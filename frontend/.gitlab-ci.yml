@@ -1,0 +1,173 @@
+#-------------------------------------------------------------------------------#
+#        Discover additional configuration options in our documentation         #
+#              https://www.jetbrains.com/help/qodana/gitlab.html                #
+#-------------------------------------------------------------------------------#
+
+include:
+  - component: $CI_SERVER_FQDN/qodana/qodana/qodana-gitlab-ci@v2025.3
+    inputs:
+      args: --baseline=qodana.sarif.json
+      # When mr-mode is set to true, Qodana analyzes only the files that have been changed
+      mr-mode: false
+      use-caches: true
+      post-mr-comment: true
+      # Upload Qodana results (SARIF, other artifacts, logs) as an artifact to the job
+      upload-result: false
+      # quick-fixes available in Ultimate and Ultimate Plus plans
+      push-fixes: 'none'
+
+qodana:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+
+stages:
+  - prepare
+  - quality
+  - test
+  - build
+  - docs
+  - security
+
+variables:
+  NODE_IMAGE: "node:22.12.0-bookworm-slim"
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+  NPM_CONFIG_FUND: "false"
+  NPM_CONFIG_OFFLINE: "false"
+  NPM_CONFIG_AUDIT: "false"
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - when: never
+
+default:
+  image: "$NODE_IMAGE"
+  interruptible: true
+  cache: &npm_cache
+    key:
+      prefix: "npm-${CI_JOB_IMAGE}"
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
+    policy: pull
+
+.rules_common:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - when: never
+
+install:
+  stage: prepare
+  extends: .rules_common
+  cache:
+    <<: *npm_cache
+    policy: pull-push
+  script:
+    - node --version
+    - npm --version
+    - npm ci --prefer-offline --no-audit
+
+typecheck:
+  stage: quality
+  extends: .rules_common
+  needs: ["install"]
+  script:
+    - npm ci --prefer-offline --no-audit
+    - npm run -s type-check
+
+lint_oxlint:
+  stage: quality
+  extends: .rules_common
+  needs: ["install"]
+  script:
+    - npm ci --prefer-offline --no-audit
+    - bash ci/lint-oxlint-check.sh
+
+lint_eslint:
+  stage: quality
+  extends: .rules_common
+  needs: ["install"]
+  script:
+    - npm ci --prefer-offline --no-audit
+    - bash ci/lint-eslint-check.sh
+
+prettier_check:
+  stage: quality
+  extends: .rules_common
+  needs: ["install"]
+  script:
+    - npm ci --prefer-offline --no-audit
+    - bash ci/prettier-check.sh
+
+test_unit:
+  stage: test
+  extends: .rules_common
+  needs: ["install"]
+  script:
+    - npm ci --prefer-offline --no-audit
+    - mkdir -p reports
+    - npm run -s test:unit -- --run --reporter=default --reporter=junit --outputFile.junit=reports/junit.xml
+  artifacts:
+    when: always
+    expire_in: 2 weeks
+    reports:
+      junit: reports/junit.xml
+    paths:
+      - reports/
+
+build_app:
+  stage: build
+  extends: .rules_common
+  needs: ["install", "typecheck", "test_unit"]
+  script:
+    - npm ci --prefer-offline --no-audit
+    - npm run -s build
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - dist/
+
+docs_build:
+  stage: docs
+  needs: ["install"]
+  rules:
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - docs/**/*
+        - src/**/docs.md
+        - scripts/docgen.mjs
+        - package.json
+        - package-lock.json
+    - when: never
+  script:
+    - npm ci --prefer-offline --no-audit
+    - npm run -s docs:gen
+    - npm run -s docs:build
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - docs/.vitepress/dist/
+
+security_audit:
+  stage: security
+  extends: .rules_common
+  needs: ["install"]
+  variables:
+    NPM_CONFIG_AUDIT_LEVEL: "high"
+  script:
+    - npm ci --prefer-offline --no-audit
+    - npm run -s audit:ci

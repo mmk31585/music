@@ -1,0 +1,166 @@
+@import './fonts.css';
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'tailwindcss-primeui';
+@import 'primeicons/primeicons.css';
+@custom-variant dark (&:where(.app-dark, .app-dark *));
+
+@utility scroll-bar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--color-info-main) 70%, transparent) transparent;
+  scrollbar-gutter: auto;
+
+  &::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  &::-webkit-scrollbar-button,
+  &::-webkit-scrollbar-button:single-button,
+  &::-webkit-scrollbar-button:single-button:vertical:decrement,
+  &::-webkit-scrollbar-button:single-button:vertical:increment,
+  &::-webkit-scrollbar-button:single-button:horizontal:decrement,
+  &::-webkit-scrollbar-button:single-button:horizontal:increment {
+    width: 0;
+    height: 0;
+    display: none;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 999px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: color-mix(in oklch, var(--color-info-main) 65%, transparent);
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+    transition: background-color 0.2s ease;
+  }
+
+  &:hover::-webkit-scrollbar-thumb {
+    background: color-mix(in oklch, var(--color-info-main) 85%, transparent);
+  }
+
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+@theme {
+  --color-primary-tint-01: #f5e5ff;
+  --color-primary-tint-02: #edd2ff;
+  --color-primary-tint-03: #deadff;
+  --color-primary-tint-04: #cb79ff;
+  --color-primary-main: #b646ff;
+  --color-primary-shade-01: #ad37fb;
+  --color-primary-shade-02: #8f12df;
+  --color-primary-shade-03: #7915b5;
+  --color-primary-shade-04: #631292;
+
+  --color-neutral-gray-01: #fafafa;
+  --color-neutral-gray-02: #f7f7f8;
+  --color-neutral-gray-03: #f2f2f3;
+  --color-neutral-gray-04: #e7e7e8;
+  --color-neutral-gray-05: #ceced1;
+  --color-neutral-gray-06: #b6b6b9;
+  --color-neutral-gray-07: #9d9ea2;
+  --color-neutral-gray-08: #85858b;
+  --color-neutral-gray-09: #6d6d74;
+  --color-neutral-gray-10: #54555d;
+  --color-neutral-gray-11: #3c3d45;
+  --color-neutral-gray-12: #2e2f39;
+  --color-neutral-gray-13: #23242e;
+
+  --color-error-tint-01: #ffeded;
+  --color-error-tint-02: #ffc2c2;
+  --color-error-tint-03: #ffa3a3;
+  --color-error-tint-04: #ff8585;
+  --color-error-main: #ff6666;
+  --color-error-shade-01: #cc5252;
+  --color-error-shade-02: #993d3d;
+  --color-error-shade-03: #662929;
+  --color-error-shade-04: #331414;
+
+  --color-success-tint-01: #f3fdf3;
+  --color-success-tint-02: #cbf5cb;
+  --color-success-tint-03: #9cec9c;
+  --color-success-tint-04: #6fe36f;
+  --color-success-main: #32cd32;
+  --color-success-shade-01: #28a428;
+  --color-success-shade-02: #1e7b1e;
+  --color-success-shade-03: #145214;
+  --color-success-shade-04: #0a290a;
+
+  --color-warning-tint-01: #fffcf5;
+  --color-warning-tint-02: #fff4d4;
+  --color-warning-tint-03: #ffe9a8;
+  --color-warning-tint-04: #ffdf7d;
+  --color-warning-main: #ffc107;
+  --color-warning-shade-01: #cc9a06;
+  --color-warning-shade-02: #997404;
+  --color-warning-shade-03: #664d03;
+  --color-warning-shade-04: #332701;
+
+  --color-info-tint-01: #f4f9ff;
+  --color-info-tint-02: #d4eaff;
+  --color-info-tint-03: #a9d5ff;
+  --color-info-tint-04: #7dbfff;
+  --color-info-main: #1e90ff;
+  --color-info-shade-01: #1873cc;
+  --color-info-shade-02: #125699;
+  --color-info-shade-03: #0c3a66;
+  --color-info-shade-04: #061d33;
+
+  --color-primary: var(--color-info-shade-01);
+  --color-secondary: var(--color-primary-main);
+  --color-accent: var(--color-success-shade-01);
+
+  --color-success: var(--color-success-main);
+  --color-warning: var(--color-warning-main);
+  --color-danger: var(--color-error-main);
+  --color-info: var(--color-info-main);
+
+  --color-base-background: var(--color-neutral-gray-04);
+  --color-background: var(--color-white);
+  --color-foreground: var(--color-neutral-gray-09);
+  --color-muted: oklch(0.95 0.01 265);
+  --color-border: var(--color-neutral-gray-06);
+
+  --color-disable: var(--color-neutral-gray-09);
+
+  --color-hover: color-mix(in oklch, var(--color-primary) 10%, white);
+  --color-active: color-mix(in oklch, var(--color-primary) 20%, black);
+  --color-focus-ring: var(--color-primary-tint-04);
+}
+
+:root.app-dark,
+.app-dark {
+  --color-base-background: var(--color-neutral-gray-10);
+  --color-background: var(--color-neutral-gray-12);
+  --color-foreground: var(--color-neutral-gray-01);
+  --color-muted: oklch(0.28 0.01 265);
+  --color-border: var(--color-neutral-gray-10);
+
+  --color-primary: color-mix(in oklch, var(--color-primary-main) 70%, white);
+
+  --color-disable: var(--color-neutral-gray-06);
+  --color-hover: color-mix(in oklch, var(--color-primary-tint-05) 20%, transparent);
+  --color-focus-ring: var(--color-primary-tint-04);
+
+  --color-success: var(--color-success-shade-04);
+  --color-warning: var(--color-warning-shade-02);
+  --color-danger: var(--color-error-shade-02);
+}
+
+html {
+  font-size: 14px;
+  scroll-behavior: smooth;
+}

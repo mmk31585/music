@@ -1,0 +1,6 @@
+export { default as AdminSidebar } from './AdminSidebar.vue'
+export { default as AdminTopbar } from './AdminTopbar.vue'
+export { default as AdminStatCard } from './AdminStatCard.vue'
+export { default as UploadMediaCard } from './UploadMediaCard.vue'
+export { default as AdminSectionHeader } from './AdminSectionHeader.vue'
+export { default as CatalogQuickActions } from './CatalogQuickActions.vue'
