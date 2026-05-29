@@ -44,11 +44,11 @@ func NewHandler(service *Service, validator *validator.Validator, mediaService .
 func (h *Handler) RegisterArtist(c *gin.Context) {
 	var req CreateArtistRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.GinError(c, appErr.BadRequest("invalid request body", nil))
+		response.Error(c, appErr.BadRequest("invalid request body", nil))
 		return
 	}
 	if errs := h.validator.Validate(req); len(errs) > 0 {
-		response.GinError(c, appErr.Validation("validation failed", errs))
+		response.Error(c, appErr.Validation("validation failed", errs))
 		return
 	}
 
@@ -56,22 +56,22 @@ func (h *Handler) RegisterArtist(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrDuplicateArtistSlug):
-			response.GinError(c, appErr.Conflict("artist with similar name already exists",
+			response.Error(c, appErr.Conflict("artist with similar name already exists",
 				map[string]string{"name": req.Name}))
 		default:
-			response.GinError(c, appErr.Internal("failed to create artist", nil))
+			response.Error(c, appErr.Internal("failed to create artist", nil))
 		}
 		return
 	}
 
-	response.GinSuccess(c, http.StatusCreated, "artist created successfully", artist)
+	response.Success(c, http.StatusCreated, "artist created successfully", artist)
 }
 
 func (h *Handler) GetArtist(c *gin.Context) {
 	idStr := c.Param("artistID")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.GinError(c, appErr.BadRequest("invalid artist id",
+		response.Error(c, appErr.BadRequest("invalid artist id",
 			map[string]interface{}{"id": idStr}))
 		return
 	}
@@ -80,15 +80,15 @@ func (h *Handler) GetArtist(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrArtistNotFound):
-			response.GinError(c, appErr.NotFound("artist not found",
+			response.Error(c, appErr.NotFound("artist not found",
 				map[string]string{"id": id.String()}))
 		default:
-			response.GinError(c, appErr.Internal("failed to fetch artist", nil))
+			response.Error(c, appErr.Internal("failed to fetch artist", nil))
 		}
 		return
 	}
 
-	response.GinSuccess(c, http.StatusOK, "artist fetched successfully", artist)
+	response.Success(c, http.StatusOK, "artist fetched successfully", artist)
 }
 
 func (h *Handler) ListArtists(c *gin.Context) {
@@ -96,30 +96,30 @@ func (h *Handler) ListArtists(c *gin.Context) {
 
 	artists, total, err := h.service.ListArtists(c.Request.Context(), filter)
 	if err != nil {
-		response.GinError(c, appErr.Internal("failed to list artists", nil))
+		response.Error(c, appErr.Internal("failed to list artists", nil))
 		return
 	}
 
 	meta := pagination.NewMeta(filter.Pagination, total)
-	response.GinSuccessWithMeta(c, http.StatusOK, "artists fetched successfully", artists, meta)
+	response.SuccessWithMeta(c, http.StatusOK, "artists fetched successfully", artists, meta)
 }
 
 func (h *Handler) UpdateArtist(c *gin.Context) {
 	idStr := c.Param("artistID")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.GinError(c, appErr.BadRequest("invalid artist id",
+		response.Error(c, appErr.BadRequest("invalid artist id",
 			map[string]interface{}{"id": idStr}))
 		return
 	}
 
 	var req UpdateArtistRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.GinError(c, appErr.BadRequest("invalid request body", nil))
+		response.Error(c, appErr.BadRequest("invalid request body", nil))
 		return
 	}
 	if errs := h.validator.Validate(req); len(errs) > 0 {
-		response.GinError(c, appErr.Validation("validation failed", errs))
+		response.Error(c, appErr.Validation("validation failed", errs))
 		return
 	}
 
@@ -127,28 +127,28 @@ func (h *Handler) UpdateArtist(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrArtistNotFound):
-			response.GinError(c, appErr.NotFound("artist not found",
+			response.Error(c, appErr.NotFound("artist not found",
 				map[string]string{"id": id.String()}))
 		case errors.Is(err, ErrDuplicateArtistSlug):
 			detail := map[string]string{}
 			if req.Name != nil {
 				detail["name"] = *req.Name
 			}
-			response.GinError(c, appErr.Conflict("artist with similar name already exists", detail))
+			response.Error(c, appErr.Conflict("artist with similar name already exists", detail))
 		default:
-			response.GinError(c, appErr.Internal("failed to update artist", nil))
+			response.Error(c, appErr.Internal("failed to update artist", nil))
 		}
 		return
 	}
 
-	response.GinSuccess(c, http.StatusOK, "artist updated successfully", artist)
+	response.Success(c, http.StatusOK, "artist updated successfully", artist)
 }
 
 func (h *Handler) DeleteArtist(c *gin.Context) {
 	idStr := c.Param("artistID")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.GinError(c, appErr.BadRequest("invalid artist id",
+		response.Error(c, appErr.BadRequest("invalid artist id",
 			map[string]interface{}{"id": idStr}))
 		return
 	}
@@ -156,15 +156,15 @@ func (h *Handler) DeleteArtist(c *gin.Context) {
 	if err := h.service.DeleteArtist(c.Request.Context(), id); err != nil {
 		switch {
 		case errors.Is(err, ErrArtistNotFound):
-			response.GinError(c, appErr.NotFound("artist not found",
+			response.Error(c, appErr.NotFound("artist not found",
 				map[string]string{"id": id.String()}))
 		default:
-			response.GinError(c, appErr.Internal("failed to delete artist", nil))
+			response.Error(c, appErr.Internal("failed to delete artist", nil))
 		}
 		return
 	}
 
-	response.GinSuccess(c, http.StatusOK, "artist deleted successfully", nil)
+	response.Success[any](c, http.StatusOK, "artist deleted successfully", nil)
 }
 
 // --------------------
@@ -174,11 +174,11 @@ func (h *Handler) DeleteArtist(c *gin.Context) {
 func (h *Handler) RegisterAlbum(c *gin.Context) {
 	var req CreateAlbumRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.GinError(c, appErr.BadRequest("invalid request body", nil))
+		response.Error(c, appErr.BadRequest("invalid request body", nil))
 		return
 	}
 	if errs := h.validator.Validate(req); len(errs) > 0 {
-		response.GinError(c, appErr.Validation("validation failed", errs))
+		response.Error(c, appErr.Validation("validation failed", errs))
 		return
 	}
 
@@ -186,25 +186,25 @@ func (h *Handler) RegisterAlbum(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrArtistNotFound):
-			response.GinError(c, appErr.NotFound("artist not found",
+			response.Error(c, appErr.NotFound("artist not found",
 				map[string]string{"artistId": req.ArtistID.String()}))
 		case errors.Is(err, ErrDuplicateAlbumSlug):
-			response.GinError(c, appErr.Conflict("album with similar title already exists for this artist",
+			response.Error(c, appErr.Conflict("album with similar title already exists for this artist",
 				map[string]string{"title": req.Title}))
 		default:
-			response.GinError(c, appErr.Internal("failed to create album", nil))
+			response.Error(c, appErr.Internal("failed to create album", nil))
 		}
 		return
 	}
 
-	response.GinSuccess(c, http.StatusCreated, "album created successfully", album)
+	response.Success(c, http.StatusCreated, "album created successfully", album)
 }
 
 func (h *Handler) GetAlbum(c *gin.Context) {
 	idStr := c.Param("albumID")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.GinError(c, appErr.BadRequest("invalid album id",
+		response.Error(c, appErr.BadRequest("invalid album id",
 			map[string]interface{}{"id": idStr}))
 		return
 	}
@@ -213,15 +213,15 @@ func (h *Handler) GetAlbum(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrAlbumNotFound):
-			response.GinError(c, appErr.NotFound("album not found",
+			response.Error(c, appErr.NotFound("album not found",
 				map[string]string{"id": id.String()}))
 		default:
-			response.GinError(c, appErr.Internal("failed to fetch album", nil))
+			response.Error(c, appErr.Internal("failed to fetch album", nil))
 		}
 		return
 	}
 
-	response.GinSuccess(c, http.StatusOK, "album fetched successfully", album)
+	response.Success(c, http.StatusOK, "album fetched successfully", album)
 }
 
 func (h *Handler) ListAlbums(c *gin.Context) {
@@ -229,30 +229,30 @@ func (h *Handler) ListAlbums(c *gin.Context) {
 
 	albums, total, err := h.service.ListAlbums(c.Request.Context(), filter)
 	if err != nil {
-		response.GinError(c, appErr.Internal("failed to list albums", nil))
+		response.Error(c, appErr.Internal("failed to list albums", nil))
 		return
 	}
 
 	meta := pagination.NewMeta(filter.Pagination, total)
-	response.GinSuccessWithMeta(c, http.StatusOK, "albums fetched successfully", albums, meta)
+	response.SuccessWithMeta(c, http.StatusOK, "albums fetched successfully", albums, meta)
 }
 
 func (h *Handler) UpdateAlbum(c *gin.Context) {
 	idStr := c.Param("albumID")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.GinError(c, appErr.BadRequest("invalid album id",
+		response.Error(c, appErr.BadRequest("invalid album id",
 			map[string]interface{}{"id": idStr}))
 		return
 	}
 
 	var req UpdateAlbumRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.GinError(c, appErr.BadRequest("invalid request body", nil))
+		response.Error(c, appErr.BadRequest("invalid request body", nil))
 		return
 	}
 	if errs := h.validator.Validate(req); len(errs) > 0 {
-		response.GinError(c, appErr.Validation("validation failed", errs))
+		response.Error(c, appErr.Validation("validation failed", errs))
 		return
 	}
 
@@ -260,28 +260,28 @@ func (h *Handler) UpdateAlbum(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrAlbumNotFound):
-			response.GinError(c, appErr.NotFound("album not found",
+			response.Error(c, appErr.NotFound("album not found",
 				map[string]string{"id": id.String()}))
 		case errors.Is(err, ErrDuplicateAlbumSlug):
 			detail := map[string]string{}
 			if req.Title != nil {
 				detail["title"] = *req.Title
 			}
-			response.GinError(c, appErr.Conflict("album with similar title already exists for this artist", detail))
+			response.Error(c, appErr.Conflict("album with similar title already exists for this artist", detail))
 		default:
-			response.GinError(c, appErr.Internal("failed to update album", nil))
+			response.Error(c, appErr.Internal("failed to update album", nil))
 		}
 		return
 	}
 
-	response.GinSuccess(c, http.StatusOK, "album updated successfully", album)
+	response.Success(c, http.StatusOK, "album updated successfully", album)
 }
 
 func (h *Handler) DeleteAlbum(c *gin.Context) {
 	idStr := c.Param("albumID")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.GinError(c, appErr.BadRequest("invalid album id",
+		response.Error(c, appErr.BadRequest("invalid album id",
 			map[string]interface{}{"id": idStr}))
 		return
 	}
@@ -289,15 +289,15 @@ func (h *Handler) DeleteAlbum(c *gin.Context) {
 	if err := h.service.DeleteAlbum(c.Request.Context(), id); err != nil {
 		switch {
 		case errors.Is(err, ErrAlbumNotFound):
-			response.GinError(c, appErr.NotFound("album not found",
+			response.Error(c, appErr.NotFound("album not found",
 				map[string]string{"id": id.String()}))
 		default:
-			response.GinError(c, appErr.Internal("failed to delete album", nil))
+			response.Error(c, appErr.Internal("failed to delete album", nil))
 		}
 		return
 	}
 
-	response.GinSuccess(c, http.StatusOK, "album deleted successfully", nil)
+	response.Success[any](c, http.StatusOK, "album deleted successfully", nil)
 }
 
 // --------------------
@@ -310,11 +310,11 @@ func (h *Handler) RegisterTrack(c *gin.Context) {
 		// log the raw body for debugging
 		body, _ := c.GetRawData()
 		log.Printf("invalid JSON: %v, body: %s", err, string(body))
-		response.GinError(c, appErr.BadRequest("invalid request body", nil))
+		response.Error(c, appErr.BadRequest("invalid request body", nil))
 		return
 	}
 	if errs := h.validator.Validate(req); len(errs) > 0 {
-		response.GinError(c, appErr.Validation("validation failed", errs))
+		response.Error(c, appErr.Validation("validation failed", errs))
 		return
 	}
 
@@ -322,32 +322,32 @@ func (h *Handler) RegisterTrack(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrArtistNotFound):
-			response.GinError(c, appErr.NotFound("artist not found",
+			response.Error(c, appErr.NotFound("artist not found",
 				map[string]string{"artistId": req.ArtistID.String()}))
 		case errors.Is(err, ErrAlbumNotFound):
 			detail := map[string]string{}
 			if req.AlbumID != nil {
 				detail["albumId"] = req.AlbumID.String()
 			}
-			response.GinError(c, appErr.NotFound("album not found", detail))
+			response.Error(c, appErr.NotFound("album not found", detail))
 		case errors.Is(err, ErrInvalidGenreIDs):
-			response.GinError(c, appErr.BadRequest("one or more genre ids are invalid",
+			response.Error(c, appErr.BadRequest("one or more genre ids are invalid",
 				map[string]interface{}{"genreIds": req.GenreIDs}))
 		case errors.Is(err, ErrDuplicateTrackSlug):
-			response.GinError(c, appErr.Conflict("track with similar title already exists for this artist",
+			response.Error(c, appErr.Conflict("track with similar title already exists for this artist",
 				map[string]string{"title": req.Title}))
 		default:
-			response.GinError(c, appErr.Internal("failed to create track", nil))
+			response.Error(c, appErr.Internal("failed to create track", nil))
 		}
 		return
 	}
 
-	response.GinSuccess(c, http.StatusCreated, "track created successfully", track)
+	response.Success(c, http.StatusCreated, "track created successfully", track)
 }
 
 func (h *Handler) RegisterTrackWithAudio(c *gin.Context) {
 	if h.mediaService == nil {
-		response.GinError(c, appErr.Internal("media upload service is not configured", nil))
+		response.Error(c, appErr.Internal("media upload service is not configured", nil))
 		return
 	}
 
@@ -355,20 +355,20 @@ func (h *Handler) RegisterTrackWithAudio(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, hardLimit)
 
 	if err := c.Request.ParseMultipartForm(hardLimit); err != nil {
-		response.GinError(c, appErr.BadRequest("invalid multipart form or file too large", err))
+		response.Error(c, appErr.BadRequest("invalid multipart form or file too large", err))
 		return
 	}
 
 	file, header, err := c.Request.FormFile("trackAudio")
 	if err != nil {
-		response.GinError(c, appErr.BadRequest("track audio file is required", err))
+		response.Error(c, appErr.BadRequest("track audio file is required", err))
 		return
 	}
 	defer file.Close()
 
 	req, err := createTrackRequestFromMultipart(c)
 	if err != nil {
-		response.GinError(c, appErr.BadRequest(err.Error(), nil))
+		response.Error(c, appErr.BadRequest(err.Error(), nil))
 		return
 	}
 	if strings.TrimSpace(req.Title) == "" {
@@ -376,7 +376,7 @@ func (h *Handler) RegisterTrackWithAudio(c *gin.Context) {
 	}
 
 	if errs := h.validator.Validate(req); len(errs) > 0 {
-		response.GinError(c, appErr.Validation("validation failed", errs))
+		response.Error(c, appErr.Validation("validation failed", errs))
 		return
 	}
 
@@ -384,13 +384,13 @@ func (h *Handler) RegisterTrackWithAudio(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, media.ErrFileTooLarge):
-			response.GinError(c, appErr.BadRequest("file too large", err))
+			response.Error(c, appErr.BadRequest("file too large", err))
 		case errors.Is(err, media.ErrInvalidMimeType):
-			response.GinError(c, appErr.BadRequest("invalid audio file type", err))
+			response.Error(c, appErr.BadRequest("invalid audio file type", err))
 		case errors.Is(err, media.ErrEmptyFile):
-			response.GinError(c, appErr.BadRequest("uploaded file is empty", err))
+			response.Error(c, appErr.BadRequest("uploaded file is empty", err))
 		default:
-			response.GinError(c, appErr.Internal("failed to upload track audio", err))
+			response.Error(c, appErr.Internal("failed to upload track audio", err))
 		}
 		return
 	}
@@ -404,7 +404,7 @@ func (h *Handler) RegisterTrackWithAudio(c *gin.Context) {
 		return
 	}
 
-	response.GinSuccess(c, http.StatusCreated, "track uploaded and created successfully", gin.H{
+	response.Success(c, http.StatusCreated, "track uploaded and created successfully", gin.H{
 		"track": track,
 		"media": upload,
 	})
@@ -500,22 +500,22 @@ func parseMultipartGenreIDs(c *gin.Context) ([]uuid.UUID, error) {
 func writeTrackCreateError(c *gin.Context, err error, req CreateTrackRequest) {
 	switch {
 	case errors.Is(err, ErrArtistNotFound):
-		response.GinError(c, appErr.NotFound("artist not found",
+		response.Error(c, appErr.NotFound("artist not found",
 			map[string]string{"artistId": req.ArtistID.String()}))
 	case errors.Is(err, ErrAlbumNotFound):
 		detail := map[string]string{}
 		if req.AlbumID != nil {
 			detail["albumId"] = req.AlbumID.String()
 		}
-		response.GinError(c, appErr.NotFound("album not found", detail))
+		response.Error(c, appErr.NotFound("album not found", detail))
 	case errors.Is(err, ErrInvalidGenreIDs):
-		response.GinError(c, appErr.BadRequest("one or more genre ids are invalid",
+		response.Error(c, appErr.BadRequest("one or more genre ids are invalid",
 			map[string]interface{}{"genreIds": req.GenreIDs}))
 	case errors.Is(err, ErrDuplicateTrackSlug):
-		response.GinError(c, appErr.Conflict("track with similar title already exists for this artist",
+		response.Error(c, appErr.Conflict("track with similar title already exists for this artist",
 			map[string]string{"title": req.Title}))
 	default:
-		response.GinError(c, appErr.Internal("failed to create track", nil))
+		response.Error(c, appErr.Internal("failed to create track", nil))
 	}
 }
 
@@ -523,7 +523,7 @@ func (h *Handler) GetTrack(c *gin.Context) {
 	idStr := c.Param("trackID")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.GinError(c, appErr.BadRequest("invalid track id",
+		response.Error(c, appErr.BadRequest("invalid track id",
 			map[string]interface{}{"id": idStr}))
 		return
 	}
@@ -532,15 +532,15 @@ func (h *Handler) GetTrack(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrTrackNotFound):
-			response.GinError(c, appErr.NotFound("track not found",
+			response.Error(c, appErr.NotFound("track not found",
 				map[string]string{"id": id.String()}))
 		default:
-			response.GinError(c, appErr.Internal("failed to fetch track", nil))
+			response.Error(c, appErr.Internal("failed to fetch track", nil))
 		}
 		return
 	}
 
-	response.GinSuccess(c, http.StatusOK, "track fetched successfully", track)
+	response.Success(c, http.StatusOK, "track fetched successfully", track)
 }
 
 func (h *Handler) ListTracks(c *gin.Context) {
@@ -548,12 +548,12 @@ func (h *Handler) ListTracks(c *gin.Context) {
 
 	tracks, total, err := h.service.ListTracks(c.Request.Context(), filter)
 	if err != nil {
-		response.GinError(c, appErr.Internal("failed to list tracks", nil))
+		response.Error(c, appErr.Internal("failed to list tracks", nil))
 		return
 	}
 
 	meta := pagination.NewMeta(filter.Pagination, total)
-	response.GinSuccessWithMeta(c, http.StatusOK, "tracks fetched successfully", tracks, meta)
+	response.SuccessWithMeta(c, http.StatusOK, "tracks fetched successfully", tracks, meta)
 }
 
 func (h *Handler) ListAdminTracks(c *gin.Context) {
@@ -561,30 +561,30 @@ func (h *Handler) ListAdminTracks(c *gin.Context) {
 
 	tracks, total, err := h.service.ListTracks(c.Request.Context(), filter)
 	if err != nil {
-		response.GinError(c, appErr.Internal("failed to list admin tracks", nil))
+		response.Error(c, appErr.Internal("failed to list admin tracks", nil))
 		return
 	}
 
 	meta := pagination.NewMeta(filter.Pagination, total)
-	response.GinSuccessWithMeta(c, http.StatusOK, "admin tracks fetched successfully", tracks, meta)
+	response.SuccessWithMeta(c, http.StatusOK, "admin tracks fetched successfully", tracks, meta)
 }
 
 func (h *Handler) UpdateTrack(c *gin.Context) {
 	idStr := c.Param("trackID")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.GinError(c, appErr.BadRequest("invalid track id",
+		response.Error(c, appErr.BadRequest("invalid track id",
 			map[string]interface{}{"id": idStr}))
 		return
 	}
 
 	var req UpdateTrackRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.GinError(c, appErr.BadRequest("invalid request body", nil))
+		response.Error(c, appErr.BadRequest("invalid request body", nil))
 		return
 	}
 	if errs := h.validator.Validate(req); len(errs) > 0 {
-		response.GinError(c, appErr.Validation("validation failed", errs))
+		response.Error(c, appErr.Validation("validation failed", errs))
 		return
 	}
 
@@ -592,37 +592,37 @@ func (h *Handler) UpdateTrack(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrTrackNotFound):
-			response.GinError(c, appErr.NotFound("track not found",
+			response.Error(c, appErr.NotFound("track not found",
 				map[string]string{"id": id.String()}))
 		case errors.Is(err, ErrAlbumNotFound):
 			detail := map[string]string{}
 			if req.AlbumID != nil {
 				detail["albumId"] = req.AlbumID.String()
 			}
-			response.GinError(c, appErr.NotFound("album not found", detail))
+			response.Error(c, appErr.NotFound("album not found", detail))
 		case errors.Is(err, ErrInvalidGenreIDs):
-			response.GinError(c, appErr.BadRequest("one or more genre ids are invalid",
+			response.Error(c, appErr.BadRequest("one or more genre ids are invalid",
 				map[string]interface{}{"genreIds": req.GenreIDs}))
 		case errors.Is(err, ErrDuplicateTrackSlug):
 			detail := map[string]string{}
 			if req.Title != nil {
 				detail["title"] = *req.Title
 			}
-			response.GinError(c, appErr.Conflict("track with similar title already exists for this artist", detail))
+			response.Error(c, appErr.Conflict("track with similar title already exists for this artist", detail))
 		default:
-			response.GinError(c, appErr.Internal("failed to update track", nil))
+			response.Error(c, appErr.Internal("failed to update track", nil))
 		}
 		return
 	}
 
-	response.GinSuccess(c, http.StatusOK, "track updated successfully", track)
+	response.Success(c, http.StatusOK, "track updated successfully", track)
 }
 
 func (h *Handler) DeleteTrack(c *gin.Context) {
 	idStr := c.Param("trackID")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.GinError(c, appErr.BadRequest("invalid track id",
+		response.Error(c, appErr.BadRequest("invalid track id",
 			map[string]interface{}{"id": idStr}))
 		return
 	}
@@ -630,15 +630,15 @@ func (h *Handler) DeleteTrack(c *gin.Context) {
 	if err := h.service.DeleteTrack(c.Request.Context(), id); err != nil {
 		switch {
 		case errors.Is(err, ErrTrackNotFound):
-			response.GinError(c, appErr.NotFound("track not found",
+			response.Error(c, appErr.NotFound("track not found",
 				map[string]string{"id": id.String()}))
 		default:
-			response.GinError(c, appErr.Internal("failed to delete track", nil))
+			response.Error(c, appErr.Internal("failed to delete track", nil))
 		}
 		return
 	}
 
-	response.GinSuccess(c, http.StatusOK, "track deleted successfully", nil)
+	response.Success[any](c, http.StatusOK, "track deleted successfully", nil)
 }
 
 // --------------------
@@ -648,11 +648,11 @@ func (h *Handler) DeleteTrack(c *gin.Context) {
 func (h *Handler) CreateGenre(c *gin.Context) {
 	var req CreateGenreRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.GinError(c, appErr.BadRequest("invalid request body", nil))
+		response.Error(c, appErr.BadRequest("invalid request body", nil))
 		return
 	}
 	if errs := h.validator.Validate(req); len(errs) > 0 {
-		response.GinError(c, appErr.Validation("validation failed", errs))
+		response.Error(c, appErr.Validation("validation failed", errs))
 		return
 	}
 
@@ -660,25 +660,25 @@ func (h *Handler) CreateGenre(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrDuplicateGenreName):
-			response.GinError(c, appErr.Conflict("genre name already exists",
+			response.Error(c, appErr.Conflict("genre name already exists",
 				map[string]string{"name": req.Name}))
 		case errors.Is(err, ErrDuplicateGenreSlug):
-			response.GinError(c, appErr.Conflict("genre slug already exists",
+			response.Error(c, appErr.Conflict("genre slug already exists",
 				map[string]string{"name": req.Name}))
 		default:
-			response.GinError(c, appErr.Internal("failed to create genre", nil))
+			response.Error(c, appErr.Internal("failed to create genre", nil))
 		}
 		return
 	}
 
-	response.GinSuccess(c, http.StatusCreated, "genre created successfully", genre)
+	response.Success(c, http.StatusCreated, "genre created successfully", genre)
 }
 
 func (h *Handler) GetGenre(c *gin.Context) {
 	idStr := c.Param("genreID")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.GinError(c, appErr.BadRequest("invalid genre id",
+		response.Error(c, appErr.BadRequest("invalid genre id",
 			map[string]interface{}{"id": idStr}))
 		return
 	}
@@ -687,43 +687,43 @@ func (h *Handler) GetGenre(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrGenreNotFound):
-			response.GinError(c, appErr.NotFound("genre not found",
+			response.Error(c, appErr.NotFound("genre not found",
 				map[string]string{"id": id.String()}))
 		default:
-			response.GinError(c, appErr.Internal("failed to fetch genre", nil))
+			response.Error(c, appErr.Internal("failed to fetch genre", nil))
 		}
 		return
 	}
 
-	response.GinSuccess(c, http.StatusOK, "genre fetched successfully", genre)
+	response.Success(c, http.StatusOK, "genre fetched successfully", genre)
 }
 
 func (h *Handler) ListGenres(c *gin.Context) {
 	genres, err := h.service.ListGenres(c.Request.Context())
 	if err != nil {
-		response.GinError(c, appErr.Internal("failed to list genres", nil))
+		response.Error(c, appErr.Internal("failed to list genres", nil))
 		return
 	}
 
-	response.GinSuccess(c, http.StatusOK, "genres fetched successfully", genres)
+	response.Success(c, http.StatusOK, "genres fetched successfully", genres)
 }
 
 func (h *Handler) UpdateGenre(c *gin.Context) {
 	idStr := c.Param("genreID")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.GinError(c, appErr.BadRequest("invalid genre id",
+		response.Error(c, appErr.BadRequest("invalid genre id",
 			map[string]interface{}{"id": idStr}))
 		return
 	}
 
 	var req UpdateGenreRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.GinError(c, appErr.BadRequest("invalid request body", nil))
+		response.Error(c, appErr.BadRequest("invalid request body", nil))
 		return
 	}
 	if errs := h.validator.Validate(req); len(errs) > 0 {
-		response.GinError(c, appErr.Validation("validation failed", errs))
+		response.Error(c, appErr.Validation("validation failed", errs))
 		return
 	}
 
@@ -731,34 +731,34 @@ func (h *Handler) UpdateGenre(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrGenreNotFound):
-			response.GinError(c, appErr.NotFound("genre not found",
+			response.Error(c, appErr.NotFound("genre not found",
 				map[string]string{"id": id.String()}))
 		case errors.Is(err, ErrDuplicateGenreName):
 			detail := map[string]string{}
 			if req.Name != nil {
 				detail["name"] = *req.Name
 			}
-			response.GinError(c, appErr.Conflict("genre name already exists", detail))
+			response.Error(c, appErr.Conflict("genre name already exists", detail))
 		case errors.Is(err, ErrDuplicateGenreSlug):
 			detail := map[string]string{}
 			if req.Name != nil {
 				detail["name"] = *req.Name
 			}
-			response.GinError(c, appErr.Conflict("genre slug already exists", detail))
+			response.Error(c, appErr.Conflict("genre slug already exists", detail))
 		default:
-			response.GinError(c, appErr.Internal("failed to update genre", nil))
+			response.Error(c, appErr.Internal("failed to update genre", nil))
 		}
 		return
 	}
 
-	response.GinSuccess(c, http.StatusOK, "genre updated successfully", genre)
+	response.Success(c, http.StatusOK, "genre updated successfully", genre)
 }
 
 func (h *Handler) DeleteGenre(c *gin.Context) {
 	idStr := c.Param("genreID")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.GinError(c, appErr.BadRequest("invalid genre id",
+		response.Error(c, appErr.BadRequest("invalid genre id",
 			map[string]interface{}{"id": idStr}))
 		return
 	}
@@ -766,15 +766,15 @@ func (h *Handler) DeleteGenre(c *gin.Context) {
 	if err := h.service.DeleteGenre(c.Request.Context(), id); err != nil {
 		switch {
 		case errors.Is(err, ErrGenreNotFound):
-			response.GinError(c, appErr.NotFound("genre not found",
+			response.Error(c, appErr.NotFound("genre not found",
 				map[string]string{"id": id.String()}))
 		default:
-			response.GinError(c, appErr.Internal("failed to delete genre", nil))
+			response.Error(c, appErr.Internal("failed to delete genre", nil))
 		}
 		return
 	}
 
-	response.GinSuccess(c, http.StatusOK, "genre deleted successfully", nil)
+	response.Success[any](c, http.StatusOK, "genre deleted successfully", nil)
 }
 
 // --------------------
@@ -786,9 +786,9 @@ func (h *Handler) Search(c *gin.Context) {
 
 	result, err := h.service.Search(c.Request.Context(), q)
 	if err != nil {
-		response.GinError(c, appErr.Internal("failed to search catalog", nil))
+		response.Error(c, appErr.Internal("failed to search catalog", nil))
 		return
 	}
 
-	response.GinSuccess(c, http.StatusOK, "search completed successfully", result)
+	response.Success(c, http.StatusOK, "search completed successfully", result)
 }

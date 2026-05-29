@@ -1,396 +1,291 @@
-import { computed, ref, shallowRef } from 'vue'
 import { defineStore } from 'pinia'
-import type { Track } from '@/services/api/catalog'
-
-type RepeatMode = 'off' | 'one' | 'all'
-
-type PersistedPlayerState = {
-  queue: Track[]
-  currentTrackId: string | number | null
-  currentTime: number
-  volume: number
-  repeatMode: RepeatMode
-  shuffle: boolean
-}
-
-type AudioCleanup = () => void
-
-const STORAGE_KEY = 'music_player_state'
-
-function readPersistedState(): PersistedPlayerState | null {
-  if (typeof window === 'undefined') return null
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as PersistedPlayerState) : null
-  } catch {
-    window.localStorage.removeItem(STORAGE_KEY)
-    return null
-  }
-}
-
-function writePersistedState(state: PersistedPlayerState) {
-  if (typeof window === 'undefined') return
-
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  } catch {
-    // Playback persistence is nice-to-have; quota/privacy failures should not break audio.
-  }
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value))
-}
+import { computed, ref } from 'vue'
+import type { PlaybackTrack } from '@/services/api/player'
+import { usePlayerApi } from '@/services/api/player'
+import {
+  audioEngine,
+  preloadManager,
+  queueManager,
+  setMediaSessionPlaybackState,
+  updateMediaSession,
+} from '@/services/player'
 
 export const usePlayerStore = defineStore('player', () => {
-  const persisted = readPersistedState()
+  const playerApi = usePlayerApi()
 
-  const audio = shallowRef<HTMLAudioElement | null>(null)
-  const audioCleanup = shallowRef<AudioCleanup | null>(null)
-  const queue = ref<Track[]>(persisted?.queue ?? [])
-  const currentIndex = ref(
-    persisted?.currentTrackId
-      ? queue.value.findIndex((track) => track.id === persisted.currentTrackId)
-      : -1,
-  )
+  const currentTrack = ref<PlaybackTrack | null>(null)
+  const queue = ref<PlaybackTrack[]>([])
+
   const isPlaying = ref(false)
   const isBuffering = ref(false)
-  const currentTime = ref(persisted?.currentTime ?? 0)
+  const isLoadingTrack = ref(false)
+
+  const currentTime = ref(0)
   const duration = ref(0)
-  const volume = ref(persisted?.volume ?? 0.8)
-  const repeatMode = ref<RepeatMode>(persisted?.repeatMode ?? 'off')
-  const shuffle = ref(persisted?.shuffle ?? false)
-  const error = ref('')
 
-  if (currentIndex.value < 0 && queue.value.length > 0) {
-    currentIndex.value = 0
-  }
+  const volume = ref(Number(localStorage.getItem('player-volume') || 0.85))
+  const muted = ref(localStorage.getItem('player-muted') === 'true')
 
-  const currentTrack = computed(() => {
-    if (currentIndex.value < 0) return null
-    return queue.value[currentIndex.value] ?? null
+  const error = ref<string | null>(null)
+
+  const progressPercent = computed(() => {
+    if (!duration.value) return 0
+    return Math.min(100, Math.max(0, (currentTime.value / duration.value) * 100))
   })
 
-  const canPlayCurrent = computed(() => !!currentTrack.value?.audio_url)
-  const hasNext = computed(
-    () =>
-      (shuffle.value && queue.value.length > 1) ||
-      currentIndex.value < queue.value.length - 1 ||
-      (repeatMode.value === 'all' && queue.value.length > 1),
-  )
-  const hasPrevious = computed(
-    () =>
-      currentTime.value > 3 ||
-      currentIndex.value > 0 ||
-      (repeatMode.value === 'all' && queue.value.length > 1),
-  )
+  const hasNext = computed(() => Boolean(queueManager.getNext()))
+  const hasPrevious = computed(() => Boolean(queueManager.getPrevious()))
 
-  function persist() {
-    writePersistedState({
-      queue: queue.value,
-      currentTrackId: currentTrack.value?.id ?? null,
-      currentTime: currentTime.value,
-      volume: volume.value,
-      repeatMode: repeatMode.value,
-      shuffle: shuffle.value,
+  let initialized = false
+
+  function initialize() {
+    if (initialized) return
+    initialized = true
+
+    audioEngine.setVolume(volume.value)
+    audioEngine.setMuted(muted.value)
+
+    audioEngine.on('play', () => {
+      isPlaying.value = true
+      setMediaSessionPlaybackState('playing')
+    })
+
+    audioEngine.on('pause', () => {
+      isPlaying.value = false
+      setMediaSessionPlaybackState('paused')
+    })
+
+    audioEngine.on('waiting', () => {
+      isBuffering.value = true
+    })
+
+    audioEngine.on('playing', () => {
+      isBuffering.value = false
+    })
+
+    audioEngine.on('canplay', () => {
+      isBuffering.value = false
+    })
+
+    audioEngine.on('timeupdate', (payload) => {
+      currentTime.value = payload.currentTime
+      duration.value = payload.duration || duration.value
+    })
+
+    audioEngine.on('durationchange', (payload) => {
+      if (payload.duration) {
+        duration.value = payload.duration
+      }
+    })
+
+    audioEngine.on('volumechange', (payload) => {
+      volume.value = payload.volume
+      muted.value = payload.muted
+
+      localStorage.setItem('player-volume', String(payload.volume))
+      localStorage.setItem('player-muted', String(payload.muted))
+    })
+
+    audioEngine.on('ended', async () => {
+      await playNext()
+    })
+
+    audioEngine.on('error', (err) => {
+      error.value = err.message
+      isBuffering.value = false
+      isPlaying.value = false
+      setMediaSessionPlaybackState('none')
     })
   }
 
-  function addAudioListener<K extends keyof HTMLMediaElementEventMap>(
-    element: HTMLAudioElement,
-    event: K,
-    listener: (event: HTMLMediaElementEventMap[K]) => void,
-  ) {
-    element.addEventListener(event, listener)
-    return () => element.removeEventListener(event, listener)
-  }
+  async function playTrack(track: PlaybackTrack) {
+    initialize()
 
-  function disposeAudio() {
-    const element = audio.value
-
-    audioCleanup.value?.()
-    audioCleanup.value = null
-
-    if (element) {
-      element.pause()
-      element.removeAttribute('src')
-      element.load()
-    }
-
-    audio.value = null
-    isPlaying.value = false
-    isBuffering.value = false
-  }
-
-  function ensureAudio() {
-    if (audio.value || typeof Audio === 'undefined') return audio.value
-
-    const element = new Audio()
-    element.preload = 'metadata'
-    element.volume = volume.value
-    const cleanup: AudioCleanup[] = []
-
-    cleanup.push(
-      addAudioListener(element, 'loadstart', () => {
-        isBuffering.value = true
-        error.value = ''
-      }),
-    )
-    cleanup.push(
-      addAudioListener(element, 'loadedmetadata', () => {
-        duration.value = Number.isFinite(element.duration) ? element.duration : 0
-        if (currentTime.value > 0 && currentTime.value < duration.value) {
-          element.currentTime = currentTime.value
-        }
-        isBuffering.value = false
-      }),
-    )
-    cleanup.push(
-      addAudioListener(element, 'waiting', () => {
-        isBuffering.value = true
-      }),
-    )
-    cleanup.push(
-      addAudioListener(element, 'playing', () => {
-        isBuffering.value = false
-        isPlaying.value = true
-      }),
-    )
-    cleanup.push(
-      addAudioListener(element, 'pause', () => {
-        isPlaying.value = false
-        persist()
-      }),
-    )
-    cleanup.push(
-      addAudioListener(element, 'timeupdate', () => {
-        currentTime.value = element.currentTime
-        if (Math.floor(element.currentTime) % 5 === 0) {
-          persist()
-        }
-      }),
-    )
-    cleanup.push(
-      addAudioListener(element, 'durationchange', () => {
-        duration.value = Number.isFinite(element.duration) ? element.duration : 0
-      }),
-    )
-    cleanup.push(
-      addAudioListener(element, 'ended', () => {
-        if (repeatMode.value === 'one') {
-          void playCurrent(true)
-          return
-        }
-
-        if (hasNext.value) {
-          void playNext()
-        } else {
-          isPlaying.value = false
-          currentTime.value = 0
-          persist()
-        }
-      }),
-    )
-    cleanup.push(
-      addAudioListener(element, 'error', () => {
-        error.value = 'This track could not be played.'
-        isBuffering.value = false
-        isPlaying.value = false
-        persist()
-      }),
-    )
-
-    audioCleanup.value = () => {
-      for (const remove of cleanup) {
-        remove()
-      }
-    }
-    audio.value = element
-    loadCurrent(false)
-
-    return element
-  }
-
-  function loadCurrent(keepTime: boolean) {
-    const element = ensureAudio()
-    const track = currentTrack.value
-
-    if (!element || !track?.audio_url) {
-      duration.value = track?.duration_seconds ?? 0
-      return
-    }
-
-    if (element.src !== track.audio_url) {
-      element.src = track.audio_url
-      element.load()
-      duration.value = track.duration_seconds ?? 0
-      if (!keepTime) currentTime.value = 0
-    }
-  }
-
-  async function playCurrent(keepTime = false) {
-    const element = ensureAudio()
-    const track = currentTrack.value
-
-    if (!element || !track) return
-    if (!track.audio_url) {
-      error.value = 'This track has no audio file yet.'
-      return
-    }
-
-    loadCurrent(keepTime)
-    error.value = ''
+    error.value = null
+    isLoadingTrack.value = true
+    isBuffering.value = true
 
     try {
-      await element.play()
-      isPlaying.value = true
-      persist()
-    } catch {
-      error.value = 'Playback was blocked. Press play again.'
-      isPlaying.value = false
+      currentTrack.value = track
+      queueManager.setCurrent(track)
+      queue.value = queueManager.all()
+
+      duration.value = track.durationSeconds || 0
+      currentTime.value = 0
+
+      updateMediaSession(track, {
+        play: resume,
+        pause,
+        next: playNext,
+        previous: playPrevious,
+        seek,
+      })
+
+      await audioEngine.play(track.streamUrl)
+
+      const nextTrack = queueManager.getNext()
+      if (nextTrack) {
+        preloadManager.preload(nextTrack.streamUrl)
+      }
+    } catch (err: any) {
+      error.value = err?.message || 'Could not play track'
+    } finally {
+      isLoadingTrack.value = false
+      isBuffering.value = false
     }
   }
 
-  function setQueue(tracks: Track[], startTrack?: Track) {
-    queue.value = tracks.filter((track) => !!track.audio_url)
-    currentIndex.value = startTrack
-      ? queue.value.findIndex((track) => track.id === startTrack.id)
-      : currentIndex.value
+  async function playTrackById(id: string) {
+    initialize()
 
-    if (currentIndex.value < 0 && queue.value.length > 0) {
-      currentIndex.value = 0
+    isLoadingTrack.value = true
+    error.value = null
+
+    try {
+      const track = await playerApi.getPlaybackTrack(id)
+      await playTrack(track)
+    } catch (err: any) {
+      error.value = err?.message || 'Could not load track'
+    } finally {
+      isLoadingTrack.value = false
     }
-
-    persist()
   }
 
-  async function playTrack(track: Track, tracks: Track[] = queue.value) {
-    setQueue(tracks.length > 0 ? tracks : [track], track)
-    currentTime.value = 0
-    loadCurrent(false)
-    await playCurrent(false)
+  async function setQueueAndPlay(tracks: PlaybackTrack[], startIndex = 0) {
+    initialize()
+
+    if (!tracks.length) return
+
+    queueManager.setQueue(tracks, startIndex)
+    queue.value = queueManager.all()
+
+    const track = tracks[startIndex]
+    if (track) {
+      await playTrack(track)
+    }
   }
 
-  async function togglePlay() {
-    const element = ensureAudio()
-    if (!element) return
+  async function toggleTrack(track: PlaybackTrack) {
+    initialize()
 
-    if (isPlaying.value) {
-      element.pause()
+    if (currentTrack.value?.id === track.id) {
+      if (isPlaying.value) {
+        pause()
+      } else {
+        await resume()
+      }
+
       return
     }
 
-    await playCurrent(true)
+    await playTrack(track)
+  }
+
+  async function resume() {
+    initialize()
+
+    if (!currentTrack.value) return
+
+    error.value = null
+
+    try {
+      await audioEngine.play()
+    } catch (err: any) {
+      error.value = err?.message || 'Could not resume playback'
+    }
+  }
+
+  function pause() {
+    audioEngine.pause()
+  }
+
+  function stop() {
+    audioEngine.stop()
+    isPlaying.value = false
+    currentTime.value = 0
+  }
+
+  function seek(seconds: number) {
+    audioEngine.seek(seconds)
+    currentTime.value = seconds
+  }
+
+  function seekPercent(percent: number) {
+    if (!duration.value) return
+
+    const safePercent = Math.max(0, Math.min(100, percent))
+    seek((safePercent / 100) * duration.value)
+  }
+
+  function setVolume(value: number) {
+    audioEngine.setVolume(value)
+  }
+
+  function toggleMute() {
+    audioEngine.setMuted(!muted.value)
   }
 
   async function playNext() {
-    if (queue.value.length === 0) return
+    const nextTrack = queueManager.next()
 
-    if (shuffle.value && queue.value.length > 1) {
-      let nextIndex = currentIndex.value
-      while (nextIndex === currentIndex.value) {
-        nextIndex = Math.floor(Math.random() * queue.value.length)
-      }
-      currentIndex.value = nextIndex
-    } else if (currentIndex.value < queue.value.length - 1) {
-      currentIndex.value += 1
-    } else if (repeatMode.value === 'all') {
-      currentIndex.value = 0
-    } else {
+    if (!nextTrack) {
+      pause()
+      currentTime.value = 0
       return
     }
 
-    currentTime.value = 0
-    loadCurrent(false)
-    await playCurrent(false)
+    await playTrack(nextTrack)
   }
 
   async function playPrevious() {
-    const element = ensureAudio()
-    if (!element || queue.value.length === 0) return
-
-    if (currentTime.value > 3) {
+    if (currentTime.value > 4) {
       seek(0)
       return
     }
 
-    if (currentIndex.value > 0) {
-      currentIndex.value -= 1
-    } else if (repeatMode.value === 'all') {
-      currentIndex.value = queue.value.length - 1
+    const previousTrack = queueManager.previous()
+
+    if (!previousTrack) {
+      seek(0)
+      return
     }
 
-    currentTime.value = 0
-    loadCurrent(false)
-    await playCurrent(false)
-  }
-
-  function seek(seconds: number) {
-    const element = ensureAudio()
-    const nextTime = clamp(seconds, 0, duration.value || currentTrack.value?.duration_seconds || 0)
-
-    currentTime.value = nextTime
-    if (element) {
-      element.currentTime = nextTime
-    }
-    persist()
-  }
-
-  function setVolume(nextVolume: number) {
-    volume.value = clamp(nextVolume, 0, 1)
-    const element = ensureAudio()
-    if (element) {
-      element.volume = volume.value
-    }
-    persist()
-  }
-
-  function toggleShuffle() {
-    shuffle.value = !shuffle.value
-    persist()
-  }
-
-  function cycleRepeat() {
-    repeatMode.value =
-      repeatMode.value === 'off' ? 'all' : repeatMode.value === 'all' ? 'one' : 'off'
-    persist()
-  }
-
-  function restore() {
-    ensureAudio()
-  }
-
-  function dispose() {
-    persist()
-    disposeAudio()
+    await playTrack(previousTrack)
   }
 
   return {
-    queue,
     currentTrack,
-    currentIndex,
+    queue,
+
     isPlaying,
     isBuffering,
+    isLoadingTrack,
+
     currentTime,
     duration,
+    progressPercent,
+
     volume,
-    repeatMode,
-    shuffle,
+    muted,
+
     error,
-    canPlayCurrent,
+
     hasNext,
     hasPrevious,
-    restore,
-    dispose,
-    setQueue,
+
+    initialize,
     playTrack,
-    togglePlay,
+    playTrackById,
+    setQueueAndPlay,
+    toggleTrack,
+    resume,
+    pause,
+    stop,
+    seek,
+    seekPercent,
+    setVolume,
+    toggleMute,
     playNext,
     playPrevious,
-    seek,
-    setVolume,
-    toggleShuffle,
-    cycleRepeat,
   }
 })

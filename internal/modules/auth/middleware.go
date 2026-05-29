@@ -21,21 +21,21 @@ func AuthMiddleware(tokens *TokenManager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 		if header == "" {
-			response.GinError(c, ErrUnauthorized())
+			response.Error(c, ErrUnauthorized())
 			c.Abort()
 			return
 		}
 
 		parts := strings.SplitN(header, " ", 2)
 		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-			response.GinError(c, apperrors.Unauthorized("invalid authorization header", nil))
+			response.Error(c, apperrors.Unauthorized("invalid authorization header", nil))
 			c.Abort()
 			return
 		}
 
 		claims, err := tokens.ParseAccessToken(parts[1])
 		if err != nil {
-			response.GinError(c, err)
+			response.Error(c, err)
 			c.Abort()
 			return
 		}
@@ -54,7 +54,7 @@ func RequireRole(role string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		currentRole := UserRoleFromContext(c)
 		if currentRole != role {
-			response.GinError(c, apperrors.Forbidden("insufficient permissions", nil))
+			response.Error(c, apperrors.Forbidden("insufficient permissions", nil))
 			c.Abort()
 			return
 		}

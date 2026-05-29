@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"music/internal/common/middleware"
 	"music/internal/common/validator"
 	"music/internal/config"
 	"music/internal/platform/cache"
@@ -24,8 +25,11 @@ func Bootstrap(ctx context.Context) (*App, error) {
 		return nil, fmt.Errorf("init logger: %w", err)
 	}
 
-	log.Info("running database migrations")
+	if cfg.App.Env == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
+	log.Info("running database migrations")
 	if err := database.RunMigrations(cfg.Postgres.URL, "migrations"); err != nil {
 		return nil, fmt.Errorf("migrations failed: %w", err)
 	}
@@ -50,13 +54,17 @@ func Bootstrap(ctx context.Context) (*App, error) {
 		Validator: v,
 	}
 
-	// Build the Gin engine and register all routes
-	engine := gin.New()        // or gin.Default() if you want logger/recovery; we'll add middlewares in main
-	app.RegisterRoutes(engine) // RegisterRoutes now accepts *gin.Engine
-	app.Router = engine        // engine implements http.Handler
+	router := gin.New()
+	router.Use(middleware.CORS(cfg.CORS.AllowedOrigins))
+	router.Use(middleware.GinZapLogger(log))
+	router.Use(middleware.GinZapRecovery(log))
 
-	// Create HTTP server with the Gin engine as handler
+	app.RegisterRoutes(router)
+	registerMediaRoutes(router, cfg.Media.BasePath)
+
+	app.Router = router
 	app.HTTPServer = app.NewHTTPServer()
+	app.HTTPServer.Handler = app.Router
 
 	return app, nil
 }

@@ -38,7 +38,8 @@ func RegisterAdminRoutes(rg *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc
 	// Artists admin
 	artists := adminCatalog.Group("/artists")
 	{
-		artists.POST("/", h.RegisterArtist)
+		artists.GET("", h.ListArtists)
+		artists.POST("", h.RegisterArtist)
 		artists.PATCH("/:artistID", h.UpdateArtist)
 		artists.DELETE("/:artistID", h.DeleteArtist)
 	}
@@ -46,7 +47,8 @@ func RegisterAdminRoutes(rg *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc
 	// Albums admin
 	albums := adminCatalog.Group("/albums")
 	{
-		albums.POST("/", h.RegisterAlbum)
+		albums.GET("", h.ListAlbums)
+		albums.POST("", h.RegisterAlbum)
 		albums.PATCH("/:albumID", h.UpdateAlbum)
 		albums.DELETE("/:albumID", h.DeleteAlbum)
 	}
@@ -54,9 +56,9 @@ func RegisterAdminRoutes(rg *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc
 	// Tracks admin
 	tracks := adminCatalog.Group("/tracks")
 	{
-		tracks.GET("/", h.ListAdminTracks)
+		tracks.GET("", h.ListAdminTracks)
 		tracks.POST("/upload", h.RegisterTrackWithAudio)
-		tracks.POST("/", h.RegisterTrack)
+		tracks.POST("", h.RegisterTrack)
 		tracks.PATCH("/:trackID", h.UpdateTrack)
 		tracks.DELETE("/:trackID", h.DeleteTrack)
 	}
@@ -64,7 +66,8 @@ func RegisterAdminRoutes(rg *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc
 	// Genres admin
 	genres := adminCatalog.Group("/genres")
 	{
-		genres.POST("/", h.CreateGenre)
+		genres.GET("", h.ListGenres)
+		genres.POST("", h.CreateGenre)
 		genres.PATCH("/:genreID", h.UpdateGenre)
 		genres.DELETE("/:genreID", h.DeleteGenre)
 	}

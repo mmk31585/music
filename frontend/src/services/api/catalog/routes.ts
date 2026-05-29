@@ -16,13 +16,13 @@ import {
 import { z } from 'zod'
 
 type TrackMutationPayload = {
-  artistId?: string | number | null
-  albumId?: string | number | null
+  artist_id?: string | number | null
+  album_id?: string | number | null
   title?: string
-  durationSeconds?: number | null
-  audioUrl?: string | null
-  coverUrl?: string | null
-  genreIds?: Array<string | number>
+  duration_seconds?: number | null
+  audio_url?: string | null
+  cover_url?: string | null
+  genre_ids?: Array<string | number>
 }
 
 export type TrackFormPayload = Partial<Track> & {
@@ -36,17 +36,19 @@ const UploadedTrackResponseSchema = z.object({
 
 function toTrackMutationPayload(payload: Partial<Track>): TrackMutationPayload {
   return {
-    artistId: payload.artist_id ?? null,
-    albumId: payload.album_id ?? null,
+    artist_id: payload.artist_id ?? null,
+    album_id: payload.album_id ?? null,
     title: payload.title,
-    durationSeconds: payload.duration_seconds ?? 0,
-    audioUrl: payload.audio_url ?? null,
-    coverUrl: payload.cover_url ?? null,
-    genreIds: payload.genre_id ? [payload.genre_id] : [],
+    duration_seconds: payload.duration_seconds ?? 0,
+    audio_url: payload.audio_url ?? null,
+    cover_url: payload.cover_url ?? null,
+    genre_ids: payload.genre_id ? [payload.genre_id] : [],
   }
 }
 
 export const useCatalogApi = () => {
+  // ---------- PUBLIC ----------
+
   const getTracks = async (config?: UseRequestConfig<Track[]>) => {
     return useRequest<Track, true>(
       CatalogApiRoutes.TRACKS,
@@ -61,7 +63,10 @@ export const useCatalogApi = () => {
     )
   }
 
-  const getTrack = async (id: string | number, config?: UseRequestConfig<Track>) => {
+  const getTrack = async (
+    id: string | number,
+    config?: UseRequestConfig<Track>,
+  ) => {
     return useRequest<Track>(
       `${CatalogApiRoutes.TRACKS}/${id}`,
       {
@@ -117,7 +122,10 @@ export const useCatalogApi = () => {
     )
   }
 
-  const searchCatalog = async (query: string, config?: UseRequestConfig<unknown>) => {
+  const searchCatalog = async (
+    query: string,
+    config?: UseRequestConfig<unknown>,
+  ) => {
     return useRequest(
       `${CatalogApiRoutes.SEARCH}?q=${encodeURIComponent(query)}`,
       {
@@ -130,7 +138,7 @@ export const useCatalogApi = () => {
     )
   }
 
-  // ---------- ADMIN SECTION ----------
+  // ---------- ADMIN TRACKS ----------
 
   const adminGetTracks = async (config?: UseRequestConfig<Track[]>) => {
     return useRequest<Track, true>(
@@ -146,7 +154,10 @@ export const useCatalogApi = () => {
     )
   }
 
-  const adminCreateTrack = async (payload: Partial<Track>, config?: UseRequestConfig<Track>) => {
+  const adminCreateTrack = async (
+    payload: Partial<Track>,
+    config?: UseRequestConfig<Track>,
+  ) => {
     return useRequest<Track>(
       CatalogApiRoutes.ADMIN_TRACKS,
       {
@@ -171,15 +182,17 @@ export const useCatalogApi = () => {
     const formData = new FormData()
 
     formData.append('trackAudio', file)
+
     if (data.title) formData.append('title', data.title)
-    if (data.artistId) formData.append('artistId', String(data.artistId))
-    if (data.albumId) formData.append('albumId', String(data.albumId))
-    if (data.durationSeconds != null) {
-      formData.append('durationSeconds', String(data.durationSeconds))
+    if (data.artist_id != null) formData.append('artistID', String(data.artist_id))
+    if (data.album_id != null) formData.append('albumID', String(data.album_id))
+    if (data.duration_seconds != null) {
+      formData.append('durationSeconds', String(data.duration_seconds))
     }
-    if (data.audioUrl) formData.append('audioUrl', data.audioUrl)
-    if (data.coverUrl) formData.append('coverUrl', data.coverUrl)
-    for (const genreID of data.genreIds ?? []) {
+    if (data.audio_url) formData.append('audioUrl', data.audio_url)
+    if (data.cover_url) formData.append('coverUrl', data.cover_url)
+
+    for (const genreID of data.genre_ids ?? []) {
       formData.append('genreIds', String(genreID))
     }
 
@@ -220,9 +233,239 @@ export const useCatalogApi = () => {
     )
   }
 
-  const adminDeleteTrack = async (id: string | number, config?: UseRequestConfig<void>) => {
+  const adminDeleteTrack = async (
+    id: string | number,
+    config?: UseRequestConfig<void>,
+  ) => {
     return useRequest(
       `${CatalogApiRoutes.ADMIN_TRACKS}/${id}`,
+      {
+        method: 'DELETE',
+      },
+      {
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
+  // ---------- ADMIN ARTISTS ----------
+
+  const adminGetArtists = async (config?: UseRequestConfig<Artist[]>) => {
+    return useRequest<Artist, true>(
+      CatalogApiRoutes.ADMIN_ARTISTS,
+      {
+        method: 'GET',
+      },
+      {
+        schema: ArtistSchema,
+        silent: true,
+        ...config,
+      },
+    )
+  }
+
+  const adminCreateArtist = async (
+    payload: Partial<Artist>,
+    config?: UseRequestConfig<Artist>,
+  ) => {
+    return useRequest<Artist>(
+      CatalogApiRoutes.ADMIN_ARTISTS,
+      {
+        method: 'POST',
+        data: {
+          name: payload.name,
+          bio: payload.bio ?? null,
+          image_url: payload.image_url ?? null,
+        },
+      },
+      {
+        schema: ArtistSchema,
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
+  const adminUpdateArtist = async (
+    id: string | number,
+    payload: Partial<Artist>,
+    config?: UseRequestConfig<Artist>,
+  ) => {
+    return useRequest<Artist>(
+      `${CatalogApiRoutes.ADMIN_ARTISTS}/${id}`,
+      {
+        method: 'PATCH',
+        data: {
+          name: payload.name,
+          bio: payload.bio ?? null,
+          image_url: payload.image_url ?? null,
+        },
+      },
+      {
+        schema: ArtistSchema,
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
+  const adminDeleteArtist = async (
+    id: string | number,
+    config?: UseRequestConfig<void>,
+  ) => {
+    return useRequest(
+      `${CatalogApiRoutes.ADMIN_ARTISTS}/${id}`,
+      {
+        method: 'DELETE',
+      },
+      {
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
+  // ---------- ADMIN ALBUMS ----------
+
+  const adminGetAlbums = async (config?: UseRequestConfig<Album[]>) => {
+    return useRequest<Album, true>(
+      CatalogApiRoutes.ADMIN_ALBUMS,
+      {
+        method: 'GET',
+      },
+      {
+        schema: AlbumSchema,
+        silent: true,
+        ...config,
+      },
+    )
+  }
+
+  const adminCreateAlbum = async (
+    payload: Partial<Album>,
+    config?: UseRequestConfig<Album>,
+  ) => {
+    return useRequest<Album>(
+      CatalogApiRoutes.ADMIN_ALBUMS,
+      {
+        method: 'POST',
+        data: {
+          title: payload.title,
+          cover_url: payload.cover_url ?? null,
+          artist_id: payload.artist_id ?? null,
+        },
+      },
+      {
+        schema: AlbumSchema,
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
+  const adminUpdateAlbum = async (
+    id: string | number,
+    payload: Partial<Album>,
+    config?: UseRequestConfig<Album>,
+  ) => {
+    return useRequest<Album>(
+      `${CatalogApiRoutes.ADMIN_ALBUMS}/${id}`,
+      {
+        method: 'PATCH',
+        data: {
+          title: payload.title,
+          coverUrl: payload.cover_url ?? null,
+          artistID: payload.artist_id ?? null,
+        },
+      },
+      {
+        schema: AlbumSchema,
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
+  const adminDeleteAlbum = async (
+    id: string | number,
+    config?: UseRequestConfig<void>,
+  ) => {
+    return useRequest(
+      `${CatalogApiRoutes.ADMIN_ALBUMS}/${id}`,
+      {
+        method: 'DELETE',
+      },
+      {
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
+  // ---------- ADMIN GENRES ----------
+
+  const adminGetGenres = async (config?: UseRequestConfig<Genre[]>) => {
+    return useRequest<Genre, true>(
+      CatalogApiRoutes.ADMIN_GENRES,
+      {
+        method: 'GET',
+      },
+      {
+        schema: GenreSchema,
+        silent: true,
+        ...config,
+      },
+    )
+  }
+
+  const adminCreateGenre = async (
+    payload: Partial<Genre>,
+    config?: UseRequestConfig<Genre>,
+  ) => {
+    return useRequest<Genre>(
+      CatalogApiRoutes.ADMIN_GENRES,
+      {
+        method: 'POST',
+        data: {
+          name: payload.name,
+        },
+      },
+      {
+        schema: GenreSchema,
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
+  const adminUpdateGenre = async (
+    id: string | number,
+    payload: Partial<Genre>,
+    config?: UseRequestConfig<Genre>,
+  ) => {
+    return useRequest<Genre>(
+      `${CatalogApiRoutes.ADMIN_GENRES}/${id}`,
+      {
+        method: 'PATCH',
+        data: {
+          name: payload.name,
+        },
+      },
+      {
+        schema: GenreSchema,
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
+  const adminDeleteGenre = async (
+    id: string | number,
+    config?: UseRequestConfig<void>,
+  ) => {
+    return useRequest(
+      `${CatalogApiRoutes.ADMIN_GENRES}/${id}`,
       {
         method: 'DELETE',
       },
@@ -246,5 +489,20 @@ export const useCatalogApi = () => {
     adminUploadTrackWithAudio,
     adminUpdateTrack,
     adminDeleteTrack,
+
+    adminGetArtists,
+    adminCreateArtist,
+    adminUpdateArtist,
+    adminDeleteArtist,
+
+    adminGetAlbums,
+    adminCreateAlbum,
+    adminUpdateAlbum,
+    adminDeleteAlbum,
+
+    adminGetGenres,
+    adminCreateGenre,
+    adminUpdateGenre,
+    adminDeleteGenre,
   }
 }

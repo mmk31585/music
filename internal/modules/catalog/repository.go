@@ -103,6 +103,7 @@ func (r *Repository) CreateArtist(ctx context.Context, artist *Artist) error {
 	`
 
 	_, err := r.db.NamedExecContext(ctx, query, artist)
+	fmt.Println(err)
 	return mapPostgresError(err)
 }
 

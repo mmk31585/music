@@ -1,18 +1,30 @@
 package app
 
 import (
+	"music/internal/modules/auth"
+	"music/internal/modules/catalog"
+	"music/internal/modules/library"
+	"music/internal/modules/media"
+	"music/internal/modules/notification"
+	"music/internal/modules/player"
+	"music/internal/modules/playlist"
+	"music/internal/modules/recommendation"
+	"music/internal/modules/search"
+	"music/internal/modules/subscription"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 
-	"music/internal/modules/auth"
-	"music/internal/modules/catalog"
-	"music/internal/modules/media"
+	opensearch "github.com/opensearch-project/opensearch-go"
 )
 
 func (a *App) RegisterRoutes(r *gin.Engine) {
-	// API v1 group
 	api := r.Group("/api/v1")
+
+	// ---------- Shared DB adapter ----------
+	sqlDB := stdlib.OpenDBFromPool(a.DB)
+	sqlxDB := sqlx.NewDb(sqlDB, "pgx")
 
 	// ---------- Auth module ----------
 	tokenManager := auth.NewTokenManager(
@@ -25,9 +37,8 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	authRepo := auth.NewRepository(a.DB)
 	authService := auth.NewService(authRepo, tokenManager)
 	authHandler := auth.NewHandler(authService, a.Validator)
-	authMW := auth.AuthMiddleware(tokenManager) // returns gin.HandlerFunc
+	authMW := auth.AuthMiddleware(tokenManager)
 
-	// Register auth routes (pass the group and middleware)
 	auth.RegisterRoutes(api, authHandler, authMW)
 
 	// ---------- Media module ----------
@@ -57,18 +68,67 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 		},
 	})
 
+	mediaHandler := media.NewHandler(mediaService)
+	media.RegisterAdminRoutes(api, mediaHandler, authMW)
+
 	// ---------- Catalog module ----------
-	sqlDB := stdlib.OpenDBFromPool(a.DB)
-	sqlxDB := sqlx.NewDb(sqlDB, "pgx")
 	catalogRepo := catalog.NewRepository(sqlxDB)
 	catalogService := catalog.NewService(catalogRepo)
 	catalogHandler := catalog.NewHandler(catalogService, a.Validator, mediaService)
 
-	// Public catalog routes (no auth)
 	catalog.RegisterPublicRoutes(api, catalogHandler)
-	// Admin catalog routes (with auth middleware)
 	catalog.RegisterAdminRoutes(api, catalogHandler, authMW)
 
-	mediaHandler := media.NewHandler(mediaService)
-	media.RegisterAdminRoutes(api, mediaHandler, authMW)
+	// ---------- Player module ----------
+	playerRepo := player.NewRepository(sqlxDB)
+	playerService := player.NewService(playerRepo, a.Config.Media.BasePath)
+	playerHandler := player.NewHandler(playerService)
+
+	player.RegisterPublicRoutes(api, playerHandler)
+
+	// ---------- Playlist module ----------
+	playlistRepo := playlist.NewRepository(sqlxDB)
+	playlistService := playlist.NewService(playlistRepo)
+	playlistHandler := playlist.NewHandler(playlistService)
+
+	playlist.RegisterRoutes(api, playlistHandler, authMW)
+
+	// ---------- Library module ----------
+	libraryRepo := library.NewRepository(sqlxDB)
+	libraryService := library.NewService(libraryRepo)
+	libraryHandler := library.NewHandler(libraryService)
+
+	library.RegisterRoutes(api, libraryHandler, authMW)
+
+	// ---------- Recommendation module ----------
+	recommendationRepo := recommendation.NewRepository(sqlxDB)
+	recommendationService := recommendation.NewService(recommendationRepo)
+	recommendationHandler := recommendation.NewHandler(recommendationService)
+
+	recommendation.RegisterRoutes(api, recommendationHandler, authMW)
+
+	// ---------- Search module ----------
+	if a.Config.OpenSearch.URL != "" {
+		osClient, err := opensearch.NewClient(opensearch.Config{
+			Addresses: []string{a.Config.OpenSearch.URL},
+		})
+		if err == nil {
+			searchService := search.NewService(osClient)
+			searchHandler := search.NewHandler(searchService)
+
+			search.RegisterRoutes(api, searchHandler)
+		}
+	}
+	notificationRepo := notification.NewRepository(sqlxDB)
+	notificationService := notification.NewService(notificationRepo)
+	notificationHandler := notification.NewHandler(notificationService)
+
+	notification.RegisterRoutes(api, notificationHandler, authMW)
+
+	subscriptionRepo := subscription.NewRepository(sqlxDB)
+	subscriptionService := subscription.NewService(subscriptionRepo)
+	subscriptionHandler := subscription.NewHandler(subscriptionService)
+
+	subscription.RegisterRoutes(api, subscriptionHandler, authMW)
+
 }

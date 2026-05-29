@@ -1,66 +1,100 @@
 <template>
   <div
-    class="group flex items-center gap-4 rounded-2xl px-4 py-3 transition hover:bg-white/5"
+    class="group grid grid-cols-[48px_1fr_auto] items-center gap-4 rounded-xl px-3 py-2 transition hover:bg-white/10"
     :class="isCurrent ? 'bg-white/10' : ''"
-    role="button"
-    tabindex="0"
-    @click="playTrack"
-    @keydown.enter.prevent="playTrack"
-    @keydown.space.prevent="playTrack"
   >
-    <div
-      class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 text-sm text-slate-300"
-    >
-      <i v-if="isCurrent && player.isPlaying" class="pi pi-volume-up text-emerald-300" />
-      <span v-else>{{ index + 1 }}</span>
-    </div>
-
-    <div class="min-w-0 flex-1">
-      <p class="truncate font-medium text-white">{{ track.title }}</p>
-      <p class="truncate text-sm text-slate-400">
-        {{ track.artist_name || 'Unknown artist' }}
-        <span v-if="track.album_title">• {{ track.album_title }}</span>
-      </p>
-    </div>
-
-    <div class="hidden text-sm text-slate-400 md:block">
-      {{ formatDuration(track.duration_seconds) }}
-    </div>
-
     <button
-      class="rounded-full bg-[#1db954] p-3 text-black transition disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-slate-500 md:opacity-0 md:group-hover:opacity-100"
-      :disabled="!track.audio_url"
-      :aria-label="track.audio_url ? `Play ${track.title}` : `${track.title} has no audio file`"
-      @click.stop="playTrack"
+      type="button"
+      class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[#1db954] hover:text-black"
+      :disabled="loadingThisTrack"
+      @click="handlePlay"
     >
-      <i :class="isCurrent && player.isPlaying ? 'pi pi-pause' : 'pi pi-play-fill'" />
+      <i v-if="loadingThisTrack" class="pi pi-spin pi-spinner text-sm" />
+      <i v-else :class="buttonIcon" class="text-sm" />
     </button>
+
+    <div class="min-w-0">
+      <div class="truncate text-sm font-semibold text-white">
+        {{ title }}
+      </div>
+
+      <div class="truncate text-xs text-slate-400">
+        {{ artistName }}
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 text-xs text-slate-400">
+      <span v-if="durationLabel">{{ durationLabel }}</span>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Track } from '@/services/api/catalog'
-import { usePlayerStore } from '@/stores'
+import { usePlayer } from '@/composables/player'
+import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
 
 const props = defineProps<{
-  track: Track
-  index: number
-  queue?: Track[]
+  track: any
 }>()
 
-const player = usePlayerStore()
-const isCurrent = computed(() => player.currentTrack?.id === props.track.id)
+const player = usePlayer()
+const playerApi = usePlayerApi()
 
-function formatDuration(value?: number | null) {
-  if (!value) return '--:--'
-  const mins = Math.floor(value / 60)
-  const secs = value % 60
-  return `${mins}:${String(secs).padStart(2, '0')}`
-}
+const title = computed(() => props.track.title || 'Untitled')
+const artistName = computed(() => {
+  return (
+    props.track.artistName ||
+    props.track.artist_name ||
+    props.track.artist?.name ||
+    props.track.artist ||
+    'Unknown artist'
+  )
+})
 
-function playTrack() {
-  if (!props.track.audio_url) return
-  void player.playTrack(props.track, props.queue ?? [props.track])
+const durationSeconds = computed(() => {
+  return props.track.durationSeconds ?? props.track.duration_seconds ?? props.track.duration ?? null
+})
+
+const durationLabel = computed(() => {
+  const total = Number(durationSeconds.value)
+  if (!Number.isFinite(total) || total <= 0) return ''
+
+  const minutes = Math.floor(total / 60)
+  const seconds = Math.floor(total % 60)
+
+  return `${minutes}:${String(seconds).padStart(2, '0')}`
+})
+
+const playbackTrack = computed<PlaybackTrack>(() => {
+  const id = String(props.track.id)
+
+  return {
+    id,
+    title: title.value,
+    artistName: artistName.value,
+    albumTitle:
+      props.track.albumTitle || props.track.album_title || props.track.album?.title || null,
+    coverUrl: props.track.coverUrl || props.track.cover_url || props.track.cover || null,
+    durationSeconds: durationSeconds.value,
+    streamUrl: playerApi.getTrackStreamUrl(id),
+  }
+})
+
+const isCurrent = computed(() => {
+  return player.currentTrack.value?.id === playbackTrack.value.id
+})
+
+const loadingThisTrack = computed(() => {
+  return isCurrent.value && (player.isLoadingTrack.value || player.isBuffering.value)
+})
+
+const buttonIcon = computed(() => {
+  if (isCurrent.value && player.isPlaying.value) return 'pi pi-pause'
+  return 'pi pi-play'
+})
+
+async function handlePlay() {
+  await player.toggleTrack(playbackTrack.value)
 }
 </script>

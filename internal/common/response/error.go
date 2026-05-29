@@ -1,14 +1,11 @@
 package response
 
 import (
-	"encoding/json"
-	"net/http"
-
-	apperrors "music/internal/common/errors"
-
 	"github.com/gin-gonic/gin"
+	apperrors "music/internal/common/errors"
 )
 
+// ErrorResponse represents the standard error payload structure.
 type ErrorResponse struct {
 	Success bool        `json:"success"`
 	Code    string      `json:"code"`
@@ -16,48 +13,27 @@ type ErrorResponse struct {
 	Details interface{} `json:"details,omitempty"`
 }
 
-// Error writes an error response using http.ResponseWriter (for non-Gin handlers)
-func Error(w http.ResponseWriter, err error) {
+// Error sends a standardized error response and aborts the Gin context.
+// Accepts either *apperrors.AppError or any error (converted via ToAppError).
+func Error(c *gin.Context, err error) {
 	appErr := apperrors.ToAppError(err)
-	writeError(w, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details)
-}
-
-// AppError is an alias for Error (kept for compatibility)
-func AppError(w http.ResponseWriter, err error) {
-	Error(w, err)
-}
-
-// GinError writes an error response using Gin's context
-func GinError(c *gin.Context, err error) {
-	appErr := apperrors.ToAppError(err)
-	writeGinError(c, appErr.StatusCode, appErr.Code, appErr.Message, appErr.Details)
-}
-
-// GinAppError is an alias for GinError
-func GinAppError(c *gin.Context, err error) {
-	GinError(c, err)
-}
-
-// writeError is the internal writer for standard http.ResponseWriter
-func writeError(w http.ResponseWriter, statusCode int, code string, message string, details interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	_ = json.NewEncoder(w).Encode(ErrorResponse{
+	c.AbortWithStatusJSON(appErr.StatusCode, ErrorResponse{
 		Success: false,
-		Code:    code,
-		Message: message,
-		Details: details,
+		Code:    appErr.Code,
+		Message: appErr.Message,
+		Details: appErr.Details,
 	})
 }
 
-// writeGinError is the internal writer for gin.Context
-func writeGinError(c *gin.Context, statusCode int, code string, message string, details interface{}) {
-	c.Header("Content-Type", "application/json")
-	c.Status(statusCode)
-	c.JSON(statusCode, ErrorResponse{
-		Success: false,
-		Code:    code,
-		Message: message,
-		Details: details,
-	})
+// HandlerFunc defines a typed handler signature that returns an error.
+// When used with Wrap, errors are automatically sent via Error().
+type HandlerFunc func(c *gin.Context) error
+
+// Wrap converts a HandlerFunc into a standard gin.HandlerFunc with automatic error handling.
+func Wrap(fn HandlerFunc) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if err := fn(c); err != nil {
+			Error(c, err) // automatically aborts context
+		}
+	}
 }

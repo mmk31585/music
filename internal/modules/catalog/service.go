@@ -2,6 +2,8 @@ package catalog
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -113,7 +115,7 @@ func (s *Service) CreateArtist(ctx context.Context, req CreateArtistRequest) (*A
 	if req.MonthlyListeners != nil {
 		monthlyListeners = *req.MonthlyListeners
 	}
-
+	fmt.Print(req)
 	artist := &Artist{
 		ID:               uuid.New(),
 		Name:             req.Name,
@@ -123,6 +125,7 @@ func (s *Service) CreateArtist(ctx context.Context, req CreateArtistRequest) (*A
 		IsVerified:       isVerified,
 		MonthlyListeners: monthlyListeners,
 		CreatedAt:        now,
+		UpdatedAt:        &now,
 	}
 
 	if err := s.repo.CreateArtist(ctx, artist); err != nil {
@@ -217,7 +220,7 @@ func (s *Service) CreateAlbum(ctx context.Context, req CreateAlbumRequest) (*Alb
 		}
 		releaseDate = &parsed
 	}
-
+	now := time.Now().UTC()
 	albumType := "album"
 	if req.AlbumType != nil && *req.AlbumType != "" {
 		albumType = *req.AlbumType
@@ -231,7 +234,8 @@ func (s *Service) CreateAlbum(ctx context.Context, req CreateAlbumRequest) (*Alb
 		CoverURL:    req.CoverURL,
 		ReleaseDate: releaseDate,
 		AlbumType:   albumType,
-		CreatedAt:   time.Now().UTC(),
+		CreatedAt:   now,
+		UpdatedAt:   &now,
 	}
 
 	if err := s.repo.CreateAlbum(ctx, album); err != nil {
@@ -332,6 +336,7 @@ func (s *Service) CreateTrack(ctx context.Context, req CreateTrackRequest) (*Tra
 		return nil, err
 	}
 
+	now := time.Now().UTC()
 	explicit := false
 	if req.Explicit != nil {
 		explicit = *req.Explicit
@@ -341,7 +346,6 @@ func (s *Service) CreateTrack(ctx context.Context, req CreateTrackRequest) (*Tra
 	if req.IsPublic != nil {
 		isPublic = *req.IsPublic
 	}
-
 	track := &Track{
 		ID:              uuid.New(),
 		ArtistID:        req.ArtistID,
@@ -355,9 +359,10 @@ func (s *Service) CreateTrack(ctx context.Context, req CreateTrackRequest) (*Tra
 		CoverURL:        req.CoverURL,
 		PlayCount:       0,
 		IsPublic:        isPublic,
-		CreatedAt:       time.Now().UTC(),
+		CreatedAt:       now,
+		UpdatedAt:       &now,
 	}
-
+	log.Print(track)
 	if err := s.repo.CreateTrack(ctx, track, req.GenreIDs); err != nil {
 		return nil, err
 	}

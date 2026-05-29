@@ -6,13 +6,21 @@ export const ArtistSchema = z
   .object({
     id: IdSchema,
     name: z.string(),
+    bio: z.string().optional().nullable(),
+
     image_url: z.string().optional().nullable(),
-    imageUrl: z.string().optional().nullable(),
+
+    is_verified: z.boolean().optional().nullable(),
+
+    monthly_listeners: z.number().optional().nullable(),
   })
   .transform((artist) => ({
     id: artist.id,
     name: artist.name,
-    image_url: artist.image_url ?? artist.imageUrl ?? null,
+    bio: artist.bio ?? null,
+    image_url: artist.image_url ,
+    is_verified: artist.is_verified ,
+    monthly_listeners: artist.monthly_listeners ,
   }))
 
 export const AlbumSchema = z
@@ -20,16 +28,14 @@ export const AlbumSchema = z
     id: IdSchema,
     title: z.string(),
     cover_url: z.string().optional().nullable(),
-    coverUrl: z.string().optional().nullable(),
     artist_id: IdSchema.optional().nullable(),
-    artistId: IdSchema.optional().nullable(),
     artist_name: z.string().optional().nullable(),
   })
   .transform((album) => ({
     id: album.id,
     title: album.title,
-    cover_url: album.cover_url ?? album.coverUrl ?? null,
-    artist_id: album.artist_id ?? album.artistId ?? null,
+    cover_url: album.cover_url ,
+    artist_id: album.artist_id ,
     artist_name: album.artist_name ?? null,
   }))
 
@@ -43,15 +49,10 @@ export const TrackSchema = z
     id: IdSchema,
     title: z.string(),
     duration_seconds: z.number().optional().nullable(),
-    durationSeconds: z.number().optional().nullable(),
     audio_url: z.string().optional().nullable(),
-    audioUrl: z.string().optional().nullable(),
     cover_url: z.string().optional().nullable(),
-    coverUrl: z.string().optional().nullable(),
     artist_id: IdSchema.optional().nullable(),
-    artistId: IdSchema.optional().nullable(),
     album_id: IdSchema.optional().nullable(),
-    albumId: IdSchema.optional().nullable(),
     genre_id: IdSchema.optional().nullable(),
     artist_name: z.string().optional().nullable(),
     album_title: z.string().optional().nullable(),
@@ -60,11 +61,11 @@ export const TrackSchema = z
   .transform((track) => ({
     id: track.id,
     title: track.title,
-    duration_seconds: track.duration_seconds ?? track.durationSeconds ?? null,
-    audio_url: track.audio_url ?? track.audioUrl ?? null,
-    cover_url: track.cover_url ?? track.coverUrl ?? null,
-    artist_id: track.artist_id ?? track.artistId ?? null,
-    album_id: track.album_id ?? track.albumId ?? null,
+    duration_seconds: track.duration_seconds ,
+    audio_url: track.audio_url ,
+    cover_url: track.cover_url ,
+    artist_id: track.artist_id ,
+    album_id: track.album_id ,
     genre_id: track.genre_id ?? track.genres?.[0]?.id ?? null,
     artist_name: track.artist_name ?? null,
     album_title: track.album_title ?? null,

@@ -28,6 +28,21 @@ export const adminRoutes: RouteRecordRaw[] = [
         name: 'admin.catalog.tracks',
         component: () => import('@/pages/admin/PageAdminTracks.vue'),
       },
+      {
+        path: '/admin/artists',
+        name: 'AdminArtists',
+        component: () => import('@/pages/admin/AdminArtistsPage.vue'),
+      },
+      {
+        path: '/admin/albums',
+        name: 'AdminAlbums',
+        component: () => import('@/pages/admin/AdminAlbumsPage.vue'),
+      },
+      {
+        path: '/admin/genres',
+        name: 'AdminGenres',
+        component: () => import('@/pages/admin/AdminGenresPage.vue'),
+      },
     ],
   },
 ]

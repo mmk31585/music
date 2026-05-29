@@ -11,13 +11,14 @@ import (
 )
 
 type Config struct {
-	App      AppConfig
-	Postgres PostgresConfig
-	Redis    RedisConfig
-	Log      LogConfig
-	CORS     CORSConfig
-	Auth     AuthConfig
-	Media    MediaConfig
+	App        AppConfig
+	Postgres   PostgresConfig
+	Redis      RedisConfig
+	Log        LogConfig
+	CORS       CORSConfig
+	Auth       AuthConfig
+	Media      MediaConfig
+	OpenSearch OpenSearchConfig
 
 	// Legacy song module compatibility. The active upload path lives in
 	// internal/modules/media, but these keep old packages buildable until the
@@ -26,12 +27,20 @@ type Config struct {
 	MaxUploadSize   int64
 	UploadDir       string
 }
+
 type MediaConfig struct {
 	BasePath          string
 	PublicBase        string
 	MaxFileSizeBytes  int64
 	MaxImageSizeBytes int64
 	MaxAudioSizeBytes int64
+}
+
+type OpenSearchConfig struct {
+	URL      string
+	Username string
+	Password string
+	Index    string
 }
 
 type AuthConfig struct {
@@ -114,6 +123,12 @@ func Load() (*Config, error) {
 			MaxImageSizeBytes: mbToBytes(getInt64Env("MEDIA_MAX_IMAGE_SIZE_MB", 5)),
 			MaxAudioSizeBytes: mbToBytes(getInt64Env("MEDIA_MAX_AUDIO_SIZE_MB", 30)),
 		},
+		OpenSearch: OpenSearchConfig{
+			URL:      getEnv("OPENSEARCH_URL", ""),
+			Username: getEnv("OPENSEARCH_USERNAME", ""),
+			Password: getEnv("OPENSEARCH_PASSWORD", ""),
+			Index:    getEnv("OPENSEARCH_INDEX", "tracks"),
+		},
 	}
 
 	cfg.AllowedAudioExt = map[string]bool{
@@ -141,6 +156,7 @@ func getEnv(key, fallback string) string {
 	}
 	return value
 }
+
 func getInt64Env(key string, fallback int64) int64 {
 	value := os.Getenv(key)
 	if value == "" {
@@ -154,6 +170,7 @@ func getInt64Env(key string, fallback int64) int64 {
 
 	return parsed
 }
+
 func getEnvAsInt(key string, fallback int) int {
 	value := os.Getenv(key)
 	if value == "" {

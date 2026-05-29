@@ -10,10 +10,12 @@ import { PrimeVueResolver } from '@primevue/auto-import-resolver'
 export default defineConfig({
   server: {
     port: 3000,
+    host: '0.0.0.0',
      proxy: {
       '/api/v1': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+        secure: false,
       },
     },
   },

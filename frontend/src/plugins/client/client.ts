@@ -12,7 +12,7 @@ const axiosClient: AxiosInstance = axios.create({
   withCredentials: true,
 })
 
-axiosClient.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
+//axiosClient.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
 axiosClient.defaults.headers.common['Content-Type'] = 'application/json'
 
 export default axiosClient

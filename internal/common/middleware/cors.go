@@ -3,35 +3,57 @@ package middleware
 import (
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
-func CORS(allowedOrigins []string) func(http.Handler) http.Handler {
-	allowed := make(map[string]bool, len(allowedOrigins))
+func CORS(allowedOrigins []string) gin.HandlerFunc {
+	allowed := make(map[string]struct{})
 
 	for _, origin := range allowedOrigins {
-		allowed[strings.TrimSpace(origin)] = true
+		origin = strings.TrimSpace(origin)
+
+		if origin != "" {
+			allowed[origin] = struct{}{}
+		}
 	}
 
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			origin := r.Header.Get("Origin")
+	return func(c *gin.Context) {
+		origin := c.GetHeader("Origin")
 
-			if origin != "" && allowed[origin] {
-				w.Header().Set("Access-Control-Allow-Origin", origin)
-				w.Header().Set("Vary", "Origin")
+		if origin != "" {
+			if _, ok := allowed[origin]; ok {
+				c.Header("Access-Control-Allow-Origin", origin)
+				c.Header(
+					"Vary",
+					"Origin, Access-Control-Request-Method, Access-Control-Request-Headers",
+				)
 			}
+		}
 
-			w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Accept,Authorization,Content-Type,X-Request-ID")
-			w.Header().Set("Access-Control-Allow-Credentials", "true")
-			w.Header().Set("Access-Control-Max-Age", "86400")
+		c.Header(
+			"Access-Control-Allow-Methods",
+			"GET, POST, PUT, PATCH, DELETE, OPTIONS",
+		)
 
-			if r.Method == http.MethodOptions {
-				w.WriteHeader(http.StatusNoContent)
-				return
-			}
+		c.Header(
+			"Access-Control-Allow-Headers",
+			"Accept, Authorization, Content-Type, X-Request-ID, X-Device-ID, Range",
+		)
 
-			next.ServeHTTP(w, r)
-		})
+		c.Header(
+			"Access-Control-Expose-Headers",
+			"Content-Length, Content-Range, Accept-Ranges, Content-Type",
+		)
+
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Max-Age", "86400")
+
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+
+		c.Next()
 	}
 }

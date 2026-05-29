@@ -2,7 +2,7 @@ APP_NAME=musicapp
 DOCKER_COMPOSE=docker compose -f deployments/docker-compose.yml
 
 run:
-	go run ./cmd/api
+	@air
 
 tidy:
 	go mod tidy

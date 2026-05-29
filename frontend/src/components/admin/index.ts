@@ -4,3 +4,7 @@ export { default as AdminStatCard } from './AdminStatCard.vue'
 export { default as UploadMediaCard } from './UploadMediaCard.vue'
 export { default as AdminSectionHeader } from './AdminSectionHeader.vue'
 export { default as CatalogQuickActions } from './CatalogQuickActions.vue'
+export { default as AdminArtistsCard } from './AdminArtistsCard.vue'
+export { default as AdminAlbumsCard } from './AdminAlbumsCard.vue'
+
+export { default as AdminGenresCard } from './AdminGenresCard.vue'
