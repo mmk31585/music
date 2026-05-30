@@ -153,7 +153,7 @@ func (r *Repository) ListPlaylistTracks(ctx context.Context, playlistID int64) (
 			t.duration_seconds
 		FROM playlist_tracks pt
 		JOIN tracks t ON t.id = pt.track_id
-		LEFT JOIN artists ar ON ar.id = t.artist_id
+		LEFT JOIN artist ar ON ar.id = t.artist_id
 		LEFT JOIN albums al ON al.id = t.album_id
 		WHERE pt.playlist_id = $1
 		ORDER BY pt.position ASC

@@ -30,7 +30,7 @@ export const appRoutes: RouteRecordRaw[] = [
       //   props: true,
       // },
       // {
-      //   path: 'artists/:artistId',
+      //   path: 'artist/:artistId',
       //   name: 'app.artist.details',
       //   component: () => import('@/pages/app/PageArtistDetails.vue'),
       //   props: true,

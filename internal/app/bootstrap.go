@@ -11,6 +11,7 @@ import (
 	"music/internal/config"
 	"music/internal/platform/cache"
 	"music/internal/platform/database"
+	"music/internal/platform/events"
 	platformLogger "music/internal/platform/logger"
 )
 
@@ -46,12 +47,15 @@ func Bootstrap(ctx context.Context) (*App, error) {
 
 	v := validator.New()
 
+	eventBus := events.NewBus(log)
+
 	app := &App{
 		Config:    cfg,
 		Logger:    log,
 		DB:        db,
 		Redis:     redisClient,
 		Validator: v,
+		Events:    eventBus,
 	}
 
 	router := gin.New()

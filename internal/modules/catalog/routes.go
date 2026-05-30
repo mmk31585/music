@@ -4,71 +4,70 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"music/internal/modules/auth"
+	"music/internal/modules/catalog/album"
+	"music/internal/modules/catalog/artist"
+	"music/internal/modules/catalog/genre"
+	"music/internal/modules/catalog/track"
 )
 
-func RegisterPublicRoutes(rg *gin.RouterGroup, h *Handler) {
-	catalog := rg.Group("/catalog")
+type Handlers struct {
+	Artist *artist.Handler
+	Album  *album.Handler
+	Track  *track.Handler
+	Genre  *genre.Handler
+}
+
+func RegisterPublicRoutes(rg *gin.RouterGroup, h Handlers) {
+	cg := rg.Group("/catalog")
 	{
-		// Artists
-		catalog.GET("/artists", h.ListArtists)
-		catalog.GET("/artists/:artistID", h.GetArtist)
+		cg.GET("/artists", h.Artist.List)
+		cg.GET("/artists/:artistID", h.Artist.Get)
 
-		// Albums
-		catalog.GET("/albums", h.ListAlbums)
-		catalog.GET("/albums/:albumID", h.GetAlbum)
+		cg.GET("/albums", h.Album.List)
+		cg.GET("/albums/:albumID", h.Album.Get)
 
-		// Tracks
-		catalog.GET("/tracks", h.ListTracks)
-		catalog.GET("/tracks/:trackID", h.GetTrack)
+		cg.GET("/tracks", h.Track.ListPublic)
+		cg.GET("/tracks/:trackID", h.Track.Get)
 
-		// Genres
-		catalog.GET("/genres", h.ListGenres)
-		catalog.GET("/genres/:genreID", h.GetGenre)
-
-		// Search
-		catalog.GET("/search", h.Search)
+		cg.GET("/genres", h.Genre.List)
+		cg.GET("/genres/:genreID", h.Genre.Get)
 	}
 }
 
-func RegisterAdminRoutes(rg *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
+func RegisterAdminRoutes(rg *gin.RouterGroup, h Handlers, authMW gin.HandlerFunc) {
 	adminCatalog := rg.Group("/admin/catalog")
 	adminCatalog.Use(authMW)
-	adminCatalog.Use(auth.RequireRole("admin")) // ensure this returns gin.HandlerFunc
+	adminCatalog.Use(auth.RequireRole("admin"))
 
-	// Artists admin
-	artists := adminCatalog.Group("/artists")
+	artists := adminCatalog.Group("/artist")
 	{
-		artists.GET("", h.ListArtists)
-		artists.POST("", h.RegisterArtist)
-		artists.PATCH("/:artistID", h.UpdateArtist)
-		artists.DELETE("/:artistID", h.DeleteArtist)
+		artists.GET("", h.Artist.List)
+		artists.POST("", h.Artist.Create)
+		artists.PATCH("/:artistID", h.Artist.Update)
+		artists.DELETE("/:artistID", h.Artist.Delete)
 	}
 
-	// Albums admin
 	albums := adminCatalog.Group("/albums")
 	{
-		albums.GET("", h.ListAlbums)
-		albums.POST("", h.RegisterAlbum)
-		albums.PATCH("/:albumID", h.UpdateAlbum)
-		albums.DELETE("/:albumID", h.DeleteAlbum)
+		albums.GET("", h.Album.List)
+		albums.POST("", h.Album.Create)
+		albums.PATCH("/:albumID", h.Album.Update)
+		albums.DELETE("/:albumID", h.Album.Delete)
 	}
 
-	// Tracks admin
 	tracks := adminCatalog.Group("/tracks")
 	{
-		tracks.GET("", h.ListAdminTracks)
-		tracks.POST("/upload", h.RegisterTrackWithAudio)
-		tracks.POST("", h.RegisterTrack)
-		tracks.PATCH("/:trackID", h.UpdateTrack)
-		tracks.DELETE("/:trackID", h.DeleteTrack)
+		tracks.GET("", h.Track.ListAdmin)
+		tracks.POST("", h.Track.Create)
+		tracks.PATCH("/:trackID", h.Track.Update)
+		tracks.DELETE("/:trackID", h.Track.Delete)
 	}
 
-	// Genres admin
 	genres := adminCatalog.Group("/genres")
 	{
-		genres.GET("", h.ListGenres)
-		genres.POST("", h.CreateGenre)
-		genres.PATCH("/:genreID", h.UpdateGenre)
-		genres.DELETE("/:genreID", h.DeleteGenre)
+		genres.GET("", h.Genre.List)
+		genres.POST("", h.Genre.Create)
+		genres.PATCH("/:genreID", h.Genre.Update)
+		genres.DELETE("/:genreID", h.Genre.Delete)
 	}
 }

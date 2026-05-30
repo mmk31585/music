@@ -153,7 +153,7 @@ func (s *Service) searchArtists(ctx context.Context, q string, limit int) ([]Art
 		},
 	}
 
-	respBody, err := s.doSearch(ctx, "artists", body)
+	respBody, err := s.doSearch(ctx, "artist", body)
 	if err != nil {
 		return nil, err
 	}

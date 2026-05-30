@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"music/internal/platform/web"
 )
 
 type Handler struct {
@@ -28,7 +30,7 @@ func (h *Handler) ListPlans(c *gin.Context) {
 }
 
 func (h *Handler) CurrentSubscription(c *gin.Context) {
-	userID, ok := getUserID(c)
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -44,7 +46,7 @@ func (h *Handler) CurrentSubscription(c *gin.Context) {
 }
 
 func (h *Handler) ListSubscriptions(c *gin.Context) {
-	userID, ok := getUserID(c)
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -62,7 +64,7 @@ func (h *Handler) ListSubscriptions(c *gin.Context) {
 }
 
 func (h *Handler) Checkout(c *gin.Context) {
-	userID, ok := getUserID(c)
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -99,7 +101,7 @@ func (h *Handler) Checkout(c *gin.Context) {
 }
 
 func (h *Handler) CancelCurrentSubscription(c *gin.Context) {
-	userID, ok := getUserID(c)
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -120,7 +122,7 @@ func (h *Handler) CancelCurrentSubscription(c *gin.Context) {
 }
 
 func (h *Handler) ListPayments(c *gin.Context) {
-	userID, ok := getUserID(c)
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -135,29 +137,4 @@ func (h *Handler) ListPayments(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"payments": payments,
 	})
-}
-
-func getUserID(c *gin.Context) (string, bool) {
-	keys := []string{
-		"userID",
-		"userId",
-		"user_id",
-		"sub",
-	}
-
-	for _, key := range keys {
-		value, exists := c.Get(key)
-		if !exists {
-			continue
-		}
-
-		switch v := value.(type) {
-		case string:
-			if v != "" {
-				return v, true
-			}
-		}
-	}
-
-	return "", false
 }

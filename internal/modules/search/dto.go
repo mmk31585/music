@@ -4,7 +4,7 @@ type SearchResponse struct {
 	Query     string           `json:"query"`
 	Tracks    []TrackResult    `json:"tracks"`
 	Albums    []AlbumResult    `json:"albums"`
-	Artists   []ArtistResult   `json:"artists"`
+	Artists   []ArtistResult   `json:"artist"`
 	Playlists []PlaylistResult `json:"playlists"`
 }
 

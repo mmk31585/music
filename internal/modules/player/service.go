@@ -7,6 +7,10 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
+
+	"github.com/google/uuid"
+
+	"music/internal/platform/events"
 )
 
 var (
@@ -19,9 +23,10 @@ var (
 type Service struct {
 	repo      *Repository
 	mediaRoot string
+	publisher events.Publisher
 }
 
-func NewService(repo *Repository, mediaRoot string) *Service {
+func NewService(repo *Repository, mediaRoot string, publisher events.Publisher) *Service {
 	if strings.TrimSpace(mediaRoot) == "" {
 		mediaRoot = "./media"
 	}
@@ -29,6 +34,7 @@ func NewService(repo *Repository, mediaRoot string) *Service {
 	return &Service{
 		repo:      repo,
 		mediaRoot: mediaRoot,
+		publisher: publisher,
 	}
 }
 
@@ -40,19 +46,17 @@ func (s *Service) GetPlaybackTrack(ctx context.Context, id string) (*PlaybackTra
 
 	track, err := s.repo.GetTrackForPlayback(ctx, id)
 	if err != nil {
-		log.Println("Error getting playback track:", err)
+		log.Println("error getting playback track:", err)
 		return nil, err
 	}
 
 	if strings.TrimSpace(track.AudioURL) == "" {
-		log.Println("Error getting playback track: audio url is empty")
+		log.Println("error getting playback track: audio url is empty")
 		return nil, ErrAudioNotFound
 	}
 
-	// Public endpoint protection.
-	// Later you can pass user/session and allow premium/private tracks.
 	if !track.IsPublic {
-		log.Println("Error getting playback track: playback is not public")
+		log.Println("error getting playback track: playback is not public")
 		return nil, ErrPrivateTrack
 	}
 
@@ -73,23 +77,23 @@ func (s *Service) BuildPlaybackResponse(track *PlaybackTrack) PlaybackTrackRespo
 
 func (s *Service) ResolveAudioFilePath(audioURL string) (string, error) {
 	audioURL = strings.TrimSpace(audioURL)
-	if audioURL == "" { // Fix: was " "
+	if audioURL == "" {
 		return "", ErrAudioNotFound
 	}
 
 	parsedURL, err := url.Parse(audioURL)
-	if err == nil && parsedURL.Host != "" { // Fix: was & & and " "
+	if err == nil && parsedURL.Host != "" {
 		audioURL = parsedURL.Path
 	}
 
-	audioURL = strings.Replace(audioURL, "\\", "/", -1)
-	audioURL = strings.TrimPrefix(audioURL, "/") // Fix: was "/ "
+	audioURL = strings.ReplaceAll(audioURL, "\\", "/")
+	audioURL = strings.TrimPrefix(audioURL, "/")
 
-	if strings.HasPrefix(audioURL, "media/") { // Fix: was "media/ "
+	if strings.HasPrefix(audioURL, "media/") {
 		audioURL = strings.TrimPrefix(audioURL, "media/")
 	}
 
-	if audioURL == "" { // Fix: was " "
+	if audioURL == "" {
 		return "", ErrInvalidMediaURL
 	}
 
@@ -124,6 +128,55 @@ func (s *Service) ResolveAudioFilePath(audioURL string) (string, error) {
 
 	return absFile, nil
 }
-func (s *Service) TrackPlayed(ctx context.Context, trackID string) {
-	_ = s.repo.IncrementPlayCount(ctx, trackID)
+
+// TrackPlayed keeps your counter update, but also emits an event.
+// This is the important upgrade.
+func (s *Service) TrackPlayed(
+	ctx context.Context,
+	userID string,
+	track *PlaybackTrack,
+	duration int,
+	completed bool,
+	source string,
+) {
+	if track == nil {
+		return
+	}
+
+	_ = s.repo.IncrementPlayCount(ctx, track.ID)
+
+	if s.publisher == nil {
+		return
+	}
+
+	parsedUserID, err := uuid.Parse(strings.TrimSpace(userID))
+	if err != nil {
+		return
+	}
+
+	trackUUID, err := uuid.Parse(strings.TrimSpace(track.ID))
+	if err != nil {
+		return
+	}
+
+	var artistUUID uuid.UUID
+	if strings.TrimSpace(track.ArtistID) != "" {
+		artistUUID, _ = uuid.Parse(track.ArtistID)
+	}
+
+	var albumUUID uuid.UUID
+	if strings.TrimSpace(track.AlbumID) != "" {
+		albumUUID, _ = uuid.Parse(track.AlbumID)
+	}
+
+	_ = s.publisher.Publish(ctx, events.TrackPlayedEvent{
+		BaseEvent: events.NewBaseEvent(),
+		UserID:    parsedUserID,
+		TrackID:   trackUUID,
+		ArtistID:  artistUUID,
+		AlbumID:   albumUUID,
+		Duration:  duration,
+		Completed: completed,
+		Source:    source,
+	})
 }

@@ -6,6 +6,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+
+	"music/internal/platform/web"
 )
 
 type Handler struct {
@@ -14,20 +16,6 @@ type Handler struct {
 
 func NewHandler(service Service) *Handler {
 	return &Handler{service: service}
-}
-
-func getUserIDFromGin(c *gin.Context) (string, bool) {
-	v, ok := c.Get("user_id")
-	if !ok {
-		return "", false
-	}
-
-	userID, ok := v.(string)
-	if !ok || userID == "" {
-		return "", false
-	}
-
-	return userID, true
 }
 
 func parseLimit(c *gin.Context) (int, error) {
@@ -86,7 +74,7 @@ func (h *Handler) BestTracks(c *gin.Context) {
 }
 
 func (h *Handler) RecentTracks(c *gin.Context) {
-	userID, ok := getUserIDFromGin(c)
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "unauthorized"})
 		return
@@ -206,7 +194,7 @@ func (h *Handler) TracksByGenre(c *gin.Context) {
 }
 
 func (h *Handler) ForYou(c *gin.Context) {
-	userID, ok := getUserIDFromGin(c)
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "unauthorized"})
 		return

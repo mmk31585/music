@@ -6,6 +6,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+
+	"music/internal/platform/web"
 )
 
 type Handler struct {
@@ -17,7 +19,7 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) ListNotifications(c *gin.Context) {
-	userID, ok := getUserID(c)
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
@@ -36,7 +38,7 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 }
 
 func (h *Handler) MarkAsRead(c *gin.Context) {
-	userID, ok := getUserID(c)
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
@@ -64,7 +66,7 @@ func (h *Handler) MarkAsRead(c *gin.Context) {
 }
 
 func (h *Handler) MarkAllAsRead(c *gin.Context) {
-	userID, ok := getUserID(c)
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
@@ -79,21 +81,4 @@ func (h *Handler) MarkAllAsRead(c *gin.Context) {
 	c.JSON(http.StatusOK, MarkReadResponse{
 		Message: "All notifications marked as read",
 	})
-}
-
-func getUserID(c *gin.Context) (string, bool) {
-	keys := []string{"userID", "userId", "user_id", "sub"}
-
-	for _, key := range keys {
-		value, exists := c.Get(key)
-		if !exists {
-			continue
-		}
-
-		if s, ok := value.(string); ok && s != "" {
-			return s, true
-		}
-	}
-
-	return "", false
 }

@@ -49,7 +49,7 @@ func (r *Repository) AlbumExists(ctx context.Context, albumID int64) (bool, erro
 func (r *Repository) ArtistExists(ctx context.Context, artistID int64) (bool, error) {
 	var exists bool
 	err := r.db.QueryRowContext(ctx,
-		`SELECT EXISTS(SELECT 1 FROM artists WHERE id = $1)`,
+		`SELECT EXISTS(SELECT 1 FROM artist WHERE id = $1)`,
 		artistID,
 	).Scan(&exists)
 	return exists, err
@@ -178,7 +178,7 @@ func (r *Repository) ListLikedTracks(ctx context.Context, userID int64) ([]Libra
 			NULL
 		FROM liked_tracks lt
 		JOIN tracks t ON t.id = lt.track_id
-		LEFT JOIN artists ar ON ar.id = t.artist_id
+		LEFT JOIN artist ar ON ar.id = t.artist_id
 		LEFT JOIN albums al ON al.id = t.album_id
 		WHERE lt.user_id = $1
 		ORDER BY lt.created_at DESC
@@ -226,7 +226,7 @@ func (r *Repository) ListLikedAlbums(ctx context.Context, userID int64) ([]Libra
 			la.created_at
 		FROM liked_albums la
 		JOIN albums al ON al.id = la.album_id
-		LEFT JOIN artists ar ON ar.id = al.artist_id
+		LEFT JOIN artist ar ON ar.id = al.artist_id
 		WHERE la.user_id = $1
 		ORDER BY la.created_at DESC
 	`
@@ -265,7 +265,7 @@ func (r *Repository) ListFollowedArtists(ctx context.Context, userID int64) ([]L
 			ar.cover_url,
 			fa.created_at
 		FROM followed_artists fa
-		JOIN artists ar ON ar.id = fa.artist_id
+		JOIN artist ar ON ar.id = fa.artist_id
 		WHERE fa.user_id = $1
 		ORDER BY fa.created_at DESC
 	`
@@ -309,7 +309,7 @@ func (r *Repository) ListPlayHistory(ctx context.Context, userID int64, limit in
 			ph.played_at
 		FROM play_history ph
 		JOIN tracks t ON t.id = ph.track_id
-		LEFT JOIN artists ar ON ar.id = t.artist_id
+		LEFT JOIN artist ar ON ar.id = t.artist_id
 		LEFT JOIN albums al ON al.id = t.album_id
 		WHERE ph.user_id = $1
 		ORDER BY ph.played_at DESC
@@ -362,7 +362,7 @@ func (r *Repository) ListRecentlyPlayed(ctx context.Context, userID int64, limit
 			MAX(ph.played_at) AS last_played_at
 		FROM play_history ph
 		JOIN tracks t ON t.id = ph.track_id
-		LEFT JOIN artists ar ON ar.id = t.artist_id
+		LEFT JOIN artist ar ON ar.id = t.artist_id
 		LEFT JOIN albums al ON al.id = t.album_id
 		WHERE ph.user_id = $1
 		GROUP BY

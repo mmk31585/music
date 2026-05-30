@@ -111,7 +111,7 @@ func (s *service) ForYou(ctx context.Context, userID string, limit int) ([]Track
 		}
 	}
 
-	// 1. Followed artists
+	// 1. Followed artist
 	followedArtistIDs, err := s.repo.GetFollowedArtistIDs(ctx, userID, 10)
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func (s *service) ForYou(ctx context.Context, userID string, limit int) ([]Track
 		addItems(items, 5)
 	}
 
-	// 2. Top artists from listening history
+	// 2. Top artist from listening history
 	topArtistIDs, err := s.repo.GetTopArtistIDs(ctx, userID, 10)
 	if err != nil {
 		return nil, err

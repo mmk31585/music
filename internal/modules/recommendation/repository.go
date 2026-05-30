@@ -64,7 +64,7 @@ SELECT
 	t.audio_url,
 	t.duration_seconds
 FROM tracks t
-LEFT JOIN artists a ON a.id = t.artist_id
+LEFT JOIN artist a ON a.id = t.artist_id
 LEFT JOIN albums al ON al.id = t.album_id
 `
 }
@@ -84,7 +84,7 @@ SELECT
 	t.duration_seconds
 FROM tracks t
 JOIN play_history ph ON ph.track_id = t.id
-LEFT JOIN artists a ON a.id = t.artist_id
+LEFT JOIN artist a ON a.id = t.artist_id
 LEFT JOIN albums al ON al.id = t.album_id
 WHERE ph.played_at >= NOW() - INTERVAL '30 days'
 GROUP BY t.id, t.title, t.artist_id, a.name, t.album_id, al.title, t.genre, t.cover_url, t.audio_url, t.duration_seconds
@@ -113,7 +113,7 @@ SELECT
 	t.duration_seconds,
 	(COALESCE(lt.like_count, 0) * 3 + COALESCE(ph.play_count, 0))::float AS score
 FROM tracks t
-LEFT JOIN artists a ON a.id = t.artist_id
+LEFT JOIN artist a ON a.id = t.artist_id
 LEFT JOIN albums al ON al.id = t.album_id
 LEFT JOIN (
 	SELECT track_id, COUNT(*) AS like_count
@@ -199,7 +199,7 @@ FROM (
 		ph.played_at
 	FROM play_history ph
 	JOIN tracks t ON t.id = ph.track_id
-	LEFT JOIN artists a ON a.id = t.artist_id
+	LEFT JOIN artist a ON a.id = t.artist_id
 	LEFT JOIN albums al ON al.id = t.album_id
 	WHERE ph.user_id = $1
 	ORDER BY t.id, ph.played_at DESC
@@ -272,7 +272,7 @@ SELECT
 	t.duration_seconds,
 	(%s)::float AS score
 FROM tracks t
-LEFT JOIN artists a ON a.id = t.artist_id
+LEFT JOIN artist a ON a.id = t.artist_id
 LEFT JOIN albums al ON al.id = t.album_id
 WHERE t.id <> $1
 ORDER BY score DESC, t.title ASC

@@ -4,6 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
+
+	"github.com/google/uuid"
+
+	"music/internal/platform/events"
 )
 
 var (
@@ -12,11 +17,15 @@ var (
 )
 
 type Service struct {
-	repo *Repository
+	repo      *Repository
+	publisher events.Publisher
 }
 
-func NewService(repo *Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo *Repository, publisher events.Publisher) *Service {
+	return &Service{
+		repo:      repo,
+		publisher: publisher,
+	}
 }
 
 func (s *Service) ListPlans(ctx context.Context) ([]PlanResponse, error) {
@@ -125,6 +134,8 @@ func (s *Service) Checkout(ctx context.Context, userID string, req CheckoutReque
 		return nil, err
 	}
 
+	s.publishSubscriptionPurchased(ctx, userID, sub.ID, plan.Name, int(plan.PriceCents), plan.Currency)
+
 	mappedSub := mapSubscription(*sub)
 	mappedPlan := mapPlan(*plan)
 	mappedSub.Plan = &mappedPlan
@@ -165,6 +176,38 @@ func (s *Service) ListPayments(ctx context.Context, userID string) ([]PaymentRes
 	}
 
 	return result, nil
+}
+
+func (s *Service) publishSubscriptionPurchased(
+	ctx context.Context,
+	userID string,
+	subscriptionID string,
+	planName string,
+	amountCents int,
+	currency string,
+) {
+	if s.publisher == nil {
+		return
+	}
+
+	uid, err := uuid.Parse(strings.TrimSpace(userID))
+	if err != nil {
+		return
+	}
+
+	sid, err := uuid.Parse(strings.TrimSpace(subscriptionID))
+	if err != nil {
+		return
+	}
+
+	_ = s.publisher.Publish(ctx, events.SubscriptionPurchasedEvent{
+		BaseEvent:      events.NewBaseEvent(),
+		UserID:         uid,
+		SubscriptionID: sid,
+		Plan:           planName,
+		Amount:         int64(amountCents),
+		Currency:       currency,
+	})
 }
 
 func mapPlan(plan Plan) PlanResponse {

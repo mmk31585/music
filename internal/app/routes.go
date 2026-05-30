@@ -1,32 +1,44 @@
 package app
 
 import (
+	"music/internal/modules/analytics"
 	"music/internal/modules/auth"
 	"music/internal/modules/catalog"
+	"music/internal/modules/catalog/album"
+	artist "music/internal/modules/catalog/artist"
+	"music/internal/modules/catalog/genre"
+	"music/internal/modules/catalog/track"
+	"music/internal/modules/follow"
+	"music/internal/modules/history"
 	"music/internal/modules/library"
 	"music/internal/modules/media"
 	"music/internal/modules/notification"
 	"music/internal/modules/player"
 	"music/internal/modules/playlist"
+	"music/internal/modules/queue"
 	"music/internal/modules/recommendation"
 	"music/internal/modules/search"
 	"music/internal/modules/subscription"
+	"music/internal/platform/events"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
-
 	opensearch "github.com/opensearch-project/opensearch-go"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.uber.org/zap"
 )
 
 func (a *App) RegisterRoutes(r *gin.Engine) {
 	api := r.Group("/api/v1")
-
-	// ---------- Shared DB adapter ----------
+	api.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	sqlDB := stdlib.OpenDBFromPool(a.DB)
 	sqlxDB := sqlx.NewDb(sqlDB, "pgx")
 
-	// ---------- Auth module ----------
+	logger := zap.L()
+	bus := events.NewBus(logger)
+
 	tokenManager := auth.NewTokenManager(
 		a.Config.Auth.JWTAccessSecret,
 		a.Config.Auth.JWTRefreshSecret,
@@ -38,10 +50,8 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	authService := auth.NewService(authRepo, tokenManager)
 	authHandler := auth.NewHandler(authService, a.Validator)
 	authMW := auth.AuthMiddleware(tokenManager)
-
 	auth.RegisterRoutes(api, authHandler, authMW)
 
-	// ---------- Media module ----------
 	mediaStorage := media.NewLocalStorage(media.LocalStorageConfig{
 		BasePath:   a.Config.Media.BasePath,
 		PublicBase: a.Config.Media.PublicBase,
@@ -71,43 +81,82 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	mediaHandler := media.NewHandler(mediaService)
 	media.RegisterAdminRoutes(api, mediaHandler, authMW)
 
-	// ---------- Catalog module ----------
-	catalogRepo := catalog.NewRepository(sqlxDB)
-	catalogService := catalog.NewService(catalogRepo)
-	catalogHandler := catalog.NewHandler(catalogService, a.Validator, mediaService)
+	artistRepo := artist.NewRepository(sqlxDB)
+	artistService := artist.NewService(artistRepo)
+	artistHandler := artist.NewHandler(artistService)
 
-	catalog.RegisterPublicRoutes(api, catalogHandler)
-	catalog.RegisterAdminRoutes(api, catalogHandler, authMW)
+	albumRepo := album.NewRepository(sqlxDB)
+	albumService := album.NewService(albumRepo)
+	albumHandler := album.NewHandler(albumService)
 
-	// ---------- Player module ----------
-	playerRepo := player.NewRepository(sqlxDB)
-	playerService := player.NewService(playerRepo, a.Config.Media.BasePath)
-	playerHandler := player.NewHandler(playerService)
+	genreRepo := genre.NewRepository(sqlxDB)
+	genreService := genre.NewService(genreRepo)
+	genreHandler := genre.NewHandler(genreService)
 
-	player.RegisterPublicRoutes(api, playerHandler)
+	trackRepo := track.NewRepository(sqlxDB)
+	trackService := track.NewService(trackRepo)
+	trackHandler := track.NewHandler(trackService)
 
-	// ---------- Playlist module ----------
+	catalogHandlers := catalog.Handlers{
+		Artist: artistHandler,
+		Album:  albumHandler,
+		Genre:  genreHandler,
+		Track:  trackHandler,
+	}
+
+	catalog.RegisterPublicRoutes(api, catalogHandlers)
+	catalog.RegisterAdminRoutes(api, catalogHandlers, authMW)
+
 	playlistRepo := playlist.NewRepository(sqlxDB)
 	playlistService := playlist.NewService(playlistRepo)
 	playlistHandler := playlist.NewHandler(playlistService)
-
 	playlist.RegisterRoutes(api, playlistHandler, authMW)
 
-	// ---------- Library module ----------
 	libraryRepo := library.NewRepository(sqlxDB)
 	libraryService := library.NewService(libraryRepo)
 	libraryHandler := library.NewHandler(libraryService)
-
 	library.RegisterRoutes(api, libraryHandler, authMW)
 
-	// ---------- Recommendation module ----------
+	queueRepo := queue.NewRepository(sqlxDB)
+	queueService := queue.NewService(queueRepo)
+	queueHandler := queue.NewHandler(queueService)
+	queue.RegisterRoutes(api, queueHandler, authMW)
+
+	followRepo := follow.NewRepository(sqlxDB)
+	followService := follow.NewService(followRepo)
+	followHandler := follow.NewHandler(followService)
+	follow.RegisterRoutes(api, followHandler, authMW)
+
 	recommendationRepo := recommendation.NewRepository(sqlxDB)
 	recommendationService := recommendation.NewService(recommendationRepo)
 	recommendationHandler := recommendation.NewHandler(recommendationService)
-
 	recommendation.RegisterRoutes(api, recommendationHandler, authMW)
 
-	// ---------- Search module ----------
+	historyRepo := history.NewRepository(sqlxDB)
+	historyService := history.NewService(historyRepo)
+	historyHandler := history.NewHandler(historyService)
+	history.RegisterRoutes(api, historyHandler, authMW)
+
+	analyticsRepo := analytics.NewRepository(sqlxDB)
+	analyticsService := analytics.NewService(analyticsRepo)
+	analyticsHandler := analytics.NewHandler(analyticsService)
+	analytics.RegisterRoutes(api, analyticsHandler)
+
+	notificationRepo := notification.NewRepository(sqlxDB)
+	notificationService := notification.NewService(notificationRepo)
+	notificationHandler := notification.NewHandler(notificationService)
+	notification.RegisterRoutes(api, notificationHandler, authMW)
+
+	subscriptionRepo := subscription.NewRepository(sqlxDB)
+	subscriptionService := subscription.NewService(subscriptionRepo, bus)
+	subscriptionHandler := subscription.NewHandler(subscriptionService)
+	subscription.RegisterRoutes(api, subscriptionHandler, authMW)
+
+	playerRepo := player.NewRepository(sqlxDB)
+	playerService := player.NewService(playerRepo, a.Config.Media.BasePath, bus)
+	playerHandler := player.NewHandler(playerService)
+	player.RegisterPublicRoutes(api, playerHandler)
+
 	if a.Config.OpenSearch.URL != "" {
 		osClient, err := opensearch.NewClient(opensearch.Config{
 			Addresses: []string{a.Config.OpenSearch.URL},
@@ -115,20 +164,25 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 		if err == nil {
 			searchService := search.NewService(osClient)
 			searchHandler := search.NewHandler(searchService)
-
 			search.RegisterRoutes(api, searchHandler)
 		}
 	}
-	notificationRepo := notification.NewRepository(sqlxDB)
-	notificationService := notification.NewService(notificationRepo)
-	notificationHandler := notification.NewHandler(notificationService)
 
-	notification.RegisterRoutes(api, notificationHandler, authMW)
+	analyticsEvents := analytics.NewEventHandler(analyticsService)
+	notificationEvents := notification.NewEventHandler(notificationService)
+	recommendationEvents := recommendation.NewEventHandler(recommendationService)
+	historyEvents := history.NewEventHandler(historyService)
 
-	subscriptionRepo := subscription.NewRepository(sqlxDB)
-	subscriptionService := subscription.NewService(subscriptionRepo)
-	subscriptionHandler := subscription.NewHandler(subscriptionService)
+	bus.Subscribe(events.EventTrackPlayed, analyticsEvents.OnTrackPlayed)
+	bus.Subscribe(events.EventTrackPlayed, historyEvents.OnTrackPlayed)
+	bus.Subscribe(events.EventTrackPlayed, recommendationEvents.OnTrackPlayed)
 
-	subscription.RegisterRoutes(api, subscriptionHandler, authMW)
+	bus.Subscribe(events.EventPlaylistCreated, analyticsEvents.OnPlaylistCreated)
+	bus.Subscribe(events.EventPlaylistCreated, notificationEvents.OnPlaylistCreated)
 
+	bus.Subscribe(events.EventSubscriptionPurchased, analyticsEvents.OnSubscriptionPurchased)
+	bus.Subscribe(events.EventSubscriptionPurchased, notificationEvents.OnSubscriptionPurchased)
+
+	bus.Subscribe(events.EventUserRegistered, analyticsEvents.OnUserRegistered)
+	bus.Subscribe(events.EventUserRegistered, notificationEvents.OnUserRegistered)
 }

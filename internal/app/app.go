@@ -1,6 +1,7 @@
 package app
 
 import (
+	"music/internal/platform/events"
 	"net/http"
 
 	"music/internal/common/validator"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/opensearch-project/opensearch-go"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
@@ -20,5 +20,6 @@ type App struct {
 	Redis      *redis.Client
 	Validator  *validator.Validator
 	Router     *gin.Engine
+	Events     *events.Bus
 	HTTPServer *http.Server
 }

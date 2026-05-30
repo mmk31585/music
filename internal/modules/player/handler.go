@@ -1,6 +1,7 @@
 package player
 
 import (
+	"context"
 	"errors"
 	"log"
 	"net/http"
@@ -22,6 +23,14 @@ func NewHandler(service *Service) *Handler {
 	}
 }
 
+// GetPlaybackTrack godoc
+// @Summary      Get track playback details
+// @Description  Returns track info and a streaming URL
+// @Tags         player
+// @Param        id   path      string  true  "Track ID"
+// @Success      200  {object}  response.Data{data=PlaybackTrackResponse}
+// @Failure      404  {object}  errors.AppError
+// @Router       /player/tracks/{id} [get]
 func (h *Handler) GetPlaybackTrack(c *gin.Context) {
 	trackID := c.Param("id")
 
@@ -36,6 +45,15 @@ func (h *Handler) GetPlaybackTrack(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "Success", payload)
 }
+
+// StreamTrack godoc
+// @Summary      Stream track audio
+// @Description  Serves the actual audio file
+// @Tags         player
+// @Param        id   path      string  true  "Track ID"
+// @Produce      audio/mpeg
+// @Success      200  {file}    binary
+// @Router       /player/tracks/{id}/stream [get]
 func (h *Handler) StreamTrack(c *gin.Context) {
 	trackID := c.Param("id")
 	track, err := h.service.GetPlaybackTrack(c.Request.Context(), trackID)
@@ -45,7 +63,6 @@ func (h *Handler) StreamTrack(c *gin.Context) {
 		return
 	}
 
-	// Fix typo: track.AudioURL (was track.Audio URL)
 	filePath, err := h.service.ResolveAudioFilePath(track.AudioURL)
 	if err != nil {
 		log.Print("Stream Audio Path Error")
@@ -78,8 +95,14 @@ func (h *Handler) StreamTrack(c *gin.Context) {
 	contentType := detectAudioContentType(filePath)
 	setStreamingHeaders(c.Writer, contentType)
 
-	// Fix: DispatchPlayStarted doesn't exist. Use TrackPlayed asynchronously.
-	go h.service.TrackPlayed(c.Request.Context(), track.ID)
+	go h.service.TrackPlayed(
+		context.Background(),
+		"",
+		track,
+		0,
+		false,
+		"stream",
+	)
 
 	http.ServeContent(c.Writer, c.Request, stat.Name(), stat.ModTime(), file)
 }

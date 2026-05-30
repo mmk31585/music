@@ -32,7 +32,7 @@ func (r *Repository) GetTrackForPlayback(ctx context.Context, id string) (*Playb
 		       COALESCE(t.is_public, true) AS is_public,
 		       t.created_at
 		FROM tracks t
-		LEFT JOIN artists ar ON ar.id = t.artist_id
+		LEFT JOIN artist ar ON ar.id = t.artist_id
 		LEFT JOIN albums al ON al.id = t.album_id
 		WHERE t.id = $1
 		LIMIT 1

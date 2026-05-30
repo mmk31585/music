@@ -29,7 +29,7 @@ export const adminRoutes: RouteRecordRaw[] = [
         component: () => import('@/pages/admin/PageAdminTracks.vue'),
       },
       {
-        path: '/admin/artists',
+        path: '/admin/artist',
         name: 'AdminArtists',
         component: () => import('@/pages/admin/AdminArtistsPage.vue'),
       },

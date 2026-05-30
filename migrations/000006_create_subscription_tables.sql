@@ -102,7 +102,7 @@ VALUES
             "Listen to music",
             "Create playlists",
             "Like tracks",
-            "Follow artists"
+            "Follow artist"
         ]'::jsonb
     ),
     (

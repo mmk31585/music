@@ -13,6 +13,16 @@ import (
 	"go.uber.org/zap"
 )
 
+// @title           Music Application API
+// @version         1.0
+// @description     This is the API server for the Music Streaming Application.
+// @host            localhost:8080
+// @BasePath        /api/v1
+
+// @securityDefinitions.apikey Bearer
+// @in header
+// @name Authorization
+// @description Type "Bearer " followed by your token
 func main() {
 	ctx := context.Background()
 
