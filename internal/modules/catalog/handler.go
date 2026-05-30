@@ -41,6 +41,20 @@ func NewHandler(service *Service, validator *validator.Validator, mediaService .
 // Artists
 // --------------------
 
+// RegisterArtist godoc
+// @Summary      Register a new artist
+// @Description  Create a new artist entry in the catalog (Admin only)
+// @Tags         catalog
+// @Accept       json
+// @Produce      json
+// @Param        request  body      CreateArtistRequest  true  "Artist Details"
+// @Success      201      {object}  response.SuccessResponse[Artist]
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      401      {object}  response.ErrorResponse
+// @Failure      403      {object}  response.ErrorResponse
+// @Failure      409      {object}  response.ErrorResponse
+// @Security     Bearer
+// @Router       /admin/catalog/artists [post]
 func (h *Handler) RegisterArtist(c *gin.Context) {
 	var req CreateArtistRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -67,6 +81,16 @@ func (h *Handler) RegisterArtist(c *gin.Context) {
 	response.Success(c, http.StatusCreated, "artist created successfully", artist)
 }
 
+// GetArtist godoc
+// @Summary      Get artist details
+// @Description  Get detailed information about an artist by ID
+// @Tags         catalog
+// @Produce      json
+// @Param        artistID  path      string  true  "Artist ID"
+// @Success      200       {object}  response.SuccessResponse[Artist]
+// @Failure      400       {object}  response.ErrorResponse
+// @Failure      404       {object}  response.ErrorResponse
+// @Router       /catalog/artists/{artistID} [get]
 func (h *Handler) GetArtist(c *gin.Context) {
 	idStr := c.Param("artistID")
 	id, err := uuid.Parse(idStr)
@@ -91,6 +115,17 @@ func (h *Handler) GetArtist(c *gin.Context) {
 	response.Success(c, http.StatusOK, "artist fetched successfully", artist)
 }
 
+// ListArtists godoc
+// @Summary      List artists
+// @Description  Retrieve a paginated list of artists
+// @Tags         catalog
+// @Produce      json
+// @Param        page   query     int     false  "Page number"
+// @Param        limit  query     int     false  "Items per page"
+// @Param        name   query     string  false  "Filter by name"
+// @Success      200    {object}  response.SuccessResponse[[]Artist]
+// @Failure      500    {object}  response.ErrorResponse
+// @Router       /catalog/artists [get]
 func (h *Handler) ListArtists(c *gin.Context) {
 	filter := ParseArtistListFilter(c) // changed to accept gin.Context
 
@@ -104,6 +139,21 @@ func (h *Handler) ListArtists(c *gin.Context) {
 	response.SuccessWithMeta(c, http.StatusOK, "artists fetched successfully", artists, meta)
 }
 
+// UpdateArtist godoc
+// @Summary      Update artist
+// @Description  Update artist details (Admin only)
+// @Tags         catalog
+// @Accept       json
+// @Produce      json
+// @Param        artistID  path      string               true  "Artist ID"
+// @Param        request   body      UpdateArtistRequest  true  "Updated Artist Details"
+// @Success      200       {object}  response.SuccessResponse[Artist]
+// @Failure      400       {object}  response.ErrorResponse
+// @Failure      401       {object}  response.ErrorResponse
+// @Failure      403       {object}  response.ErrorResponse
+// @Failure      404       {object}  response.ErrorResponse
+// @Security     Bearer
+// @Router       /admin/catalog/artists/{artistID} [patch]
 func (h *Handler) UpdateArtist(c *gin.Context) {
 	idStr := c.Param("artistID")
 	id, err := uuid.Parse(idStr)
@@ -144,6 +194,19 @@ func (h *Handler) UpdateArtist(c *gin.Context) {
 	response.Success(c, http.StatusOK, "artist updated successfully", artist)
 }
 
+// DeleteArtist godoc
+// @Summary      Delete artist
+// @Description  Delete an artist from the catalog (Admin only)
+// @Tags         catalog
+// @Produce      json
+// @Param        artistID  path      string  true  "Artist ID"
+// @Success      200       {object}  response.SuccessResponse[any]
+// @Failure      400       {object}  response.ErrorResponse
+// @Failure      401       {object}  response.ErrorResponse
+// @Failure      403       {object}  response.ErrorResponse
+// @Failure      404       {object}  response.ErrorResponse
+// @Security     Bearer
+// @Router       /admin/catalog/artists/{artistID} [delete]
 func (h *Handler) DeleteArtist(c *gin.Context) {
 	idStr := c.Param("artistID")
 	id, err := uuid.Parse(idStr)
@@ -171,6 +234,21 @@ func (h *Handler) DeleteArtist(c *gin.Context) {
 // Albums
 // --------------------
 
+// RegisterAlbum godoc
+// @Summary      Register a new album
+// @Description  Create a new album entry (Admin only)
+// @Tags         catalog
+// @Accept       json
+// @Produce      json
+// @Param        request  body      CreateAlbumRequest  true  "Album Details"
+// @Success      201      {object}  response.SuccessResponse[Album]
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      401      {object}  response.ErrorResponse
+// @Failure      403      {object}  response.ErrorResponse
+// @Failure      404      {object}  response.ErrorResponse
+// @Failure      409      {object}  response.ErrorResponse
+// @Security     Bearer
+// @Router       /admin/catalog/albums [post]
 func (h *Handler) RegisterAlbum(c *gin.Context) {
 	var req CreateAlbumRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -200,6 +278,16 @@ func (h *Handler) RegisterAlbum(c *gin.Context) {
 	response.Success(c, http.StatusCreated, "album created successfully", album)
 }
 
+// GetAlbum godoc
+// @Summary      Get album details
+// @Description  Get detailed information about an album by ID
+// @Tags         catalog
+// @Produce      json
+// @Param        albumID  path      string  true  "Album ID"
+// @Success      200      {object}  response.SuccessResponse[Album]
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      404      {object}  response.ErrorResponse
+// @Router       /catalog/albums/{albumID} [get]
 func (h *Handler) GetAlbum(c *gin.Context) {
 	idStr := c.Param("albumID")
 	id, err := uuid.Parse(idStr)
@@ -224,6 +312,17 @@ func (h *Handler) GetAlbum(c *gin.Context) {
 	response.Success(c, http.StatusOK, "album fetched successfully", album)
 }
 
+// ListAlbums godoc
+// @Summary      List albums
+// @Description  Retrieve a paginated list of albums
+// @Tags         catalog
+// @Produce      json
+// @Param        page      query     int     false  "Page number"
+// @Param        limit     query     int     false  "Items per page"
+// @Param        artistID  query     string  false  "Filter by artist ID"
+// @Success      200       {object}  response.SuccessResponse[[]Album]
+// @Failure      500       {object}  response.ErrorResponse
+// @Router       /catalog/albums [get]
 func (h *Handler) ListAlbums(c *gin.Context) {
 	filter := ParseAlbumListFilter(c)
 
@@ -237,6 +336,21 @@ func (h *Handler) ListAlbums(c *gin.Context) {
 	response.SuccessWithMeta(c, http.StatusOK, "albums fetched successfully", albums, meta)
 }
 
+// UpdateAlbum godoc
+// @Summary      Update album
+// @Description  Update album details (Admin only)
+// @Tags         catalog
+// @Accept       json
+// @Produce      json
+// @Param        albumID  path      string               true  "Album ID"
+// @Param        request  body      UpdateAlbumRequest  true  "Updated Album Details"
+// @Success      200      {object}  response.SuccessResponse[Album]
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      401      {object}  response.ErrorResponse
+// @Failure      403      {object}  response.ErrorResponse
+// @Failure      404      {object}  response.ErrorResponse
+// @Security     Bearer
+// @Router       /admin/catalog/albums/{albumID} [patch]
 func (h *Handler) UpdateAlbum(c *gin.Context) {
 	idStr := c.Param("albumID")
 	id, err := uuid.Parse(idStr)
@@ -277,6 +391,19 @@ func (h *Handler) UpdateAlbum(c *gin.Context) {
 	response.Success(c, http.StatusOK, "album updated successfully", album)
 }
 
+// DeleteAlbum godoc
+// @Summary      Delete album
+// @Description  Delete an album from the catalog (Admin only)
+// @Tags         catalog
+// @Produce      json
+// @Param        albumID  path      string  true  "Album ID"
+// @Success      200      {object}  response.SuccessResponse[any]
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      401      {object}  response.ErrorResponse
+// @Failure      403      {object}  response.ErrorResponse
+// @Failure      404      {object}  response.ErrorResponse
+// @Security     Bearer
+// @Router       /admin/catalog/albums/{albumID} [delete]
 func (h *Handler) DeleteAlbum(c *gin.Context) {
 	idStr := c.Param("albumID")
 	id, err := uuid.Parse(idStr)
@@ -304,6 +431,21 @@ func (h *Handler) DeleteAlbum(c *gin.Context) {
 // Tracks
 // --------------------
 
+// RegisterTrack godoc
+// @Summary      Register a new track
+// @Description  Create a new track entry (Admin only)
+// @Tags         catalog
+// @Accept       json
+// @Produce      json
+// @Param        request  body      CreateTrackRequest  true  "Track Details"
+// @Success      201      {object}  response.SuccessResponse[Track]
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      401      {object}  response.ErrorResponse
+// @Failure      403      {object}  response.ErrorResponse
+// @Failure      404      {object}  response.ErrorResponse
+// @Failure      409      {object}  response.ErrorResponse
+// @Security     Bearer
+// @Router       /admin/catalog/tracks [post]
 func (h *Handler) RegisterTrack(c *gin.Context) {
 	var req CreateTrackRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -345,6 +487,28 @@ func (h *Handler) RegisterTrack(c *gin.Context) {
 	response.Success(c, http.StatusCreated, "track created successfully", track)
 }
 
+// RegisterTrackWithAudio godoc
+// @Summary      Register track with audio upload
+// @Description  Upload audio file and create track entry (Admin only)
+// @Tags         catalog
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        trackAudio       formData  file    true   "Audio file"
+// @Param        artistId         formData  string  true   "Artist ID"
+// @Param        title            formData  string  false  "Track Title"
+// @Param        albumId          formData  string  false  "Album ID"
+// @Param        durationSeconds  formData  int     false  "Duration in seconds"
+// @Param        trackNumber      formData  int     false  "Track number"
+// @Param        explicit         formData  bool    false  "Is explicit"
+// @Param        isPublic         formData  bool    false  "Is public"
+// @Param        coverUrl         formData  string  false  "Cover URL"
+// @Param        genreIds         formData  array   false  "Genre IDs (comma separated or multiple fields)"
+// @Success      201              {object}  response.SuccessResponse[gin.H]
+// @Failure      400              {object}  response.ErrorResponse
+// @Failure      401              {object}  response.ErrorResponse
+// @Failure      403              {object}  response.ErrorResponse
+// @Security     Bearer
+// @Router       /admin/catalog/tracks/upload [post]
 func (h *Handler) RegisterTrackWithAudio(c *gin.Context) {
 	if h.mediaService == nil {
 		response.Error(c, appErr.Internal("media upload service is not configured", nil))
@@ -519,6 +683,16 @@ func writeTrackCreateError(c *gin.Context, err error, req CreateTrackRequest) {
 	}
 }
 
+// GetTrack godoc
+// @Summary      Get track details
+// @Description  Get detailed information about a track by ID
+// @Tags         catalog
+// @Produce      json
+// @Param        trackID  path      string  true  "Track ID"
+// @Success      200      {object}  response.SuccessResponse[Track]
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      404      {object}  response.ErrorResponse
+// @Router       /catalog/tracks/{trackID} [get]
 func (h *Handler) GetTrack(c *gin.Context) {
 	idStr := c.Param("trackID")
 	id, err := uuid.Parse(idStr)
@@ -543,6 +717,18 @@ func (h *Handler) GetTrack(c *gin.Context) {
 	response.Success(c, http.StatusOK, "track fetched successfully", track)
 }
 
+// ListTracks godoc
+// @Summary      List tracks
+// @Description  Retrieve a paginated list of public tracks
+// @Tags         catalog
+// @Produce      json
+// @Param        page      query     int     false  "Page number"
+// @Param        limit     query     int     false  "Items per page"
+// @Param        artistID  query     string  false  "Filter by artist ID"
+// @Param        albumID   query     string  false  "Filter by album ID"
+// @Success      200       {object}  response.SuccessResponse[[]Track]
+// @Failure      500       {object}  response.ErrorResponse
+// @Router       /catalog/tracks [get]
 func (h *Handler) ListTracks(c *gin.Context) {
 	filter := ParseTrackListFilter(c, false)
 
@@ -556,6 +742,18 @@ func (h *Handler) ListTracks(c *gin.Context) {
 	response.SuccessWithMeta(c, http.StatusOK, "tracks fetched successfully", tracks, meta)
 }
 
+// ListAdminTracks godoc
+// @Summary      List all tracks (Admin)
+// @Description  Retrieve a paginated list of all tracks including private ones (Admin only)
+// @Tags         catalog
+// @Produce      json
+// @Param        page   query     int  false  "Page number"
+// @Param        limit  query     int  false  "Items per page"
+// @Success      200    {object}  response.SuccessResponse[[]Track]
+// @Failure      401    {object}  response.ErrorResponse
+// @Failure      403    {object}  response.ErrorResponse
+// @Security     Bearer
+// @Router       /admin/catalog/tracks [get]
 func (h *Handler) ListAdminTracks(c *gin.Context) {
 	filter := ParseTrackListFilter(c, true)
 
@@ -569,6 +767,21 @@ func (h *Handler) ListAdminTracks(c *gin.Context) {
 	response.SuccessWithMeta(c, http.StatusOK, "admin tracks fetched successfully", tracks, meta)
 }
 
+// UpdateTrack godoc
+// @Summary      Update track
+// @Description  Update track details (Admin only)
+// @Tags         catalog
+// @Accept       json
+// @Produce      json
+// @Param        trackID  path      string              true  "Track ID"
+// @Param        request  body      UpdateTrackRequest  true  "Updated Track Details"
+// @Success      200      {object}  response.SuccessResponse[Track]
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      401      {object}  response.ErrorResponse
+// @Failure      403      {object}  response.ErrorResponse
+// @Failure      404      {object}  response.ErrorResponse
+// @Security     Bearer
+// @Router       /admin/catalog/tracks/{trackID} [patch]
 func (h *Handler) UpdateTrack(c *gin.Context) {
 	idStr := c.Param("trackID")
 	id, err := uuid.Parse(idStr)
@@ -618,6 +831,19 @@ func (h *Handler) UpdateTrack(c *gin.Context) {
 	response.Success(c, http.StatusOK, "track updated successfully", track)
 }
 
+// DeleteTrack godoc
+// @Summary      Delete track
+// @Description  Delete a track from the catalog (Admin only)
+// @Tags         catalog
+// @Produce      json
+// @Param        trackID  path      string  true  "Track ID"
+// @Success      200      {object}  response.SuccessResponse[any]
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      401      {object}  response.ErrorResponse
+// @Failure      403      {object}  response.ErrorResponse
+// @Failure      404      {object}  response.ErrorResponse
+// @Security     Bearer
+// @Router       /admin/catalog/tracks/{trackID} [delete]
 func (h *Handler) DeleteTrack(c *gin.Context) {
 	idStr := c.Param("trackID")
 	id, err := uuid.Parse(idStr)
@@ -645,6 +871,20 @@ func (h *Handler) DeleteTrack(c *gin.Context) {
 // Genres
 // --------------------
 
+// CreateGenre godoc
+// @Summary      Create genre
+// @Description  Add a new genre to the catalog (Admin only)
+// @Tags         catalog
+// @Accept       json
+// @Produce      json
+// @Param        request  body      CreateGenreRequest  true  "Genre Details"
+// @Success      201      {object}  response.SuccessResponse[Genre]
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      401      {object}  response.ErrorResponse
+// @Failure      403      {object}  response.ErrorResponse
+// @Failure      409      {object}  response.ErrorResponse
+// @Security     Bearer
+// @Router       /admin/catalog/genres [post]
 func (h *Handler) CreateGenre(c *gin.Context) {
 	var req CreateGenreRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -674,6 +914,16 @@ func (h *Handler) CreateGenre(c *gin.Context) {
 	response.Success(c, http.StatusCreated, "genre created successfully", genre)
 }
 
+// GetGenre godoc
+// @Summary      Get genre details
+// @Description  Get information about a genre by ID
+// @Tags         catalog
+// @Produce      json
+// @Param        genreID  path      string  true  "Genre ID"
+// @Success      200      {object}  response.SuccessResponse[Genre]
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      404      {object}  response.ErrorResponse
+// @Router       /catalog/genres/{genreID} [get]
 func (h *Handler) GetGenre(c *gin.Context) {
 	idStr := c.Param("genreID")
 	id, err := uuid.Parse(idStr)
@@ -698,6 +948,14 @@ func (h *Handler) GetGenre(c *gin.Context) {
 	response.Success(c, http.StatusOK, "genre fetched successfully", genre)
 }
 
+// ListGenres godoc
+// @Summary      List genres
+// @Description  Retrieve all available genres
+// @Tags         catalog
+// @Produce      json
+// @Success      200  {object}  response.SuccessResponse[[]Genre]
+// @Failure      500  {object}  response.ErrorResponse
+// @Router       /catalog/genres [get]
 func (h *Handler) ListGenres(c *gin.Context) {
 	genres, err := h.service.ListGenres(c.Request.Context())
 	if err != nil {
@@ -708,6 +966,21 @@ func (h *Handler) ListGenres(c *gin.Context) {
 	response.Success(c, http.StatusOK, "genres fetched successfully", genres)
 }
 
+// UpdateGenre godoc
+// @Summary      Update genre
+// @Description  Update genre details (Admin only)
+// @Tags         catalog
+// @Accept       json
+// @Produce      json
+// @Param        genreID  path      string              true  "Genre ID"
+// @Param        request  body      UpdateGenreRequest  true  "Updated Genre Details"
+// @Success      200      {object}  response.SuccessResponse[Genre]
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      401      {object}  response.ErrorResponse
+// @Failure      403      {object}  response.ErrorResponse
+// @Failure      404      {object}  response.ErrorResponse
+// @Security     Bearer
+// @Router       /admin/catalog/genres/{genreID} [patch]
 func (h *Handler) UpdateGenre(c *gin.Context) {
 	idStr := c.Param("genreID")
 	id, err := uuid.Parse(idStr)
@@ -754,6 +1027,19 @@ func (h *Handler) UpdateGenre(c *gin.Context) {
 	response.Success(c, http.StatusOK, "genre updated successfully", genre)
 }
 
+// DeleteGenre godoc
+// @Summary      Delete genre
+// @Description  Remove a genre from the catalog (Admin only)
+// @Tags         catalog
+// @Produce      json
+// @Param        genreID  path      string  true  "Genre ID"
+// @Success      200      {object}  response.SuccessResponse[any]
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      401      {object}  response.ErrorResponse
+// @Failure      403      {object}  response.ErrorResponse
+// @Failure      404      {object}  response.ErrorResponse
+// @Security     Bearer
+// @Router       /admin/catalog/genres/{genreID} [delete]
 func (h *Handler) DeleteGenre(c *gin.Context) {
 	idStr := c.Param("genreID")
 	id, err := uuid.Parse(idStr)
@@ -781,6 +1067,15 @@ func (h *Handler) DeleteGenre(c *gin.Context) {
 // Search
 // --------------------
 
+// Search godoc
+// @Summary      Search catalog
+// @Description  Search for artists, albums, and tracks by query string
+// @Tags         catalog
+// @Produce      json
+// @Param        q    query     string  true  "Search query"
+// @Success      200  {object}  response.SuccessResponse[SearchResponse]
+// @Failure      500  {object}  response.ErrorResponse
+// @Router       /catalog/search [get]
 func (h *Handler) Search(c *gin.Context) {
 	q := strings.TrimSpace(c.Query("q"))
 

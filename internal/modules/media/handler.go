@@ -19,6 +19,22 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// UploadAdminMedia godoc
+// @Summary      Upload media for admin
+// @Description  Upload artist images, album covers, or track covers/audio (Admin only)
+// @Tags         media
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        artistImage  formData  file  false  "Artist Image"
+// @Param        albumCover   formData  file  false  "Album Cover"
+// @Param        trackCover   formData  file  false  "Track Cover"
+// @Param        trackAudio   formData  file  false  "Track Audio"
+// @Success      201          {object}  response.SuccessResponse[UploadResponse]
+// @Failure      400          {object}  response.ErrorResponse
+// @Failure      401          {object}  response.ErrorResponse
+// @Failure      500          {object}  response.ErrorResponse
+// @Security     Bearer
+// @Router       /admin/media/upload [post]
 func (h *Handler) UploadAdminMedia(c *gin.Context) {
 	const hardLimit = 60 << 20 // 60 MB
 

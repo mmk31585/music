@@ -22,6 +22,16 @@ func NewHandler(service *Service) *Handler {
 	}
 }
 
+// GetPlaybackTrack godoc
+// @Summary      Get playback track details
+// @Description  Returns playback metadata and stream URL for a public track
+// @Tags         player
+// @Produce      json
+// @Param        id   path      string  true  "Track ID"
+// @Success      200  {object}  response.SuccessResponse[PlaybackTrackResponse]
+// @Failure      400  {object}  response.ErrorResponse
+// @Failure      404  {object}  response.ErrorResponse
+// @Router       /player/tracks/{id} [get]
 func (h *Handler) GetPlaybackTrack(c *gin.Context) {
 	trackID := c.Param("id")
 
@@ -36,6 +46,16 @@ func (h *Handler) GetPlaybackTrack(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "Success", payload)
 }
+// StreamTrack godoc
+// @Summary      Stream track audio
+// @Description  Streams the audio file for a given track ID
+// @Tags         player
+// @Produce      audio/mpeg
+// @Param        id   path      string  true  "Track ID"
+// @Success      200  {file}    binary
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /player/tracks/{id}/stream [get]
 func (h *Handler) StreamTrack(c *gin.Context) {
 	trackID := c.Param("id")
 	track, err := h.service.GetPlaybackTrack(c.Request.Context(), trackID)
