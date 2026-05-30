@@ -24,13 +24,17 @@ func NewHandler(service *Service) *Handler {
 }
 
 // GetPlaybackTrack godoc
-// @Summary      Get track playback details
-// @Description  Returns track info and a streaming URL
-// @Tags         player
-// @Param        id   path      string  true  "Track ID"
-// @Success      200  {object}  response.Data{data=PlaybackTrackResponse}
-// @Failure      404  {object}  errors.AppError
-// @Router       /player/tracks/{id} [get]
+// @Summary Get track playback details
+// @Description Returns track info and a streaming URL.
+// @Tags player
+// @Produce json
+// @Param id path string true "Track ID"
+// @Success 200 {object} response.SuccessResponse
+// @Failure 400 {object} appErrors.AppError
+// @Failure 403 {object} appErrors.AppError
+// @Failure 404 {object} appErrors.AppError
+// @Failure 500 {object} appErrors.AppError
+// @Router /player/tracks/{id} [get]
 func (h *Handler) GetPlaybackTrack(c *gin.Context) {
 	trackID := c.Param("id")
 
@@ -47,13 +51,17 @@ func (h *Handler) GetPlaybackTrack(c *gin.Context) {
 }
 
 // StreamTrack godoc
-// @Summary      Stream track audio
-// @Description  Serves the actual audio file
-// @Tags         player
-// @Param        id   path      string  true  "Track ID"
-// @Produce      audio/mpeg
-// @Success      200  {file}    binary
-// @Router       /player/tracks/{id}/stream [get]
+// @Summary Stream track audio
+// @Description Serves the actual audio file.
+// @Tags player
+// @Param id path string true "Track ID"
+// @Produce audio/mpeg
+// @Success 200 {file} binary
+// @Failure 400 {object} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /player/tracks/{id}/stream [get]
 func (h *Handler) StreamTrack(c *gin.Context) {
 	trackID := c.Param("id")
 	track, err := h.service.GetPlaybackTrack(c.Request.Context(), trackID)
@@ -79,7 +87,12 @@ func (h *Handler) StreamTrack(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to open audio file"})
 		return
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+
+		}
+	}(file)
 
 	stat, err := file.Stat()
 	if err != nil {
@@ -121,8 +134,7 @@ func (h *Handler) handleError(c *gin.Context, err error) {
 	case errors.Is(err, ErrPrivateTrack):
 		response.Error(c, appErrors.Forbidden("track is private", nil))
 	default:
-		// 🔑 UNCOMMENT & LOG THIS TO FIND THE ROOT CAUSE
 		log.Printf("[PLAYER ERROR] %v", err)
-		response.Error(c, appErrors.Internal("player error lsknfd", err)) // Pass err for logging
+		response.Error(c, appErrors.Internal("player error lsknfd", err))
 	}
 }

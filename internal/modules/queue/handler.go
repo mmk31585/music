@@ -16,7 +16,19 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// GetQueue godoc
+// @Summary Get current user's queue
+// @Description Returns the current playback queue for the authenticated user.
+// @Tags queue
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Success 200 {object} QueueResponse
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /queue [get]
 func (h *Handler) GetQueue(c *gin.Context) {
+
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -35,7 +47,22 @@ func (h *Handler) GetQueue(c *gin.Context) {
 	})
 }
 
+// AddTrack godoc
+// @Summary Add a track to the queue
+// @Description Adds a track to the authenticated user's queue.
+// @Tags queue
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body AddTrackRequest true "Add track request"
+// @Success 201 {object} AddTrackResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /queue/tracks [post]
 func (h *Handler) AddTrack(c *gin.Context) {
+
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -68,7 +95,22 @@ func (h *Handler) AddTrack(c *gin.Context) {
 	})
 }
 
+// RemoveTrack godoc
+// @Summary Remove a track from the queue
+// @Description Removes the queue item specified by id for the authenticated user.
+// @Tags queue
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path string true "Queue item ID"
+// @Success 200 {object} MessageResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /queue/tracks/{id} [delete]
 func (h *Handler) RemoveTrack(c *gin.Context) {
+
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -95,7 +137,22 @@ func (h *Handler) RemoveTrack(c *gin.Context) {
 	})
 }
 
+// Reorder godoc
+// @Summary Reorder queue items
+// @Description Reorders items in the authenticated user's queue.
+// @Tags queue
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body ReorderQueueRequest true "Reorder queue request"
+// @Success 200 {object} MessageResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /queue/reorder [put]
 func (h *Handler) Reorder(c *gin.Context) {
+
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -130,7 +187,19 @@ func (h *Handler) Reorder(c *gin.Context) {
 	})
 }
 
+// Clear godoc
+// @Summary Clear queue
+// @Description Removes all items from the authenticated user's queue.
+// @Tags queue
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Success 200 {object} MessageResponse
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /queue [delete]
 func (h *Handler) Clear(c *gin.Context) {
+
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -146,6 +215,18 @@ func (h *Handler) Clear(c *gin.Context) {
 		Message: "queue cleared",
 	})
 }
+
+// Clear godoc
+// @Summary Clear the user's queue
+// @Description Removes all items from the authenticated user's queue
+// @Tags queue
+// @Accept json
+// @Produce json
+// @Success 200 {object} response.SuccessResponse{data=queue.MessageResponse}
+// @Failure 401 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Security Bearer
+// @Router /queue [delete]
 
 func getUserIDFromGin(c *gin.Context) (uuid.UUID, bool) {
 	value, exists := c.Get("userID")

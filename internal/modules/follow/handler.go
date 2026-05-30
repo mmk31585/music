@@ -16,6 +16,20 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// FollowArtist godoc
+// @Summary Follow an artist
+// @Description Follows the artist specified by id for the authenticated user.
+// @Tags follow
+// @Accept json
+// @Produce json
+// @Param id path string true "Artist ID"
+// @Success 200 {object} FollowResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Security Bearer
+// @Router /artists/{id}/follow [post]
 func (h *Handler) FollowArtist(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -42,6 +56,19 @@ func (h *Handler) FollowArtist(c *gin.Context) {
 	})
 }
 
+// UnfollowArtist godoc
+// @Summary Unfollow an artist
+// @Description Unfollows the artist specified by id for the authenticated user.
+// @Tags follow
+// @Accept json
+// @Produce json
+// @Param id path string true "Artist ID"
+// @Success 200 {object} FollowResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Security Bearer
+// @Router /artists/{id}/follow [delete]
 func (h *Handler) UnfollowArtist(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -66,6 +93,20 @@ func (h *Handler) UnfollowArtist(c *gin.Context) {
 	})
 }
 
+// FollowUser godoc
+// @Summary Follow a user
+// @Description Follows the user specified by id for the authenticated user.
+// @Tags follow
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {object} FollowResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Security Bearer
+// @Router /users/{id}/follow [post]
 func (h *Handler) FollowUser(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -94,6 +135,19 @@ func (h *Handler) FollowUser(c *gin.Context) {
 	})
 }
 
+// UnfollowUser godoc
+// @Summary Unfollow a user
+// @Description Unfollows the user specified by id for the authenticated user.
+// @Tags follow
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {object} FollowResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Security Bearer
+// @Router /users/{id}/follow [delete]
 func (h *Handler) UnfollowUser(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {

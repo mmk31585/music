@@ -9,6 +9,7 @@ import (
 	"music/internal/modules/catalog/genre"
 	"music/internal/modules/catalog/track"
 	"music/internal/modules/follow"
+	"music/internal/modules/health"
 	"music/internal/modules/history"
 	"music/internal/modules/library"
 	"music/internal/modules/media"
@@ -33,11 +34,15 @@ import (
 func (a *App) RegisterRoutes(r *gin.Engine) {
 	api := r.Group("/api/v1")
 	api.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	sqlDB := stdlib.OpenDBFromPool(a.DB)
 	sqlxDB := sqlx.NewDb(sqlDB, "pgx")
 
 	logger := zap.L()
 	bus := events.NewBus(logger)
+
+	healthHandler := health.NewHandler(a.DB, a.Redis)
+	health.RegisterRoutes(api, healthHandler)
 
 	tokenManager := auth.NewTokenManager(
 		a.Config.Auth.JWTAccessSecret,

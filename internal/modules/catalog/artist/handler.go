@@ -16,6 +16,16 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// List godoc
+// @Summary List artists
+// @Description Returns a paginated list of artists.
+// @Tags artists
+// @Produce json
+// @Param limit query int false "Maximum number of items to return"
+// @Param offset query int false "Number of items to skip"
+// @Success 200 {array} Artist
+// @Failure 500 {object} map[string]interface{}
+// @Router /artists [get]
 func (h *Handler) List(c *gin.Context) {
 	p := common.ParsePagination(c)
 
@@ -27,6 +37,17 @@ func (h *Handler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, items)
 }
 
+// Get godoc
+// @Summary Get artist by ID
+// @Description Returns a single artist by its ID.
+// @Tags artists
+// @Produce json
+// @Param artistID path string true "Artist ID"
+// @Success 200 {object} Artist
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /artists/{artistID} [get]
 func (h *Handler) Get(c *gin.Context) {
 	item, err := h.service.GetByID(c.Request.Context(), c.Param("artistID"))
 	if errors.Is(err, common.ErrNotFound) {
@@ -44,6 +65,18 @@ func (h *Handler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, item)
 }
 
+// Create godoc
+// @Summary Create artist
+// @Description Creates a new artist.
+// @Tags artists
+// @Accept json
+// @Produce json
+// @Param request body CreateRequest true "Artist creation payload"
+// @Success 201 {object} Artist
+// @Failure 400 {object} map[string]interface{}
+// @Failure 409 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /artists [post]
 func (h *Handler) Create(c *gin.Context) {
 	var req CreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -63,6 +96,20 @@ func (h *Handler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, item)
 }
 
+// Update godoc
+// @Summary Update artist
+// @Description Updates an existing artist by ID.
+// @Tags artists
+// @Accept json
+// @Produce json
+// @Param artistID path string true "Artist ID"
+// @Param request body UpdateRequest true "Artist update payload"
+// @Success 200 {object} Artist
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 409 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /artists/{artistID} [put]
 func (h *Handler) Update(c *gin.Context) {
 	var req UpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -91,6 +138,17 @@ func (h *Handler) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, item)
 }
 
+// Delete godoc
+// @Summary Delete artist
+// @Description Deletes an artist by ID.
+// @Tags artists
+// @Produce json
+// @Param artistID path string true "Artist ID"
+// @Success 204 "No Content"
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /artists/{artistID} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	err := h.service.Delete(c.Request.Context(), c.Param("artistID"))
 	if errors.Is(err, common.ErrNotFound) {

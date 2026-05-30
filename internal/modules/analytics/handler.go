@@ -17,6 +17,18 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// TrackEvent godoc
+// @Summary Track analytics event
+// @Description Records an analytics event for an authenticated or anonymous user.
+// @Tags analytics
+// @Accept json
+// @Produce json
+// @Param request body TrackEventRequest true "Analytics event payload"
+// @Success 201 {object} TrackEventResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /analytics/events [post]
 func (h *Handler) TrackEvent(c *gin.Context) {
 	var req TrackEventRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

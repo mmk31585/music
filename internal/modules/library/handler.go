@@ -16,6 +16,21 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// LikeTrack godoc
+// @Summary Like a track
+// @Description Adds a track to the authenticated user's liked tracks.
+// @Tags library
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body LikeTrackRequest true "Like track request"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 409 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/tracks/like [post]
 func (h *Handler) LikeTrack(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -37,6 +52,20 @@ func (h *Handler) LikeTrack(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "track liked"})
 }
 
+// UnlikeTrack godoc
+// @Summary Unlike a track
+// @Description Removes a track from the authenticated user's liked tracks.
+// @Tags library
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param trackId path int true "Track ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/tracks/{trackId}/like [delete]
 func (h *Handler) UnlikeTrack(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -58,6 +87,16 @@ func (h *Handler) UnlikeTrack(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "track unliked"})
 }
 
+// ListLikedTracks godoc
+// @Summary List liked tracks
+// @Description Returns all liked tracks for the authenticated user.
+// @Tags library
+// @Produce json
+// @Security Bearer
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/tracks/liked [get]
 func (h *Handler) ListLikedTracks(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -74,6 +113,21 @@ func (h *Handler) ListLikedTracks(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": items})
 }
 
+// LikeAlbum godoc
+// @Summary Like an album
+// @Description Adds an album to the authenticated user's liked albums.
+// @Tags library
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body LikeAlbumRequest true "Like album request"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 409 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/albums/like [post]
 func (h *Handler) LikeAlbum(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -95,6 +149,20 @@ func (h *Handler) LikeAlbum(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "album liked"})
 }
 
+// UnlikeAlbum godoc
+// @Summary Unlike an album
+// @Description Removes an album from the authenticated user's liked albums.
+// @Tags library
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param albumId path int true "Album ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/albums/{albumId}/like [delete]
 func (h *Handler) UnlikeAlbum(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -116,6 +184,16 @@ func (h *Handler) UnlikeAlbum(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "album unliked"})
 }
 
+// ListLikedAlbums godoc
+// @Summary List liked albums
+// @Description Returns all liked albums for the authenticated user.
+// @Tags library
+// @Produce json
+// @Security Bearer
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/albums/liked [get]
 func (h *Handler) ListLikedAlbums(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -132,6 +210,21 @@ func (h *Handler) ListLikedAlbums(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": items})
 }
 
+// FollowArtist godoc
+// @Summary Follow an artist from library
+// @Description Adds an artist to the authenticated user's followed artists.
+// @Tags library
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body FollowArtistRequest true "Follow artist request"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 409 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/artists/follow [post]
 func (h *Handler) FollowArtist(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -153,6 +246,20 @@ func (h *Handler) FollowArtist(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "artist followed"})
 }
 
+// UnfollowArtist godoc
+// @Summary Unfollow an artist from library
+// @Description Removes an artist from the authenticated user's followed artists.
+// @Tags library
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param artistId path int true "Artist ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/artists/{artistId}/follow [delete]
 func (h *Handler) UnfollowArtist(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -174,6 +281,16 @@ func (h *Handler) UnfollowArtist(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "artist unfollowed"})
 }
 
+// ListFollowedArtists godoc
+// @Summary List followed artists
+// @Description Returns all followed artists for the authenticated user.
+// @Tags library
+// @Produce json
+// @Security Bearer
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/artists/followed [get]
 func (h *Handler) ListFollowedArtists(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -190,6 +307,20 @@ func (h *Handler) ListFollowedArtists(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": items})
 }
 
+// AddPlayHistory godoc
+// @Summary Add play history entry
+// @Description Adds a track to the authenticated user's play history.
+// @Tags library
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body AddPlayHistoryRequest true "Add play history request"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/history [post]
 func (h *Handler) AddPlayHistory(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -211,6 +342,18 @@ func (h *Handler) AddPlayHistory(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "play history added"})
 }
 
+// ListPlayHistory godoc
+// @Summary List play history
+// @Description Returns the authenticated user's play history.
+// @Tags library
+// @Produce json
+// @Security Bearer
+// @Param limit query int false "Maximum number of items to return" default(50)
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/history [get]
 func (h *Handler) ListPlayHistory(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -229,6 +372,18 @@ func (h *Handler) ListPlayHistory(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": items})
 }
 
+// ListRecentlyPlayed godoc
+// @Summary List recently played tracks
+// @Description Returns recently played tracks for the authenticated user.
+// @Tags library
+// @Produce json
+// @Security Bearer
+// @Param limit query int false "Maximum number of items to return" default(20)
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/history/recent [get]
 func (h *Handler) ListRecentlyPlayed(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {

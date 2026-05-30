@@ -16,6 +16,19 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// CreatePlaylist godoc
+// @Summary Create playlist
+// @Description Creates a new playlist for the authenticated user.
+// @Tags playlists
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body CreatePlaylistRequest true "Create playlist request"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /playlists [post]
 func (h *Handler) CreatePlaylist(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -41,6 +54,22 @@ func (h *Handler) CreatePlaylist(c *gin.Context) {
 	})
 }
 
+// UpdatePlaylist godoc
+// @Summary Update playlist
+// @Description Updates an existing playlist owned by the authenticated user.
+// @Tags playlists
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "Playlist ID"
+// @Param request body UpdatePlaylistRequest true "Update playlist request"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /playlists/{id} [put]
 func (h *Handler) UpdatePlaylist(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -72,6 +101,21 @@ func (h *Handler) UpdatePlaylist(c *gin.Context) {
 	})
 }
 
+// DeletePlaylist godoc
+// @Summary Delete playlist
+// @Description Deletes an existing playlist owned by the authenticated user.
+// @Tags playlists
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "Playlist ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /playlists/{id} [delete]
 func (h *Handler) DeletePlaylist(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -96,6 +140,19 @@ func (h *Handler) DeletePlaylist(c *gin.Context) {
 	})
 }
 
+// GetPlaylist godoc
+// @Summary Get playlist
+// @Description Returns playlist details and tracks. Private playlists require owner access.
+// @Tags playlists
+// @Accept json
+// @Produce json
+// @Param id path int true "Playlist ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /playlists/{id} [get]
 func (h *Handler) GetPlaylist(c *gin.Context) {
 	playlistID, err := parseInt64Param(c, "id")
 	if err != nil {
@@ -120,6 +177,15 @@ func (h *Handler) GetPlaylist(c *gin.Context) {
 	})
 }
 
+// ListPublicPlaylists godoc
+// @Summary List public playlists
+// @Description Returns all public playlists.
+// @Tags playlists
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /playlists/public [get]
 func (h *Handler) ListPublicPlaylists(c *gin.Context) {
 	items, err := h.service.ListPublicPlaylists(c.Request.Context())
 	if err != nil {
@@ -133,6 +199,17 @@ func (h *Handler) ListPublicPlaylists(c *gin.Context) {
 	})
 }
 
+// ListMyPlaylists godoc
+// @Summary List my playlists
+// @Description Returns playlists owned by the authenticated user.
+// @Tags playlists
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /playlists/me [get]
 func (h *Handler) ListMyPlaylists(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -152,6 +229,23 @@ func (h *Handler) ListMyPlaylists(c *gin.Context) {
 	})
 }
 
+// AddTrack godoc
+// @Summary Add track to playlist
+// @Description Adds a track to an authenticated user's playlist.
+// @Tags playlists
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "Playlist ID"
+// @Param request body AddTrackRequest true "Add track request"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 409 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /playlists/{id}/tracks [post]
 func (h *Handler) AddTrack(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -182,6 +276,22 @@ func (h *Handler) AddTrack(c *gin.Context) {
 	})
 }
 
+// RemoveTrack godoc
+// @Summary Remove track from playlist
+// @Description Removes a track from an authenticated user's playlist.
+// @Tags playlists
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "Playlist ID"
+// @Param trackId path int true "Track ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /playlists/{id}/tracks/{trackId} [delete]
 func (h *Handler) RemoveTrack(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -212,6 +322,22 @@ func (h *Handler) RemoveTrack(c *gin.Context) {
 	})
 }
 
+// ReorderTrack godoc
+// @Summary Reorder playlist track
+// @Description Updates the position of a track inside an authenticated user's playlist.
+// @Tags playlists
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "Playlist ID"
+// @Param request body ReorderTrackRequest true "Reorder track request"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /playlists/{id}/tracks/reorder [put]
 func (h *Handler) ReorderTrack(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {

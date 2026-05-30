@@ -16,14 +16,17 @@ func NewHandler(service *Service) *Handler {
 }
 
 // GetHistory godoc
-// @Summary      Get listening history
-// @Description  Returns paginated listening history for the current user
-// @Tags         history
-// @Security     Bearer
-// @Param        page  query     int  false  "Page number"
-// @Param        limit query     int  false  "Items per page"
-// @Success      200   {object}  response.Data{data=[]HistoryResponse}
-// @Router       /history [get]
+// @Summary Get listening history
+// @Description Returns paginated listening history for the current user.
+// @Tags history
+// @Produce json
+// @Security Bearer
+// @Param limit query int false "Maximum number of items to return"
+// @Param offset query int false "Number of items to skip"
+// @Success 200 {object} HistoryResponse
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /history [get]
 func (h *Handler) GetHistory(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
