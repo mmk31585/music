@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"music/docs"
 	"net/http"
 	"os"
 	"os/signal"
@@ -32,6 +33,12 @@ func main() {
 	}
 
 	log := application.Logger
+	docs.SwaggerInfo.Title = "Music API"
+	docs.SwaggerInfo.Description = "Music streaming API documentation"
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Host = "localhost:8080"
+	docs.SwaggerInfo.BasePath = "/api/v1"
+	docs.SwaggerInfo.Schemes = []string{"http"}
 
 	go func() {
 		log.Info("starting server",

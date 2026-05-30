@@ -30,10 +30,11 @@ func NewHandler(service *Service) *Handler {
 // @Produce json
 // @Param id path string true "Track ID"
 // @Success 200 {object} response.SuccessResponse
-// @Failure 400 {object} appErrors.AppError
-// @Failure 403 {object} appErrors.AppError
-// @Failure 404 {object} appErrors.AppError
-// @Failure 500 {object} appErrors.AppError
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 401 {object} response.ErrorResponse
+// @Failure 403 {object} response.ErrorResponse
+// @Failure 404 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
 // @Router /player/tracks/{id} [get]
 func (h *Handler) GetPlaybackTrack(c *gin.Context) {
 	trackID := c.Param("id")
