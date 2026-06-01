@@ -1,11 +1,11 @@
 package app
 
 import (
-	"music/internal/platform/events"
+	"music/internal/platform/eventbus"
 	"net/http"
 
-	"music/internal/common/validator"
-	"music/internal/config"
+	"music/internal/platform/validation"
+	"music/internal/platform/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"

@@ -8,8 +8,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"music/internal/common/response"
-	"music/internal/common/validator"
+	"music/internal/shared/utils"
+	"music/internal/platform/validation"
 )
 
 type Handler struct {

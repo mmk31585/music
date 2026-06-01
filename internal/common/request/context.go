@@ -3,7 +3,7 @@ package request
 import (
 	"net/http"
 
-	"music/internal/common/middleware"
+	"music/internal/shared/middleware"
 )
 
 func RequestID(r *http.Request) string {

@@ -3,7 +3,7 @@ package validator
 import (
 	"strings"
 
-	apperrors "music/internal/common/errors"
+	apperrors "music/internal/contracts/errors"
 
 	govalidator "github.com/go-playground/validator/v10"
 )

@@ -2,7 +2,7 @@ package app
 
 import (
 	"music/internal/modules/analytics"
-	"music/internal/modules/auth"
+	"music/internal/modules/identity"
 	"music/internal/modules/catalog"
 	"music/internal/modules/catalog/album"
 	artist "music/internal/modules/catalog/artist"
@@ -20,7 +20,7 @@ import (
 	"music/internal/modules/recommendation"
 	"music/internal/modules/search"
 	"music/internal/modules/subscription"
-	"music/internal/platform/events"
+	"music/internal/platform/eventbus"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/stdlib"

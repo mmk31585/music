@@ -3,7 +3,7 @@ package history
 import (
 	"context"
 
-	"music/internal/platform/events"
+	"music/internal/platform/eventbus"
 )
 
 type EventHandler struct {

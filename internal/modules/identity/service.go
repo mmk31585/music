@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	apperrors "music/internal/common/errors"
+	apperrors "music/internal/contracts/errors"
 )
 
 type Service struct {

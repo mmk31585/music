@@ -3,7 +3,7 @@ package catalog
 import (
 	"github.com/gin-gonic/gin"
 
-	"music/internal/modules/auth"
+	"music/internal/modules/identity"
 	"music/internal/modules/catalog/album"
 	"music/internal/modules/catalog/artist"
 	"music/internal/modules/catalog/genre"
