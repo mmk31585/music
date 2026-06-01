@@ -7,7 +7,7 @@ import (
 	"errors"
 	"time"
 
-	apperrors "music/internal/common/errors"
+	apperrors "music/internal/contracts/errors"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"

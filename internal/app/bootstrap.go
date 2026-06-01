@@ -6,12 +6,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"music/internal/common/middleware"
-	"music/internal/common/validator"
-	"music/internal/config"
+	"music/internal/shared/middleware"
+	"music/internal/platform/validation"
+	"music/internal/platform/config"
 	"music/internal/platform/cache"
 	"music/internal/platform/database"
-	"music/internal/platform/events"
+	"music/internal/platform/eventbus"
 	platformLogger "music/internal/platform/logger"
 )
 

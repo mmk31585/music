@@ -2,7 +2,7 @@ package response
 
 import (
 	"github.com/gin-gonic/gin"
-	apperrors "music/internal/common/errors"
+	apperrors "music/internal/contracts/errors"
 )
 
 // ErrorResponse represents the standard error payload structure.

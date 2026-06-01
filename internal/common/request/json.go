@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	apperrors "music/internal/common/errors"
+	apperrors "music/internal/contracts/errors"
 )
 
 const maxJSONBodySize = 1 << 20 // 1 MB

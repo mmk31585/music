@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	apperrors "music/internal/common/errors"
+	apperrors "music/internal/contracts/errors"
 )
 
 // ValidationError sends a 422 Unprocessable Entity response for validation failures.

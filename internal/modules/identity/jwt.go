@@ -3,7 +3,7 @@ package auth
 import (
 	"time"
 
-	apperrors "music/internal/common/errors"
+	apperrors "music/internal/contracts/errors"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"

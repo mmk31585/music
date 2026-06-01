@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	apperrors "music/internal/common/errors"
-	"music/internal/common/response"
+	apperrors "music/internal/contracts/errors"
+	"music/internal/shared/utils"
 )
 
 // Context keys for Gin

@@ -7,8 +7,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	appErr "music/internal/common/errors"
-	"music/internal/common/response"
+	appErr "music/internal/contracts/errors"
+	"music/internal/shared/utils"
 )
 
 type Handler struct {
