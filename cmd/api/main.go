@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"music/internal/app"
+	"music/internal/platform/common"
 
 	"go.uber.org/zap"
 )
