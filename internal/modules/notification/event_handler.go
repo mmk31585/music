@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"music/internal/platform/events"
+	"music/internal/platform/eventbus"
 )
 
 type EventHandler struct {
