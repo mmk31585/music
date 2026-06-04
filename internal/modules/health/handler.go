@@ -7,8 +7,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 
-	apperrors "music/internal/common/errors"
-	"music/internal/common/response"
+	apperrors "music/internal/contracts/errors"
+	"music/internal/shared/utils"
 )
 
 type Handler struct {

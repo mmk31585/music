@@ -2,7 +2,7 @@ package track
 
 import (
 	"errors"
-	"music/internal/modules/catalog/common"
+	"music/internal/modules/catalog/transport"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

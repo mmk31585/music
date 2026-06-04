@@ -2,7 +2,7 @@ package genre
 
 import (
 	"context"
-	"music/internal/modules/catalog/common"
+	"music/internal/modules/catalog/transport"
 )
 
 type Service struct {

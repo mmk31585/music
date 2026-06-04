@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"music/internal/app"
+	"music/internal/platform/common"
 
 	"go.uber.org/zap"
 )
@@ -27,7 +27,7 @@ import (
 func main() {
 	ctx := context.Background()
 
-	application, err := app.Bootstrap(ctx)
+	application, err := common.Bootstrap(ctx)
 	if err != nil {
 		panic(err)
 	}
