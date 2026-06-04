@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"music/internal/platform/events"
+	"music/internal/platform/eventbus"
 )
 
 var (

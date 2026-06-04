@@ -3,7 +3,7 @@ package genre
 import (
 	"context"
 	"database/sql"
-	"music/internal/modules/catalog/common"
+	"music/internal/modules/catalog/transport"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
