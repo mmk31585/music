@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type Handler struct {
@@ -109,7 +110,16 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
+	if req.ArtistID == uuid.Nil && len(req.Artists) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "artist_id or artists is required"})
+		return
+	}
+
 	item, err := h.service.Create(c.Request.Context(), req)
+	if errors.Is(err, common.ErrInvalidInput) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid track payload"})
+		return
+	}
 	if errors.Is(err, common.ErrForeignKey) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid album_id, artists, or genre_ids"})
 		return
@@ -119,9 +129,11 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create track"})
+		c.Error(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	c.JSON(http.StatusCreated, item)
 }
 

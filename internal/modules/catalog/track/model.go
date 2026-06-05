@@ -58,20 +58,22 @@ type Track struct {
 }
 
 type CreateRequest struct {
-	// Deprecated compatibility field.
-	// If artists[] is empty, this will become the primary artist.
 	ArtistID uuid.UUID `db:"artist_id" json:"artist_id"`
 
 	Artists []TrackArtistRequest `json:"artists"`
 
+	// compatibility with current frontend
+	ArtistIDs []uuid.UUID          `json:"artist_ids"`
+	Credits   []TrackArtistRequest `json:"credits"`
+
 	AlbumID         *uuid.UUID `db:"album_id" json:"album_id"`
-	Title           string     `db:"title" json:"title" validate:"required,min=1,max=250"`
-	DurationSeconds int        `db:"duration_seconds" json:"duration_seconds" validate:"required,min=0"`
-	TrackNumber     *int       `db:"track_number" json:"track_number" validate:"omitempty,min=1"`
+	Title           string     `db:"title" json:"title"`
+	DurationSeconds int        `db:"duration_seconds" json:"duration_seconds"`
+	TrackNumber     *int       `db:"track_number" json:"track_number"`
 	Explicit        *bool      `db:"explicit" json:"explicit"`
 
-	AudioURL *string `db:"audio_url" json:"audio_url" validate:"omitempty,url"`
-	CoverURL *string `db:"cover_url" json:"cover_url" validate:"omitempty,url"`
+	AudioURL *string `db:"audio_url" json:"audio_url"`
+	CoverURL *string `db:"cover_url" json:"cover_url"`
 
 	AudioMediaID *uuid.UUID `db:"audio_media_id" json:"audio_media_id"`
 	CoverMediaID *uuid.UUID `db:"cover_media_id" json:"cover_media_id"`

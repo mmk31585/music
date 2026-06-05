@@ -62,6 +62,10 @@ func Bootstrap(ctx context.Context) (*App, error) {
 	router.Use(middleware.CORS(cfg.CORS.AllowedOrigins))
 	router.Use(middleware.GinZapLogger(log))
 	router.Use(middleware.GinZapRecovery(log))
+	// Add body parsing middleware for multipart forms
+	router.Use(gin.Recovery())
+	router.Use(gin.Logger())
+	//router.Use(gin.BodyLimitMiddleware(cfg.Media.MaxFileSizeMB * 1024 * 1024))
 	router.Static("/uploads", app.Config.Storage.Local.BaseDir)
 
 	app.RegisterRoutes(router)

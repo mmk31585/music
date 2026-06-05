@@ -3,6 +3,7 @@ package track
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 	"music/internal/modules/catalog/common"
 
 	"github.com/google/uuid"
@@ -59,15 +60,42 @@ func primaryArtistID(artists []TrackArtistRequest, fallback uuid.UUID) uuid.UUID
 }
 
 func (r *Repository) Create(ctx context.Context, req CreateRequest) (*Track, error) {
+	slog.InfoContext(ctx, "creating track",
+		"title", req.Title,
+		"album_id", req.AlbumID,
+		"artist_id", req.ArtistID,
+		"artist_ids_count", len(req.ArtistIDs),
+		"artists_count", len(req.Artists),
+		"credits_count", len(req.Credits),
+	)
+
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
+		slog.ErrorContext(ctx, "failed to begin transaction", "error", err)
 		return nil, err
 	}
-	defer func() { _ = tx.Rollback() }()
 
-	artists := normalizeTrackArtists(req.Artists, req.ArtistID)
-	mainArtistID := primaryArtistID(artists, req.ArtistID)
+	defer func() {
+		if err := tx.Rollback(); err == nil {
+			slog.DebugContext(ctx, "transaction rolled back")
+		}
+	}()
+
+	fallbackArtistID := req.ArtistID
+	if fallbackArtistID == uuid.Nil && len(req.ArtistIDs) > 0 {
+		fallbackArtistID = req.ArtistIDs[0]
+	}
+
+	artistsInput := req.Artists
+	if len(artistsInput) == 0 && len(req.Credits) > 0 {
+		artistsInput = req.Credits
+	}
+
+	artists := normalizeTrackArtists(artistsInput, fallbackArtistID)
+
+	mainArtistID := primaryArtistID(artists, fallbackArtistID)
 	if mainArtistID == uuid.Nil {
+		slog.WarnContext(ctx, "invalid main artist id")
 		return nil, common.ErrInvalidInput
 	}
 
@@ -83,7 +111,14 @@ func (r *Repository) Create(ctx context.Context, req CreateRequest) (*Track, err
 		isPublic = *req.IsPublic
 	}
 
+	slog.DebugContext(ctx, "prepared track data",
+		"slug", slug,
+		"explicit", explicit,
+		"is_public", isPublic,
+	)
+
 	var item Track
+
 	err = tx.GetContext(ctx, &item, `
 		INSERT INTO tracks (
 			artist_id,
@@ -131,25 +166,74 @@ func (r *Repository) Create(ctx context.Context, req CreateRequest) (*Track, err
 		req.CoverMediaID,
 		isPublic,
 	)
+
 	if err != nil {
+		slog.ErrorContext(ctx, "failed to insert track",
+			"title", req.Title,
+			"artist_id", mainArtistID,
+			"error", err,
+		)
 		return nil, common.MapPGError(err)
 	}
 
+	slog.InfoContext(ctx, "track inserted",
+		"track_id", item.ID,
+	)
+
 	if err := r.replaceArtistsTx(ctx, tx, item.ID, artists); err != nil {
+		slog.ErrorContext(ctx, "failed to replace track artists",
+			"track_id", item.ID,
+			"error", err,
+		)
 		return nil, err
 	}
+
+	slog.DebugContext(ctx, "track artists updated",
+		"track_id", item.ID,
+		"artists_count", len(artists),
+	)
 
 	if err := r.replaceGenresTx(ctx, tx, item.ID, req.GenreIDs); err != nil {
+		slog.ErrorContext(ctx, "failed to replace track genres",
+			"track_id", item.ID,
+			"error", err,
+		)
 		return nil, err
 	}
+
+	slog.DebugContext(ctx, "track genres updated",
+		"track_id", item.ID,
+		"genres_count", len(req.GenreIDs),
+	)
 
 	if err := tx.Commit(); err != nil {
+		slog.ErrorContext(ctx, "failed to commit transaction",
+			"track_id", item.ID,
+			"error", err,
+		)
 		return nil, err
 	}
 
-	return r.GetByID(ctx, item.ID)
-}
+	slog.InfoContext(ctx, "track created successfully",
+		"track_id", item.ID,
+		"title", item.Title,
+	)
 
+	result, err := r.GetByID(ctx, item.ID)
+	if err != nil {
+		slog.ErrorContext(ctx, "track created but failed to reload",
+			"track_id", item.ID,
+			"error", err,
+		)
+		return nil, err
+	}
+
+	slog.DebugContext(ctx, "track loaded successfully",
+		"track_id", item.ID,
+	)
+
+	return result, nil
+}
 func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*Track, error) {
 	var item Track
 	err := r.db.GetContext(ctx, &item, `

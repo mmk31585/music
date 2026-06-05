@@ -57,7 +57,9 @@ func (s *Service) Upload(
 	category UploadCategory,
 	file multipart.File,
 	header *multipart.FileHeader,
+	createdBy *uuid.UUID,
 ) (*UploadResponse, error) {
+
 	if file == nil || header == nil {
 		return nil, ErrNoFileProvided
 	}
@@ -107,6 +109,7 @@ func (s *Service) Upload(
 
 	existing, err := s.repo.FindByChecksum(ctx, hash)
 	if err != nil {
+		log.Printf("[MEDIA FIND BY CHECKSUM FAIL] hash=%s err=%+v", hash, err)
 		return nil, err
 	}
 
@@ -162,9 +165,13 @@ func (s *Service) Upload(
 		Height:           nil,
 		OriginalFilename: &header.Filename,
 		Metadata:         metadata,
-		CreatedBy:        nil,
+		CreatedBy:        createdBy,
 	})
 	if err != nil {
+		log.Printf("[MEDIA DB CREATE FAIL] key=%s url=%s mime=%s size=%d createdBy=%v err=%+v",
+			key, url, mimeType, size, createdBy, err,
+		)
+
 		_ = s.storage.Delete(ctx, key)
 		return nil, err
 	}

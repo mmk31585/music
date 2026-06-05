@@ -6,8 +6,6 @@ import { TrackApiRoutes } from './enums'
 import { TrackSchema, type Track, type TrackCreatePayload, type TrackUpdatePayload } from './types'
 
 export const useTracksApi = () => {
-  // ==================== PUBLIC ====================
-
   const getTracks = async (config?: UseRequestConfig<Track[]>) => {
     return useRequest<Track, true>(
       TrackApiRoutes.LIST,
@@ -31,8 +29,6 @@ export const useTracksApi = () => {
       },
     )
   }
-
-  // ==================== ADMIN ====================
 
   const adminGetTracks = async (config?: UseRequestConfig<Track[]>) => {
     return useRequest<Track, true>(
@@ -64,19 +60,12 @@ export const useTracksApi = () => {
     )
   }
 
-  /**
-   * Upload audio only.
-   *
-   * Backend field should match:
-   * Go: c.FormFile("trackAudio")
-   */
   const adminUploadTrackAudio = async (
     file: File,
     config?: UseRequestConfig<UploadResponse>,
     requestConfig?: Pick<AxiosRequestConfig, 'onUploadProgress' | 'signal'>,
   ) => {
     const formData = new FormData()
-
     formData.append('trackAudio', file)
 
     return useRequest<UploadResponse>(
@@ -94,22 +83,12 @@ export const useTracksApi = () => {
     )
   }
 
-  /**
-   * Upload cover only.
-   *
-   * Backend field should match:
-   * Go: c.FormFile("trackCover")
-   *
-   * If your backend uses another field name, change this:
-   * formData.append('trackCover', file)
-   */
   const adminUploadTrackCover = async (
     file: File,
     config?: UseRequestConfig<UploadResponse>,
     requestConfig?: Pick<AxiosRequestConfig, 'onUploadProgress' | 'signal'>,
   ) => {
     const formData = new FormData()
-
     formData.append('trackCover', file)
 
     return useRequest<UploadResponse>(
@@ -158,11 +137,8 @@ export const useTracksApi = () => {
   }
 
   return {
-    // Public
     getTracks,
     getTrack,
-
-    // Admin
     adminGetTracks,
     adminCreateTrack,
     adminUploadTrackAudio,

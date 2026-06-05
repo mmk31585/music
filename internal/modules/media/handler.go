@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	appErr "music/internal/common/errors"
 	"music/internal/common/response"
@@ -66,8 +67,10 @@ func (h *Handler) UploadAdminMedia(c *gin.Context) {
 	defer func(file multipart.File) {
 		_ = file.Close()
 	}(file)
+	createdBy := getUserIDFromContext(c)
 
-	res, err := h.service.Upload(c.Request.Context(), category, file, header)
+	res, err := h.service.Upload(c.Request.Context(), category, file, header, createdBy)
+
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrFileTooLarge):
@@ -140,4 +143,34 @@ func detectUploadField(r *http.Request) (UploadCategory, string, error) {
 	}
 
 	return selectedCategory, selectedName, nil
+}
+func getUserIDFromContext(c *gin.Context) *uuid.UUID {
+	keys := []string{"user_id", "userID", "userId", "sub"}
+
+	for _, key := range keys {
+		raw, exists := c.Get(key)
+		if !exists || raw == nil {
+			continue
+		}
+
+		switch v := raw.(type) {
+		case uuid.UUID:
+			return &v
+
+		case *uuid.UUID:
+			return v
+
+		case string:
+			if v == "" {
+				continue
+			}
+
+			parsed, err := uuid.Parse(v)
+			if err == nil {
+				return &parsed
+			}
+		}
+	}
+
+	return nil
 }

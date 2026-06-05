@@ -4,6 +4,7 @@ import {
   type Track,
   type TrackCreatePayload,
   type TrackUpdatePayload,
+  type TrackArtistRequest,
 } from '@/services/api/catalog/tracks'
 import type { UploadResponse } from '@/services/api/media'
 import { useLyricsApi } from '@/services/api/lyrics'
@@ -11,19 +12,19 @@ import { useLyricsApi } from '@/services/api/lyrics'
 export type TrackCreditPayload = {
   artist_id: string | number
   role: string
+  position?: number
 }
 
 export type TrackFormPayload = {
   title: string
+  artist_id: string | number
   album_id?: string | number | null
   duration_seconds?: number | null
   audio_url?: string | null
   cover_url?: string | null
 
-  artist_ids?: Array<string | number>
-  featured_artist_ids?: Array<string | number>
+  artists?: TrackCreditPayload[]
   genre_ids?: Array<string | number>
-  credits?: TrackCreditPayload[]
 
   track_number?: number | null
   disc_number?: number | null
@@ -44,52 +45,71 @@ export type TrackFormPayload = {
   coverFile?: File | null
 }
 
+function normalizeArtists(payload: TrackFormPayload): TrackArtistRequest[] {
+  if (payload.artists?.length) {
+    return payload.artists.map((artist, index) => ({
+      artist_id: artist.artist_id,
+      role: artist.role || (index === 0 ? 'primary' : 'featured'),
+      position: artist.position ?? index,
+    }))
+  }
+
+  return [
+    {
+      artist_id: payload.artist_id,
+      role: 'primary',
+      position: 0,
+    },
+  ]
+}
+
 function toCreatePayload(payload: TrackFormPayload): TrackCreatePayload {
+  const primaryArtistId = payload.artist_ids?.[0]
+
+  if (!primaryArtistId) {
+    throw new Error('artist_id is required')
+  }
+
   return {
     title: payload.title,
+    artist_id: primaryArtistId,
+    artists: (payload.credits ?? []).length
+      ? payload.credits!.map((credit, index) => ({
+          artist_id: credit.artist_id,
+          role: credit.role,
+          position: index,
+        }))
+      : [
+          {
+            artist_id: primaryArtistId,
+            role: 'primary',
+            position: 0,
+          },
+        ],
     album_id: payload.album_id ?? null,
     duration_seconds: payload.duration_seconds ?? null,
     audio_url: payload.audio_url ?? null,
     cover_url: payload.cover_url ?? null,
-    artist_ids: payload.artist_ids ?? [],
-    featured_artist_ids: payload.featured_artist_ids ?? [],
     genre_ids: payload.genre_ids ?? [],
-    credits: payload.credits ?? [],
     track_number: payload.track_number ?? null,
-    disc_number: payload.disc_number ?? null,
-    year: payload.year ?? null,
-    composer: payload.composer ?? null,
-    album_artist: payload.album_artist ?? null,
     explicit: payload.explicit ?? false,
-    isrc: payload.isrc ?? null,
-    language: payload.language ?? null,
-    release_date: payload.release_date ?? null,
-    label: payload.label ?? null,
-  } as TrackCreatePayload
+  }
 }
+
 
 function toUpdatePayload(payload: TrackFormPayload): TrackUpdatePayload {
   return {
     title: payload.title,
+    artist_id: payload.artist_id ?? null,
+    artists: normalizeArtists(payload),
     album_id: payload.album_id ?? null,
     duration_seconds: payload.duration_seconds ?? null,
     audio_url: payload.audio_url ?? null,
     cover_url: payload.cover_url ?? null,
-    artist_ids: payload.artist_ids ?? [],
-    featured_artist_ids: payload.featured_artist_ids ?? [],
     genre_ids: payload.genre_ids ?? [],
-    credits: payload.credits ?? [],
     track_number: payload.track_number ?? null,
-    disc_number: payload.disc_number ?? null,
-    year: payload.year ?? null,
-    composer: payload.composer ?? null,
-    album_artist: payload.album_artist ?? null,
     explicit: payload.explicit ?? false,
-    isrc: payload.isrc ?? null,
-    language: payload.language ?? null,
-    release_date: payload.release_date ?? null,
-    label: payload.label ?? null,
-  } as TrackUpdatePayload
+  }
 }
 
 function getUploadedAudioUrl(uploaded: UploadResponse): string | null {
@@ -110,12 +130,7 @@ export function useAdminTracks() {
     adminDeleteTrack,
   } = useTracksApi()
 
-  const {
-    getTrackLyrics,
-    adminCreateLyrics,
-    adminUpdateLyrics,
-    adminDeleteLyrics,
-  } = useLyricsApi()
+  const { getTrackLyrics, adminCreateLyrics, adminUpdateLyrics, adminDeleteLyrics } = useLyricsApi()
 
   const tracks = ref<Track[]>([])
   const loading = ref(false)
@@ -164,7 +179,7 @@ export function useAdminTracks() {
         return
       }
     } catch {
-      // Treat missing lyrics as create case.
+      // missing lyrics -> create
     }
 
     if (!content) return
