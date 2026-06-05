@@ -49,7 +49,7 @@ func (r *Repository) AlbumExists(ctx context.Context, albumID int64) (bool, erro
 func (r *Repository) ArtistExists(ctx context.Context, artistID int64) (bool, error) {
 	var exists bool
 	err := r.db.QueryRowContext(ctx,
-		`SELECT EXISTS(SELECT 1 FROM artist WHERE id = $1)`,
+		`SELECT EXISTS(SELECT 1 FROM artists WHERE id = $1)`,
 		artistID,
 	).Scan(&exists)
 	return exists, err

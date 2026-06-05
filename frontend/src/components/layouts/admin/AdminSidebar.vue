@@ -7,7 +7,6 @@
       >
         A
       </div>
-
       <div>
         <h1 class="text-lg font-bold text-white">Admin Panel</h1>
         <p class="text-xs text-slate-400">Catalog & media control</p>
@@ -25,14 +24,7 @@
         <span>Dashboard</span>
       </RouterLink>
 
-      <RouterLink
-        to="/admin/media"
-        active-class="bg-white/10 text-white"
-        class="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-300 transition hover:bg-white/5 hover:text-white"
-      >
-        <i class="pi pi-upload" />
-        <span>Media Upload</span>
-      </RouterLink>
+
 
       <RouterLink
         to="/admin/catalog"
@@ -50,7 +42,7 @@
 
         <div class="space-y-2">
           <RouterLink
-            to="/admin/catalog/tracks"
+            to="/admin/tracks"
             active-class="bg-[#1db954]/15 text-[#1db954]"
             class="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-300 transition hover:bg-white/5 hover:text-white"
           >
@@ -119,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { useAuth } from '@/composables/auth/useAuth'
+import { useAuth } from '@/composables/auth/useAuth.ts'
 
 const { logout } = useAuth()
 

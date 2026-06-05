@@ -31,9 +31,11 @@ func (h *Handler) ListPublic(c *gin.Context) {
 
 	items, err := h.service.List(c.Request.Context(), p.Limit, p.Offset, true)
 	if err != nil {
+		c.Error(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list tracks"})
 		return
 	}
+
 	c.JSON(http.StatusOK, items)
 }
 
@@ -109,7 +111,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 	item, err := h.service.Create(c.Request.Context(), req)
 	if errors.Is(err, common.ErrForeignKey) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid artist_id, album_id, or genre_ids"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid album_id, artists, or genre_ids"})
 		return
 	}
 	if errors.Is(err, common.ErrConflict) {
@@ -189,4 +191,90 @@ func (h *Handler) Delete(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusNoContent)
+}
+func (h *Handler) Credits(c *gin.Context) {
+	items, err := h.service.ListCredits(c.Request.Context(), c.Param("trackID"))
+	if errors.Is(err, common.ErrInvalidInput) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid track id"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list track credits"})
+		return
+	}
+
+	c.JSON(http.StatusOK, items)
+}
+
+func (h *Handler) ReplaceCredits(c *gin.Context) {
+	var req []TrackCreditRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	items, err := h.service.ReplaceCredits(c.Request.Context(), c.Param("trackID"), req)
+	if errors.Is(err, common.ErrInvalidInput) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid track id or credits"})
+		return
+	}
+	if errors.Is(err, common.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "track not found"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to replace track credits"})
+		return
+	}
+
+	c.JSON(http.StatusOK, items)
+}
+func (h *Handler) Artists(c *gin.Context) {
+	trackID := c.Param("trackID")
+
+	items, err := h.service.ListArtists(c.Request.Context(), trackID)
+	if err != nil {
+		switch err {
+		case common.ErrInvalidInput:
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		case common.ErrNotFound:
+			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": err.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "failed to fetch track artists"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    items,
+	})
+}
+
+func (h *Handler) ReplaceArtists(c *gin.Context) {
+	trackID := c.Param("trackID")
+
+	var req []TrackArtistRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid request body"})
+		return
+	}
+
+	items, err := h.service.ReplaceArtists(c.Request.Context(), trackID, req)
+	if err != nil {
+		switch err {
+		case common.ErrInvalidInput:
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		case common.ErrNotFound:
+			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": err.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "failed to replace track artists"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    items,
+	})
 }

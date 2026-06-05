@@ -11,5 +11,6 @@
 </template>
 
 <script setup lang="ts">
-import { AdminSectionHeader, AdminGenresCard } from '@/components/admin'
+import AdminSectionHeader from '@/components/admin/AdminSectionHeader.vue'
+import AdminGenresCard from '@/components/admin/AdminGenresCard.vue'
 </script>

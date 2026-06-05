@@ -12,12 +12,20 @@ export function useAdminCatalog() {
 
   const loading = computed(() => {
     return (
-      tracks.loading.value || artists.loading.value || albums.loading.value || genres.loading.value
+      tracks.loading.value ||
+      artists.loading.value ||
+      albums.loading.value ||
+      genres.loading.value
     )
   })
 
   const saving = computed(() => {
-    return tracks.saving.value || artists.saving.value || albums.saving.value || genres.saving.value
+    return (
+      tracks.saving.value ||
+      artists.saving.value ||
+      albums.saving.value ||
+      genres.saving.value
+    )
   })
 
   const deleting = computed(() => {

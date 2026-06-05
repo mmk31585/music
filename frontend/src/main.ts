@@ -12,6 +12,8 @@ import PrimeVue from 'primevue/config'
 import { IndigoPreset, primeLocale } from '@/utils'
 import ToastService from 'primevue/toastservice'
 import ConfirmationService from 'primevue/confirmationservice'
+import { Buffer } from 'buffer'
+  ;(globalThis as any).Buffer = Buffer
 
 
 const app = createApp(App)

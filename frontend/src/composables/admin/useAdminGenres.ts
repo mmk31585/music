@@ -1,11 +1,20 @@
 import { ref } from 'vue'
-import { useCatalogApi } from '@/services/api/catalog'
-import type { Genre } from '@/services/api/catalog'
+import {
+  useGenresApi,
+  type Genre,
+  type GenreCreatePayload,
+  type GenreUpdatePayload,
+} from '@/services/api/catalog/genres'
 
-export type GenreFormPayload = Partial<Genre>
+export type GenreFormPayload = GenreCreatePayload & GenreUpdatePayload
 
 export function useAdminGenres() {
-  const api = useCatalogApi()
+  const {
+    adminGetGenres,
+    adminCreateGenre,
+    adminUpdateGenre,
+    adminDeleteGenre,
+  } = useGenresApi()
 
   const genres = ref<Genre[]>([])
   const loading = ref(false)
@@ -18,7 +27,7 @@ export function useAdminGenres() {
     error.value = null
 
     try {
-      const response = await api.adminGetGenres()
+      const response = await adminGetGenres()
       genres.value = response
       return response
     } catch (err) {
@@ -34,10 +43,8 @@ export function useAdminGenres() {
     error.value = null
 
     try {
-      const created = await api.adminCreateGenre(payload)
-
+      const created = await adminCreateGenre(payload)
       genres.value = [created, ...genres.value]
-
       return created
     } catch (err) {
       error.value = err
@@ -52,12 +59,10 @@ export function useAdminGenres() {
     error.value = null
 
     try {
-      const updated = await api.adminUpdateGenre(id, payload)
-
+      const updated = await adminUpdateGenre(id, payload)
       genres.value = genres.value.map((genre) =>
         String(genre.id) === String(id) ? updated : genre,
       )
-
       return updated
     } catch (err) {
       error.value = err
@@ -72,8 +77,7 @@ export function useAdminGenres() {
     error.value = null
 
     try {
-      await api.adminDeleteGenre(id)
-
+      await adminDeleteGenre(id)
       genres.value = genres.value.filter((genre) => String(genre.id) !== String(id))
     } catch (err) {
       error.value = err

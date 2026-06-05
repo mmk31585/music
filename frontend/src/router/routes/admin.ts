@@ -1,68 +1,63 @@
 import type { RouteRecordRaw } from 'vue-router'
 import LayoutAdmin from '@/layouts/LayoutAdmin.vue'
-import { useUserAuthStore } from '@/stores'
 
 export const adminRoutes: RouteRecordRaw[] = [
   {
     path: '/admin',
     component: LayoutAdmin,
-    meta: { requiresAuth: true, requiresRole: 'admin' },
+    meta: {
+      requiresAuth: true,
+      requiresRole: 'admin',
+    },
     children: [
       {
         path: '',
         name: 'admin.dashboard',
         component: () => import('@/pages/admin/PageAdminDashboard.vue'),
-      },
-      {
-        path: 'media',
-        name: 'admin.media',
-        component: () => import('@/pages/admin/PageAdminMediaUpload.vue'),
+        meta: {
+          title: 'Admin Dashboard',
+        },
       },
       {
         path: 'catalog',
         name: 'admin.catalog',
         component: () => import('@/pages/admin/PageAdminCatalog.vue'),
+        meta: {
+          title: 'Catalog',
+        },
       },
       {
-        path: 'catalog/tracks',
-        name: 'admin.catalog.tracks',
+        path: 'tracks',
+        name: 'admin.tracks',
         component: () => import('@/pages/admin/PageAdminTracks.vue'),
+        meta: {
+          title: 'Tracks',
+        },
       },
       {
-        path: '/admin/artist',
-        name: 'AdminArtists',
+        path: 'artists',
+        name: 'admin.artists',
         component: () => import('@/pages/admin/AdminArtistsPage.vue'),
+        meta: {
+          title: 'Artists',
+        },
       },
       {
-        path: '/admin/albums',
-        name: 'AdminAlbums',
+        path: 'albums',
+        name: 'admin.albums',
         component: () => import('@/pages/admin/AdminAlbumsPage.vue'),
+        meta: {
+          title: 'Albums',
+        },
       },
       {
-        path: '/admin/genres',
-        name: 'AdminGenres',
+        path: 'genres',
+        name: 'admin.genres',
         component: () => import('@/pages/admin/AdminGenresPage.vue'),
+        meta: {
+          title: 'Genres',
+        },
       },
     ],
   },
 ]
-
-export function setupRouteGuards(router: import('vue-router').Router) {
-  router.beforeEach(async (to) => {
-    const auth = useUserAuthStore()
-
-    if (to.meta.requiresAuth && !auth.isAuthenticated) {
-      return { name: 'auth.login' }
-    }
-
-    if (to.meta.guestOnly && auth.isAuthenticated) {
-      return { name: 'app.home' }
-    }
-
-    if (to.meta.requiresRole === 'admin' && !auth.isAdmin) {
-      return { name: 'app.home' }
-    }
-
-    return true
-  })
-}

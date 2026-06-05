@@ -11,7 +11,7 @@
       <div class="flex items-center gap-3">
         <RouterLink
           to="/admin/media"
-          class="rounded-full bg-[#1db954] px-4 py-2 text-sm font-medium text-black transition hover:opacity-90"
+          class="rounded-full bg-[#1db954] px-4 py-2 text-sm font-semibold text-black transition hover:opacity-90"
         >
           <i class="pi pi-upload mr-2" />
           Upload

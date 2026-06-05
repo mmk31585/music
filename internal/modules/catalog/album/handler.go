@@ -172,3 +172,72 @@ func (h *Handler) Delete(c *gin.Context) {
 	}
 	c.Status(http.StatusNoContent)
 }
+func (h *Handler) Tracks(c *gin.Context) {
+	p := common.ParsePagination(c)
+
+	items, err := h.service.ListTracks(
+		c.Request.Context(),
+		c.Param("albumID"),
+		p.Limit,
+		p.Offset,
+	)
+	if errors.Is(err, common.ErrInvalidInput) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid album id"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list album tracks"})
+		return
+	}
+
+	c.JSON(http.StatusOK, items)
+}
+func (h *Handler) Artists(c *gin.Context) {
+	albumID := c.Param("albumID")
+
+	items, err := h.service.ListArtists(c.Request.Context(), albumID)
+	if err != nil {
+		switch err {
+		case common.ErrInvalidInput:
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		case common.ErrNotFound:
+			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": err.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "failed to fetch album artists"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    items,
+	})
+}
+
+func (h *Handler) ReplaceArtists(c *gin.Context) {
+	albumID := c.Param("albumID")
+
+	var req []AlbumArtistRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid request body"})
+		return
+	}
+
+	items, err := h.service.ReplaceArtists(c.Request.Context(), albumID, req)
+	if err != nil {
+		switch err {
+		case common.ErrInvalidInput:
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		case common.ErrNotFound:
+			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": err.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "failed to replace album artists"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    items,
+	})
+}

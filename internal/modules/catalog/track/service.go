@@ -44,3 +44,37 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 	}
 	return s.repo.Delete(ctx, uid)
 }
+func (s *Service) ListCredits(ctx context.Context, id string) ([]TrackCredit, error) {
+	uid, err := common.ParseUUID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.repo.ListCredits(ctx, uid)
+}
+
+func (s *Service) ReplaceCredits(ctx context.Context, id string, credits []TrackCreditRequest) ([]TrackCredit, error) {
+	uid, err := common.ParseUUID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.repo.ReplaceCredits(ctx, uid, credits)
+}
+func (s *Service) ListArtists(ctx context.Context, id string) ([]TrackArtist, error) {
+	uid, err := common.ParseUUID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.repo.ListArtists(ctx, uid)
+}
+
+func (s *Service) ReplaceArtists(ctx context.Context, id string, artists []TrackArtistRequest) ([]TrackArtist, error) {
+	uid, err := common.ParseUUID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.repo.ReplaceArtists(ctx, uid, artists)
+}

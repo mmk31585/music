@@ -11,6 +11,11 @@ const routes: RouteRecordRaw[] = [
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@/pages/errors/PageNotFound.vue'),
+    meta: {
+      title: 'Page Not Found',
+      layout: 'layout-empty',
+    },
   },
 ]
+
 export default routes

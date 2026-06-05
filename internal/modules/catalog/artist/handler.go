@@ -31,7 +31,7 @@ func (h *Handler) List(c *gin.Context) {
 
 	items, err := h.service.List(c.Request.Context(), p.Limit, p.Offset)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list artist"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list artists"})
 		return
 	}
 	c.JSON(http.StatusOK, items)
@@ -164,4 +164,167 @@ func (h *Handler) Delete(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusNoContent)
+}
+func (h *Handler) Overview(c *gin.Context) {
+	item, err := h.service.GetOverview(c.Request.Context(), c.Param("artistID"))
+	if errors.Is(err, common.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "artist not found"})
+		return
+	}
+	if errors.Is(err, common.ErrInvalidInput) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid artist id"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get artist overview"})
+		return
+	}
+
+	c.JSON(http.StatusOK, item)
+}
+
+func (h *Handler) Tracks(c *gin.Context) {
+	p := common.ParsePagination(c)
+
+	items, err := h.service.ListTracks(c.Request.Context(), c.Param("artistID"), p.Limit, p.Offset)
+	if errors.Is(err, common.ErrInvalidInput) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid artist id"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list artist tracks"})
+		return
+	}
+
+	c.JSON(http.StatusOK, items)
+}
+
+func (h *Handler) Albums(c *gin.Context) {
+	p := common.ParsePagination(c)
+
+	items, err := h.service.ListAlbums(c.Request.Context(), c.Param("artistID"), p.Limit, p.Offset)
+	if errors.Is(err, common.ErrInvalidInput) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid artist id"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list artist albums"})
+		return
+	}
+
+	c.JSON(http.StatusOK, items)
+}
+
+func (h *Handler) Singles(c *gin.Context) {
+	p := common.ParsePagination(c)
+
+	items, err := h.service.ListSingles(c.Request.Context(), c.Param("artistID"), p.Limit, p.Offset)
+	if errors.Is(err, common.ErrInvalidInput) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid artist id"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list artist singles"})
+		return
+	}
+
+	c.JSON(http.StatusOK, items)
+}
+
+func (h *Handler) AppearsOn(c *gin.Context) {
+	p := common.ParsePagination(c)
+
+	items, err := h.service.ListAppearsOn(c.Request.Context(), c.Param("artistID"), p.Limit, p.Offset)
+	if errors.Is(err, common.ErrInvalidInput) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid artist id"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list artist appears-on tracks"})
+		return
+	}
+
+	c.JSON(http.StatusOK, items)
+}
+func (h *Handler) TopTracks(c *gin.Context) {
+	p := common.ParsePagination(c)
+
+	items, err := h.service.ListTopTracks(c.Request.Context(), c.Param("artistID"), p.Limit, p.Offset)
+	if errors.Is(err, common.ErrInvalidInput) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid artist id"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list artist top tracks"})
+		return
+	}
+
+	c.JSON(http.StatusOK, items)
+}
+
+func (h *Handler) Related(c *gin.Context) {
+	p := common.ParsePagination(c)
+
+	items, err := h.service.ListRelated(c.Request.Context(), c.Param("artistID"), p.Limit, p.Offset)
+	if errors.Is(err, common.ErrInvalidInput) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid artist id"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list related artists"})
+		return
+	}
+
+	c.JSON(http.StatusOK, items)
+}
+
+func (h *Handler) ReplaceRelated(c *gin.Context) {
+	var req []RelatedArtistRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	items, err := h.service.ReplaceRelated(c.Request.Context(), c.Param("artistID"), req)
+	if errors.Is(err, common.ErrInvalidInput) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid artist id or related artists"})
+		return
+	}
+	if errors.Is(err, common.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "artist not found"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to replace related artists"})
+		return
+	}
+
+	c.JSON(http.StatusOK, items)
+}
+func (h *Handler) ReplaceTopTracks(c *gin.Context) {
+	artistID := c.Param("artistID")
+
+	var req []ArtistTopTrackRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid request body"})
+		return
+	}
+
+	items, err := h.service.ReplaceTopTracks(c.Request.Context(), artistID, req)
+	if err != nil {
+		switch err {
+		case common.ErrInvalidInput:
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		case common.ErrNotFound:
+			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": err.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "failed to replace artist top tracks"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    items,
+	})
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"music/internal/platform/events"
+	platformstorage "music/internal/platform/storage"
 )
 
 var (
@@ -22,23 +23,31 @@ var (
 
 type Service struct {
 	repo      *Repository
-	mediaRoot string
+	storage   platformstorage.Storage
 	publisher events.Publisher
 }
 
-func NewService(repo *Repository, mediaRoot string, publisher events.Publisher) *Service {
-	if strings.TrimSpace(mediaRoot) == "" {
-		mediaRoot = "./media"
-	}
-
+func NewService(
+	repo *Repository,
+	storage platformstorage.Storage,
+	publisher events.Publisher,
+) *Service {
 	return &Service{
 		repo:      repo,
-		mediaRoot: mediaRoot,
+		storage:   storage,
 		publisher: publisher,
 	}
 }
 
 func (s *Service) GetPlaybackTrack(ctx context.Context, id string) (*PlaybackTrack, error) {
+	return s.getPlaybackTrack(ctx, id, true)
+}
+
+func (s *Service) GetAdminPlaybackTrack(ctx context.Context, id string) (*PlaybackTrack, error) {
+	return s.getPlaybackTrack(ctx, id, false)
+}
+
+func (s *Service) getPlaybackTrack(ctx context.Context, id string, requirePublic bool) (*PlaybackTrack, error) {
 	id = strings.TrimSpace(id)
 	if id == "" {
 		return nil, ErrInvalidTrackID
@@ -55,7 +64,7 @@ func (s *Service) GetPlaybackTrack(ctx context.Context, id string) (*PlaybackTra
 		return nil, ErrAudioNotFound
 	}
 
-	if !track.IsPublic {
+	if requirePublic && !track.IsPublic {
 		log.Println("error getting playback track: playback is not public")
 		return nil, ErrPrivateTrack
 	}
@@ -71,66 +80,107 @@ func (s *Service) BuildPlaybackResponse(track *PlaybackTrack) PlaybackTrackRespo
 		AlbumTitle:      track.AlbumTitle,
 		CoverURL:        track.CoverURL,
 		DurationSeconds: track.DurationSeconds,
-		StreamURL:       "/api/player/tracks/" + track.ID + "/stream",
+
+		// Important: your registered route is /api/v1/player/...
+		StreamURL: "/api/v1/player/tracks/" + track.ID + "/stream",
 	}
 }
 
-func (s *Service) ResolveAudioFilePath(audioURL string) (string, error) {
+func (s *Service) BuildAdminPlaybackResponse(track *PlaybackTrack) PlaybackTrackResponse {
+	return PlaybackTrackResponse{
+		ID:              track.ID,
+		Title:           track.Title,
+		ArtistName:      track.ArtistName,
+		AlbumTitle:      track.AlbumTitle,
+		CoverURL:        track.CoverURL,
+		DurationSeconds: track.DurationSeconds,
+
+		// Private/admin stream URL.
+		StreamURL: "/api/v1/admin/player/tracks/" + track.ID + "/stream",
+	}
+}
+
+// ResolveAudioStorageKey converts stored audio_url into your storage key.
+//
+// Examples:
+//
+// http://localhost:8080/uploads/track-audio/file.mp3
+// -> track-audio/file.mp3
+//
+// /uploads/track-audio/file.mp3
+// -> track-audio/file.mp3
+//
+// track-audio/file.mp3
+// -> track-audio/file.mp3
+func (s *Service) ResolveAudioStorageKey(audioURL string) (string, error) {
 	audioURL = strings.TrimSpace(audioURL)
 	if audioURL == "" {
 		return "", ErrAudioNotFound
 	}
 
 	parsedURL, err := url.Parse(audioURL)
-	if err == nil && parsedURL.Host != "" {
+	if err == nil && parsedURL.Scheme != "" {
 		audioURL = parsedURL.Path
 	}
 
 	audioURL = strings.ReplaceAll(audioURL, "\\", "/")
+	audioURL = strings.TrimSpace(audioURL)
 	audioURL = strings.TrimPrefix(audioURL, "/")
 
-	if strings.HasPrefix(audioURL, "media/") {
-		audioURL = strings.TrimPrefix(audioURL, "media/")
-	}
+	audioURL = strings.TrimPrefix(audioURL, "uploads/")
+	audioURL = strings.TrimPrefix(audioURL, "media/")
 
 	if audioURL == "" {
 		return "", ErrInvalidMediaURL
 	}
 
-	cleanRelative := filepath.Clean(audioURL)
+	cleanKey := filepath.Clean(audioURL)
+	cleanKey = strings.ReplaceAll(cleanKey, "\\", "/")
 
-	if cleanRelative == "." ||
-		strings.HasPrefix(cleanRelative, "..") ||
-		strings.Contains(cleanRelative, string(filepath.Separator)+".."+string(filepath.Separator)) {
+	if cleanKey == "." ||
+		strings.HasPrefix(cleanKey, "../") ||
+		strings.Contains(cleanKey, "/../") ||
+		strings.HasPrefix(cleanKey, "/") {
 		return "", ErrInvalidMediaURL
 	}
 
-	fullPath := filepath.Join(s.mediaRoot, cleanRelative)
-
-	absRoot, err := filepath.Abs(s.mediaRoot)
-	if err != nil {
-		return "", err
-	}
-
-	absFile, err := filepath.Abs(fullPath)
-	if err != nil {
-		return "", err
-	}
-
-	rel, err := filepath.Rel(absRoot, absFile)
-	if err != nil {
-		return "", err
-	}
-
-	if strings.HasPrefix(rel, "..") || filepath.IsAbs(rel) {
-		return "", ErrInvalidMediaURL
-	}
-
-	return absFile, nil
+	return cleanKey, nil
 }
 
-// TrackPlayed keeps your counter update, but also emits an event.
-// This is the important upgrade.
+func (s *Service) ResolveAudioURL(ctx context.Context, audioURL string) (string, error) {
+	log.Println("ResolveAudioURL input:", audioURL)
+
+	key, err := s.ResolveAudioStorageKey(audioURL)
+	if err != nil {
+		log.Println("ResolveAudioStorageKey error:", err)
+		return "", err
+	}
+
+	log.Println("resolved storage key:", key)
+
+	exists, err := s.storage.Exists(ctx, key)
+	if err != nil {
+		log.Println("storage.Exists error:", err)
+		return "", err
+	}
+
+	log.Println("storage.Exists result:", exists)
+
+	if !exists {
+		return "", ErrAudioNotFound
+	}
+
+	resolvedURL, err := s.storage.GetURL(ctx, key)
+	if err != nil {
+		log.Println("storage.GetURL error:", err)
+		return "", err
+	}
+
+	log.Println("storage.GetURL result:", resolvedURL)
+
+	return resolvedURL, nil
+}
+
 func (s *Service) TrackPlayed(
 	ctx context.Context,
 	userID string,

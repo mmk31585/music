@@ -1,12 +1,22 @@
 package media
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
+	"regexp"
 	"strings"
+
+	"github.com/google/uuid"
+
+	platformstorage "music/internal/platform/storage"
 )
 
 type Config struct {
@@ -20,13 +30,15 @@ type Config struct {
 }
 
 type Service struct {
-	storage Storage
+	storage platformstorage.Storage
+	repo    *Repository
 	cfg     Config
 }
 
-func NewService(storage Storage, cfg Config) *Service {
+func NewService(storage platformstorage.Storage, repo *Repository, cfg Config) *Service {
 	return &Service{
 		storage: storage,
+		repo:    repo,
 		cfg:     cfg,
 	}
 }
@@ -59,36 +71,159 @@ func (s *Service) Upload(
 		return nil, ErrFileTooLarge
 	}
 
+	log.Println("CATEGORY:", category)
+	log.Println("FILE:", header.Filename)
+	log.Println("SIZE:", header.Size)
+
 	mimeType, err := detectMimeType(file)
 	if err != nil {
+		log.Println("MIME ERROR:", err)
 		return nil, ErrInvalidMimeType
 	}
+
+	log.Println("MIME:", mimeType)
 
 	if !s.isAllowedMime(category, mimeType) {
 		return nil, ErrInvalidMimeType
 	}
 
-	stored, err := s.storage.SaveFile(ctx, file, header, string(category), mimeType)
-	if err != nil {
-		if strings.Contains(err.Error(), "uploaded file is empty") {
-			return nil, ErrEmptyFile
+	if seeker, ok := file.(io.Seeker); ok {
+		if _, err := seeker.Seek(0, io.SeekStart); err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrStorageFailed, err)
 		}
+	}
+
+	content, err := io.ReadAll(file)
+	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrStorageFailed, err)
 	}
 
-	resp := &UploadResponse{
-		MediaID:      stored.SHA256,
-		URL:          stored.URL,
-		Path:         stored.Path,
-		FileName:     stored.FileName,
-		OriginalName: header.Filename,
-		Size:         stored.Size,
-		MimeType:     mimeType,
-		SHA256:       stored.SHA256,
-		Duplicate:    stored.Duplicate,
+	if len(content) == 0 {
+		return nil, ErrEmptyFile
 	}
 
+	hashBytes := sha256.Sum256(content)
+	hash := hex.EncodeToString(hashBytes[:])
+
+	existing, err := s.repo.FindByChecksum(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+
+	if existing != nil {
+		return uploadResponseFromMedia(existing, true), nil
+	}
+
+	ext := extensionForMime(mimeType)
+	if ext == "" {
+		ext = sanitizeExtension(strings.ToLower(filepath.Ext(header.Filename)))
+	}
+	if ext == "" {
+		ext = ".bin"
+	}
+
+	original := sanitizeFilename(header.Filename)
+	key := buildObjectKey(category, original)
+
+	err = s.storage.Upload(
+		ctx,
+		key,
+		bytes.NewReader(content),
+		int64(len(content)),
+		mimeType,
+	)
+	if err != nil {
+		log.Printf("[UPLOAD STORAGE FAIL] key=%s size=%d mime=%s err=%+v",
+			key, len(content), mimeType, err,
+		)
+		return nil, fmt.Errorf("%w: %v", ErrStorageFailed, err)
+	}
+
+	url, err := s.storage.GetURL(ctx, key)
+	if err != nil {
+		_ = s.storage.Delete(ctx, key)
+		return nil, fmt.Errorf("%w: %v", ErrStorageFailed, err)
+	}
+
+	size := int64(len(content))
+	metadata := buildUploadMetadata(category, header.Filename)
+
+	mediaItem, err := s.repo.Create(ctx, CreateMediaRequest{
+		MediaType:        mediaTypeForCategory(category),
+		StorageProvider:  "local",
+		Bucket:           nil,
+		ObjectKey:        key,
+		PublicURL:        &url,
+		MimeType:         &mimeType,
+		FileSize:         &size,
+		ChecksumSHA256:   &hash,
+		DurationSeconds:  nil,
+		Width:            nil,
+		Height:           nil,
+		OriginalFilename: &header.Filename,
+		Metadata:         metadata,
+		CreatedBy:        nil,
+	})
+	if err != nil {
+		_ = s.storage.Delete(ctx, key)
+		return nil, err
+	}
+
+	resp := uploadResponseFromMedia(mediaItem, false)
+	resp.FileName = original
+
 	return resp, nil
+}
+func sanitizeFilename(name string) string {
+	name = strings.ToLower(name)
+
+	re := regexp.MustCompile(`[^a-z0-9.\-_]+`)
+	name = re.ReplaceAllString(name, "-")
+
+	return name
+}
+func uploadResponseFromMedia(item *Media, duplicate bool) *UploadResponse {
+	if item == nil {
+		return nil
+	}
+
+	url := ""
+	if item.PublicURL != nil {
+		url = *item.PublicURL
+	}
+
+	originalName := ""
+	if item.OriginalFilename != nil {
+		originalName = *item.OriginalFilename
+	}
+
+	size := int64(0)
+	if item.FileSize != nil {
+		size = *item.FileSize
+	}
+
+	mimeType := ""
+	if item.MimeType != nil {
+		mimeType = *item.MimeType
+	}
+
+	sha256Value := ""
+	if item.ChecksumSHA256 != nil {
+		sha256Value = *item.ChecksumSHA256
+	}
+
+	return &UploadResponse{
+		MediaID:         item.ID.String(),
+		URL:             url,
+		Path:            item.ObjectKey,
+		FileName:        filepath.Base(item.ObjectKey),
+		OriginalName:    originalName,
+		Size:            size,
+		MimeType:        mimeType,
+		SHA256:          sha256Value,
+		Duplicate:       duplicate,
+		DurationSeconds: item.DurationSeconds,
+	}
 }
 
 func (s *Service) DeleteUploadedFile(ctx context.Context, upload *UploadResponse) error {
@@ -96,7 +231,30 @@ func (s *Service) DeleteUploadedFile(ctx context.Context, upload *UploadResponse
 		return nil
 	}
 
-	return s.storage.DeleteFile(ctx, upload.Path)
+	return s.storage.Delete(ctx, upload.Path)
+}
+
+func buildObjectKey(category UploadCategory, fileName string) string {
+	return fmt.Sprintf("%s/%s-%s", sanitizeCategory(string(category)), uuid.NewString(), fileName)
+}
+
+func mediaTypeForCategory(category UploadCategory) string {
+	switch category {
+	case UploadCategoryArtistImage, UploadCategoryAlbumCover, UploadCategoryTrackCover:
+		return "image"
+	case UploadCategoryTrackAudio:
+		return "audio"
+	default:
+		return "other"
+	}
+}
+
+func buildUploadMetadata(category UploadCategory, originalFilename string) string {
+	return fmt.Sprintf(
+		`{"uploadCategory":%q,"originalFilename":%q}`,
+		string(category),
+		originalFilename,
+	)
 }
 
 func (s *Service) isKnownCategory(category UploadCategory) bool {

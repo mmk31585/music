@@ -1,11 +1,20 @@
 import { ref } from 'vue'
-import { useCatalogApi } from '@/services/api/catalog'
-import type { Artist } from '@/services/api/catalog'
+import {
+  useArtistsApi,
+  type Artist,
+  type ArtistCreatePayload,
+  type ArtistUpdatePayload,
+} from '@/services/api/catalog/artists'
 
-export type ArtistFormPayload = Partial<Artist>
+export type ArtistFormPayload = ArtistCreatePayload & ArtistUpdatePayload
 
 export function useAdminArtists() {
-  const api = useCatalogApi()
+  const {
+    adminGetArtists,
+    adminCreateArtist,
+    adminUpdateArtist,
+    adminDeleteArtist,
+  } = useArtistsApi()
 
   const artists = ref<Artist[]>([])
   const loading = ref(false)
@@ -18,7 +27,7 @@ export function useAdminArtists() {
     error.value = null
 
     try {
-      const response = await api.adminGetArtists()
+      const response = await adminGetArtists()
       artists.value = response
       return response
     } catch (err) {
@@ -34,10 +43,8 @@ export function useAdminArtists() {
     error.value = null
 
     try {
-      const created = await api.adminCreateArtist(payload)
-
+      const created = await adminCreateArtist(payload)
       artists.value = [created, ...artists.value]
-
       return created
     } catch (err) {
       error.value = err
@@ -52,12 +59,10 @@ export function useAdminArtists() {
     error.value = null
 
     try {
-      const updated = await api.adminUpdateArtist(id, payload)
-
+      const updated = await adminUpdateArtist(id, payload)
       artists.value = artists.value.map((artist) =>
         String(artist.id) === String(id) ? updated : artist,
       )
-
       return updated
     } catch (err) {
       error.value = err
@@ -72,8 +77,7 @@ export function useAdminArtists() {
     error.value = null
 
     try {
-      await api.adminDeleteArtist(id)
-
+      await adminDeleteArtist(id)
       artists.value = artists.value.filter((artist) => String(artist.id) !== String(id))
     } catch (err) {
       error.value = err

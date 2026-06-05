@@ -1,0 +1,326 @@
+package app
+
+import (
+	"context"
+	"music/internal/modules/analytics"
+	"music/internal/modules/auth"
+	"music/internal/modules/catalog/album"
+	artist "music/internal/modules/catalog/artist"
+	"music/internal/modules/catalog/genre"
+	"music/internal/modules/catalog/track"
+	"music/internal/modules/follow"
+	"music/internal/modules/health"
+	"music/internal/modules/history"
+	"music/internal/modules/library"
+	"music/internal/modules/lyrics"
+	"music/internal/modules/media"
+	"music/internal/modules/notification"
+	"music/internal/modules/player"
+	"music/internal/modules/playlist"
+	"music/internal/modules/queue"
+	"music/internal/modules/recommendation"
+	"music/internal/modules/search"
+	"music/internal/modules/subscription"
+	"music/internal/platform/events"
+	platformstorage "music/internal/platform/storage"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
+	opensearch "github.com/opensearch-project/opensearch-go"
+	"go.uber.org/zap"
+)
+
+type Container struct {
+	SQLX *sqlx.DB
+	Bus  *events.Bus
+
+	Storage platformstorage.Storage
+
+	AuthMW gin.HandlerFunc
+
+	HealthHandler *health.Handler
+
+	AuthService *auth.Service
+	AuthHandler *auth.Handler
+
+	MediaService *media.Service
+	MediaHandler *media.Handler
+
+	ArtistService *artist.Service
+	ArtistHandler *artist.Handler
+
+	AlbumService *album.Service
+	AlbumHandler *album.Handler
+
+	GenreService *genre.Service
+	GenreHandler *genre.Handler
+
+	TrackService *track.Service
+	TrackHandler *track.Handler
+
+	LyricsService *lyrics.Service
+	LyricsHandler *lyrics.Handler
+
+	PlaylistService *playlist.Service
+	PlaylistHandler *playlist.Handler
+
+	LibraryService *library.Service
+	LibraryHandler *library.Handler
+
+	QueueService *queue.Service
+	QueueHandler *queue.Handler
+
+	FollowService *follow.Service
+	FollowHandler *follow.Handler
+
+	RecommendationService recommendation.Service
+	RecommendationHandler *recommendation.Handler
+
+	HistoryService *history.Service
+	HistoryHandler *history.Handler
+
+	AnalyticsService *analytics.Service
+	AnalyticsHandler *analytics.Handler
+
+	NotificationService *notification.Service
+	NotificationHandler *notification.Handler
+
+	SubscriptionService *subscription.Service
+	SubscriptionHandler *subscription.Handler
+
+	PlayerService *player.Service
+	PlayerHandler *player.Handler
+
+	SearchService *search.Service
+	SearchHandler *search.Handler
+}
+
+func NewContainer(a *App) *Container {
+	sqlDB := stdlib.OpenDBFromPool(a.DB)
+	sqlxDB := sqlx.NewDb(sqlDB, "pgx")
+
+	logger := zap.L()
+	bus := events.NewBus(logger)
+
+	c := &Container{
+		SQLX: sqlxDB,
+		Bus:  bus,
+	}
+
+	c.buildHealth(a)
+	c.buildStorage(a)
+	c.buildAuth(a)
+	c.buildMedia(a)
+	c.buildCatalog()
+	c.buildLyrics()
+	c.buildPlaylist()
+	c.buildLibrary()
+	c.buildQueue()
+	c.buildFollow()
+	c.buildRecommendation()
+	c.buildHistory()
+	c.buildAnalytics()
+	c.buildNotification()
+	c.buildSubscription()
+	c.buildPlayer()
+	c.buildSearch(a)
+	c.subscribeEvents()
+
+	return c
+}
+
+func (c *Container) buildHealth(a *App) {
+	c.HealthHandler = health.NewHandler(a.DB, a.Redis)
+}
+
+func (c *Container) buildStorage(a *App) {
+	storageClient, err := platformstorage.New(context.Background(), platformstorage.Config{
+		Driver: a.Config.Storage.Driver,
+		Local: platformstorage.LocalConfig{
+			BaseDir: a.Config.Storage.Local.BaseDir,
+			BaseURL: a.Config.Storage.Local.BaseURL,
+		},
+		S3: platformstorage.S3Config{
+			Bucket:          a.Config.Storage.S3.Bucket,
+			Region:          a.Config.Storage.S3.Region,
+			Endpoint:        a.Config.Storage.S3.Endpoint,
+			AccessKeyID:     a.Config.Storage.S3.AccessKeyID,
+			SecretAccessKey: a.Config.Storage.S3.SecretAccessKey,
+			PublicBaseURL:   a.Config.Storage.S3.PublicBaseURL,
+			UsePathStyle:    a.Config.Storage.S3.UsePathStyle,
+			PresignURLs:     a.Config.Storage.S3.PresignURLs,
+			PresignTTL:      a.Config.Storage.S3.PresignTTL,
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	c.Storage = storageClient
+}
+
+func (c *Container) buildAuth(a *App) {
+	tokenManager := auth.NewTokenManager(
+		a.Config.Auth.JWTAccessSecret,
+		a.Config.Auth.JWTRefreshSecret,
+		a.Config.Auth.AccessTTL,
+		a.Config.Auth.RefreshTTL,
+	)
+
+	authRepo := auth.NewRepository(a.DB)
+	c.AuthService = auth.NewService(authRepo, tokenManager)
+	c.AuthHandler = auth.NewHandler(c.AuthService, a.Validator)
+	c.AuthMW = auth.AuthMiddleware(tokenManager)
+}
+
+func (c *Container) buildMedia(a *App) {
+	mediaRepo := media.NewRepository(c.SQLX)
+
+	c.MediaService = media.NewService(c.Storage, mediaRepo, media.Config{
+		MaxFileSizeBytes:  60 << 20,
+		MaxImageSizeBytes: 10 << 20,
+		MaxAudioSizeBytes: 60 << 20,
+		AllowedImageMime: []string{
+			"image/jpeg",
+			"image/png",
+			"image/webp",
+		},
+		AllowedAudioMime: []string{
+			"audio/mpeg",
+			"audio/ogg",
+			"audio/flac",
+			"audio/wav",
+			"audio/x-wav",
+			"audio/wave",
+			"audio/mp4",
+			"audio/aac",
+			"application/octet-stream",
+		},
+	})
+
+	c.MediaHandler = media.NewHandler(c.MediaService)
+}
+func (c *Container) buildCatalog() {
+	artistRepo := artist.NewRepository(c.SQLX)
+	c.ArtistService = artist.NewService(artistRepo)
+	c.ArtistHandler = artist.NewHandler(c.ArtistService)
+
+	albumRepo := album.NewRepository(c.SQLX)
+	c.AlbumService = album.NewService(albumRepo)
+	c.AlbumHandler = album.NewHandler(c.AlbumService)
+
+	genreRepo := genre.NewRepository(c.SQLX)
+	c.GenreService = genre.NewService(genreRepo)
+	c.GenreHandler = genre.NewHandler(c.GenreService)
+
+	trackRepo := track.NewRepository(c.SQLX)
+	c.TrackService = track.NewService(trackRepo)
+	c.TrackHandler = track.NewHandler(c.TrackService)
+}
+
+func (c *Container) buildLyrics() {
+	lyricsRepo := lyrics.NewRepository(c.SQLX)
+	c.LyricsService = lyrics.NewService(lyricsRepo)
+	c.LyricsHandler = lyrics.NewHandler(c.LyricsService)
+}
+
+func (c *Container) buildPlaylist() {
+	playlistRepo := playlist.NewRepository(c.SQLX)
+	c.PlaylistService = playlist.NewService(playlistRepo)
+	c.PlaylistHandler = playlist.NewHandler(c.PlaylistService)
+}
+
+func (c *Container) buildLibrary() {
+	libraryRepo := library.NewRepository(c.SQLX)
+	c.LibraryService = library.NewService(libraryRepo)
+	c.LibraryHandler = library.NewHandler(c.LibraryService)
+}
+
+func (c *Container) buildQueue() {
+	queueRepo := queue.NewRepository(c.SQLX)
+	c.QueueService = queue.NewService(queueRepo)
+	c.QueueHandler = queue.NewHandler(c.QueueService)
+}
+
+func (c *Container) buildFollow() {
+	followRepo := follow.NewRepository(c.SQLX)
+	c.FollowService = follow.NewService(followRepo)
+	c.FollowHandler = follow.NewHandler(c.FollowService)
+}
+
+func (c *Container) buildRecommendation() {
+	recommendationRepo := recommendation.NewRepository(c.SQLX)
+	c.RecommendationService = recommendation.NewService(recommendationRepo)
+	c.RecommendationHandler = recommendation.NewHandler(c.RecommendationService)
+}
+
+func (c *Container) buildHistory() {
+	historyRepo := history.NewRepository(c.SQLX)
+	c.HistoryService = history.NewService(historyRepo)
+	c.HistoryHandler = history.NewHandler(c.HistoryService)
+}
+
+func (c *Container) buildAnalytics() {
+	analyticsRepo := analytics.NewRepository(c.SQLX)
+	c.AnalyticsService = analytics.NewService(analyticsRepo)
+	c.AnalyticsHandler = analytics.NewHandler(c.AnalyticsService)
+}
+
+func (c *Container) buildNotification() {
+	notificationRepo := notification.NewRepository(c.SQLX)
+	c.NotificationService = notification.NewService(notificationRepo)
+	c.NotificationHandler = notification.NewHandler(c.NotificationService)
+}
+
+func (c *Container) buildSubscription() {
+	subscriptionRepo := subscription.NewRepository(c.SQLX)
+	c.SubscriptionService = subscription.NewService(subscriptionRepo, c.Bus)
+	c.SubscriptionHandler = subscription.NewHandler(c.SubscriptionService)
+}
+func (c *Container) buildPlayer() {
+	playerRepo := player.NewRepository(c.SQLX)
+	c.PlayerService = player.NewService(playerRepo, c.Storage, c.Bus)
+	c.PlayerHandler = player.NewHandler(c.PlayerService)
+}
+
+func (c *Container) buildSearch(a *App) {
+	if a.Config.OpenSearch.URL == "" {
+		return
+	}
+
+	cfg := opensearch.Config{
+		Addresses: []string{a.Config.OpenSearch.URL},
+		Username:  a.Config.OpenSearch.Username,
+		Password:  a.Config.OpenSearch.Password,
+	}
+
+	osClient, err := opensearch.NewClient(cfg)
+	if err != nil {
+		zap.L().Warn("failed to initialize opensearch client", zap.Error(err))
+		return
+	}
+
+	c.SearchService = search.NewService(osClient)
+	c.SearchHandler = search.NewHandler(c.SearchService)
+}
+
+func (c *Container) subscribeEvents() {
+	analyticsEvents := analytics.NewEventHandler(c.AnalyticsService)
+	notificationEvents := notification.NewEventHandler(c.NotificationService)
+	recommendationEvents := recommendation.NewEventHandler(c.RecommendationService)
+	historyEvents := history.NewEventHandler(c.HistoryService)
+
+	c.Bus.Subscribe(events.EventTrackPlayed, analyticsEvents.OnTrackPlayed)
+	c.Bus.Subscribe(events.EventTrackPlayed, historyEvents.OnTrackPlayed)
+	c.Bus.Subscribe(events.EventTrackPlayed, recommendationEvents.OnTrackPlayed)
+
+	c.Bus.Subscribe(events.EventPlaylistCreated, analyticsEvents.OnPlaylistCreated)
+	c.Bus.Subscribe(events.EventPlaylistCreated, notificationEvents.OnPlaylistCreated)
+
+	c.Bus.Subscribe(events.EventSubscriptionPurchased, analyticsEvents.OnSubscriptionPurchased)
+	c.Bus.Subscribe(events.EventSubscriptionPurchased, notificationEvents.OnSubscriptionPurchased)
+
+	c.Bus.Subscribe(events.EventUserRegistered, analyticsEvents.OnUserRegistered)
+	c.Bus.Subscribe(events.EventUserRegistered, notificationEvents.OnUserRegistered)
+}

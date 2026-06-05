@@ -5,7 +5,6 @@ export const appRoutes: RouteRecordRaw[] = [
   {
     path: '/',
     component: LayoutMusicApp,
-    meta: { requiresAuth: true },
     children: [
       {
         path: '',
@@ -14,33 +13,29 @@ export const appRoutes: RouteRecordRaw[] = [
       },
       {
         path: 'search',
-        name: 'app.search',
+        name: 'search',
         component: () => import('@/pages/app/PageSearch.vue'),
       },
-      // {
-      //   path: 'tracks/:trackId',
-      //   name: 'app.track.details',
-      //   component: () => import('@/pages/app/PageTrackDetails.vue'),
-      //   props: true,
-      // },
-      // {
-      //   path: 'albums/:albumId',
-      //   name: 'app.album.details',
-      //   component: () => import('@/pages/app/PageAlbumDetails.vue'),
-      //   props: true,
-      // },
-      // {
-      //   path: 'artist/:artistId',
-      //   name: 'app.artist.details',
-      //   component: () => import('@/pages/app/PageArtistDetails.vue'),
-      //   props: true,
-      // },
-      // {
-      //   path: 'genres/:genreId',
-      //   name: 'app.genre.details',
-      //   component: () => import('@/pages/app/PageGenreDetails.vue'),
-      //   props: true,
-      // },
+      {
+        path: 'recommendations',
+        name: 'recommendations',
+        component: () => import('@/pages/app/PageRecommendations.vue'),
+      },
+      {
+        path: 'library',
+        name: 'library',
+        component: () => import('@/pages/app/PageLibrary.vue'),
+      },
+      {
+        path: 'playlists',
+        name: 'playlists',
+        component: () => import('@/pages/app/PagePlaylists.vue'),
+      },
+      {
+        path: 'recently-played',
+        name: 'recently-played',
+        component: () => import('@/pages/app/PageRecentlyPlayed.vue'),
+      },
     ],
   },
 ]

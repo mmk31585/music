@@ -164,3 +164,43 @@ html {
   font-size: 14px;
   scroll-behavior: smooth;
 }
+html {
+  background: #050505;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(29, 185, 84, 0.18), transparent 32rem),
+    radial-gradient(circle at top right, rgba(34, 197, 94, 0.08), transparent 26rem),
+    linear-gradient(180deg, #101010 0%, #050505 45%, #000 100%);
+  color: #fff;
+}
+
+::selection {
+  background: rgba(29, 185, 84, 0.35);
+  color: #fff;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}

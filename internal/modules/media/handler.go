@@ -38,10 +38,8 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) UploadAdminMedia(c *gin.Context) {
 	const hardLimit = 60 << 20 // 60 MB
 
-	// Set max bytes reader on the request
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, hardLimit)
 
-	// Parse multipart form
 	if err := c.Request.ParseMultipartForm(hardLimit); err != nil {
 		response.Error(c, appErr.BadRequest("invalid multipart form or file too large", err))
 		return
@@ -66,10 +64,7 @@ func (h *Handler) UploadAdminMedia(c *gin.Context) {
 		return
 	}
 	defer func(file multipart.File) {
-		err := file.Close()
-		if err != nil {
-
-		}
+		_ = file.Close()
 	}(file)
 
 	res, err := h.service.Upload(c.Request.Context(), category, file, header)
@@ -93,11 +88,9 @@ func (h *Handler) UploadAdminMedia(c *gin.Context) {
 		return
 	}
 
-	// Use GinSuccess with status 201 Created
 	response.Success(c, http.StatusCreated, "file uploaded successfully", res)
 }
 
-// detectUploadField unchanged because it works on *http.Request
 func detectUploadField(r *http.Request) (UploadCategory, string, error) {
 	if r.MultipartForm == nil || r.MultipartForm.File == nil {
 		return "", "", ErrNoFileProvided
@@ -148,5 +141,3 @@ func detectUploadField(r *http.Request) (UploadCategory, string, error) {
 
 	return selectedCategory, selectedName, nil
 }
-
-var _ multipart.File

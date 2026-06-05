@@ -4,24 +4,21 @@ import type { UseRequestConfig } from '@/plugins/client/types'
 import { AuthApiRoutes } from './enums'
 import {
   AuthResponseSchema,
-  UserSchema,
+  CurrentUserResponseSchema,
   type AuthResponse,
+  type CurrentUserResponse,
   type RegisterPayload,
-  type User,
   type LoginPayload,
+  type LogoutPayload,
 } from './types'
 
 export const useAuthApi = () => {
-  const login = async (
-    payload: LoginPayload,
-    config?: UseRequestConfig<AuthResponse>,
-  ) => {
+  const login = async (payload: LoginPayload, config?: UseRequestConfig<AuthResponse>) => {
     return useRequest<AuthResponse>(
       AuthApiRoutes.LOGIN,
       {
         method: 'POST',
-        data: payload
-        ,
+        data: payload,
       },
       {
         schema: AuthResponseSchema,
@@ -57,11 +54,12 @@ export const useAuthApi = () => {
     )
   }
 
-  const logout = async (config?: UseRequestConfig<unknown>) => {
+  const logout = async (payload: LogoutPayload, config?: UseRequestConfig<unknown>) => {
     return useRequest(
       AuthApiRoutes.LOGOUT,
       {
         method: 'POST',
+        data: payload,
       },
       {
         ...config,
@@ -69,14 +67,14 @@ export const useAuthApi = () => {
     )
   }
 
-  const me = async (config?: UseRequestConfig<User>) => {
-    return useRequest<User>(
+  const me = async (config?: UseRequestConfig<CurrentUserResponse>) => {
+    return useRequest<CurrentUserResponse>(
       AuthApiRoutes.ME,
       {
         method: 'GET',
       },
       {
-        schema: UserSchema,
+        schema: CurrentUserResponseSchema,
         silent: true,
         ...config,
       },

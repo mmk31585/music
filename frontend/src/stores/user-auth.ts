@@ -1,13 +1,13 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
-import { safeLocalStorage } from '@/services/storage'
-import { AuthResponseSchema, useAuthApi, UserSchema } from '@/services/api'  // assuming this still works
 import Cookie from 'js-cookie'
-import type { UseRequestConfig } from '@/plugins/client/types'
-import type { User, LoginPayload } from '@/services/api'  // adjust import
 
-// Local token shape (simpler than old AuthTokenProps)
+import { safeLocalStorage } from '@/services/storage'
+import { useAuthApi } from '@/services/api'
+import type { UseRequestConfig } from '@/plugins/client/types'
+import type { User, LoginPayload } from '@/services/api'
+
 interface TokenState {
   access_token: string
   refresh_token?: string
@@ -15,39 +15,27 @@ interface TokenState {
 
 function createSafeNamespace<T>(key: string) {
   return {
-    get: (): string | T | null => safeLocalStorage.getItem<T>(key),
+    get: (): T | null => safeLocalStorage.getItem<T>(key),
     set: (value: T): void => safeLocalStorage.setItem<T>(key, value),
     remove: (): void => safeLocalStorage.removeItem(key),
   }
 }
 
-// Helper to extract token & user from a flexible API response
-function normalizeAuthResponse(raw: unknown): { user?: User; token?: TokenState } {
-  const parsed = AuthResponseSchema.parse(raw)  // you'll need to import this schema
-  // Prefer top-level fields, then data.*
-  const user = parsed.user ?? parsed.data?.user
-  const accessToken = parsed.access_token ?? parsed.data?.access_token ?? parsed.token ?? parsed.data?.token
-  const refreshToken = parsed.refresh_token ?? parsed.data?.refresh_token
-  return {
-    user: user as User | undefined,
-    token: accessToken ? { access_token: accessToken, refresh_token: refreshToken } : undefined,
-  }
-}
-
 export const useUserAuthStore = defineStore('auth', () => {
   const cookieName = 'auth_cookie'
-  const storage = createSafeNamespace<User>('user_auth')
   const tokenCookieName = 'token_cookie'
-  const tokenStorage = createSafeNamespace<TokenState>('user_token')
   const deviceCookieName = 'device_cookie'
+
+  const storage = createSafeNamespace<User>('user_auth')
+  const tokenStorage = createSafeNamespace<TokenState>('user_token')
   const deviceStorage = createSafeNamespace<string>('device_id')
 
-  const user = ref(storage.get())
-  const state = ref(tokenStorage.get()) // holds { access_token, refresh_token? }
-  const deviceId = ref(deviceStorage.get())
+  const user = ref<User | null>(storage.get())
+  const state = ref<TokenState | null>(tokenStorage.get())
+  const deviceId = ref<string | null>(deviceStorage.get())
   const loading = ref(false)
 
-  const isAuthenticated = computed(() => !!state.value?.access_token)
+  const isAuthenticated = computed(() => Boolean(state.value?.access_token))
   const isAdmin = computed(() => user.value?.role === 'admin')
   const token = computed(() => state.value?.access_token ?? null)
   const device = computed(() => deviceId.value ?? null)
@@ -55,94 +43,149 @@ export const useUserAuthStore = defineStore('auth', () => {
 
   function persistToken(data: TokenState) {
     tokenStorage.set(data)
-    Cookie.set(tokenCookieName, JSON.stringify(data), { secure: true, sameSite: 'lax' })
+    Cookie.set(tokenCookieName, JSON.stringify(data), {
+      secure: true,
+      sameSite: 'lax',
+    })
   }
 
   function persistUser(data: User) {
     storage.set(data)
-    Cookie.set(cookieName, JSON.stringify(data), { secure: true, sameSite: 'lax' })
+    Cookie.set(cookieName, JSON.stringify(data), {
+      secure: true,
+      sameSite: 'lax',
+    })
   }
 
   function persistDeviceId(id: string) {
     deviceStorage.set(id)
-    Cookie.set(deviceCookieName, JSON.stringify(id), { secure: true, sameSite: 'lax' })
+    Cookie.set(deviceCookieName, JSON.stringify(id), {
+      secure: true,
+      sameSite: 'lax',
+    })
   }
 
   function clearToken() {
+    state.value = null
     tokenStorage.remove()
     Cookie.remove(tokenCookieName)
   }
 
   function clearUser() {
     user.value = null
-    state.value = null
+    storage.remove()
+    Cookie.remove(cookieName)
   }
 
   function setToken(newToken: string) {
-    if (!state.value) return
-    state.value = {
-      ...state.value,
-      access_token: newToken,
+    if (!state.value) {
+      state.value = {
+        access_token: newToken,
+      }
+    } else {
+      state.value = {
+        ...state.value,
+        access_token: newToken,
+      }
     }
+
     persistToken(state.value)
   }
+
   function setSession(payload: { access_token: string; refresh_token?: string; user: User }) {
     const tokenState: TokenState = {
       access_token: payload.access_token,
       refresh_token: payload.refresh_token,
     }
+
     state.value = tokenState
-    persistToken(tokenState)
     user.value = payload.user
+
+    persistToken(tokenState)
     persistUser(payload.user)
   }
+
   async function login(payload: LoginPayload, testing = false): Promise<User> {
-    let options = {}
-    if (testing) {
-      options = { headers: { 'X-Testing': 'true' } }
+    loading.value = true
+
+    try {
+      const config: UseRequestConfig<unknown> = testing
+        ? {
+            headers: {
+              'X-Testing': 'true',
+            },
+          }
+        : {}
+
+      const response = await useAuthApi().login(payload, config)
+
+      if (!response.access_token) {
+        throw new Error('Login failed: no access token received')
+      }
+
+      if (!response.user) {
+        throw new Error('Login failed: no user data received')
+      }
+
+      setSession({
+        access_token: response.access_token,
+        refresh_token: response.refresh_token,
+        user: response.user,
+      })
+
+      return response.user
+    } finally {
+      loading.value = false
     }
+  }
 
-    const rawResponse = await useAuthApi().login(payload, {}, options)
-    const { user: userData, token: tokenData } = normalizeAuthResponse(rawResponse)
+  async function me(config: UseRequestConfig<unknown> = {}) {
+    const userData = await useAuthApi().me(config)
 
-    if (!tokenData?.access_token) throw new Error('Login failed: no access token received')
-    if (!userData) throw new Error('Login failed: no user data received')
-
-    state.value = tokenData
-    persistToken(tokenData)
     user.value = userData
     persistUser(userData)
 
     return userData
   }
 
-  async function me(config: UseRequestConfig<User> = {}) {
-    const rawUser = await useAuthApi().me(config)
-    // Assuming me() already returns a valid User object
-    const userData = UserSchema.parse(rawUser) // validate shape
-    user.value = userData
-    persistUser(userData)
-    return userData
-  }
+  async function logout(): Promise<void> {
+    const refreshToken = state.value?.refresh_token
 
-  function logout(): Promise<void> {
-    return useAuthApi().logout({
-      success: () => $reset(),
-    })
+    try {
+      if (refreshToken) {
+        await useAuthApi().logout({
+          refreshToken,
+        })
+      }
+    } catch (error) {
+      console.warn('Logout request failed, clearing local session anyway:', error)
+    } finally {
+      $reset()
+    }
   }
 
   function createDeviceId() {
     if (!device.value) {
-      deviceId.value = uuidv4()
-      persistDeviceId(deviceId.value)
+      const id = uuidv4()
+
+      deviceId.value = id
+      persistDeviceId(id)
     }
   }
 
   function restore(): void {
     const storedToken = tokenStorage.get()
-    if (storedToken) state.value = storedToken
-
+    const storedUser = storage.get()
     const storedDevice = deviceStorage.get()
+
+    if (storedToken) {
+      state.value = storedToken
+    }
+
+    if (storedUser) {
+      user.value = storedUser
+    }
+
     if (storedDevice) {
       deviceId.value = storedDevice
     } else {
@@ -151,7 +194,15 @@ export const useUserAuthStore = defineStore('auth', () => {
 
     if (token.value) {
       loading.value = true
-      me().finally(() => (loading.value = false))
+
+      me()
+        .catch((error) => {
+          console.warn('Failed to restore auth session:', error)
+          $reset()
+        })
+        .finally(() => {
+          loading.value = false
+        })
     }
   }
 
@@ -163,17 +214,16 @@ export const useUserAuthStore = defineStore('auth', () => {
   restore()
 
   return {
-    // state
     user,
     entity: state,
     deviceId,
+
     loading: isLoading,
-    // computed
     isAuthenticated,
     isAdmin,
     token,
     device,
-    // actions
+
     login,
     logout,
     me,

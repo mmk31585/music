@@ -62,9 +62,10 @@ func Bootstrap(ctx context.Context) (*App, error) {
 	router.Use(middleware.CORS(cfg.CORS.AllowedOrigins))
 	router.Use(middleware.GinZapLogger(log))
 	router.Use(middleware.GinZapRecovery(log))
+	router.Static("/uploads", app.Config.Storage.Local.BaseDir)
 
 	app.RegisterRoutes(router)
-	registerMediaRoutes(router, cfg.Media.BasePath)
+	//registerMediaRoutes(router, cfg.Media.BasePath)
 
 	app.Router = router
 	app.HTTPServer = app.NewHTTPServer()

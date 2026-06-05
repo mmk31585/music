@@ -17,12 +17,59 @@ func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{db: db}
 }
 
+func normalizeTrackArtists(reqArtists []TrackArtistRequest, fallbackArtistID uuid.UUID) []TrackArtistRequest {
+	if len(reqArtists) == 0 && fallbackArtistID != uuid.Nil {
+		return []TrackArtistRequest{
+			{
+				ArtistID: fallbackArtistID,
+				Role:     "primary",
+				Position: 1,
+			},
+		}
+	}
+
+	for i := range reqArtists {
+		if reqArtists[i].Role == "" {
+			reqArtists[i].Role = "primary"
+		}
+		if reqArtists[i].Position <= 0 {
+			reqArtists[i].Position = i + 1
+		}
+	}
+
+	return reqArtists
+}
+
+func primaryArtistID(artists []TrackArtistRequest, fallback uuid.UUID) uuid.UUID {
+	if fallback != uuid.Nil {
+		return fallback
+	}
+
+	for _, a := range artists {
+		if a.Role == "primary" {
+			return a.ArtistID
+		}
+	}
+
+	if len(artists) > 0 {
+		return artists[0].ArtistID
+	}
+
+	return uuid.Nil
+}
+
 func (r *Repository) Create(ctx context.Context, req CreateRequest) (*Track, error) {
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = tx.Rollback() }()
+
+	artists := normalizeTrackArtists(req.Artists, req.ArtistID)
+	mainArtistID := primaryArtistID(artists, req.ArtistID)
+	if mainArtistID == uuid.Nil {
+		return nil, common.ErrInvalidInput
+	}
 
 	slug := common.Slugify(req.Title)
 
@@ -39,15 +86,39 @@ func (r *Repository) Create(ctx context.Context, req CreateRequest) (*Track, err
 	var item Track
 	err = tx.GetContext(ctx, &item, `
 		INSERT INTO tracks (
-			artist_id, album_id, title, slug, duration_seconds, track_number,
-			explicit, audio_url, cover_url, is_public
+			artist_id,
+			album_id,
+			title,
+			slug,
+			duration_seconds,
+			track_number,
+			explicit,
+			audio_url,
+			cover_url,
+			audio_media_id,
+			cover_media_id,
+			is_public
 		)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
 		RETURNING
-			id, artist_id, album_id, title, slug, duration_seconds, track_number,
-			explicit, audio_url, cover_url, play_count, is_public, created_at, updated_at
+			id,
+			artist_id,
+			album_id,
+			title,
+			slug,
+			duration_seconds,
+			track_number,
+			explicit,
+			audio_url,
+			cover_url,
+			audio_media_id,
+			cover_media_id,
+			play_count,
+			is_public,
+			created_at,
+			updated_at
 	`,
-		req.ArtistID,
+		mainArtistID,
 		req.AlbumID,
 		req.Title,
 		slug,
@@ -56,10 +127,16 @@ func (r *Repository) Create(ctx context.Context, req CreateRequest) (*Track, err
 		explicit,
 		req.AudioURL,
 		req.CoverURL,
+		req.AudioMediaID,
+		req.CoverMediaID,
 		isPublic,
 	)
 	if err != nil {
 		return nil, common.MapPGError(err)
+	}
+
+	if err := r.replaceArtistsTx(ctx, tx, item.ID, artists); err != nil {
+		return nil, err
 	}
 
 	if err := r.replaceGenresTx(ctx, tx, item.ID, req.GenreIDs); err != nil {
@@ -77,8 +154,22 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*Track, error) 
 	var item Track
 	err := r.db.GetContext(ctx, &item, `
 		SELECT
-			id, artist_id, album_id, title, slug, duration_seconds, track_number,
-			explicit, audio_url, cover_url, play_count, is_public, created_at, updated_at
+			id,
+			artist_id,
+			album_id,
+			title,
+			slug,
+			duration_seconds,
+			track_number,
+			explicit,
+			audio_url,
+			cover_url,
+			audio_media_id,
+			cover_media_id,
+			play_count,
+			is_public,
+			created_at,
+			updated_at
 		FROM tracks
 		WHERE id = $1
 	`, id)
@@ -89,11 +180,9 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*Track, error) 
 		return nil, err
 	}
 
-	genres, err := r.listGenresByTrack(ctx, id)
-	if err != nil {
+	if err := r.hydrate(ctx, &item); err != nil {
 		return nil, err
 	}
-	item.Genres = genres
 
 	return &item, nil
 }
@@ -103,14 +192,30 @@ func (r *Repository) List(ctx context.Context, limit, offset int, publicOnly boo
 
 	query := `
 		SELECT
-			id, artist_id, album_id, title, slug, duration_seconds, track_number,
-			explicit, audio_url, cover_url, play_count, is_public, created_at, updated_at
+			id,
+			artist_id,
+			album_id,
+			title,
+			slug,
+			duration_seconds,
+			track_number,
+			explicit,
+			audio_url,
+			cover_url,
+			audio_media_id,
+			cover_media_id,
+			play_count,
+			is_public,
+			created_at,
+			updated_at
 		FROM tracks
 	`
+
 	args := []any{}
 	if publicOnly {
 		query += ` WHERE is_public = TRUE`
 	}
+
 	query += ` ORDER BY created_at DESC LIMIT $1 OFFSET $2`
 	args = append(args, limit, offset)
 
@@ -120,11 +225,9 @@ func (r *Repository) List(ctx context.Context, limit, offset int, publicOnly boo
 	}
 
 	for i := range items {
-		genres, err := r.listGenresByTrack(ctx, items[i].ID)
-		if err != nil {
+		if err := r.hydrate(ctx, &items[i]); err != nil {
 			return nil, err
 		}
-		items[i].Genres = genres
 	}
 
 	return items, nil
@@ -160,12 +263,28 @@ func (r *Repository) Update(ctx context.Context, id uuid.UUID, req UpdateRequest
 			explicit = COALESCE($7, explicit),
 			audio_url = COALESCE($8, audio_url),
 			cover_url = COALESCE($9, cover_url),
-			is_public = COALESCE($10, is_public),
+			audio_media_id = COALESCE($10, audio_media_id),
+			cover_media_id = COALESCE($11, cover_media_id),
+			is_public = COALESCE($12, is_public),
 			updated_at = NOW()
 		WHERE id = $1
 		RETURNING
-			id, artist_id, album_id, title, slug, duration_seconds, track_number,
-			explicit, audio_url, cover_url, play_count, is_public, created_at, updated_at
+			id,
+			artist_id,
+			album_id,
+			title,
+			slug,
+			duration_seconds,
+			track_number,
+			explicit,
+			audio_url,
+			cover_url,
+			audio_media_id,
+			cover_media_id,
+			play_count,
+			is_public,
+			created_at,
+			updated_at
 	`,
 		id,
 		req.AlbumID,
@@ -176,6 +295,8 @@ func (r *Repository) Update(ctx context.Context, id uuid.UUID, req UpdateRequest
 		req.Explicit,
 		req.AudioURL,
 		req.CoverURL,
+		req.AudioMediaID,
+		req.CoverMediaID,
 		req.IsPublic,
 	)
 	if err == sql.ErrNoRows {
@@ -183,6 +304,28 @@ func (r *Repository) Update(ctx context.Context, id uuid.UUID, req UpdateRequest
 	}
 	if err != nil {
 		return nil, common.MapPGError(err)
+	}
+
+	if req.Artists != nil {
+		artists := normalizeTrackArtists(req.Artists, uuid.Nil)
+		if len(artists) == 0 {
+			return nil, common.ErrInvalidInput
+		}
+
+		if err := r.replaceArtistsTx(ctx, tx, id, artists); err != nil {
+			return nil, err
+		}
+
+		newPrimary := primaryArtistID(artists, uuid.Nil)
+		if newPrimary != uuid.Nil {
+			if _, err := tx.ExecContext(ctx, `
+				UPDATE tracks
+				SET artist_id = $2, updated_at = NOW()
+				WHERE id = $1
+			`, id, newPrimary); err != nil {
+				return nil, common.MapPGError(err)
+			}
+		}
 	}
 
 	if req.GenreIDs != nil {
@@ -203,14 +346,83 @@ func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return common.MapPGError(err)
 	}
+
 	rows, err := res.RowsAffected()
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return common.ErrNotFound
 	}
+
 	return nil
+}
+
+func (r *Repository) hydrate(ctx context.Context, item *Track) error {
+	artists, err := r.listArtistsByTrack(ctx, item.ID)
+	if err != nil {
+		return err
+	}
+	item.Artists = artists
+
+	genres, err := r.listGenresByTrack(ctx, item.ID)
+	if err != nil {
+		return err
+	}
+	item.Genres = genres
+
+	return nil
+}
+
+func (r *Repository) replaceArtistsTx(ctx context.Context, tx *sqlx.Tx, trackID uuid.UUID, artists []TrackArtistRequest) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM track_artists WHERE track_id = $1`, trackID); err != nil {
+		return common.MapPGError(err)
+	}
+
+	for i, a := range artists {
+		role := a.Role
+		if role == "" {
+			role = "primary"
+		}
+
+		position := a.Position
+		if position <= 0 {
+			position = i + 1
+		}
+
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO track_artists (
+				track_id,
+				artist_id,
+				role,
+				position
+			)
+			VALUES ($1, $2, $3, $4)
+		`, trackID, a.ArtistID, role, position); err != nil {
+			return common.MapPGError(err)
+		}
+	}
+
+	return nil
+}
+
+func (r *Repository) listArtistsByTrack(ctx context.Context, trackID uuid.UUID) ([]TrackArtist, error) {
+	var items []TrackArtist
+	err := r.db.SelectContext(ctx, &items, `
+		SELECT
+			a.id AS artist_id,
+			a.name,
+			a.slug,
+			ta.role,
+			ta.position
+		FROM track_artists ta
+		INNER JOIN artists a ON a.id = ta.artist_id
+		WHERE ta.track_id = $1
+		ORDER BY ta.position ASC, ta.role ASC, a.name ASC
+	`, trackID)
+
+	return items, err
 }
 
 func (r *Repository) replaceGenresTx(ctx context.Context, tx *sqlx.Tx, trackID uuid.UUID, genreIDs []uuid.UUID) error {
@@ -226,6 +438,7 @@ func (r *Repository) replaceGenresTx(ctx context.Context, tx *sqlx.Tx, trackID u
 			return common.MapPGError(err)
 		}
 	}
+
 	return nil
 }
 
@@ -238,5 +451,171 @@ func (r *Repository) listGenresByTrack(ctx context.Context, trackID uuid.UUID) (
 		WHERE tg.track_id = $1
 		ORDER BY g.name ASC
 	`, trackID)
+
 	return items, err
+}
+func normalizeTrackCredits(credits []TrackCreditRequest) []TrackCreditRequest {
+	for i := range credits {
+		if credits[i].Position <= 0 {
+			credits[i].Position = i + 1
+		}
+	}
+
+	return credits
+}
+
+func (r *Repository) ListCredits(ctx context.Context, trackID uuid.UUID) ([]TrackCredit, error) {
+	var items []TrackCredit
+
+	err := r.db.SelectContext(ctx, &items, `
+		SELECT
+			tc.id,
+			tc.track_id,
+			tc.artist_id,
+			a.name AS artist_name,
+			a.slug AS artist_slug,
+			tc.credit_type,
+			tc.position,
+			tc.created_at
+		FROM track_credits tc
+		INNER JOIN artists a ON a.id = tc.artist_id
+		WHERE tc.track_id = $1
+		ORDER BY tc.position ASC, tc.credit_type ASC, a.name ASC
+	`, trackID)
+
+	return items, err
+}
+
+func (r *Repository) ReplaceCredits(ctx context.Context, trackID uuid.UUID, credits []TrackCreditRequest) ([]TrackCredit, error) {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var exists bool
+	err = tx.GetContext(ctx, &exists, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM tracks
+			WHERE id = $1
+		)
+	`, trackID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, common.ErrNotFound
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM track_credits
+		WHERE track_id = $1
+	`, trackID); err != nil {
+		return nil, common.MapPGError(err)
+	}
+
+	credits = normalizeTrackCredits(credits)
+
+	for _, c := range credits {
+		if c.ArtistID == uuid.Nil || c.CreditType == "" {
+			return nil, common.ErrInvalidInput
+		}
+
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO track_credits (
+				track_id,
+				artist_id,
+				credit_type,
+				position
+			)
+			VALUES ($1, $2, $3, $4)
+		`,
+			trackID,
+			c.ArtistID,
+			c.CreditType,
+			c.Position,
+		); err != nil {
+			return nil, common.MapPGError(err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return r.ListCredits(ctx, trackID)
+}
+func (r *Repository) ListArtists(ctx context.Context, trackID uuid.UUID) ([]TrackArtist, error) {
+	var exists bool
+	err := r.db.GetContext(ctx, &exists, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM tracks
+			WHERE id = $1
+		)
+	`, trackID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, common.ErrNotFound
+	}
+
+	return r.listArtistsByTrack(ctx, trackID)
+}
+
+func (r *Repository) ReplaceArtists(ctx context.Context, trackID uuid.UUID, artists []TrackArtistRequest) ([]TrackArtist, error) {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var exists bool
+	err = tx.GetContext(ctx, &exists, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM tracks
+			WHERE id = $1
+		)
+	`, trackID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, common.ErrNotFound
+	}
+
+	artists = normalizeTrackArtists(artists, uuid.Nil)
+	if len(artists) == 0 {
+		return nil, common.ErrInvalidInput
+	}
+
+	for _, a := range artists {
+		if a.ArtistID == uuid.Nil {
+			return nil, common.ErrInvalidInput
+		}
+	}
+
+	if err := r.replaceArtistsTx(ctx, tx, trackID, artists); err != nil {
+		return nil, err
+	}
+
+	newPrimary := primaryArtistID(artists, uuid.Nil)
+	if newPrimary != uuid.Nil {
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE tracks
+			SET artist_id = $2, updated_at = NOW()
+			WHERE id = $1
+		`, trackID, newPrimary); err != nil {
+			return nil, common.MapPGError(err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return r.listArtistsByTrack(ctx, trackID)
 }

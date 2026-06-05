@@ -10,7 +10,7 @@ import (
 )
 
 func registerMediaRoutes(r *gin.Engine, mediaRoot string) {
-	r.GET("/media/*filepath", func(c *gin.Context) {
+	r.GET("/uploads/*filepath", func(c *gin.Context) {
 		requestedPath := c.Param("filepath")
 
 		requestedPath = strings.TrimPrefix(requestedPath, "/")

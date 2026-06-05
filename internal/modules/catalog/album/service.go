@@ -29,6 +29,15 @@ func (s *Service) List(ctx context.Context, limit, offset int) ([]Album, error) 
 	return s.repo.List(ctx, limit, offset)
 }
 
+func (s *Service) ListTracks(ctx context.Context, id string, limit, offset int) ([]AlbumTrack, error) {
+	uid, err := common.ParseUUID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.repo.ListTracks(ctx, uid, limit, offset)
+}
+
 func (s *Service) Update(ctx context.Context, id string, req UpdateRequest) (*Album, error) {
 	uid, err := common.ParseUUID(id)
 	if err != nil {
@@ -43,4 +52,21 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 		return err
 	}
 	return s.repo.Delete(ctx, uid)
+}
+func (s *Service) ListArtists(ctx context.Context, id string) ([]AlbumArtist, error) {
+	uid, err := common.ParseUUID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.repo.ListArtists(ctx, uid)
+}
+
+func (s *Service) ReplaceArtists(ctx context.Context, id string, artists []AlbumArtistRequest) ([]AlbumArtist, error) {
+	uid, err := common.ParseUUID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.repo.ReplaceArtists(ctx, uid, artists)
 }

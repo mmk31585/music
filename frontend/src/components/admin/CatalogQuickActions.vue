@@ -1,61 +1,53 @@
 <template>
-  <div class="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg">
-    <div class="mb-6">
-      <h2 class="text-xl font-bold text-white">Catalog quick actions</h2>
-      <p class="mt-2 text-sm text-slate-400">
-        Shortcuts for managing tracks, artists, albums, and genres.
-      </p>
-    </div>
+  <div class="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6">
+    <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-400">Quick actions</h3>
 
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <RouterLink
-        to="/admin/media"
-        class="rounded-2xl border border-white/10 bg-black/20 p-5 transition hover:border-[#1db954]/40 hover:bg-white/5"
+        v-for="action in actions"
+        :key="action.to"
+        :to="action.to"
+        class="group flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5 transition-all duration-200 hover:border-emerald-500/20 hover:bg-emerald-500/5"
       >
         <div
-          class="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1db954]/15 text-[#1db954]"
+          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 transition-colors group-hover:bg-emerald-500/10"
         >
-          <i class="pi pi-upload" />
+          <i :class="[action.icon, 'text-sm text-slate-400 group-hover:text-emerald-400 transition-colors']" />
         </div>
-        <h3 class="font-semibold text-white">Upload media</h3>
-        <p class="mt-2 text-sm text-slate-400">Upload audio and media assets.</p>
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-white">{{ action.label }}</p>
+          <p class="truncate text-xs text-slate-500">{{ action.description }}</p>
+        </div>
       </RouterLink>
-
-      <button
-        class="rounded-2xl border border-white/10 bg-black/20 p-5 text-left transition hover:border-[#1db954]/40 hover:bg-white/5"
-      >
-        <div
-          class="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1db954]/15 text-[#1db954]"
-        >
-          <i class="pi pi-plus-circle" />
-        </div>
-        <h3 class="font-semibold text-white">Create track</h3>
-        <p class="mt-2 text-sm text-slate-400">Add new tracks to the catalog.</p>
-      </button>
-
-      <button
-        class="rounded-2xl border border-white/10 bg-black/20 p-5 text-left transition hover:border-[#1db954]/40 hover:bg-white/5"
-      >
-        <div
-          class="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1db954]/15 text-[#1db954]"
-        >
-          <i class="pi pi-users" />
-        </div>
-        <h3 class="font-semibold text-white">Manage artists</h3>
-        <p class="mt-2 text-sm text-slate-400">Create or edit artist records.</p>
-      </button>
-
-      <button
-        class="rounded-2xl border border-white/10 bg-black/20 p-5 text-left transition hover:border-[#1db954]/40 hover:bg-white/5"
-      >
-        <div
-          class="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1db954]/15 text-[#1db954]"
-        >
-          <i class="pi pi-book" />
-        </div>
-        <h3 class="font-semibold text-white">Manage albums</h3>
-        <p class="mt-2 text-sm text-slate-400">Update album metadata and covers.</p>
-      </button>
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+const actions = [
+  {
+    label: 'Manage Tracks',
+    description: 'View & edit tracks',
+    icon: 'pi pi-play-circle',
+    to: '/admin/tracks',
+  },
+  {
+    label: 'Manage Artists',
+    description: 'View & edit artists',
+    icon: 'pi pi-users',
+    to: '/admin/artists',
+  },
+  {
+    label: 'Manage Albums',
+    description: 'View & edit albums',
+    icon: 'pi pi-book',
+    to: '/admin/albums',
+  },
+  {
+    label: 'Manage Genres',
+    description: 'View & edit genres',
+    icon: 'pi pi-tags',
+    to: '/admin/genres',
+  },
+]
+</script>

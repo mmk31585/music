@@ -1,352 +1,220 @@
 <template>
-  <div class="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg">
-    <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-      <div>
-        <h2 class="text-xl font-bold text-white">Albums</h2>
-        <p class="mt-2 text-sm text-slate-400">Manage album titles, covers, and artists.</p>
+  <div>
+    <!-- Toolbar -->
+    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-sm tabular-nums text-slate-500">
+          {{ filteredAlbums.length }} album{{ filteredAlbums.length !== 1 ? 's' : '' }}
+        </span>
+        <div class="h-4 w-px bg-white/10" />
+        <InputText
+          v-model="searchQuery"
+          placeholder="Search albums..."
+          class="!h-9 !w-56 !rounded-lg !border-white/[0.08] !bg-white/[0.03] !text-sm !text-white placeholder:!text-slate-600"
+        />
       </div>
 
       <Button
         label="Add album"
         icon="pi pi-plus"
-        class="border-0 bg-[#1db954] text-black"
+        size="small"
+        class="!rounded-xl !bg-emerald-500 !px-4 !text-black hover:!bg-emerald-400"
         @click="openCreate"
       />
     </div>
 
-    <DataTable
-      :value="albums"
-      :loading="loading"
-      data-key="id"
-      responsive-layout="scroll"
-      class="overflow-hidden rounded-2xl"
-    >
-      <Column header="Cover">
-        <template #body="{ data }">
-          <img
-            v-if="data.cover_url"
-            :src="data.cover_url"
-            :alt="data.title"
-            class="h-12 w-12 rounded-xl object-cover"
-          />
-
-          <div
-            v-else
-            class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-xs text-slate-400"
-          >
-            N/A
-          </div>
-        </template>
-      </Column>
-
-      <Column field="title" header="Title" sortable />
-
-      <Column header="Artist">
-        <template #body="{ data }">
-          {{ getArtistName(data.artist_id) }}
-        </template>
-      </Column>
-
-      <Column field="cover_url" header="Cover URL">
-        <template #body="{ data }">
-          <span class="line-clamp-1 max-w-md text-sm text-slate-300">
-            {{ data.cover_url || '-' }}
-          </span>
-        </template>
-      </Column>
-
-      <Column header="Actions">
-        <template #body="{ data }">
-          <div class="flex gap-2">
-            <Button icon="pi pi-pencil" severity="secondary" text rounded @click="openEdit(data)" />
-
-            <Button
-              icon="pi pi-trash"
-              severity="danger"
-              text
-              rounded
-              :loading="deleting"
-              @click="handleDelete(data.id)"
-            />
-          </div>
-        </template>
-      </Column>
-
-      <template #empty>
-        <div class="py-8 text-center text-sm text-slate-400">No albums found.</div>
-      </template>
-    </DataTable>
-
-    <Dialog
-      v-model:visible="dialogVisible"
-      modal
-      :header="editingAlbum ? 'Edit album' : 'Add album'"
-      class="w-full max-w-lg"
-    >
-      <div class="flex flex-col gap-4">
-        <div>
-          <label class="mb-2 block text-sm font-medium text-slate-300">Title</label>
-
-          <InputText
-            v-model="form.title"
-            class="w-full"
-            placeholder="Album title"
-            autofocus
-            :disabled="saving || uploadingImage"
-          />
-        </div>
-
-        <div>
-          <label class="mb-2 block text-sm font-medium text-slate-300">Artist</label>
-
-          <Dropdown
-            v-model="form.artist_id"
-            :options="artistOptions"
-            option-label="label"
-            option-value="value"
-            placeholder="Select artist"
-            class="w-full"
-            :loading="artistsLoading"
-            :disabled="saving || uploadingImage"
-            show-clear
-          />
-        </div>
-
-        <div>
-          <label class="mb-2 block text-sm font-medium text-slate-300">Album cover</label>
-
-          <input
-            type="file"
-            accept="image/*"
-            class="block w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-300 file:mr-4 file:rounded-lg file:border-0 file:bg-[#1db954] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-black"
-            :disabled="saving || uploadingImage"
-            @change="handleCoverImageChange"
-          />
-
-          <p v-if="uploadingImage" class="mt-2 text-xs text-slate-400">Uploading cover...</p>
-
-          <p v-if="uploadImageError" class="mt-2 text-xs text-red-300">
-            {{ uploadImageError }}
-          </p>
-
-          <p v-if="form.cover_url" class="mt-2 line-clamp-1 text-xs text-slate-500">
-            {{ form.cover_url }}
-          </p>
-        </div>
-
-        <div v-if="form.cover_url" class="rounded-2xl bg-black/20 p-3">
-          <img
-            :src="form.cover_url"
-            alt="Album preview"
-            class="h-32 w-32 rounded-2xl object-cover"
-          />
-
-          <Button
-            type="button"
-            label="Remove cover"
-            severity="danger"
-            text
-            size="small"
-            class="mt-3 px-0"
-            :disabled="saving || uploadingImage"
-            @click="removeCover"
-          />
-        </div>
-
-        <div
-          v-if="errorMessage"
-          class="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
-        >
-          {{ errorMessage }}
+    <!-- Content -->
+    <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+      <!-- Loading -->
+      <div v-if="loading" class="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3 lg:grid-cols-4">
+        <div v-for="i in 8" :key="i" class="space-y-3">
+          <div class="aspect-square animate-pulse rounded-xl bg-white/[0.06]" />
+          <div class="h-4 w-3/4 animate-pulse rounded bg-white/[0.06]" />
+          <div class="h-3 w-1/2 animate-pulse rounded bg-white/[0.04]" />
         </div>
       </div>
 
-      <template #footer>
-        <Button
-          label="Cancel"
-          severity="secondary"
-          outlined
-          :disabled="saving || uploadingImage"
-          @click="dialogVisible = false"
-        />
+      <!-- Empty -->
+      <AdminEmptyState
+        v-else-if="filteredAlbums.length === 0 && !searchQuery"
+        icon="pi pi-book"
+        title="No albums yet"
+        description="Create your first album to organize tracks."
+      >
+        <template #action>
+          <Button
+            label="Add album"
+            icon="pi pi-plus"
+            size="small"
+            class="!rounded-xl !bg-emerald-500 !px-4 !text-black hover:!bg-emerald-400"
+            @click="openCreate"
+          />
+        </template>
+      </AdminEmptyState>
 
-        <Button
-          :label="editingAlbum ? 'Save changes' : 'Create album'"
-          icon="pi pi-check"
-          :loading="saving"
-          :disabled="!canSubmit"
-          class="border-0 bg-[#1db954] text-black"
-          @click="submit"
-        />
-      </template>
-    </Dialog>
+      <AdminEmptyState
+        v-else-if="filteredAlbums.length === 0 && searchQuery"
+        icon="pi pi-search"
+        title="No results found"
+        :description="`No albums matching &quot;${searchQuery}&quot;`"
+      />
+
+      <!-- Album Grid -->
+      <div v-else class="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3 lg:grid-cols-4">
+        <div
+          v-for="album in filteredAlbums"
+          :key="album.id"
+          class="group cursor-default"
+        >
+          <!-- Cover -->
+          <div
+            class="relative aspect-square overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.04]"
+          >
+            <img
+              v-if="album.cover_url"
+              :src="album.cover_url"
+              :alt="album.title"
+              class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              @error="($event.target as HTMLImageElement).style.display = 'none'"
+            />
+            <div
+              v-else
+              class="flex h-full w-full items-center justify-center"
+            >
+              <i class="pi pi-image text-3xl text-slate-700" />
+            </div>
+
+            <!-- Overlay actions -->
+            <div
+              class="absolute inset-0 flex items-end justify-end gap-1 bg-gradient-to-t from-black/60 via-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100"
+            >
+              <Button
+                icon="pi pi-pencil"
+                rounded
+                size="small"
+                class="!h-8 !w-8 !bg-white/20 !text-white !backdrop-blur-sm hover:!bg-white/30"
+                @click="openEdit(album)"
+              />
+              <Button
+                icon="pi pi-trash"
+                rounded
+                size="small"
+                class="!h-8 !w-8 !bg-white/20 !text-white !backdrop-blur-sm hover:!bg-red-500/60"
+                @click="openDeleteConfirm(album)"
+              />
+            </div>
+          </div>
+
+          <!-- Info -->
+          <div class="mt-2.5 min-w-0">
+            <p class="truncate text-sm font-medium text-white">{{ album.title }}</p>
+            <p class="mt-0.5 truncate text-xs text-slate-500">
+              {{ album.artist_name || 'Unknown artist' }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Dialog -->
+    <AlbumFormDialog
+      v-model="showForm"
+      :album="selectedAlbum"
+      :saving="saving"
+      @submit="handleSubmit"
+    />
+
+    <!-- Delete Confirm -->
+    <AdminDeleteConfirm
+      v-model="showDelete"
+      title="Delete album"
+      :item-name="deleteTarget?.title"
+      :deleting="deleting"
+      @confirm="handleDelete"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import Button from 'primevue/button'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
-import Dropdown from 'primevue/dropdown'
 import { useToast } from 'primevue/usetoast'
-
-import { useAdminAlbums, useAdminArtists } from '@/composables/admin'
-import { useCatalogImageUpload } from '@/composables/media/useCatalogImageUpload'
-import type { Album } from '@/services/api/catalog'
+import AdminEmptyState from './AdminEmptyState.vue'
+import AlbumFormDialog from './AlbumFormDialog.vue'
+import AdminDeleteConfirm from './AdminDeleteConfirm.vue'
+import { useAdminAlbums, type AlbumFormPayload } from '@/composables/admin/useAdminAlbums'
+import type { Album } from '@/services/api/catalog/albums'
 
 const toast = useToast()
+const {
+  albums,
+  loading,
+  saving,
+  deleting,
+  fetchAlbums,
+  createAlbum,
+  updateAlbum,
+  deleteAlbum,
+} = useAdminAlbums()
 
-const { albums, loading, saving, deleting, fetchAlbums, createAlbum, updateAlbum, deleteAlbum } =
-  useAdminAlbums()
+const searchQuery = ref('')
+const showForm = ref(false)
+const showDelete = ref(false)
+const selectedAlbum = ref<Album | null>(null)
+const deleteTarget = ref<Album | null>(null)
 
-const { artists, loading: artistsLoading, fetchArtists } = useAdminArtists()
-
-const { uploadingImage, uploadImageError, uploadCatalogImage } = useCatalogImageUpload()
-
-const dialogVisible = ref(false)
-const editingAlbum = ref<Album | null>(null)
-const errorMessage = ref('')
-
-const form = reactive({
-  title: '',
-  artist_id: null as string | number | null,
-  cover_url: '',
+const filteredAlbums = computed(() => {
+  const q = searchQuery.value.toLowerCase().trim()
+  if (!q) return albums.value
+  return albums.value.filter(
+    (a) =>
+      a.title.toLowerCase().includes(q) ||
+      a.artist_name?.toLowerCase().includes(q),
+  )
 })
 
-const canSubmit = computed(() => {
-  return form.title.trim().length > 0 && !saving.value && !uploadingImage.value
-})
-
-const artistOptions = computed(() => {
-  return artists.value.map((artist) => ({
-    label: artist.name,
-    value: artist.id,
-  }))
-})
-
-onMounted(async () => {
-  await Promise.all([fetchAlbums(), fetchArtists()])
-})
-
-function getArtistName(id: string | number | null | undefined) {
-  if (id == null) return '-'
-
-  const artist = artists.value.find((item) => String(item.id) === String(id))
-  return artist?.name || '-'
-}
-
-function resetForm() {
-  form.title = ''
-  form.artist_id = null
-  form.cover_url = ''
-  errorMessage.value = ''
-  editingAlbum.value = null
-}
+onMounted(fetchAlbums)
 
 function openCreate() {
-  resetForm()
-  dialogVisible.value = true
+  selectedAlbum.value = null
+  showForm.value = true
 }
 
 function openEdit(album: Album) {
-  editingAlbum.value = album
-  form.title = album.title
-  form.artist_id = album.artist_id ?? null
-  form.cover_url = album.cover_url || ''
-  errorMessage.value = ''
-  dialogVisible.value = true
+  selectedAlbum.value = album
+  showForm.value = true
 }
 
-async function handleCoverImageChange(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
+function openDeleteConfirm(album: Album) {
+  deleteTarget.value = album
+  showDelete.value = true
+}
 
-  if (!file) return
-
-  errorMessage.value = ''
-
+async function handleSubmit(payload: AlbumFormPayload) {
   try {
-    form.cover_url = await uploadCatalogImage(file, 'album-cover')
-
-    toast.add({
-      severity: 'success',
-      summary: 'Cover uploaded',
-      life: 2000,
-    })
-  } catch {
-    errorMessage.value = 'Could not upload album cover. Please try again.'
-  } finally {
-    input.value = ''
-  }
-}
-
-function removeCover() {
-  form.cover_url = ''
-}
-
-function getPayload() {
-  return {
-    title: form.title.trim(),
-    artist_id: form.artist_id,
-    cover_url: form.cover_url.trim() || null,
-  }
-}
-
-async function submit() {
-  if (!canSubmit.value) return
-
-  errorMessage.value = ''
-
-  try {
-    if (editingAlbum.value) {
-      const updated = await updateAlbum(editingAlbum.value.id, getPayload())
-
-      toast.add({
-        severity: 'success',
-        summary: 'Album updated',
-        detail: updated.title,
-        life: 2500,
-      })
+    if (selectedAlbum.value) {
+      await updateAlbum(selectedAlbum.value.id, payload)
+      toast.add({ severity: 'success', summary: 'Album updated', life: 2500 })
     } else {
-      const created = await createAlbum(getPayload())
-
-      toast.add({
-        severity: 'success',
-        summary: 'Album created',
-        detail: created.title,
-        life: 2500,
-      })
+      await createAlbum(payload)
+      toast.add({ severity: 'success', summary: 'Album created', life: 2500 })
     }
-
-    dialogVisible.value = false
-    resetForm()
+    showForm.value = false
   } catch {
-    errorMessage.value = 'Could not save album. Please try again.'
+    toast.add({ severity: 'error', summary: 'Operation failed', life: 3000 })
   }
 }
 
-async function handleDelete(id: string | number) {
-  const confirmed = window.confirm('Delete this album?')
-  if (!confirmed) return
-
+async function handleDelete() {
+  if (!deleteTarget.value) return
   try {
-    await deleteAlbum(id)
-
-    toast.add({
-      severity: 'success',
-      summary: 'Album deleted',
-      life: 2500,
-    })
+    await deleteAlbum(deleteTarget.value.id)
+    toast.add({ severity: 'success', summary: 'Album deleted', life: 2500 })
+    showDelete.value = false
+    deleteTarget.value = null
   } catch {
-    toast.add({
-      severity: 'error',
-      summary: 'Delete failed',
-      detail: 'Could not delete album.',
-      life: 3000,
-    })
+    toast.add({ severity: 'error', summary: 'Delete failed', life: 3000 })
   }
 }
 </script>

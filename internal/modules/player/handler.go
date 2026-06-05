@@ -1,16 +1,11 @@
 package player
 
 import (
-	"context"
 	"errors"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/gin-gonic/gin"
-
-	appErrors "music/internal/common/errors"
-	"music/internal/common/response"
 )
 
 type Handler struct {
@@ -23,119 +18,170 @@ func NewHandler(service *Service) *Handler {
 	}
 }
 
-// GetPlaybackTrack godoc
-// @Summary Get track playback details
-// @Description Returns track info and a streaming URL.
-// @Tags player
-// @Produce json
-// @Param id path string true "Track ID"
-// @Success 200 {object} response.SuccessResponse
-// @Failure 400 {object} response.ErrorResponse
-// @Failure 401 {object} response.ErrorResponse
-// @Failure 403 {object} response.ErrorResponse
-// @Failure 404 {object} response.ErrorResponse
-// @Failure 500 {object} response.ErrorResponse
-// @Router /player/tracks/{id} [get]
-func (h *Handler) GetPlaybackTrack(c *gin.Context) {
-	trackID := c.Param("id")
+type PlaybackResponse struct {
+	Success bool `json:"success"`
+	Data    any  `json:"data"`
+}
 
-	track, err := h.service.GetPlaybackTrack(c.Request.Context(), trackID)
+type ErrorResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
+// GetPlaybackTrack godoc
+//
+//	@Summary		Get public track playback information
+//	@Description	Returns public playback metadata for a track
+//	@Tags			Player
+//	@Produce		json
+//	@Param			id	path		string	true	"Track ID"
+//	@Success		200	{object}	PlaybackResponse
+//	@Failure		400	{object}	ErrorResponse	"Invalid track ID"
+//	@Failure		403	{object}	ErrorResponse	"Track is private"
+//	@Failure		404	{object}	ErrorResponse	"Track not found"
+//	@Failure		500	{object}	ErrorResponse	"Internal server error"
+//	@Router			/player/tracks/{id} [get]
+func (h *Handler) GetPlaybackTrack(c *gin.Context) {
+	track, err := h.service.GetPlaybackTrack(c.Request.Context(), c.Param("id"))
 	if err != nil {
-		log.Print("Get Playback Track Error")
 		h.handleError(c, err)
 		return
 	}
 
-	payload := h.service.BuildPlaybackResponse(track)
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    h.service.BuildPlaybackResponse(track),
+	})
+}
 
-	response.Success(c, http.StatusOK, "Success", payload)
+// GetAdminPlaybackTrack godoc
+//
+//	@Summary		Get admin playback track
+//	@Description	Returns playback metadata including private tracks
+//	@Tags			Player Admin
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		string	true	"Track ID"
+//	@Success		200	{object}	PlaybackResponse
+//	@Failure		400	{object}	ErrorResponse	"Invalid track ID"
+//	@Failure		404	{object}	ErrorResponse	"Track not found"
+//	@Failure		500	{object}	ErrorResponse	"Internal server error"
+//	@Router			/admin/player/tracks/{id} [get]
+func (h *Handler) GetAdminPlaybackTrack(c *gin.Context) {
+	track, err := h.service.GetAdminPlaybackTrack(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		h.handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    h.service.BuildAdminPlaybackResponse(track),
+	})
 }
 
 // StreamTrack godoc
-// @Summary Stream track audio
-// @Description Serves the actual audio file.
-// @Tags player
-// @Param id path string true "Track ID"
-// @Produce audio/mpeg
-// @Success 200 {file} binary
-// @Failure 400 {object} map[string]interface{}
-// @Failure 403 {object} map[string]interface{}
-// @Failure 404 {object} map[string]interface{}
-// @Failure 500 {object} map[string]interface{}
-// @Router /player/tracks/{id}/stream [get]
+//
+//	@Summary		Stream track audio
+//	@Description	Redirects client to the actual audio file URL
+//	@Tags			Player
+//	@Produce		plain
+//	@Param			id	path	string	true	"Track ID"
+//	@Success		302	"Redirect to audio file"
+//	@Failure		400	{object}	ErrorResponse	"Invalid track ID"
+//	@Failure		403	{object}	ErrorResponse	"Track is private"
+//	@Failure		404	{object}	ErrorResponse	"Track or audio not found"
+//	@Failure		500	{object}	ErrorResponse	"Internal server error"
+//	@Router			/player/tracks/{id}/stream [get]
 func (h *Handler) StreamTrack(c *gin.Context) {
-	trackID := c.Param("id")
-	track, err := h.service.GetPlaybackTrack(c.Request.Context(), trackID)
+	log.Println("StreamTrack handler hit, id:", c.Param("id"))
+
+	track, err := h.service.GetPlaybackTrack(c.Request.Context(), c.Param("id"))
 	if err != nil {
-		log.Print("Stream Track Error")
+		log.Println("GetPlaybackTrack error:", err)
 		h.handleError(c, err)
 		return
 	}
 
-	filePath, err := h.service.ResolveAudioFilePath(track.AudioURL)
+	log.Println("StreamTrack track audio_url:", track.AudioURL)
+
+	audioURL, err := h.service.ResolveAudioURL(c.Request.Context(), track.AudioURL)
 	if err != nil {
-		log.Print("Stream Audio Path Error")
+		log.Println("ResolveAudioURL error:", err)
 		h.handleError(c, err)
 		return
 	}
 
-	file, err := os.Open(filePath)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			c.JSON(http.StatusNotFound, gin.H{"message": "audio file not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to open audio file"})
-		return
-	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
+	log.Println("StreamTrack redirecting to:", audioURL)
 
-		}
-	}(file)
-
-	stat, err := file.Stat()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to read audio file"})
-		return
-	}
-
-	if stat.IsDir() {
-		c.JSON(http.StatusNotFound, gin.H{"message": "audio file not found"})
-		return
-	}
-
-	contentType := detectAudioContentType(filePath)
-	setStreamingHeaders(c.Writer, contentType)
-
-	go h.service.TrackPlayed(
-		context.Background(),
-		"",
-		track,
-		0,
-		false,
-		"stream",
-	)
-
-	http.ServeContent(c.Writer, c.Request, stat.Name(), stat.ModTime(), file)
+	c.Redirect(http.StatusFound, audioURL)
 }
 
-// Enable logging in the default case to see the ACTUAL error
+// StreamAdminTrack godoc
+//
+//	@Summary		Stream admin track audio
+//	@Description	Redirects client to the actual audio file URL including private tracks
+//	@Tags			Player Admin
+//	@Produce		plain
+//	@Security		BearerAuth
+//	@Param			id	path	string	true	"Track ID"
+//	@Success		302	"Redirect to audio file"
+//	@Failure		400	{object}	ErrorResponse	"Invalid track ID"
+//	@Failure		404	{object}	ErrorResponse	"Track or audio not found"
+//	@Failure		500	{object}	ErrorResponse	"Internal server error"
+//	@Router			/admin/player/tracks/{id}/stream [get]
+func (h *Handler) StreamAdminTrack(c *gin.Context) {
+	track, err := h.service.GetAdminPlaybackTrack(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		h.handleError(c, err)
+		return
+	}
+
+	audioURL, err := h.service.ResolveAudioURL(c.Request.Context(), track.AudioURL)
+	if err != nil {
+		h.handleError(c, err)
+		return
+	}
+
+	c.Redirect(http.StatusFound, audioURL)
+}
+
 func (h *Handler) handleError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, ErrInvalidTrackID):
-		response.Error(c, appErrors.BadRequest("invalid track id", nil))
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "invalid track id",
+		})
+
 	case errors.Is(err, ErrTrackNotFound):
-		response.Error(c, appErrors.NotFound("track not found", nil))
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"message": "track not found",
+		})
+
 	case errors.Is(err, ErrAudioNotFound):
-		response.Error(c, appErrors.NotFound("track audio not found", nil))
-	case errors.Is(err, ErrInvalidMediaURL):
-		response.Error(c, appErrors.BadRequest("invalid media url", nil))
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"message": "track audio not found",
+		})
+
 	case errors.Is(err, ErrPrivateTrack):
-		response.Error(c, appErrors.Forbidden("track is private", nil))
+		c.JSON(http.StatusForbidden, gin.H{
+			"success": false,
+			"message": "track is private",
+		})
+
+	case errors.Is(err, ErrInvalidMediaURL):
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "invalid media url",
+		})
+
 	default:
-		log.Printf("[PLAYER ERROR] %v", err)
-		response.Error(c, appErrors.Internal("player error lsknfd", err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "internal server error",
+		})
 	}
 }
