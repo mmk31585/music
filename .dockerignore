@@ -1,0 +1,17 @@
+.git
+.gitignore
+.github
+.idea
+*.log
+*.toml
+Makefile
+Dockerfile
+Dockerfile.worker
+tmp/
+uploads/
+scripts/
+frontend/
+deployments/
+deploy/
+docs/architecture/
+docs/*.md
