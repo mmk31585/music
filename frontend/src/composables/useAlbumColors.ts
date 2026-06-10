@@ -1,0 +1,167 @@
+import { ref, type Ref } from 'vue'
+import { watchDebounced } from '@vueuse/core'
+
+export interface AlbumColorPalette {
+  vibrant: string
+  muted: string
+  dark: string
+  light: string
+  gradient: string
+  dominant: string
+}
+
+function hexToRgb(hex: string) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  return result
+    ? {
+        r: parseInt(result[1]!, 16),
+        g: parseInt(result[2]!, 16),
+        b: parseInt(result[3]!, 16),
+      }
+    : { r: 0, g: 0, b: 0 }
+}
+
+function rgbToHex(r: number, g: number, b: number) {
+  const toHex = (n: number) =>
+    Math.max(0, Math.min(255, Math.round(n)))
+      .toString(16)
+      .padStart(2, '0')
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`
+}
+
+function extractPalette(imageData: ImageData): AlbumColorPalette {
+  const pixels = imageData.data
+  const colorBuckets = new Map<string, number>()
+  const step = 4
+
+  for (let i = 0; i < pixels.length; i += step * 4) {
+    const r = pixels[i]!
+    const g = pixels[i + 1]!
+    const b = pixels[i + 2]!
+    const key = `${Math.round(r / 16) * 16},${Math.round(g / 16) * 16},${Math.round(b / 16) * 16}`
+    colorBuckets.set(key, (colorBuckets.get(key) || 0) + 1)
+  }
+
+  const sorted = [...colorBuckets.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([key]) => {
+      const [r, g, b] = key.split(',').map(Number)
+      return { r: r!, g: g!, b: b! }
+    })
+
+  if (sorted.length === 0) {
+    return {
+      vibrant: '#1db954',
+      muted: '#1a1a2e',
+      dark: '#0a0a0a',
+      light: '#404060',
+      gradient: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #121212 100%)',
+      dominant: '#1a1a2e',
+    }
+  }
+
+  const dominant = sorted[0]!
+
+  const vibrant =
+    sorted.find((c) => {
+      const max = Math.max(c.r, c.g, c.b)
+      const min = Math.min(c.r, c.g, c.b)
+      return max - min > 60 && max > 100
+    }) || dominant
+
+  const dark = sorted.reduce((acc, c) => (c.r + c.g + c.b < acc.r + acc.g + acc.b ? c : acc))
+
+  const light = sorted.reduce((acc, c) => (c.r + c.g + c.b > acc.r + acc.g + acc.b ? c : acc))
+
+  const muted = sorted.length > 2 ? sorted[2]! : dominant
+
+  function adjustBrightness(color: { r: number; g: number; b: number }, factor: number) {
+    return {
+      r: Math.round(color.r * factor),
+      g: Math.round(color.g * factor),
+      b: Math.round(color.b * factor),
+    }
+  }
+
+  const gradient = `linear-gradient(135deg, ${rgbToHex(dark.r, dark.g, dark.b)} 0%, ${rgbToHex(dominant.r, dominant.g, dominant.b)} 50%, ${rgbToHex(muted.r, muted.g, muted.b)} 100%)`
+
+  return {
+    vibrant: rgbToHex(vibrant.r, vibrant.g, vibrant.b),
+    muted: rgbToHex(muted.r, muted.g, muted.b),
+    dark: rgbToHex(dark.r, dark.g, dark.b),
+    light: rgbToHex(light.r, light.g, light.b),
+    gradient,
+    dominant: rgbToHex(dominant.r, dominant.g, dominant.b),
+  }
+}
+
+const paletteCache = new Map<string, AlbumColorPalette>()
+
+const defaultPalette: AlbumColorPalette = {
+  vibrant: '#1db954',
+  muted: '#1a1a2e',
+  dark: '#0a0a0a',
+  light: '#404060',
+  gradient: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #121212 100%)',
+  dominant: '#1a1a2e',
+}
+
+let extractGeneration = 0
+const _globalPalette = ref<AlbumColorPalette>({ ...defaultPalette })
+const _globalLoading = ref(false)
+
+async function _extract(url: string) {
+  if (!url) return
+  const gen = ++extractGeneration
+  const cached = paletteCache.get(url)
+  if (cached) {
+    _globalPalette.value = cached
+    return
+  }
+
+  _globalLoading.value = true
+
+  try {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = () => reject(new Error('Failed to load image'))
+      img.src = url
+    })
+
+    if (gen !== extractGeneration) return
+
+    const canvas = document.createElement('canvas')
+    const size = 64
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('No canvas context')
+
+    ctx.drawImage(img, 0, 0, size, size)
+    const imageData = ctx.getImageData(0, 0, size, size)
+
+    const p = extractPalette(imageData)
+    paletteCache.set(url, p)
+    _globalPalette.value = p
+  } catch {
+    _globalPalette.value = { ...defaultPalette }
+  } finally {
+    _globalLoading.value = false
+  }
+}
+
+export function useAlbumColors(coverUrl: Ref<string | null | undefined>) {
+  watchDebounced(coverUrl, (url) => {
+    if (url) void _extract(url)
+  }, { debounce: 300, maxWait: 1000 })
+
+  return {
+    palette: _globalPalette,
+    loading: _globalLoading,
+    extract: _extract,
+  }
+}

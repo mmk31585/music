@@ -260,11 +260,7 @@
                 <span v-if="sleepTimerMinutes > 0" class="tabular-nums">{{ sleepTimerMinutes }}m</span>
               </button>
 
-              <PopOutPlayerButton
-                :disabled="!currentTrack"
-                :active="isPiPOpen"
-                @click="emit('toggle-pip')"
-              />
+              
             </div>
 
             <!-- Up Next -->
@@ -514,7 +510,6 @@
         <div v-if="showOverflow" class="absolute top-14 right-4 z-20">
           <PlayerOverflowMenu
             @close="showOverflow = false"
-            @toggle-pip="emit('toggle-pip')"
           />
         </div>
       </div>
@@ -532,18 +527,24 @@ import type { PlaybackTrack } from '@/services/api/player'
 import type { ParsedLine } from '@/composables/lyrics'
 import { parseLRCLines, parsePlainLines } from '@/composables/lyrics'
 import { onImgError } from '@/utils/helpers'
-import PopOutPlayerButton from './PopOutPlayerButton.vue'
-import { usePlayerPiPController } from '@/composables/usePlayerPiPController'
 import PlayerOverflowMenu from './PlayerOverflowMenu.vue'
 
-const props = defineProps<{ visible: boolean }>()
+const props = withDefaults(defineProps<{
+  visible: boolean
+  initialTab?: 'now-playing' | 'queue' | 'lyrics'
+}>(), {
+  initialTab: 'now-playing',
+})
 
 const emit = defineEmits<{
   'update:visible': [value: boolean]
-  'toggle-pip': []
 }>()
 
-const activeTab = ref<'now-playing' | 'queue' | 'lyrics'>('now-playing')
+const activeTab = ref<'now-playing' | 'queue' | 'lyrics'>(props.initialTab)
+
+watch(() => props.initialTab, (tab) => {
+  activeTab.value = tab
+})
 
 const tabs = [
   { key: 'now-playing' as const, label: 'Now Playing' },
@@ -591,9 +592,6 @@ const toggleRepeat = pc.toggleRepeat
 const setPlaybackRate = pc.setPlaybackRate
 const setSleepTimer = pc.setSleepTimer
 const clearSleepTimer = pc.clearSleepTimer
-
-const pip = usePlayerPiPController()
-const isPiPOpen = computed(() => pip.isOpen.value)
 
 const sleepOptions = [
   { value: 5, label: '5m' },
@@ -900,10 +898,6 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key === ' ' && e.target === e.currentTarget) {
     e.preventDefault()
     togglePlayPause()
-  }
-  if ((e.key === 'p' || e.key === 'P') && !e.ctrlKey && !e.metaKey) {
-    e.preventDefault()
-    emit('toggle-pip')
   }
 }
 

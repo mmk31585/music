@@ -1,0 +1,289 @@
+package ai
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
+)
+
+type Repository struct {
+	db *sqlx.DB
+}
+
+func NewRepository(db *sqlx.DB) *Repository {
+	return &Repository{db: db}
+}
+
+func (r *Repository) UpsertEmbedding(ctx context.Context, trackID uuid.UUID, embedding []float64, modelVersion string) error {
+	query := `
+		INSERT INTO track_embeddings (track_id, embedding, model_version, updated_at)
+		VALUES ($1, $2, $3, NOW())
+		ON CONFLICT (track_id)
+		DO UPDATE SET embedding = $2, model_version = $3, updated_at = NOW()
+	`
+	_, err := r.db.ExecContext(ctx, query, trackID, embedding, modelVersion)
+	return err
+}
+
+func (r *Repository) GetEmbedding(ctx context.Context, trackID uuid.UUID) (*TrackEmbedding, error) {
+	var e TrackEmbedding
+	err := r.db.GetContext(ctx, &e, `SELECT track_id, embedding, model_version, updated_at FROM track_embeddings WHERE track_id = $1`, trackID)
+	if err != nil {
+		return nil, err
+	}
+	return &e, nil
+}
+
+func (r *Repository) GetTracksWithoutEmbeddings(ctx context.Context, limit int) ([]TrackMeta, error) {
+	query := `
+		SELECT t.id, t.title FROM tracks t
+		LEFT JOIN track_embeddings te ON te.track_id = t.id
+		WHERE te.track_id IS NULL
+		LIMIT $1
+	`
+	rows, err := r.db.QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []TrackMeta
+	for rows.Next() {
+		var m TrackMeta
+		var idStr string
+		if err := rows.Scan(&idStr, &m.Title); err != nil {
+			return nil, err
+		}
+		m.ID = idStr
+		results = append(results, m)
+	}
+	return results, nil
+}
+
+func (r *Repository) UpsertMood(ctx context.Context, mood TrackMood) error {
+	tagsJSON, err := json.Marshal(mood.MoodTags)
+	if err != nil {
+		return fmt.Errorf("marshal mood tags: %w", err)
+	}
+	query := `
+		INSERT INTO track_moods (track_id, mood_tags, energy, valence, tempo, danceability, acousticness, instrumentalness, liveness, speechiness, updated_at)
+		VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+		ON CONFLICT (track_id)
+		DO UPDATE SET mood_tags = $2::jsonb, energy = $3, valence = $4, tempo = $5, danceability = $6,
+			acousticness = $7, instrumentalness = $8, liveness = $9, speechiness = $10, updated_at = NOW()
+	`
+	_, err = r.db.ExecContext(ctx, query,
+		mood.TrackID, string(tagsJSON),
+		mood.Energy, mood.Valence, mood.Tempo, mood.Danceability,
+		mood.Acousticness, mood.Instrumentalness, mood.Liveness, mood.Speechiness,
+	)
+	return err
+}
+
+func (r *Repository) GetMood(ctx context.Context, trackID uuid.UUID) (*TrackMood, error) {
+	var m TrackMood
+	err := r.db.GetContext(ctx, &m, `
+		SELECT track_id, mood_tags, energy, valence, tempo, danceability, acousticness, instrumentalness, liveness, speechiness, updated_at
+		FROM track_moods WHERE track_id = $1
+	`, trackID)
+	if err != nil {
+		return nil, err
+	}
+	return &m, nil
+}
+
+func (r *Repository) GetTracksByMood(ctx context.Context, moodName string, limit int) ([]TrackMeta, error) {
+	query := `
+		SELECT t.id, t.title FROM tracks t
+		JOIN track_moods tm ON tm.track_id = t.id
+		WHERE tm.mood_tags @> jsonb_build_array(jsonb_build_object('name', $1))
+		LIMIT $2
+	`
+	rows, err := r.db.QueryContext(ctx, query, moodName, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []TrackMeta
+	for rows.Next() {
+		var m TrackMeta
+		var idStr string
+		if err := rows.Scan(&idStr, &m.Title); err != nil {
+			return nil, err
+		}
+		m.ID = idStr
+		results = append(results, m)
+	}
+	return results, nil
+}
+
+func (r *Repository) GetTracksByMoodRange(ctx context.Context, minEnergy, maxEnergy, minValence, maxValence float64, limit int) ([]TrackMeta, error) {
+	query := `
+		SELECT t.id, t.title FROM tracks t
+		JOIN track_moods tm ON tm.track_id = t.id
+		WHERE tm.energy BETWEEN $1 AND $2
+		AND tm.valence BETWEEN $3 AND $4
+		LIMIT $5
+	`
+	rows, err := r.db.QueryContext(ctx, query, minEnergy, maxEnergy, minValence, maxValence, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []TrackMeta
+	for rows.Next() {
+		var m TrackMeta
+		var idStr string
+		if err := rows.Scan(&idStr, &m.Title); err != nil {
+			return nil, err
+		}
+		m.ID = idStr
+		results = append(results, m)
+	}
+	return results, nil
+}
+
+func (r *Repository) GetTracksWithoutMoods(ctx context.Context, limit int) ([]TrackMeta, error) {
+	query := `
+		SELECT t.id, t.title FROM tracks t
+		LEFT JOIN track_moods tm ON tm.track_id = t.id
+		WHERE tm.track_id IS NULL
+		LIMIT $1
+	`
+	rows, err := r.db.QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []TrackMeta
+	for rows.Next() {
+		var m TrackMeta
+		var idStr string
+		if err := rows.Scan(&idStr, &m.Title); err != nil {
+			return nil, err
+		}
+		m.ID = idStr
+		results = append(results, m)
+	}
+	return results, nil
+}
+
+func (r *Repository) GetTrackMetadata(ctx context.Context, trackID string) (*TrackMeta, error) {
+	query := `
+		SELECT t.id::text, t.title, COALESCE(a.name, '') as artist,
+			COALESCE(al.title, '') as album, COALESCE(g.name, '') as genre,
+			COALESCE(t.duration_seconds, 0) as duration
+		FROM tracks t
+		LEFT JOIN track_artists ta ON ta.track_id = t.id AND ta.position = 0
+		LEFT JOIN artists a ON a.id = ta.artist_id
+		LEFT JOIN albums al ON al.id = t.album_id
+		LEFT JOIN track_genres tg ON tg.track_id = t.id
+		LEFT JOIN genres g ON g.id = tg.genre_id
+		WHERE t.id = $1
+	`
+	var m TrackMeta
+	err := r.db.GetContext(ctx, &m, query, trackID)
+	if err != nil {
+		return nil, err
+	}
+	m.ID = trackID
+	return &m, nil
+}
+
+func (r *Repository) GetTracksByIDs(ctx context.Context, ids []string) ([]TrackMeta, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	query := `
+		SELECT t.id::text, t.title, COALESCE(a.name, '') as artist,
+			COALESCE(al.title, '') as album, COALESCE(g.name, '') as genre,
+			COALESCE(t.duration_seconds, 0) as duration
+		FROM tracks t
+		LEFT JOIN track_artists ta ON ta.track_id = t.id AND ta.position = 0
+		LEFT JOIN artists a ON a.id = ta.artist_id
+		LEFT JOIN albums al ON al.id = t.album_id
+		LEFT JOIN track_genres tg ON tg.track_id = t.id
+		LEFT JOIN genres g ON g.id = tg.genre_id
+		WHERE t.id = ANY($1)
+	`
+	rows, err := r.db.QueryContext(ctx, query, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []TrackMeta
+	for rows.Next() {
+		var m TrackMeta
+		if err := rows.Scan(&m.ID, &m.Title, &m.Artist, &m.Album, &m.Genre, &m.Duration); err != nil {
+			return nil, err
+		}
+		results = append(results, m)
+	}
+	return results, nil
+}
+
+func (r *Repository) GetSimilarByEmbedding(ctx context.Context, embedding []float64, limit int) ([]TrackMeta, error) {
+	query := `
+		SELECT t.id::text, t.title, COALESCE(a.name, '') as artist,
+			COALESCE(al.title, '') as album, COALESCE(g.name, '') as genre,
+			COALESCE(t.duration_seconds, 0) as duration
+		FROM track_embeddings te
+		JOIN tracks t ON t.id = te.track_id
+		LEFT JOIN track_artists ta ON ta.track_id = t.id AND ta.position = 0
+		LEFT JOIN artists a ON a.id = ta.artist_id
+		LEFT JOIN albums al ON al.id = t.album_id
+		LEFT JOIN track_genres tg ON tg.track_id = t.id
+		LEFT JOIN genres g ON g.id = tg.genre_id
+		WHERE NOT te.embedding IS NULL
+		ORDER BY cosine_distance(te.embedding, $1)
+		LIMIT $2
+	`
+	rows, err := r.db.QueryContext(ctx, query, embedding, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []TrackMeta
+	for rows.Next() {
+		var m TrackMeta
+		if err := rows.Scan(&m.ID, &m.Title, &m.Artist, &m.Album, &m.Genre, &m.Duration); err != nil {
+			return nil, err
+		}
+		results = append(results, m)
+	}
+	return results, nil
+}
+
+func (r *Repository) LogGeneration(ctx context.Context, log GenerationLog) error {
+	query := `
+		INSERT INTO ai_generation_log (user_id, playlist_id, prompt, track_count, model_used, latency_ms)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`
+	_, err := r.db.ExecContext(ctx, query, log.UserID, log.PlaylistID, log.Prompt, log.TrackCount, log.ModelUsed, log.LatencyMs)
+	return err
+}
+
+func (r *Repository) SaveSmartPlaylist(ctx context.Context, sp SmartPlaylist) (int64, error) {
+	query := `
+		INSERT INTO smart_playlists (user_id, name, description, query_config, is_active)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
+	`
+	var id int64
+	err := r.db.QueryRowContext(ctx, query, sp.UserID, sp.Name, sp.Description, sp.QueryConfig, sp.IsActive).Scan(&id)
+	return id, err
+}
+
+func (r *Repository) EmbeddingExists(ctx context.Context, trackID uuid.UUID) (bool, error) {
+	var exists bool
+	err := r.db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM track_embeddings WHERE track_id = $1)`, trackID).Scan(&exists)
+	return exists, err
+}

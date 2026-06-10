@@ -1,4 +1,4 @@
-import { useRequest } from '@/composables'
+import { useRequest } from '@/composables/useRequest'
 import { apiReplaceParams } from '@/utils/api-replace-params'
 import { PlayerApiRoutes } from './enums'
 import { PlaybackTrackSchema, type PlaybackTrack } from './types'

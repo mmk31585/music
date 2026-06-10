@@ -65,19 +65,6 @@
         />
       </div>
 
-      <!-- Mini Player -->
-      <button
-        type="button"
-        role="menuitem"
-        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white"
-        @click="$emit('toggle-pip')"
-      >
-        <i class="pi pi-external-link text-base text-white/40" />
-        <span>Open in Mini Player</span>
-      </button>
-
-      <div class="my-1 border-t border-white/5" />
-
       <!-- Save to Library -->
       <button
         type="button"
@@ -135,7 +122,6 @@ import type { AudioQuality } from '@/services/player/audio-engine'
 
 const emit = defineEmits<{
   close: []
-  'toggle-pip': []
 }>()
 
 const router = useRouter()

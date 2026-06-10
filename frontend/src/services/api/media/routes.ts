@@ -1,4 +1,4 @@
-import { useRequest } from '@/composables'
+import { useRequest } from '@/composables/useRequest'
 import type { AxiosRequestConfig } from 'axios'
 import type { UseRequestConfig } from '@/plugins/client/types'
 import { MediaApiRoutes } from './enums'

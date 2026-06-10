@@ -1,0 +1,1 @@
+export { useSocialShare } from './useSocialShare'

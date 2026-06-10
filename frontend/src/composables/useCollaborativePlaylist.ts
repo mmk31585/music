@@ -1,0 +1,74 @@
+import { onMounted, onUnmounted } from 'vue'
+import { wsClient } from '@/services/socket'
+import type { PlaylistEvent } from '@/services/socket'
+
+export function useCollaborativePlaylist(
+  playlistId: string,
+  onTrackAdded?: (trackId: string, userId: string) => void,
+  onTrackRemoved?: (trackId: string, userId: string) => void,
+  onTrackReordered?: (trackId: string, position: number, userId: string) => void,
+  onPlaylistUpdated?: (userId: string) => void,
+) {
+  let cleanupFns: (() => void)[] = []
+
+  function setup() {
+    if (!playlistId) return
+
+    wsClient.connect()
+    wsClient.subscribe(`playlist:${playlistId}`)
+
+    if (onTrackAdded) {
+      cleanupFns.push(
+        wsClient.on('playlist.track_added', (msg) => {
+          const ev = msg.payload as PlaylistEvent
+          if (ev.playlist_id === playlistId) {
+            onTrackAdded(ev.track_id!, ev.user_id)
+          }
+        }),
+      )
+    }
+
+    if (onTrackRemoved) {
+      cleanupFns.push(
+        wsClient.on('playlist.track_removed', (msg) => {
+          const ev = msg.payload as PlaylistEvent
+          if (ev.playlist_id === playlistId) {
+            onTrackRemoved(ev.track_id!, ev.user_id)
+          }
+        }),
+      )
+    }
+
+    if (onTrackReordered) {
+      cleanupFns.push(
+        wsClient.on('playlist.track_reordered', (msg) => {
+          const ev = msg.payload as PlaylistEvent
+          if (ev.playlist_id === playlistId) {
+            onTrackReordered(ev.track_id!, ev.position!, ev.user_id)
+          }
+        }),
+      )
+    }
+
+    if (onPlaylistUpdated) {
+      cleanupFns.push(
+        wsClient.on('playlist.updated', (msg) => {
+          const ev = msg.payload as PlaylistEvent
+          if (ev.playlist_id === playlistId) {
+            onPlaylistUpdated(ev.user_id)
+          }
+        }),
+      )
+    }
+  }
+
+  function teardown() {
+    if (playlistId) {
+      wsClient.unsubscribe(`playlist:${playlistId}`)
+    }
+    cleanupFns.forEach((fn) => fn())
+    cleanupFns = []
+  }
+
+  return { setup, teardown }
+}

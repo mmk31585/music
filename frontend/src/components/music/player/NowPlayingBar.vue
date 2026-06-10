@@ -188,6 +188,26 @@
                 />
               </div>
 
+              <button
+                type="button"
+                aria-label="Lyrics"
+                class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 hover:bg-white/10 hover:text-white transition-all"
+                :disabled="!currentTrack"
+                @click="$emit('toggle-lyrics')"
+              >
+                <i class="pi pi-align-left text-sm" />
+              </button>
+
+              <button
+                type="button"
+                aria-label="Expand player"
+                class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 hover:bg-white/10 hover:text-white transition-all"
+                :disabled="!currentTrack"
+                @click="$emit('toggle-fullscreen')"
+              >
+                <i class="pi pi-window-maximize text-sm" />
+              </button>
+
               <div class="overflow-menu-container relative">
                 <button
                   type="button"
@@ -201,7 +221,6 @@
                 <PlayerOverflowMenu
                   v-if="showOverflow"
                   @close="showOverflow = false"
-                  @toggle-pip="$emit('toggle-pip')"
                 />
               </div>
             </div>
@@ -220,7 +239,7 @@
               <button
                 type="button"
                 :aria-label="isPlaying ? 'Pause' : 'Play'"
-                class="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white disabled:opacity-40 active:scale-90 transition-all"
+                class="flex h-9 w-9 items-center justify-center rounded-full bg-[#1db954] text-white shadow-lg disabled:opacity-40 active:scale-90 transition-all"
                 :disabled="!currentTrack"
                 @click="togglePlayPause"
               >
@@ -246,10 +265,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue'
 import { usePlayerControls } from '@/composables/player'
-import { usePlayerPiPController } from '@/composables/usePlayerPiPController'
 import { useAlbumColors } from '@/composables/useAlbumColors'
 import { usePlayerShortcuts } from '@/composables/useShortcuts'
-import { audioEngine } from '@/services/player/audio-engine'
 import { useReactionsApi } from '@/services/api/reactions'
 import { onImgError } from '@/utils/helpers'
 import MiniEqualizer from './MiniEqualizer.vue'
@@ -258,7 +275,6 @@ import PlayerOverflowMenu from './PlayerOverflowMenu.vue'
 const emit = defineEmits<{
   'toggle-queue': []
   'toggle-fullscreen': []
-  'toggle-pip': []
   'toggle-lyrics': []
   'toggle-mobile-sheet': []
 }>()
@@ -284,9 +300,7 @@ async function toggleLike() {
 }
 
 function onTrackInfoClick() {
-  if (window.innerWidth < 768) {
-    emit('toggle-mobile-sheet')
-  }
+  emit('toggle-fullscreen')
 }
 
 const {
@@ -319,9 +333,6 @@ const {
   clearSleepTimer,
   crossfadeDuration,
 } = usePlayerControls()
-
-const pip = usePlayerPiPController()
-const isPiPOpen = pip.isOpen
 
 // Global keyboard shortcuts
 usePlayerShortcuts({

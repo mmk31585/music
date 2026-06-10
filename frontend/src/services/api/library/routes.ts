@@ -1,4 +1,4 @@
-import { useRequest } from '@/composables'
+import { useRequest } from '@/composables/useRequest'
 import type { UseRequestConfig } from '@/plugins/client/types'
 import { LibraryApiRoutes } from './enums'
 import {

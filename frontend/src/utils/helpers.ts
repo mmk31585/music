@@ -63,3 +63,12 @@ export const estimateReadTime = (content: string): number => {
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
+export function onImgError(e: Event) {
+  const img = e.currentTarget as HTMLImageElement | null
+  if (img) {
+    img.src = 'data:image/svg+xml,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" fill="%231a1a1a"><rect width="200" height="200"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" fill="%23666" font-size="14">No Image</text></svg>'
+    )
+  }
+}
