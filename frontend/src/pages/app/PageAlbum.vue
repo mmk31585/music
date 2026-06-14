@@ -1,5 +1,5 @@
 <template>
-  <div :key="route.params.id" class="mx-auto w-full max-w-5xl px-4 pt-6 pb-32 md:px-6 lg:px-8">
+  <div :key="String(route.params.id)" class="mx-auto w-full max-w-5xl px-4 pt-6 pb-32 md:px-6 lg:px-8">
     <div v-if="loading" class="space-y-6">
       <div class="flex gap-6">
         <SkeletonLoader variant="card" class="w-64 shrink-0" />
@@ -215,7 +215,7 @@ const {
   error,
   fetchAlbum,
   toggleLike,
-} = useAlbum(albumId)
+} = useAlbum(albumId) as any
 
 const coverUrl = computed(() => album.value?.cover_url || null)
 const { palette } = useAlbumColors(coverUrl)
@@ -237,7 +237,7 @@ onMounted(() => {
 
 function playAll() {
   if (!tracks.value.length) return
-  const queue = tracks.value.map((t) => ({
+  const queue = tracks.value.map((t: any) => ({
     id: String(t.id),
     title: t.title,
     artistName: t.artist_name || 'Unknown',

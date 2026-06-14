@@ -141,7 +141,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { SkeletonLoader } from '@/components/common'
 import { useSocialApi } from '@/services/api/social'
-import { getPublicUserProfile } from '@/services/api/users'
+import { useUserApi } from '@/services/api/users'
 import { useUserAuthStore } from '@/stores'
 import type { MusicClub, MusicClubMember, MusicClubPost } from '@/services/api/social'
 
@@ -165,8 +165,9 @@ const isMember = ref(false)
 async function fetchUserName(userId: string) {
   if (userNames.value[userId]) return
   try {
-    const profile = await getPublicUserProfile(userId)
-    userNames.value[userId] = profile.displayName || profile.username || userId.slice(0, 8)
+    const profile = await useUserApi().getPublicUserProfile(userId)
+    const p = profile as any
+    userNames.value[userId] = p.full_name || p.username || userId.slice(0, 8)
   } catch {
     userNames.value[userId] = userId.slice(0, 8)
   }

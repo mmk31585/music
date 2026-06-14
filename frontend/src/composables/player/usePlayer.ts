@@ -27,5 +27,19 @@ export function usePlayer() {
 
     playNext: player.playNext,
     playPrevious: player.playPrevious,
+
+    shuffleMode: player.shuffleMode,
+    repeatMode: player.repeatMode,
+    playbackRate: player.playbackRate,
+    sleepTimerMinutes: player.sleepTimerMinutes,
+    crossfadeDuration: player.crossfadeDuration,
+    audioQuality: player.audioQuality,
+
+    toggleShuffle: player.toggleShuffle,
+    toggleRepeat: player.toggleRepeat,
+    setPlaybackRate: player.setPlaybackRate,
+    updateQueue: player.updateQueue,
+    setSleepTimer: player.setSleepTimer,
+    clearSleepTimer: player.clearSleepTimer,
   }
 }

@@ -17,8 +17,11 @@ type Handlers struct {
 	Genre  *genre.Handler
 }
 
-func RegisterPublicRoutes(rg *gin.RouterGroup, h Handlers) {
+func RegisterPublicRoutes(rg *gin.RouterGroup, h Handlers, mw ...gin.HandlerFunc) {
 	cg := rg.Group("/catalog")
+	if len(mw) > 0 {
+		cg.Use(mw...)
+	}
 	{
 		cg.GET("/artists", h.Artist.List)
 		cg.GET("/artists/:artistID", h.Artist.Get)

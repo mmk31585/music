@@ -1,5 +1,5 @@
 <template>
-  <div :key="route.params.id" class="mx-auto w-full max-w-7xl px-4 pt-4 pb-32 md:px-6 lg:px-8">
+  <div :key="String(route.params.id)" class="mx-auto w-full max-w-7xl px-4 pt-4 pb-32 md:px-6 lg:px-8">
     <div v-if="loading" class="space-y-6">
       <SkeletonLoader variant="hero" />
       <div class="space-y-3">

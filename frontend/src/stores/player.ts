@@ -26,6 +26,16 @@ export const usePlayerStore = defineStore('player', () => {
   const volume = ref(Number(localStorage.getItem('player-volume') || 0.85))
   const muted = ref(localStorage.getItem('player-muted') === 'true')
 
+  const shuffleMode = ref(false)
+  type RepeatMode = 'off' | 'one' | 'all'
+  const repeatMode = ref<RepeatMode>('off')
+  const playbackRate = ref(1)
+  const sleepTimerMinutes = ref(0)
+  const crossfadeDuration = ref(0)
+  type AudioQuality = 'auto' | 'low' | 'medium' | 'high' | 'lossless'
+  const audioQuality = ref<AudioQuality>('auto')
+  let sleepTimerId: ReturnType<typeof setTimeout> | null = null
+
   const error = ref<string | null>(null)
 
   const progressPercent = computed(() => {
@@ -253,6 +263,43 @@ export const usePlayerStore = defineStore('player', () => {
     await playTrack(previousTrack)
   }
 
+  function toggleShuffle() {
+    shuffleMode.value = !shuffleMode.value
+  }
+
+  function toggleRepeat() {
+    if (repeatMode.value === 'off') repeatMode.value = 'all'
+    else if (repeatMode.value === 'all') repeatMode.value = 'one'
+    else repeatMode.value = 'off'
+  }
+
+  function setPlaybackRate(rate: number) {
+    playbackRate.value = rate
+    audioEngine.setPlaybackRate(rate)
+  }
+
+  function updateQueue(newQueue: PlaybackTrack[]) {
+    queue.value = newQueue
+    queueManager.replaceAll(newQueue)
+  }
+
+  function setSleepTimer(minutes: number) {
+    clearSleepTimer()
+    sleepTimerMinutes.value = minutes
+    sleepTimerId = setTimeout(() => {
+      pause()
+      sleepTimerMinutes.value = 0
+    }, minutes * 60 * 1000)
+  }
+
+  function clearSleepTimer() {
+    if (sleepTimerId !== null) {
+      clearTimeout(sleepTimerId)
+      sleepTimerId = null
+    }
+    sleepTimerMinutes.value = 0
+  }
+
   return {
     currentTrack,
     queue,
@@ -267,6 +314,13 @@ export const usePlayerStore = defineStore('player', () => {
 
     volume,
     muted,
+
+    shuffleMode,
+    repeatMode,
+    playbackRate,
+    sleepTimerMinutes,
+    crossfadeDuration,
+    audioQuality,
 
     error,
 
@@ -287,5 +341,11 @@ export const usePlayerStore = defineStore('player', () => {
     toggleMute,
     playNext,
     playPrevious,
+    toggleShuffle,
+    toggleRepeat,
+    setPlaybackRate,
+    updateQueue,
+    setSleepTimer,
+    clearSleepTimer,
   }
 })

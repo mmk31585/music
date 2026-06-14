@@ -1,6 +1,11 @@
-import { onMounted, onUnmounted } from 'vue'
 import { wsClient } from '@/services/socket'
-import type { PlaylistEvent } from '@/services/socket'
+
+interface PlaylistEvent {
+  playlist_id: string
+  track_id?: string
+  user_id: string
+  position?: number
+}
 
 export function useCollaborativePlaylist(
   playlistId: string,
@@ -19,7 +24,7 @@ export function useCollaborativePlaylist(
 
     if (onTrackAdded) {
       cleanupFns.push(
-        wsClient.on('playlist.track_added', (msg) => {
+        wsClient.on('playlist.track_added', (msg: any) => {
           const ev = msg.payload as PlaylistEvent
           if (ev.playlist_id === playlistId) {
             onTrackAdded(ev.track_id!, ev.user_id)
@@ -30,7 +35,7 @@ export function useCollaborativePlaylist(
 
     if (onTrackRemoved) {
       cleanupFns.push(
-        wsClient.on('playlist.track_removed', (msg) => {
+        wsClient.on('playlist.track_removed', (msg: any) => {
           const ev = msg.payload as PlaylistEvent
           if (ev.playlist_id === playlistId) {
             onTrackRemoved(ev.track_id!, ev.user_id)
@@ -41,7 +46,7 @@ export function useCollaborativePlaylist(
 
     if (onTrackReordered) {
       cleanupFns.push(
-        wsClient.on('playlist.track_reordered', (msg) => {
+        wsClient.on('playlist.track_reordered', (msg: any) => {
           const ev = msg.payload as PlaylistEvent
           if (ev.playlist_id === playlistId) {
             onTrackReordered(ev.track_id!, ev.position!, ev.user_id)
@@ -52,7 +57,7 @@ export function useCollaborativePlaylist(
 
     if (onPlaylistUpdated) {
       cleanupFns.push(
-        wsClient.on('playlist.updated', (msg) => {
+        wsClient.on('playlist.updated', (msg: any) => {
           const ev = msg.payload as PlaylistEvent
           if (ev.playlist_id === playlistId) {
             onPlaylistUpdated(ev.user_id)

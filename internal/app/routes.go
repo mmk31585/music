@@ -1,6 +1,7 @@
 package app
 
 import (
+	"music/internal/common/middleware"
 	"music/internal/modules/analytics"
 	"music/internal/modules/auth"
 	"music/internal/modules/catalog"
@@ -47,7 +48,7 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 		Track:  c.TrackHandler,
 	}
 
-	catalog.RegisterPublicRoutes(api, catalogHandlers)
+	catalog.RegisterPublicRoutes(api, catalogHandlers, c.OptionalAuthMW, middleware.RateLimitOptional(c.RDB, 60))
 	catalog.RegisterAdminRoutes(api, catalogHandlers, c.AuthMW)
 
 	lyrics.RegisterRoutes(api, c.LyricsHandler, c.AuthMW)
@@ -67,6 +68,6 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	player.RegisterPrivateRoutes(api, c.PlayerHandler, c.AuthMW)
 
 	if c.SearchHandler != nil {
-		search.RegisterRoutes(api, c.SearchHandler)
+		search.RegisterRoutes(api, c.SearchHandler, c.OptionalAuthMW, middleware.RateLimitOptional(c.RDB, 60))
 	}
 }

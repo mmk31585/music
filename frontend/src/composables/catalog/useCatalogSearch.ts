@@ -1,12 +1,15 @@
 import { computed, ref } from 'vue'
-import { useSearchApi, type SearchResponse, type SearchType } from '@/services/api/catalog/search'
+import { useSearchApi, type SearchResult } from '@/services/api/catalog/search'
+
+type SearchResultWithPlaylists = SearchResult & { playlists: any[] }
 
 export function useCatalogSearch() {
-  const { search } = useSearchApi()
+  const { searchCatalog } = useSearchApi()
 
+  type SearchType = 'all' | 'artists' | 'albums' | 'tracks'
   const query = ref('')
   const type = ref<SearchType>('all')
-  const results = ref<SearchResponse>({
+  const results = ref<SearchResultWithPlaylists>({
     tracks: [],
     artists: [],
     albums: [],
@@ -43,13 +46,13 @@ export function useCatalogSearch() {
     error.value = null
 
     try {
-      const response = await search({
-        q,
+      const response = await searchCatalog({
+        query: q,
         type: type.value,
         limit: 30,
       })
 
-      results.value = response
+      results.value = response as SearchResultWithPlaylists
       return response
     } catch (err) {
       error.value = err

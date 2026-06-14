@@ -292,10 +292,10 @@ import { useToast } from 'primevue/usetoast'
 import { useRouter } from 'vue-router'
 import { SkeletonLoader } from '@/components/common'
 import { useUserAuthStore } from '@/stores'
-import { useUsersApi } from '@/services/api/users/routes'
+import { useRequest } from '@/composables/useRequest'
+import { useUserApi } from '@/services/api/users/routes'
 
 const auth = useUserAuthStore()
-const { updateProfile, updatePassword } = useUsersApi()
 const toast = useToast()
 const router = useRouter()
 
@@ -374,12 +374,15 @@ async function saveProfile() {
   saveMessage.value = ''
   saveError.value = false
   try {
-    await updateProfile({
-      displayName: form.displayName || undefined,
-      username: form.username || undefined,
-      bio: form.bio || undefined,
-      location: form.location || undefined,
-      website: form.website || undefined,
+    await useRequest('/users/profile', {
+      method: 'PUT',
+      data: {
+        displayName: form.displayName || undefined,
+        username: form.username || undefined,
+        bio: form.bio || undefined,
+        location: form.location || undefined,
+        website: form.website || undefined,
+      },
     })
     await auth.me()
     saveMessage.value = 'Profile updated'
@@ -409,9 +412,12 @@ async function savePassword() {
   passwordMessage.value = ''
   passwordError.value = false
   try {
-    await updatePassword({
-      currentPassword: passwordForm.currentPassword,
-      newPassword: passwordForm.newPassword,
+    await useRequest('/users/password', {
+      method: 'PUT',
+      data: {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      },
     })
     passwordForm.currentPassword = ''
     passwordForm.newPassword = ''
@@ -428,7 +434,10 @@ async function savePreferences() {
   prefSaving.value = true
   prefMessage.value = ''
   try {
-    await updateProfile({ preferences: { ...preferences } })
+    await useRequest('/users/profile', {
+      method: 'PUT',
+      data: { preferences: { ...preferences } },
+    })
     prefMessage.value = 'Preferences saved'
     setTimeout(() => {
       prefMessage.value = ''

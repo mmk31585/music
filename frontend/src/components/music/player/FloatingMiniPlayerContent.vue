@@ -169,7 +169,7 @@ const styleHeight = computed(() => props.isPiP ? '100vh' : (mode.value === 'mini
 
 function onPointerDown(e: MouseEvent | TouchEvent) {
   if (props.isPiP) return
-  const target = 'touches' in e ? e.target : e.target as HTMLElement
+  const target = ('touches' in e ? e.target : e.target) as HTMLElement
   if (target.closest('button') || target.closest('input')) return
 
   isDragging.value = true

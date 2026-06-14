@@ -140,12 +140,12 @@ import { SkeletonLoader } from '@/components/common'
 import { useSocialApi } from '@/services/api/social'
 import { usePlayerApi } from '@/services/api/player'
 import { usePlayerStore } from '@/stores/player'
-import { getPublicUserProfile } from '@/services/api/users'
+import { useUserApi } from '@/services/api/users'
 import { useUserAuthStore } from '@/stores'
 import { TrackPickerDialog } from '@/components/social'
 import type { ListeningParty } from '@/services/api/social'
 import type { PlaybackTrack } from '@/services/api/player'
-import type { SearchTrack } from '@/services/api/catalog/search'
+
 
 const router = useRouter()
 const route = useRoute()
@@ -165,7 +165,7 @@ const userNames = ref<Record<string, string>>({})
 const isParticipant = ref(false)
 const showTrackPicker = ref(false)
 
-function onTrackSelected(track: SearchTrack) {
+function onTrackSelected(track: any) {
   showTrackPicker.value = false
   const trackId = String(track.id)
   updateStatus('active', trackId)
@@ -184,8 +184,9 @@ function onTrackSelected(track: SearchTrack) {
 async function fetchUserName(userId: string) {
   if (userNames.value[userId]) return
   try {
-    const profile = await getPublicUserProfile(userId)
-    userNames.value[userId] = profile.displayName || profile.username || userId.slice(0, 8)
+    const profile = await useUserApi().getPublicUserProfile(userId)
+    const p = profile as any
+    userNames.value[userId] = p.full_name || p.username || userId.slice(0, 8)
   } catch {
     userNames.value[userId] = userId.slice(0, 8)
   }

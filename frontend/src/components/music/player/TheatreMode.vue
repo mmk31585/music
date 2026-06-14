@@ -388,6 +388,7 @@ const activeWordMap = computed(() => {
   const t = currentTime.value
   for (let i = 0; i < parsedLines.value.length; i++) {
     const line = parsedLines.value[i]
+    if (!line) continue
     if (!line.words || line.words.length === 0) {
       map.set(i, -1)
       continue

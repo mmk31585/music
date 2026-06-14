@@ -28,6 +28,9 @@ class AudioEngine {
   private listeners = new Map<AudioEngineEventName, Set<Function>>()
   private animationFrameId: number | null = null
   private lastProgressEmit = 0
+  private audioContext: AudioContext | null = null
+  private analyser: AnalyserNode | null = null
+  private sourceNode: MediaElementAudioSourceNode | null = null
 
   constructor() {
     this.audio = new Audio()
@@ -35,6 +38,17 @@ class AudioEngine {
     this.audio.crossOrigin = 'anonymous'
 
     this.bindNativeEvents()
+  }
+
+  private ensureAudioContext() {
+    if (this.audioContext) return
+    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+    this.sourceNode = this.audioContext.createMediaElementSource(this.audio)
+    this.analyser = this.audioContext.createAnalyser()
+    this.analyser.fftSize = 256
+    this.analyser.smoothingTimeConstant = 0.8
+    this.sourceNode.connect(this.analyser)
+    this.analyser.connect(this.audioContext.destination)
   }
 
   get element() {
@@ -157,8 +171,7 @@ class AudioEngine {
   seek(seconds: number) {
     if (!Number.isFinite(seconds)) return
 
-    const nextTime = Math.max(0, Math.min(seconds, this.duration || seconds))
-    this.audio.currentTime = nextTime
+    this.audio.currentTime = Math.max(0, Math.min(seconds, this.duration || seconds))
 
     this.emit('timeupdate', {
       currentTime: this.currentTime,
@@ -167,8 +180,7 @@ class AudioEngine {
   }
 
   setVolume(volume: number) {
-    const safeVolume = Math.max(0, Math.min(1, volume))
-    this.audio.volume = safeVolume
+    this.audio.volume = Math.max(0, Math.min(1, volume))
   }
 
   setMuted(muted: boolean) {
@@ -201,7 +213,22 @@ class AudioEngine {
       this.animationFrameId = null
     }
   }
+
+  setPlaybackRate(rate: number) {
+    this.audio.playbackRate = rate
+  }
+
+  getAnalyserNode(): AnalyserNode | null {
+    try {
+      this.ensureAudioContext()
+    } catch {
+      return null
+    }
+    return this.analyser
+  }
 }
+
+export type AudioQuality = 'auto' | 'low' | 'medium' | 'high' | 'lossless'
 
 export const audioEngine = new AudioEngine()
 export type { AudioEngine }

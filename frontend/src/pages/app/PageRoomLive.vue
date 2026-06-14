@@ -253,7 +253,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { SkeletonLoader } from '@/components/common'
 import { useSocialApi } from '@/services/api/social'
 import { usePlayerApi } from '@/services/api/player'
-import { getPublicUserProfile } from '@/services/api/users'
+import { useUserApi } from '@/services/api/users'
 import { usePlayerStore } from '@/stores/player'
 import { useUserAuthStore } from '@/stores'
 import { wsClient } from '@/services/socket'
@@ -293,8 +293,9 @@ const isPlayingTrack = computed(() => {
 async function fetchUserName(userId: string) {
   if (userNames.value[userId]) return
   try {
-    const profile = await getPublicUserProfile(userId)
-    userNames.value[userId] = profile.displayName || profile.username || userId.slice(0, 8)
+    const profile = await useUserApi().getPublicUserProfile(userId)
+    const p = profile as any
+    userNames.value[userId] = p.full_name || p.username || userId.slice(0, 8)
   } catch {
     userNames.value[userId] = userId.slice(0, 8)
   }

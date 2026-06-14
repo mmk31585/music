@@ -15,7 +15,7 @@ interface TokenState {
 
 function createSafeNamespace<T>(key: string) {
   return {
-    get: (): T | null => safeLocalStorage.getItem<T>(key),
+    get: (): T | null => safeLocalStorage.getItem<T>(key) as T | null,
     set: (value: T): void => safeLocalStorage.setItem<T>(key, value),
     remove: (): void => safeLocalStorage.removeItem(key),
   }
@@ -36,6 +36,7 @@ export const useUserAuthStore = defineStore('auth', () => {
   const loading = ref(false)
 
   const isAuthenticated = computed(() => Boolean(state.value?.access_token))
+  const isGuest = computed(() => user.value === null && state.value?.access_token == null)
   const isAdmin = computed(() => user.value?.role === 'admin')
   const token = computed(() => state.value?.access_token ?? null)
   const device = computed(() => deviceId.value ?? null)
@@ -109,13 +110,9 @@ export const useUserAuthStore = defineStore('auth', () => {
     loading.value = true
 
     try {
-      const config: UseRequestConfig<unknown> = testing
-        ? {
-            headers: {
-              'X-Testing': 'true',
-            },
-          }
-        : {}
+      const config = testing
+        ? { headers: { 'X-Testing': 'true' } } as any
+        : {} as any
 
       const response = await useAuthApi().login(payload, config)
 
@@ -220,6 +217,7 @@ export const useUserAuthStore = defineStore('auth', () => {
 
     loading: isLoading,
     isAuthenticated,
+    isGuest,
     isAdmin,
     token,
     device,

@@ -227,7 +227,7 @@ import { useAlbumColors } from '@/composables/useAlbumColors'
 import { onImgError } from '@/utils/helpers'
 import { useSwipe } from '@/composables'
 
-defineProps<{ visible: boolean }>()
+const props = defineProps<{ visible: boolean }>()
 
 const emit = defineEmits<{
   'update:visible': [value: boolean]
@@ -264,9 +264,11 @@ const seekPercent = pc.seekPercent
 const setVolume = pc.setVolume
 const setPlaybackRate = pc.setPlaybackRate
 
+const sheetRef = ref<HTMLElement | null>(null)
+
 const speedOptions = [0.5, 0.75, 1, 1.25, 1.5, 2]
 function cycleSpeed() {
-  const idx = speedOptions.indexOf(playbackRate.value)
+  const idx = speedOptions.indexOf(playbackRate)
   const nextIdx = (idx + 1) % speedOptions.length
   setPlaybackRate(speedOptions[nextIdx]!)
 }
@@ -287,7 +289,6 @@ const bgGradient = computed(() => {
 })
 
 const sheetEl = ref<HTMLElement | null>(null)
-const sheetRef = ref<HTMLElement | null>(null)
 const isDragging = ref(false)
 
 const SHEET_HEIGHT = 560

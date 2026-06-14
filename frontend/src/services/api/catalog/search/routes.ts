@@ -1,45 +1,29 @@
 import { useRequest } from '@/composables/useRequest'
 import type { UseRequestConfig } from '@/plugins/client/types'
 import { SearchApiRoutes } from './enums'
-import { SearchResponseSchema, type SearchParams, type SearchResponse } from './types'
+import { SearchResultSchema, type SearchParams, type SearchResult } from './types'
 
 export const useSearchApi = () => {
-  const search = async (params: SearchParams, config?: UseRequestConfig<SearchResponse>) => {
-    return useRequest<SearchResponse>(
+  const search = async (params: SearchParams, config?: UseRequestConfig<SearchResult>) => {
+    return useRequest<SearchResult>(
       SearchApiRoutes.SEARCH,
       {
         method: 'GET',
         params: {
-          q: params.q,
+          q: params.query,
           type: params.type ?? 'all',
           limit: params.limit ?? 20,
         },
       },
       {
-        schema: SearchResponseSchema,
+        schema: SearchResultSchema,
         silent: true,
         ...config,
       },
     )
   }
 
-  const suggestions = async (
-    q: string,
-    limit?: number,
-    config?: UseRequestConfig<{ suggestions: string[]; query: string }>,
-  ) => {
-    return useRequest<{ suggestions: string[]; query: string }>(
-      SearchApiRoutes.SUGGESTIONS,
-      {
-        method: 'GET',
-        params: { q, limit: limit ?? 5 },
-      },
-      { silent: true, ...config },
-    )
-  }
-
   return {
     search,
-    suggestions,
   }
 }

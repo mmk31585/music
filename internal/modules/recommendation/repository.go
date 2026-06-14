@@ -40,6 +40,7 @@ type Repository interface {
 	GetTracksFromGenres(ctx context.Context, genres []string, limit int) ([]TrackItem, error)
 	GetTracksByIDs(ctx context.Context, trackIDs []string) ([]TrackItem, error)
 	GetPopularTrackIDs(ctx context.Context, limit int) ([]string, error)
+	GetUserAffinities(ctx context.Context, userID string, targetType string, limit int) ([]UserAffinity, error)
 }
 
 type repository struct {

@@ -461,7 +461,7 @@ async function doSearch() {
   noResults.value = false
 
   try {
-    const res = await searchApi.search({ q: term, limit: 20 }, undefined, { signal: abortController.signal })
+    const res = await searchApi.searchCatalog({ query: term, limit: 20 }, { signal: abortController.signal } as any)
     const data = res as any
     results.value = {
       tracks: data.tracks || [],

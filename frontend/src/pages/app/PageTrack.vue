@@ -1,5 +1,5 @@
 <template>
-  <div :key="route.params.id" class="mx-auto w-full max-w-4xl px-4 pt-6 pb-32 md:px-6 lg:px-8">
+  <div :key="String(route.params.id)" class="mx-auto w-full max-w-4xl px-4 pt-6 pb-32 md:px-6 lg:px-8">
     <div v-if="loading" class="space-y-6">
       <SkeletonLoader variant="hero" />
     </div>
@@ -181,7 +181,7 @@
           >
             <i
               class="pi pi-sort-alt text-lg"
-              :class="{ 'text-[#1db954]': player.shuffleMode.value }"
+              :class="{ 'text-[#1db954]': player.shuffleMode }"
             />
             Shuffle
           </button>
@@ -190,7 +190,7 @@
             type="button"
             class="relative flex items-center gap-2 text-sm font-medium transition"
             :class="
-              player.repeatMode.value !== 'off'
+              player.repeatMode !== 'off'
                 ? 'text-[#1db954]'
                 : 'text-slate-400 hover:text-white'
             "
@@ -198,7 +198,7 @@
           >
             <i class="pi pi-refresh text-lg" />
             <span
-              v-if="player.repeatMode.value === 'one'"
+              v-if="player.repeatMode === 'one'"
               class="absolute -top-1 -right-3 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#1db954] text-[8px] font-bold text-black"
               >1</span
             >
@@ -404,8 +404,8 @@ const {
   track,
   similarTracks,
   lyrics,
-  trackArtists,
-  trackCredits,
+  trackArtists: _trackArtists,
+  trackCredits: _trackCredits,
   mainArtist,
   featuredArtists,
   genreList,
@@ -416,6 +416,8 @@ const {
   toggleLike,
 } = useTrack(trackId)
 
+const trackArtists = _trackArtists as any
+const trackCredits = _trackCredits as any
 const player = usePlayer()
 const playerApi = usePlayerApi()
 const showQueue = ref(false)

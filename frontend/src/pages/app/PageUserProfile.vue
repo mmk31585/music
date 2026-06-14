@@ -21,7 +21,7 @@
     <template v-else>
       <UserHero
         :display-name="displayName"
-        :avatar-url="auth.user?.avatarUrl"
+        :avatar-url="(auth.user as any)?.avatarUrl"
         :follower-count="followerCount"
         :following-count="followingCount"
         :is-own-profile="isOwnProfile"

@@ -96,7 +96,7 @@ const player = usePlayer()
 const playerApi = usePlayerApi()
 
 async function playFirstTrack() {
-  const firstTrack = tracks.value[0]
+  const firstTrack = tracks.value[0] as any
   if (!firstTrack) return
 
   const id = String(firstTrack.id)
@@ -105,15 +105,15 @@ async function playFirstTrack() {
     id,
     title: firstTrack.title || 'Untitled',
     artistName:
-      firstTrack.artistName ||
       firstTrack.artist_name ||
+      firstTrack.artistName ||
       firstTrack.artist?.name ||
       firstTrack.artist ||
       'Unknown artist',
-    albumTitle: firstTrack.albumTitle || firstTrack.album_title || firstTrack.album?.title || null,
-    coverUrl: firstTrack.coverUrl || firstTrack.cover_url || firstTrack.cover || null,
+    albumTitle: firstTrack.album_title || firstTrack.albumTitle || firstTrack.album?.title || null,
+    coverUrl: firstTrack.cover_url || firstTrack.coverUrl || firstTrack.cover || null,
     durationSeconds:
-      firstTrack.durationSeconds ?? firstTrack.duration_seconds ?? firstTrack.duration ?? null,
+      firstTrack.duration_seconds ?? firstTrack.durationSeconds ?? firstTrack.duration ?? null,
     streamUrl: playerApi.getTrackStreamUrl(id),
   }
 

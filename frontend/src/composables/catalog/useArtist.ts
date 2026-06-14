@@ -27,9 +27,9 @@ export function useArtist(id: string | number) {
     try {
       const [artistData, tracksData, albumsData, followed] = await Promise.all([
         artistsApi.getArtist(id),
-        tracksApi.getTracks({ limit: 100 }).catch(() => [] as Track[]),
-        albumsApi.getAlbums({ limit: 100 }).catch(() => [] as Album[]),
-        libraryApi.getFollowedArtists({ limit: 50 }).catch(() => []),
+        tracksApi.getTracks().catch(() => [] as Track[]),
+        albumsApi.getAlbums().catch(() => [] as Album[]),
+        libraryApi.getFollowedArtists().catch(() => []),
       ])
 
       artist.value = artistData

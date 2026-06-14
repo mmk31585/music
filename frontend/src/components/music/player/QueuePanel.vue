@@ -47,42 +47,44 @@
           <p class="mb-3 text-xs font-semibold tracking-wider text-slate-500 uppercase">
             Next Up
           </p>
-          <div class="space-y-1">
-            <div
-              v-for="(track, index) in queue"
-              :key="track.id"
-              :draggable="queue.length > 1"
-              class="flex cursor-grab items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-white/[0.06] active:cursor-grabbing"
-              :class="{ 'opacity-50': dragIndex === index }"
-              @dragstart="onDragStart(index)"
-              @dragover.prevent="onDragOver(index)"
-              @dragend="onDragEnd"
-              @click="$emit('playFromQueue', index)"
-            >
-              <span class="flex w-5 items-center justify-center">
-                <i class="pi pi-bars hidden text-xs text-slate-500 group-hover:block" />
-                <span class="text-xs text-slate-500">{{ index + 1 }}</span>
-              </span>
-              <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
-                <img
-                  v-if="track.coverUrl"
-                  :src="track.coverUrl"
-                  :alt="track.title"
-                  loading="lazy"
-                  class="h-full w-full object-cover"
-                  @error="onImgError"
-                />
-                <div v-else class="flex h-full items-center justify-center">
-                  <i class="pi pi-music text-xs text-slate-500" />
+          <draggable
+            :list="localQueue"
+            item-key="id"
+            handle=".drag-handle"
+            animation="200"
+            ghost-class="opacity-30"
+            class="space-y-1"
+            @end="onReorder"
+          >
+            <template #item="{ element: track, index }">
+              <div
+                class="flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-white/[0.06]"
+                @click="$emit('playFromQueue', index)"
+              >
+                <span class="drag-handle flex w-5 items-center justify-center cursor-grab active:cursor-grabbing text-white/30 hover:text-white/70 transition-colors me-3">
+                  <i class="pi pi-bars text-xs" />
+                </span>
+                <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
+                  <img
+                    v-if="track.coverUrl"
+                    :src="track.coverUrl"
+                    :alt="track.title"
+                    loading="lazy"
+                    class="h-full w-full object-cover"
+                    @error="onImgError"
+                  />
+                  <div v-else class="flex h-full items-center justify-center">
+                    <i class="pi pi-music text-xs text-slate-500" />
+                  </div>
                 </div>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-medium text-white">{{ track.title }}</p>
+                  <p class="truncate text-xs text-slate-400">{{ track.artistName }}</p>
+                </div>
+                <span class="text-xs text-slate-500">{{ formatTime(track.durationSeconds) }}</span>
               </div>
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-medium text-white">{{ track.title }}</p>
-                <p class="truncate text-xs text-slate-400">{{ track.artistName }}</p>
-              </div>
-              <span class="text-xs text-slate-500">{{ formatTime(track.durationSeconds) }}</span>
-            </div>
-          </div>
+            </template>
+          </draggable>
         </div>
 
         <div
@@ -107,9 +109,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import draggable from 'vuedraggable'
 import { onImgError } from '@/utils/helpers'
 import { usePlayer } from '@/composables/player'
+import { queueManager } from '@/services/player/queue-manager'
+import type { PlaybackTrack } from '@/services/api/player'
 
 const visible = defineModel<boolean>('visible', { default: false })
 
@@ -121,23 +126,15 @@ const player = usePlayer()
 const currentTrack = player.currentTrack
 const queue = player.queue
 
-const dragIndex = ref<number | null>(null)
+const localQueue = ref<PlaybackTrack[]>([])
 
-function onDragStart(index: number) {
-  dragIndex.value = index
-}
+watch(() => player.queue.value, (newQueue) => {
+  localQueue.value = [...newQueue]
+}, { immediate: true })
 
-function onDragOver(index: number) {
-  if (dragIndex.value === null || dragIndex.value === index) return
-  const items = [...queue.value]
-  const [moved] = items.splice(dragIndex.value, 1)
-  items.splice(index, 0, moved)
-  player.updateQueue(items)
-  dragIndex.value = index
-}
-
-function onDragEnd() {
-  dragIndex.value = null
+function onReorder(event: { oldIndex: number; newIndex: number }) {
+  queueManager.reorderQueue(event.oldIndex, event.newIndex)
+  player.queue.value = queueManager.all()
 }
 
 function formatTime(seconds?: number | null) {

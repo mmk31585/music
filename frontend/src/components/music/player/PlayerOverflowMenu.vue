@@ -3,14 +3,16 @@
     <div
       ref="menuRef"
       role="menu"
-      class="absolute bottom-full right-0 mb-2 min-w-[260px] origin-bottom-right rounded-2xl border border-white/10 bg-black/80 p-2 shadow-2xl backdrop-blur-2xl"
+      aria-label="Player options"
+      class="glass-strong absolute bottom-full right-0 mb-2 min-w-[260px] origin-bottom-right rounded-2xl p-2 shadow-2xl"
       @keydown="onKeydown"
+      tabindex="-1"
     >
       <!-- Audio Quality -->
       <button
         type="button"
         role="menuitem"
-        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white"
+        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
         @click="cycleQuality"
       >
         <i class="pi pi-waveform text-base text-white/40" />
@@ -22,7 +24,7 @@
       <button
         type="button"
         role="menuitem"
-        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white"
+        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
         @click="showSleepPicker = !showSleepPicker"
       >
         <i class="pi pi-clock text-base text-white/40" />
@@ -43,7 +45,7 @@
           type="button"
           class="rounded-lg px-2.5 py-1 text-xs font-medium transition"
           :class="sleepTimerMinutes === opt.value ? 'bg-[#1db954] text-black' : 'bg-white/10 text-white/50 hover:bg-white/20 hover:text-white/80'"
-          @click.stop="setSleepTimer(opt.value)"
+          @click.stop="setTimer(opt.value)"
         >
           {{ opt.label }}
         </button>
@@ -65,11 +67,24 @@
         />
       </div>
 
+      <!-- Open in Mini Player -->
+      <button
+        type="button"
+        role="menuitem"
+        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
+        @click="onTogglePiP"
+      >
+        <i class="pi pi-window-maximize text-base text-white/40" />
+        <span>Open in Mini Player</span>
+      </button>
+
+      <div class="my-1 border-t border-white/5" />
+
       <!-- Save to Library -->
       <button
         type="button"
         role="menuitem"
-        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white"
+        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
         @click="toggleLike"
       >
         <i :class="liked ? 'pi pi-heart-fill text-[#1db954]' : 'pi pi-heart text-white/40'" class="text-base" />
@@ -80,7 +95,7 @@
       <button
         type="button"
         role="menuitem"
-        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white"
+        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
         @click="onAddToPlaylist"
       >
         <i class="pi pi-plus-circle text-base text-white/40" />
@@ -91,7 +106,7 @@
       <button
         type="button"
         role="menuitem"
-        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white"
+        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
         @click="onShare"
       >
         <i class="pi pi-share-alt text-base text-white/40" />
@@ -104,7 +119,7 @@
       <button
         type="button"
         role="menuitem"
-        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white"
+        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
         @click="onTrackInfo"
       >
         <i class="pi pi-info-circle text-base text-white/40" />
@@ -115,13 +130,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { usePlayerControls } from '@/composables/player'
+import { usePlayerControls, usePlayer } from '@/composables/player'
 import type { AudioQuality } from '@/services/player/audio-engine'
 
 const emit = defineEmits<{
   close: []
+  'toggle-pip': []
 }>()
 
 const router = useRouter()
@@ -155,25 +171,31 @@ function setTimer(minutes: number) {
 
 function onCrossfadeChange(e: Event) {
   const val = parseInt((e.target as HTMLInputElement).value) || 0
-  crossfadeDuration.value = val
+  usePlayer().crossfadeDuration = val
 }
 
 const qualityOptions: AudioQuality[] = ['low', 'medium', 'high']
 const qualityLabel = computed(() => {
-  const q = audioQuality.value
+  const q = audioQuality
   if (q === 'low') return 'Low'
   if (q === 'medium') return 'Medium'
   return 'High'
 })
 
 function cycleQuality() {
-  const idx = qualityOptions.indexOf(audioQuality.value)
+  const p = usePlayer()
+  const idx = qualityOptions.indexOf(p.audioQuality)
   const nextIdx = (idx + 1) % qualityOptions.length
-  audioQuality.value = qualityOptions[nextIdx]!
+  p.audioQuality = qualityOptions[nextIdx]!
 }
 
 function toggleLike() {
   liked.value = !liked.value
+}
+
+function onTogglePiP() {
+  emit('toggle-pip')
+  emit('close')
 }
 
 function onAddToPlaylist() {
@@ -229,10 +251,14 @@ function onScroll() {
   closeMenu()
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await nextTick()
   document.addEventListener('click', onClickOutside)
   document.addEventListener('scroll', onScroll, true)
   menuRef.value?.focus()
+  // Focus first menuitem
+  const firstItem = menuRef.value?.querySelector('[role="menuitem"]') as HTMLElement
+  firstItem?.focus()
 })
 
 onBeforeUnmount(() => {

@@ -28,16 +28,19 @@ import (
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	opensearch "github.com/opensearch-project/opensearch-go"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
 type Container struct {
 	SQLX *sqlx.DB
 	Bus  *events.Bus
+	RDB  *redis.Client
 
 	Storage platformstorage.Storage
 
-	AuthMW gin.HandlerFunc
+	AuthMW         gin.HandlerFunc
+	OptionalAuthMW gin.HandlerFunc
 
 	HealthHandler *health.Handler
 
@@ -106,12 +109,13 @@ func NewContainer(a *App) *Container {
 	c := &Container{
 		SQLX: sqlxDB,
 		Bus:  bus,
+		RDB:  a.Redis,
 	}
 
 	c.buildHealth(a)
 	c.buildStorage(a)
 	c.buildAuth(a)
-	c.buildMedia(a)
+	c.buildMedia()
 	c.buildCatalog()
 	c.buildLyrics()
 	c.buildPlaylist()
@@ -172,9 +176,10 @@ func (c *Container) buildAuth(a *App) {
 	c.AuthService = auth.NewService(authRepo, tokenManager)
 	c.AuthHandler = auth.NewHandler(c.AuthService, a.Validator)
 	c.AuthMW = auth.AuthMiddleware(tokenManager)
+	c.OptionalAuthMW = auth.OptionalAuthMiddleware(tokenManager)
 }
 
-func (c *Container) buildMedia(a *App) {
+func (c *Container) buildMedia() {
 	mediaRepo := media.NewRepository(c.SQLX)
 
 	c.MediaService = media.NewService(c.Storage, mediaRepo, media.Config{

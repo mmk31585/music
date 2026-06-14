@@ -2,8 +2,6 @@ import { ref, computed } from 'vue'
 import {
   useTracksApi,
   type Track,
-  type TrackArtist,
-  type TrackCredit,
 } from '@/services/api/catalog/tracks'
 import { useRecommendationsApi, type RecommendationTrack } from '@/services/api/recommendation'
 import { useLibraryApi } from '@/services/api/library'
@@ -18,6 +16,8 @@ export function useTrack(id: string | number) {
   const track = ref<Track | null>(null)
   const similarTracks = ref<RecommendationTrack[]>([])
   const lyrics = ref<Lyrics | null>(null)
+  interface TrackArtist { id: string | number; role?: string; name?: string }
+  interface TrackCredit { id: string | number; role?: string; name?: string }
   const trackArtists = ref<TrackArtist[]>([])
   const trackCredits = ref<TrackCredit[]>([])
   const isLiked = ref(false)
@@ -27,13 +27,13 @@ export function useTrack(id: string | number) {
   const mainArtist = computed(() => {
     if (!trackArtists.value.length) return null
     return (
-      trackArtists.value.find((a) => a.role === 'main' || a.role === 'primary') ??
+      trackArtists.value.find((a: any) => a.role === 'main' || a.role === 'primary') ??
       trackArtists.value[0]!
     )
   })
 
   const featuredArtists = computed(() => {
-    return trackArtists.value.filter((a) => a.role && !['main', 'primary'].includes(a.role))
+    return trackArtists.value.filter((a: any) => a.role && !['main', 'primary'].includes(a.role))
   })
 
   const genreList = computed(() => {
@@ -47,7 +47,7 @@ export function useTrack(id: string | number) {
     try {
       const [trackData, likedTracks] = await Promise.all([
         tracksApi.getTrack(id),
-        libraryApi.getLikedTracks({ limit: 50 }).catch(() => []),
+        libraryApi.getLikedTracks().catch(() => []),
       ])
 
       track.value = trackData
@@ -58,14 +58,14 @@ export function useTrack(id: string | number) {
 
       tracksApi
         .getTrackArtists(id)
-        .then((res) => {
+        .then((res: any) => {
           trackArtists.value = res ?? []
         })
         .catch(() => {})
 
       tracksApi
         .getTrackCredits(id)
-        .then((res) => {
+        .then((res: any) => {
           trackCredits.value = res ?? []
         })
         .catch(() => {})

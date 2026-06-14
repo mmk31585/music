@@ -194,7 +194,7 @@ function buildPlaybackTrack(): PlaybackTrack {
   return {
     id,
     title: title.value,
-    artistName: artistName.value,
+    artistName: String(artistName.value),
     albumTitle:
       props.track.albumTitle || props.track.album_title || props.track.album?.title || null,
     coverUrl: coverUrl.value,

@@ -10,7 +10,7 @@ export const useFeatureFlagsStore = defineStore('useFeatureFlags', () => {
   const isLoaded = computed(() => fetched.value && flags.value !== null)
 
   function isEnabled(key: FeatureFlagKey): boolean {
-    return flags.value?.[key] ?? true
+    return flags.value?.[key] ?? false
   }
 
   function setFlags(data: FeatureFlags) {

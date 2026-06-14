@@ -33,6 +33,19 @@ router.beforeEach((to: RouteLocationNormalizedGeneric) => {
     }
   }
 
+  // Guest mode: protect routes that require an account
+  if (!isAuthenticated) {
+    const guestRestricted = ['/library', '/playlists', '/profile', '/settings', '/subscriptions']
+    if (guestRestricted.some((path) => to.path.startsWith(path))) {
+      return {
+        name: 'auth.login',
+        query: {
+          redirect: to.fullPath,
+        },
+      }
+    }
+  }
+
   // Require admin role
   if (to.meta.requiresRole === 'admin') {
     if (!isAuthenticated) {

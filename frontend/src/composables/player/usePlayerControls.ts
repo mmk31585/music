@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { usePlayer } from './usePlayer'
 
 export function usePlayerControls() {
@@ -24,10 +24,28 @@ export function usePlayerControls() {
     await player.resume()
   }
 
+  const sleepTimerMinutes = ref(0)
+  let sleepTimerId: ReturnType<typeof setTimeout> | null = null
+
+  function clearSleepTimer() {
+    if (sleepTimerId !== null) {
+      clearTimeout(sleepTimerId)
+      sleepTimerId = null
+    }
+    sleepTimerMinutes.value = 0
+  }
+
+  const speedLabel = computed(() => {
+    const rate = player.playbackRate
+    if (rate === 1) return 'Normal'
+    return `${rate}x`
+  })
+
   return {
     ...player,
     playIcon,
     volumeIcon,
     togglePlayPause,
+    speedLabel,
   }
 }

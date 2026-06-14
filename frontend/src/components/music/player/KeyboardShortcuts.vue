@@ -22,7 +22,7 @@
           <div class="space-y-1">
             <div
               v-for="shortcut in shortcuts"
-              :key="shortcut.keys"
+              :key="shortcut.label"
               class="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-white/[0.04]"
             >
               <span class="text-sm text-slate-300">{{ shortcut.label }}</span>

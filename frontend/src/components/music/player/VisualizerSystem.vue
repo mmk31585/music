@@ -109,8 +109,8 @@ function tryConnectAudio() {
   analyserNode.fftSize = 256
   analyserNode.smoothingTimeConstant = 0.8
 
-  frequencyData = new Uint8Array(analyserNode.frequencyBinCount)
-  waveformData = new Uint8Array(analyserNode.frequencyBinCount)
+  frequencyData = new Uint8Array(analyserNode.frequencyBinCount) as Uint8Array
+  waveformData = new Uint8Array(analyserNode.frequencyBinCount) as Uint8Array
   hasAudioData.value = true
   return true
 }
@@ -201,7 +201,7 @@ let cachedAvgAmplitude = 0
 
 function getFreqData(): Uint8Array | null {
   if (!analyserNode || !frequencyData) return null
-  analyserNode.getByteFrequencyData(frequencyData)
+  analyserNode.getByteFrequencyData(frequencyData as any)
   let sum = 0
   for (let i = 0; i < frequencyData.length; i++) {
     sum += frequencyData[i]!
@@ -212,7 +212,7 @@ function getFreqData(): Uint8Array | null {
 
 function getWaveData(): Uint8Array | null {
   if (!analyserNode || !waveformData) return null
-  analyserNode.getByteTimeDomainData(waveformData)
+  analyserNode.getByteTimeDomainData(waveformData as any)
   return waveformData
 }
 

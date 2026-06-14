@@ -9,11 +9,9 @@ import (
 var (
 	ErrNotCollaborator     = errors.New("user is not a collaborator")
 	ErrAlreadyCollaborator = errors.New("user is already a collaborator")
-	ErrCannotRemoveOwner   = errors.New("cannot remove playlist owner as collaborator")
-	ErrPlaylistNotCollab   = errors.New("playlist is not collaborative")
 )
 
-func (r *repository) IsCollaborator(ctx context.Context, playlistID, userID string) (bool, error) {
+func (r *Repository) IsCollaborator(ctx context.Context, playlistID, userID string) (bool, error) {
 	var exists bool
 	err := r.db.QueryRowContext(ctx,
 		`SELECT EXISTS(SELECT 1 FROM playlist_collaborators WHERE playlist_id = $1 AND user_id = $2)`,
@@ -22,7 +20,7 @@ func (r *repository) IsCollaborator(ctx context.Context, playlistID, userID stri
 	return exists, err
 }
 
-func (r *repository) IsCollaborativePlaylist(ctx context.Context, playlistID string) (bool, error) {
+func (r *Repository) IsCollaborativePlaylist(ctx context.Context, playlistID string) (bool, error) {
 	var collab bool
 	err := r.db.QueryRowContext(ctx,
 		`SELECT is_collaborative FROM playlists WHERE id = $1`,
@@ -34,7 +32,7 @@ func (r *repository) IsCollaborativePlaylist(ctx context.Context, playlistID str
 	return collab, err
 }
 
-func (r *repository) SetCollaborative(ctx context.Context, playlistID string, collab bool) error {
+func (r *Repository) SetCollaborative(ctx context.Context, playlistID string, collab bool) error {
 	_, err := r.db.ExecContext(ctx,
 		`UPDATE playlists SET is_collaborative = $1, updated_at = NOW() WHERE id = $2`,
 		collab, playlistID,
@@ -42,7 +40,7 @@ func (r *repository) SetCollaborative(ctx context.Context, playlistID string, co
 	return err
 }
 
-func (r *repository) AddCollaborator(ctx context.Context, playlistID, userID string) error {
+func (r *Repository) AddCollaborator(ctx context.Context, playlistID, userID string) error {
 	_, err := r.db.ExecContext(ctx,
 		`INSERT INTO playlist_collaborators (playlist_id, user_id, added_by) VALUES ($1, $2, $2)`,
 		playlistID, userID,
@@ -56,7 +54,7 @@ func (r *repository) AddCollaborator(ctx context.Context, playlistID, userID str
 	return nil
 }
 
-func (r *repository) RemoveCollaborator(ctx context.Context, playlistID, userID string) error {
+func (r *Repository) RemoveCollaborator(ctx context.Context, playlistID, userID string) error {
 	res, err := r.db.ExecContext(ctx,
 		`DELETE FROM playlist_collaborators WHERE playlist_id = $1 AND user_id = $2`,
 		playlistID, userID,
@@ -71,7 +69,7 @@ func (r *repository) RemoveCollaborator(ctx context.Context, playlistID, userID 
 	return nil
 }
 
-func (r *repository) ListCollaborators(ctx context.Context, playlistID string) ([]CollaboratorResponse, error) {
+func (r *Repository) ListCollaborators(ctx context.Context, playlistID string) ([]CollaboratorResponse, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT pc.user_id, pc.created_at::text, false AS is_creator
 		FROM playlist_collaborators pc
@@ -81,7 +79,7 @@ func (r *repository) ListCollaborators(ctx context.Context, playlistID string) (
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	items := make([]CollaboratorResponse, 0)
 	for rows.Next() {

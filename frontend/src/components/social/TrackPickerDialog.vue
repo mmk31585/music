@@ -99,7 +99,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, onUnmounted } from 'vue'
 import { useSearchApi } from '@/services/api/catalog/search'
-import type { SearchTrack } from '@/services/api/catalog/search'
+import type { Track } from '@/services/api/catalog/tracks'
 
 const props = defineProps<{
   visible: boolean
@@ -107,14 +107,14 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  select: [track: SearchTrack]
+  select: [track: Track]
   'update:visible': [value: boolean]
 }>()
 
 const searchApi = useSearchApi()
 
 const query = ref('')
-const results = ref<SearchTrack[]>([])
+const results = ref<Track[]>([])
 const searching = ref(false)
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 let abortController: AbortController | null = null
@@ -153,7 +153,7 @@ async function doSearch() {
 
   searching.value = true
   try {
-    const res = await searchApi.search({ q: term, type: 'tracks', limit: 10 }, undefined, { signal: abortController.signal })
+    const res = await searchApi.searchCatalog({ query: term, type: 'tracks', limit: 10 }, { signal: abortController.signal } as any)
     results.value = res.tracks ?? []
   } catch (err) {
     if ((err as any)?.name === 'AbortError' || (err as any)?.code === 'ERR_CANCELED') return
@@ -172,13 +172,14 @@ function onKeydown(e: KeyboardEvent) {
     if (focusedIdx.value > 0) focusedIdx.value--
   } else if (e.key === 'Enter' && focusedIdx.value >= 0) {
     e.preventDefault()
-    selectTrack(results.value[focusedIdx.value])
+    const track = results.value[focusedIdx.value]
+    if (track) selectTrack(track)
   } else if (e.key === 'Escape') {
     close()
   }
 }
 
-function selectTrack(track: SearchTrack) {
+function selectTrack(track: Track) {
   emit('select', track)
   query.value = ''
   results.value = []
