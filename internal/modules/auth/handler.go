@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	apperrors "music/internal/common/errors"
 	"music/internal/common/response"
 	"music/internal/common/validator"
 )
@@ -109,7 +110,7 @@ func (h *Handler) Refresh(c *gin.Context) {
 	var req RefreshRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, err)
+		response.Error(c, apperrors.BadRequest("invalid request body", nil))
 		return
 	}
 

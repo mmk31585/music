@@ -62,7 +62,9 @@ const UIHooks: RequestHooks = {
 
   // ---------------- Refresh token ----------------
   refreshToken(): Promise<RefreshToken> {
-    return useAuthApi().refresh()
+    const store = useUserAuthStore()
+    const token = store.entity?.refresh_token
+    return useAuthApi().refresh(token)
   },
   refreshTokenUrlRejecter(config: AxiosRequestConfig): boolean {
     return !!config.url?.includes('/auth/refresh')
