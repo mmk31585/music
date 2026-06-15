@@ -34,6 +34,9 @@ func (h *Handler) List(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list albums"})
 		return
 	}
+	if items == nil {
+		items = []Album{}
+	}
 	c.JSON(http.StatusOK, items)
 }
 
@@ -190,6 +193,9 @@ func (h *Handler) Tracks(c *gin.Context) {
 		return
 	}
 
+	if items == nil {
+		items = []AlbumTrack{}
+	}
 	c.JSON(http.StatusOK, items)
 }
 func (h *Handler) Artists(c *gin.Context) {

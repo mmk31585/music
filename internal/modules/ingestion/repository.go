@@ -8,6 +8,7 @@ import (
 
 	catalogCommon "music/internal/modules/catalog/common"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -28,6 +29,7 @@ type CreateDraftParams struct {
 	DurationSeconds   *float64
 	Bitrate           *int
 	Format            string
+	FileHash          string
 	ExtractedMetadata string
 }
 
@@ -37,12 +39,12 @@ func (r *Repository) CreateDraft(ctx context.Context, params CreateDraftParams) 
 	err := r.db.GetContext(ctx, &draft, `
 		INSERT INTO ingestion_drafts (
 			id, uploaded_by, original_filename, file_path, file_size,
-			duration_seconds, bitrate, format, extracted_metadata
+			duration_seconds, bitrate, format, file_hash, extracted_metadata
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)
 		RETURNING
 			id, uploaded_by, original_filename, file_path, file_size,
-			duration_seconds, bitrate, format, status,
+			duration_seconds, bitrate, format, file_hash, stale, status,
 			extracted_metadata::text AS extracted_metadata,
 			enriched_metadata::text AS enriched_metadata,
 			final_metadata::text AS final_metadata,
@@ -56,6 +58,7 @@ func (r *Repository) CreateDraft(ctx context.Context, params CreateDraftParams) 
 		params.DurationSeconds,
 		params.Bitrate,
 		params.Format,
+		nullString(params.FileHash),
 		params.ExtractedMetadata,
 	)
 	if err != nil {
@@ -100,10 +103,11 @@ func (r *Repository) GetDraftByID(ctx context.Context, id string) (*IngestionDra
 	err := r.db.GetContext(ctx, &draft, `
 		SELECT
 			id, uploaded_by, original_filename, file_path, file_size,
-			duration_seconds, bitrate, format, status,
+			duration_seconds, bitrate, format, file_hash, stale, status,
 			extracted_metadata::text AS extracted_metadata,
 			enriched_metadata::text AS enriched_metadata,
 			final_metadata::text AS final_metadata,
+			artist_id, album_id, track_id,
 			created_at, updated_at
 		FROM ingestion_drafts
 		WHERE id = $1
@@ -142,15 +146,17 @@ type ListDraftsParams struct {
 }
 
 type ListDraftsRow struct {
-	ID               string     `db:"id"`
-	OriginalFilename string     `db:"original_filename"`
-	FileSize         int64      `db:"file_size"`
-	Format           string     `db:"format"`
-	DurationSeconds  *float64   `db:"duration_seconds"`
-	Status           DraftStatus `db:"status"`
-	ExtractedMetadata string   `db:"extracted_metadata"`
-	CreatedAt        time.Time  `db:"created_at"`
-	CoverArtURL      *string    `db:"cover_art_url"`
+	ID                string     `db:"id"`
+	OriginalFilename  string     `db:"original_filename"`
+	FileSize          int64      `db:"file_size"`
+	Format            string     `db:"format"`
+	DurationSeconds   *float64   `db:"duration_seconds"`
+	Status            DraftStatus `db:"status"`
+	FileHash          string     `db:"file_hash"`
+	Stale             bool       `db:"stale"`
+	ExtractedMetadata string    `db:"extracted_metadata"`
+	CreatedAt         time.Time  `db:"created_at"`
+	CoverArtURL       *string    `db:"cover_art_url"`
 }
 
 func (r *Repository) ListDrafts(ctx context.Context, params ListDraftsParams) ([]ListDraftsRow, int, error) {
@@ -173,7 +179,7 @@ func (r *Repository) ListDrafts(ctx context.Context, params ListDraftsParams) ([
 	query := `
 		SELECT
 			d.id, d.original_filename, d.file_size, d.format,
-			d.duration_seconds, d.status,
+			d.duration_seconds, d.status, d.file_hash, d.stale,
 			d.extracted_metadata::text AS extracted_metadata,
 			d.created_at,
 			a.url AS cover_art_url
@@ -233,6 +239,94 @@ func (r *Repository) SearchArtists(ctx context.Context, q string, limit int) ([]
 		return nil, err
 	}
 	return results, nil
+}
+
+func (r *Repository) UpdateDraftFinalizationResult(ctx context.Context, id string, artistID, albumID, trackID uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE ingestion_drafts
+		SET status = $1, artist_id = $2, album_id = $3, track_id = $4, updated_at = NOW()
+		WHERE id = $5
+	`, string(DraftStatusPublished), artistID, albumID, trackID, id)
+	return err
+}
+
+func (r *Repository) ListStaleDrafts(ctx context.Context, cutoff time.Time) ([]IngestionDraft, error) {
+	var drafts []IngestionDraft
+	err := r.db.SelectContext(ctx, &drafts, `
+		SELECT
+			id, uploaded_by, original_filename, file_path, file_size,
+			duration_seconds, bitrate, format, file_hash, stale, status,
+			extracted_metadata::text AS extracted_metadata,
+			enriched_metadata::text AS enriched_metadata,
+			final_metadata::text AS final_metadata,
+			created_at, updated_at
+		FROM ingestion_drafts
+		WHERE status IN ('pending', 'enriching')
+		  AND updated_at < $1
+		  AND stale = FALSE
+		ORDER BY updated_at ASC
+	`, cutoff)
+	return drafts, err
+}
+
+func (r *Repository) MarkDraftStale(ctx context.Context, id string) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE ingestion_drafts SET stale = TRUE, updated_at = NOW() WHERE id = $1
+	`, id)
+	return err
+}
+
+func (r *Repository) CountDraftsByStatus(ctx context.Context) (map[DraftStatus]int, error) {
+	type row struct {
+		Status DraftStatus `db:"status"`
+		Count  int         `db:"cnt"`
+	}
+	var rows []row
+	err := r.db.SelectContext(ctx, &rows, `
+		SELECT status, COUNT(*) AS cnt FROM ingestion_drafts GROUP BY status
+	`)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[DraftStatus]int, len(rows))
+	for _, r := range rows {
+		result[r.Status] = r.Count
+	}
+	return result, nil
+}
+
+func (r *Repository) CountPublishedThisMonth(ctx context.Context) (int, error) {
+	var count int
+	err := r.db.GetContext(ctx, &count, `
+		SELECT COUNT(*) FROM ingestion_drafts
+		WHERE status = 'published'
+		  AND updated_at >= date_trunc('month', NOW())
+	`)
+	return count, err
+}
+
+func (r *Repository) SearchByFileHash(ctx context.Context, hash string) ([]IngestionDraft, error) {
+	var drafts []IngestionDraft
+	err := r.db.SelectContext(ctx, &drafts, `
+		SELECT
+			id, uploaded_by, original_filename, file_path, file_size,
+			duration_seconds, bitrate, format, file_hash, stale, status,
+			extracted_metadata::text AS extracted_metadata,
+			enriched_metadata::text AS enriched_metadata,
+			final_metadata::text AS final_metadata,
+			created_at, updated_at
+		FROM ingestion_drafts
+		WHERE file_hash = $1
+		ORDER BY created_at DESC
+	`, hash)
+	return drafts, err
+}
+
+func nullString(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 func (r *Repository) SearchAlbums(ctx context.Context, q string, limit int) ([]AlbumSearchResult, error) {

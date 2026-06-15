@@ -3,6 +3,7 @@ package ingestion
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -10,14 +11,21 @@ import (
 	"music/internal/common/pagination"
 	"music/internal/common/response"
 	"music/internal/modules/auth"
+	"music/internal/modules/ingestion/finalization"
 )
 
 type Handler struct {
-	service *Service
+	service   *Service
+	finalizer *finalization.Service
+	cleanup   *CleanupService
 }
 
 func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
+}
+
+func (h *Handler) SetCleanup(c *CleanupService) {
+	h.cleanup = c
 }
 
 func (h *Handler) Upload(c *gin.Context) {
@@ -54,6 +62,8 @@ func (h *Handler) Upload(c *gin.Context) {
 			response.Error(c, appErr.BadRequest("no file provided", err))
 		case errors.Is(err, ErrStorageFailed):
 			response.Error(c, appErr.Internal("failed to store uploaded file", err))
+		case errors.Is(err, ErrDuplicateFile):
+			response.Error(c, appErr.Conflict("this file already exists in the catalog", err))
 		default:
 			response.Error(c, appErr.Internal("upload failed", err))
 		}
@@ -209,6 +219,46 @@ func (h *Handler) SearchArtists(c *gin.Context) {
 	response.OK(c, "artists retrieved", results)
 }
 
+func (h *Handler) SetFinalizer(f *finalization.Service) {
+	h.finalizer = f
+}
+
+func (h *Handler) FinalizeDraft(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		response.Error(c, appErr.BadRequest("draft ID is required", nil))
+		return
+	}
+
+	if h.finalizer == nil {
+		response.Error(c, appErr.Internal("finalization not configured", nil))
+		return
+	}
+
+	draft, err := h.service.GetDraftRaw(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, ErrDraftNotFound) {
+			response.Error(c, appErr.NotFound("draft not found", nil))
+			return
+		}
+		response.Error(c, appErr.Internal("failed to get draft", err))
+		return
+	}
+
+	var finalMeta string
+	if draft.FinalMetadata != nil {
+		finalMeta = *draft.FinalMetadata
+	}
+
+	result, err := h.finalizer.Finalize(c.Request.Context(), draft.ID, string(draft.Status), draft.FilePath, draft.Format, finalMeta)
+	if err != nil {
+		response.Error(c, appErr.Internal("failed to finalize draft", err))
+		return
+	}
+
+	response.OK(c, "draft published successfully", result)
+}
+
 func (h *Handler) SearchAlbums(c *gin.Context) {
 	q := c.Query("q")
 	if q == "" {
@@ -223,4 +273,33 @@ func (h *Handler) SearchAlbums(c *gin.Context) {
 	}
 
 	response.OK(c, "albums retrieved", results)
+}
+
+func (h *Handler) GetStats(c *gin.Context) {
+	stats, err := h.service.GetIngestionStats(c.Request.Context())
+	if err != nil {
+		response.Error(c, appErr.Internal("failed to get ingestion stats", err))
+		return
+	}
+	response.OK(c, "ingestion stats retrieved", stats)
+}
+
+func (h *Handler) TriggerCleanup(c *gin.Context) {
+	if h.cleanup == nil {
+		response.Error(c, appErr.Internal("cleanup service not configured", nil))
+		return
+	}
+	flagged, err := h.cleanup.FlagStaleDrafts(c.Request.Context(), 24*time.Hour)
+	if err != nil {
+		response.Error(c, appErr.Internal("cleanup failed", err))
+		return
+	}
+	response.OK(c, "cleanup completed", gin.H{"flagged": flagged})
+}
+
+func (h *Handler) GetConfig(c *gin.Context) {
+	response.OK(c, "ingestion config", IngestionConfigResponse{
+		MaxUploadSize:     200 << 20,
+		EnrichmentEnabled: true,
+	})
 }

@@ -34,6 +34,9 @@ func (h *Handler) List(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list artists"})
 		return
 	}
+	if items == nil {
+		items = []Artist{}
+	}
 	c.JSON(http.StatusOK, items)
 }
 
@@ -196,6 +199,9 @@ func (h *Handler) Tracks(c *gin.Context) {
 		return
 	}
 
+	if items == nil {
+		items = []ArtistTrack{}
+	}
 	c.JSON(http.StatusOK, items)
 }
 
@@ -212,6 +218,9 @@ func (h *Handler) Albums(c *gin.Context) {
 		return
 	}
 
+	if items == nil {
+		items = []ArtistAlbum{}
+	}
 	c.JSON(http.StatusOK, items)
 }
 
@@ -228,6 +237,9 @@ func (h *Handler) Singles(c *gin.Context) {
 		return
 	}
 
+	if items == nil {
+		items = []ArtistAlbum{}
+	}
 	c.JSON(http.StatusOK, items)
 }
 
@@ -244,6 +256,9 @@ func (h *Handler) AppearsOn(c *gin.Context) {
 		return
 	}
 
+	if items == nil {
+		items = []ArtistTrack{}
+	}
 	c.JSON(http.StatusOK, items)
 }
 func (h *Handler) TopTracks(c *gin.Context) {
@@ -259,6 +274,9 @@ func (h *Handler) TopTracks(c *gin.Context) {
 		return
 	}
 
+	if items == nil {
+		items = []ArtistTrack{}
+	}
 	c.JSON(http.StatusOK, items)
 }
 
@@ -275,6 +293,9 @@ func (h *Handler) Related(c *gin.Context) {
 		return
 	}
 
+	if items == nil {
+		items = []RelatedArtist{}
+	}
 	c.JSON(http.StatusOK, items)
 }
 
@@ -299,6 +320,9 @@ func (h *Handler) ReplaceRelated(c *gin.Context) {
 		return
 	}
 
+	if items == nil {
+		items = []RelatedArtist{}
+	}
 	c.JSON(http.StatusOK, items)
 }
 func (h *Handler) ReplaceTopTracks(c *gin.Context) {

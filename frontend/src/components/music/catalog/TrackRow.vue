@@ -86,12 +86,13 @@ interface TrackRowTrack {
   title?: string | null
   artistName?: string | null
   artist_name?: string | null
+  artist_id?: string | number | null
   artist?: { name?: string | null } | null
   artists?: { name?: string | null }[] | null
   coverUrl?: string | null
   cover_url?: string | null
   cover?: string | null
-  album?: { title?: string | null; coverUrl?: string | null; cover_url?: string | null } | null
+  album?: { title?: string | null; coverUrl?: string | null; cover_url?: string | null; id?: string | number } | null
   albumTitle?: string | null
   album_title?: string | null
   durationSeconds?: number | null
@@ -171,7 +172,10 @@ const menuItems = [
     }
   }},
   { label: 'Add to queue', icon: 'pi pi-list', action: () => player.updateQueue([...player.queue.value, buildPlaybackTrack()]) },
-  { label: 'Go to artist', icon: 'pi pi-user', action: () => router.push(`/artist/${trackId.value}`) },
+  { label: 'Go to artist', icon: 'pi pi-user', action: () => {
+    const artistId = props.track.artist_id ?? props.track.artistId
+    if (artistId) router.push(`/artist/${artistId}`)
+  }},
   { label: 'Go to album', icon: 'pi pi-book', action: () => {
     const album = props.track.album
     if (album && (album as any).id) router.push(`/album/${(album as any).id}`)

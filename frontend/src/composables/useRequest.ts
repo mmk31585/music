@@ -57,14 +57,22 @@ const UIHooks: RequestHooks = {
     useUserAuthStore().clearUser()
   },
   async redirectToLogin() {
-    await router?.push({ name: 'login' })
+    await router?.push({ name: 'auth.login' })
   },
 
   // ---------------- Refresh token ----------------
   refreshToken(): Promise<RefreshToken> {
     const store = useUserAuthStore()
     const token = store.entity?.refresh_token
-    return useAuthApi().refresh(token)
+    if (!token) {
+      return Promise.reject(new Error('No refresh token available'))
+    }
+    return useAuthApi().refresh(token).then((res) => {
+      if (res?.refresh_token) {
+        store.setRefreshToken(res.refresh_token)
+      }
+      return res
+    })
   },
   refreshTokenUrlRejecter(config: AxiosRequestConfig): boolean {
     return !!config.url?.includes('/auth/refresh')

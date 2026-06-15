@@ -5,6 +5,7 @@ export const UserSchema = z.object({
   email: z.string().email(),
   username: z.string().optional().nullable(),
   displayName: z.string().optional().nullable(),
+  avatarUrl: z.string().optional().nullable(),
   name: z.string().optional().nullable(),
   role: z.string().optional().nullable(),
 })
@@ -117,6 +118,33 @@ export const CurrentUserResponseSchema = z
     return value
   })
 
+export const AdminUserSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  username: z.string().optional(),
+  display_name: z.string().optional(),
+  displayName: z.string().optional(),
+  role: z.string(),
+  is_active: z.boolean(),
+  email_verified: z.boolean(),
+  avatar_url: z.string().optional(),
+  created_at: z.string(),
+  updated_at: z.string().optional(),
+})
+
+export const AdminUserListResponseSchema = z.object({
+  items: z.array(AdminUserSchema),
+  total: z.number(),
+  page: z.number(),
+  page_size: z.number().optional(),
+})
+
+export const AdminUserUpdatePayloadSchema = z.object({
+  role: z.string().optional(),
+  is_active: z.boolean().optional(),
+  email_verified: z.boolean().optional(),
+})
+
 export type User = z.infer<typeof UserSchema>
 export type LoginPayload = z.infer<typeof LoginPayloadSchema>
 export type RegisterPayload = z.infer<typeof RegisterPayloadSchema>
@@ -124,3 +152,6 @@ export type LogoutPayload = z.infer<typeof LogoutPayloadSchema>
 
 export type AuthResponse = z.infer<typeof AuthResponseSchema>
 export type CurrentUserResponse = z.infer<typeof CurrentUserResponseSchema>
+export type AdminUser = z.infer<typeof AdminUserSchema>
+export type AdminUserListResponse = z.infer<typeof AdminUserListResponseSchema>
+export type AdminUserUpdatePayload = z.infer<typeof AdminUserUpdatePayloadSchema>

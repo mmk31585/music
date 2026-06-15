@@ -121,7 +121,7 @@ func ptr(s string) *string { return &s }
 
 func TestPopularTracks_Success(t *testing.T) {
 	m := new(mockRepo)
-	svc := NewService(m, nil)
+	svc := NewService(m)
 
 	expected := []TrackItem{
 		{ID: "t1", Title: "Track 1", ArtistName: ptr("A1")},
@@ -139,7 +139,7 @@ func TestPopularTracks_Success(t *testing.T) {
 
 func TestPopularTracks_DefaultLimit(t *testing.T) {
 	m := new(mockRepo)
-	svc := NewService(m, nil)
+	svc := NewService(m)
 
 	m.On("GetPopularTracks", mock.Anything, 20).Return([]TrackItem{}, nil)
 
@@ -151,7 +151,7 @@ func TestPopularTracks_DefaultLimit(t *testing.T) {
 
 func TestPopularTracks_InvalidLimit(t *testing.T) {
 	m := new(mockRepo)
-	svc := NewService(m, nil)
+	svc := NewService(m)
 
 	_, err := svc.PopularTracks(context.Background(), 200)
 	assert.ErrorIs(t, err, ErrInvalidLimit)
@@ -159,7 +159,7 @@ func TestPopularTracks_InvalidLimit(t *testing.T) {
 
 func TestSimilarTracks_Success(t *testing.T) {
 	m := new(mockRepo)
-	svc := NewService(m, nil)
+	svc := NewService(m)
 
 	artistID := "artist-1"
 	genre := "Pop"
@@ -171,8 +171,6 @@ func TestSimilarTracks_Success(t *testing.T) {
 			{ID: "t2", Title: "Similar 1"},
 			{ID: "t3", Title: "Similar 2"},
 		}, nil)
-	m.On("GetSimilarTracksByCooccurrence", mock.Anything, "t1", 3).
-		Return([]TrackItem{}, nil)
 
 	items, err := svc.SimilarTracks(context.Background(), "t1", 5)
 
@@ -183,7 +181,7 @@ func TestSimilarTracks_Success(t *testing.T) {
 
 func TestSimilarTracks_NotFound(t *testing.T) {
 	m := new(mockRepo)
-	svc := NewService(m, nil)
+	svc := NewService(m)
 
 	m.On("GetTrackMeta", mock.Anything, "missing").Return(nil, ErrTrackNotFound)
 
@@ -194,7 +192,7 @@ func TestSimilarTracks_NotFound(t *testing.T) {
 
 func TestTracksByArtist_Success(t *testing.T) {
 	m := new(mockRepo)
-	svc := NewService(m, nil)
+	svc := NewService(m)
 
 	m.On("GetTracksByArtist", mock.Anything, "artist-1", 10).Return([]TrackItem{
 		{ID: "t1", Title: "A-Track"},
@@ -208,7 +206,7 @@ func TestTracksByArtist_Success(t *testing.T) {
 
 func TestTracksByGenre_Success(t *testing.T) {
 	m := new(mockRepo)
-	svc := NewService(m, nil)
+	svc := NewService(m)
 
 	m.On("GetTracksByGenre", mock.Anything, "Pop", 10).Return([]TrackItem{
 		{ID: "t1", Title: "Pop Track"},
@@ -220,24 +218,9 @@ func TestTracksByGenre_Success(t *testing.T) {
 	m.AssertExpectations(t)
 }
 
-func TestTrendingTracks_FallbackOnNilCache(t *testing.T) {
-	m := new(mockRepo)
-	svc := NewService(m, nil)
-
-	m.On("GetPopularTracks", mock.Anything, 10).Return([]TrackItem{
-		{ID: "t1", Title: "Fallback"},
-	}, nil)
-
-	items, err := svc.TrendingTracks(context.Background(), 10)
-	assert.NoError(t, err)
-	assert.Len(t, items, 1)
-	assert.Equal(t, "Fallback", items[0].Title)
-	m.AssertExpectations(t)
-}
-
 func TestForYou_Basic(t *testing.T) {
 	m := new(mockRepo)
-	svc := NewService(m, nil)
+	svc := NewService(m)
 
 	coListen := []TrackItem{
 		{ID: "t1", Title: "Co-Listen 1", ArtistID: ptr("a1")},
@@ -262,7 +245,7 @@ func TestForYou_Basic(t *testing.T) {
 
 func TestForYou_WithExclusions(t *testing.T) {
 	m := new(mockRepo)
-	svc := NewService(m, nil)
+	svc := NewService(m)
 
 	coListen := []TrackItem{
 		{ID: "t1", Title: "Liked Track", ArtistID: ptr("a1")},
@@ -296,7 +279,7 @@ func TestForYou_WithExclusions(t *testing.T) {
 
 func TestForYou_RepoError(t *testing.T) {
 	m := new(mockRepo)
-	svc := NewService(m, nil)
+	svc := NewService(m)
 
 	m.On("GetCoListenTracks", mock.Anything, "user-1", 100).Return(nil, errors.New("db down"))
 
@@ -306,7 +289,7 @@ func TestForYou_RepoError(t *testing.T) {
 
 func TestBestTracks_Success(t *testing.T) {
 	m := new(mockRepo)
-	svc := NewService(m, nil)
+	svc := NewService(m)
 
 	m.On("GetBestTracks", mock.Anything, 10).Return([]TrackItem{
 		{ID: "t1", Title: "Best 1"},
@@ -320,7 +303,7 @@ func TestBestTracks_Success(t *testing.T) {
 
 func TestRecentTracks_Success(t *testing.T) {
 	m := new(mockRepo)
-	svc := NewService(m, nil)
+	svc := NewService(m)
 
 	m.On("GetRecentTracks", mock.Anything, "user-1", 10).Return([]TrackItem{
 		{ID: "t1", Title: "Recent 1"},

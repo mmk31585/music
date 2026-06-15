@@ -12,11 +12,24 @@ var (
 	ErrInvalidPlaylistName     = errors.New("invalid playlist name")
 )
 
-type Service struct {
-	repo *Repository
+type RepositoryInterface interface {
+	CreatePlaylist(ctx context.Context, req CreatePlaylistRequest, userID int64) (Playlist, error)
+	UpdatePlaylist(ctx context.Context, playlistID, userID int64, req UpdatePlaylistRequest) (Playlist, error)
+	DeletePlaylist(ctx context.Context, playlistID, userID int64) error
+	GetPlaylistByID(ctx context.Context, playlistID int64) (Playlist, error)
+	ListPlaylistTracks(ctx context.Context, playlistID int64) ([]PlaylistTrackItem, error)
+	ListPublicPlaylists(ctx context.Context) ([]PlaylistListItemResponse, error)
+	ListUserPlaylists(ctx context.Context, userID int64) ([]PlaylistListItemResponse, error)
+	AddTrack(ctx context.Context, playlistID, trackID int64) error
+	RemoveTrack(ctx context.Context, playlistID, trackID int64) error
+	ReorderTrack(ctx context.Context, playlistID, trackID int64, newPosition int) error
 }
 
-func NewService(repo *Repository) *Service {
+type Service struct {
+	repo RepositoryInterface
+}
+
+func NewService(repo RepositoryInterface) *Service {
 	return &Service{repo: repo}
 }
 

@@ -288,7 +288,7 @@ func (r *Repository) CheckAndAwardBadges(ctx context.Context, userID string) ([]
 		case "Night Owl":
 			r.db.QueryRowContext(ctx, `SELECT COUNT(*) >= 100 FROM listening_history WHERE user_id = $1 AND EXTRACT(HOUR FROM played_at)::int BETWEEN 0 AND 5`, userID).Scan(&met)
 		case "Explorer":
-			r.db.QueryRowContext(ctx, `SELECT COUNT(DISTINCT t.genre_id) >= 20 FROM listening_history lh JOIN tracks t ON t.id = lh.track_id WHERE lh.user_id = $1 AND t.genre_id IS NOT NULL`, userID).Scan(&met)
+			r.db.QueryRowContext(ctx, `SELECT COUNT(DISTINCT g.id) >= 20 FROM listening_history lh JOIN tracks t ON t.id = lh.track_id JOIN track_genres tg ON tg.track_id = t.id JOIN genres g ON g.id = tg.genre_id WHERE lh.user_id = $1`, userID).Scan(&met)
 		case "Marathon":
 			r.db.QueryRowContext(ctx, `SELECT COUNT(*) >= 1000 FROM listening_history WHERE user_id = $1 AND played_at >= NOW() - INTERVAL '7 days'`, userID).Scan(&met)
 		case "Wordsmith":

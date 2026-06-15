@@ -1,5 +1,7 @@
 package auth
 
+import "time"
+
 type RegisterRequest struct {
 	Email       string `json:"email" validate:"required,email,max=255"`
 	Username    string `json:"username" validate:"required,min=3,max=50"`
@@ -29,4 +31,30 @@ type AuthResponse struct {
 
 type MeResponse struct {
 	User AuthUser `json:"user"`
+}
+
+type AdminUserItem struct {
+	ID            string     `json:"id"`
+	Email         string     `json:"email"`
+	Username      string     `json:"username"`
+	DisplayName   string     `json:"display_name"`
+	Role          string     `json:"role"`
+	IsActive      bool       `json:"is_active"`
+	EmailVerified bool       `json:"email_verified"`
+	AvatarURL     *string    `json:"avatar_url,omitempty"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     *time.Time `json:"updated_at,omitempty"`
+}
+
+type AdminListUsersResponse struct {
+	Items    []AdminUserItem `json:"items"`
+	Total    int             `json:"total"`
+	Page     int             `json:"page"`
+	PageSize int             `json:"page_size"`
+}
+
+type AdminUpdateUserRequest struct {
+	Role          *string `json:"role"`
+	IsActive      *bool   `json:"is_active"`
+	EmailVerified *bool   `json:"email_verified"`
 }

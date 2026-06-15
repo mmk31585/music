@@ -12,6 +12,9 @@ import {
   SaveFinalMetadataRequestSchema,
   ArtistSearchResultSchema,
   AlbumSearchResultSchema,
+  FinalizeResultSchema,
+  IngestionStatsSchema,
+  IngestionConfigSchema,
   type UploadResponse,
   type DraftDetailResponse,
   type ListDraftsResponse,
@@ -20,6 +23,9 @@ import {
   type SaveFinalMetadataRequest,
   type ArtistSearchResult,
   type AlbumSearchResult,
+  type FinalizeResult,
+  type IngestionStats,
+  type IngestionConfig,
 } from './types'
 
 export const useIngestionApi = () => {
@@ -154,6 +160,47 @@ export const useIngestionApi = () => {
     )
   }
 
+  const finalizeDraft = async (
+    id: string,
+    config?: UseRequestConfig<FinalizeResult>,
+  ) => {
+    return useRequest<FinalizeResult>(
+      IngestionApiRoutes.ADMIN_FINALIZE.replace(':id', id),
+      { method: 'POST' },
+      { schema: FinalizeResultSchema, silent: false, ...config },
+    )
+  }
+
+  const getIngestionStats = async (
+    config?: UseRequestConfig<IngestionStats>,
+  ) => {
+    return useRequest<IngestionStats>(
+      IngestionApiRoutes.ADMIN_STATS,
+      { method: 'GET' },
+      { schema: IngestionStatsSchema, silent: true, ...config },
+    )
+  }
+
+  const getIngestionConfig = async (
+    config?: UseRequestConfig<IngestionConfig>,
+  ) => {
+    return useRequest<IngestionConfig>(
+      IngestionApiRoutes.ADMIN_CONFIG,
+      { method: 'GET' },
+      { schema: IngestionConfigSchema, silent: true, ...config },
+    )
+  }
+
+  const triggerCleanup = async (
+    config?: UseRequestConfig<any>,
+  ) => {
+    return useRequest<any>(
+      IngestionApiRoutes.ADMIN_CLEANUP,
+      { method: 'POST' },
+      { silent: false, ...config },
+    )
+  }
+
   return {
     uploadAudio,
     listDrafts,
@@ -164,5 +211,9 @@ export const useIngestionApi = () => {
     rejectDraft,
     searchArtists,
     searchAlbums,
+    finalizeDraft,
+    getIngestionStats,
+    getIngestionConfig,
+    triggerCleanup,
   }
 }

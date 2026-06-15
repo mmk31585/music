@@ -13,9 +13,12 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 go build -ldflags="-s -w" -o /bin/api ./cmd/api
 
 FROM alpine:3.23
-RUN apk add --no-cache ca-certificates ffmpeg tzdata
+RUN apk add --no-cache ca-certificates ffmpeg tzdata curl \
+    && adduser -D -u 1001 appuser
 COPY --from=builder /bin/api /app/api
 COPY --from=builder /app/migrations /app/migrations
 WORKDIR /app
+RUN chown -R appuser:appuser /app
+USER appuser
 EXPOSE 8080
 ENTRYPOINT ["./api"]

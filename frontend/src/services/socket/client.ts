@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { useUserAuthStore } from '@/stores/user-auth'
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/api/v1/ws'
+const WS_URL = import.meta.env.VITE_WS_URL || undefined
 
 type MessageHandler = (data: any) => void
 
@@ -38,7 +38,8 @@ function connectInner() {
   if (!token) return
 
   try {
-    socket = new WebSocket(`${WS_URL}?token=${encodeURIComponent(token)}`)
+    const base = WS_URL || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/v1/ws`
+    socket = new WebSocket(`${base}?token=${encodeURIComponent(token)}`)
   } catch {
     scheduleReconnect()
     return

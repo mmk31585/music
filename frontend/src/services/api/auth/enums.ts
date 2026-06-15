@@ -33,4 +33,6 @@ export enum AuthApiRoutes {
   REFRESH = '/auth/refresh',
   LOGOUT = '/auth/logout',
   ME = '/auth/me',
+  ADMIN_USERS = '/admin/users',
+  ADMIN_USER = '/admin/users/:id',
 }

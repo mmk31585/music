@@ -17,6 +17,10 @@ type Config struct {
 	OpenSearch  OpenSearchConfig
 	Storage     StorageConfig
 	Enrichment  EnrichmentConfig
+	Features    FeaturesConfig
+	AI          AIConfig
+	Payment     PaymentConfig
+
 	// Legacy song module compatibility. The active upload path lives in
 	// internal/modules/media, but these keep old packages buildable until the
 	// legacy module is either migrated or explicitly removed.
@@ -39,6 +43,9 @@ func Load() (*Config, error) {
 		OpenSearch:  loadOpenSearchConfig(),
 		Storage:     loadStorageConfig(),
 		Enrichment:  loadEnrichmentConfig(),
+		Features:    loadFeaturesConfig(),
+		AI:          loadAIConfig(),
+		Payment:     loadPaymentConfig(),
 	}
 
 	cfg.applyLegacyUploadCompatibility()

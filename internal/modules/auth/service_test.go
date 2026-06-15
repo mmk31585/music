@@ -263,51 +263,13 @@ func TestService_AdminListUsers_Success(t *testing.T) {
 	params := ListUsersParams{Page: 1, PageSize: 20, SortBy: "created_at", SortOrder: "desc"}
 	mockRepo.On("ListUsers", mock.Anything, params).Return(users, 2, nil)
 
-	items, total, err := svc.AdminListUsers(context.Background(), params)
+	resp, err := svc.AdminListUsers(context.Background(), params)
 
 	assert.NoError(t, err)
-	assert.Equal(t, 2, total)
-	assert.Len(t, items, 2)
-	assert.Equal(t, "User One", items[0].DisplayName)
-	assert.Equal(t, "admin", items[1].Role)
-	mockRepo.AssertExpectations(t)
-}
-
-func TestService_UpdateProfile_Success(t *testing.T) {
-	mockRepo := new(mockRepo)
-	tokens := NewTokenManager("secret-a", "secret-r", 15*time.Minute, 7*24*time.Hour)
-	svc := NewService(mockRepo, tokens)
-
-	bio := "new bio"
-	loc := "Tehran"
-
-	now := time.Now()
-	updatedUser := User{
-		ID:          "user-1",
-		Email:       "test@example.com",
-		Username:    "testuser",
-		DisplayName: "Test User",
-		Bio:         bio,
-		Location:    loc,
-		Role:        "user",
-		IsActive:    true,
-		CreatedAt:   now,
-		UpdatedAt:   now,
-	}
-
-	mockRepo.On("UpdateUser", mock.Anything, "user-1", mock.MatchedBy(func(m map[string]any) bool {
-		return m["bio"] == bio && m["location"] == loc
-	})).Return(nil)
-	mockRepo.On("FindUserByID", mock.Anything, "user-1").Return(updatedUser, nil)
-
-	resp, err := svc.UpdateProfile(context.Background(), "user-1", UpdateProfileRequest{
-		Bio:      &bio,
-		Location: &loc,
-	})
-
-	assert.NoError(t, err)
-	assert.Equal(t, bio, resp.User.Bio)
-	assert.Equal(t, loc, resp.User.Location)
+	assert.Equal(t, 2, resp.Total)
+	assert.Len(t, resp.Items, 2)
+	assert.Equal(t, "User One", resp.Items[0].DisplayName)
+	assert.Equal(t, "admin", resp.Items[1].Role)
 	mockRepo.AssertExpectations(t)
 }
 

@@ -34,6 +34,9 @@ func (h *Handler) List(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list genres"})
 		return
 	}
+	if items == nil {
+		items = []Genre{}
+	}
 	c.JSON(http.StatusOK, items)
 }
 

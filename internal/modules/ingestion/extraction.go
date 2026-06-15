@@ -136,11 +136,32 @@ func extractExtFromMIME(mime string) string {
 }
 
 func extractedTagsToJSON(t *ExtractedTags) (string, error) {
+	sanitizeExtractedTags(t)
 	data, err := json.Marshal(t)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal extracted tags: %w", err)
 	}
 	return string(data), nil
+}
+
+func sanitizeExtractedTags(t *ExtractedTags) {
+	t.Title = sanitizeString(t.Title)
+	t.Artist = sanitizeString(t.Artist)
+	t.Album = sanitizeString(t.Album)
+	t.AlbumArtist = sanitizeString(t.AlbumArtist)
+	t.Genre = sanitizeString(t.Genre)
+	t.Comment = sanitizeString(t.Comment)
+	t.Composer = sanitizeString(t.Composer)
+	t.Lyrics = sanitizeString(t.Lyrics)
+}
+
+func sanitizeString(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r == 0 {
+			return -1
+		}
+		return r
+	}, s)
 }
 
 func extractFirstLines(s string, maxLines int) string {

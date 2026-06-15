@@ -175,11 +175,14 @@ func (h *Handler) UnfollowUser(c *gin.Context) {
 }
 
 func getUserIDFromGin(c *gin.Context) (uuid.UUID, bool) {
-	value, exists := c.Get("userID")
+	value, exists := c.Get("auth_user_id")
 	if !exists {
-		value, exists = c.Get("user_id")
+		value, exists = c.Get("userID")
 		if !exists {
-			return uuid.Nil, false
+			value, exists = c.Get("user_id")
+			if !exists {
+				return uuid.Nil, false
+			}
 		}
 	}
 
@@ -187,12 +190,10 @@ func getUserIDFromGin(c *gin.Context) (uuid.UUID, bool) {
 	case uuid.UUID:
 		return v, true
 	case string:
-		id, err := uuid.Parse(v)
-		if err != nil {
-			return uuid.Nil, false
+		parsed, err := uuid.Parse(v)
+		if err == nil {
+			return parsed, true
 		}
-		return id, true
-	default:
-		return uuid.Nil, false
 	}
+	return uuid.Nil, false
 }

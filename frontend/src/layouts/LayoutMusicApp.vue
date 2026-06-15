@@ -51,9 +51,57 @@
             </button>
           </div>
 
-          <nav role="navigation" aria-label="Mobile navigation" class="space-y-1">
+          <nav role="navigation" aria-label="Mobile navigation" class="flex-1 space-y-1 overflow-y-auto">
+            <p class="px-4 pb-1 pt-4 text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">
+              Browse
+            </p>
             <RouterLink
-              v-for="item in navItems"
+              v-for="item in browseItems"
+              :key="item.to"
+              :to="item.to"
+              class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
+              :class="activeNavBase === item.to ? 'bg-white/[0.10] text-white' : ''"
+              @click="mobileOpen = false"
+            >
+              <i :class="item.icon" class="text-lg" />
+              <span>{{ item.label }}</span>
+            </RouterLink>
+
+            <p class="px-4 pb-1 pt-4 text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">
+              Library
+            </p>
+            <RouterLink
+              v-for="item in libraryItems"
+              :key="item.to"
+              :to="item.to"
+              class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
+              :class="activeNavBase === item.to ? 'bg-white/[0.10] text-white' : ''"
+              @click="mobileOpen = false"
+            >
+              <i :class="item.icon" class="text-lg" />
+              <span>{{ item.label }}</span>
+            </RouterLink>
+
+            <p class="px-4 pb-1 pt-4 text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">
+              Social
+            </p>
+            <RouterLink
+              v-for="item in socialItems"
+              :key="item.to"
+              :to="item.to"
+              class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
+              :class="activeNavBase === item.to ? 'bg-white/[0.10] text-white' : ''"
+              @click="mobileOpen = false"
+            >
+              <i :class="item.icon" class="text-lg" />
+              <span>{{ item.label }}</span>
+            </RouterLink>
+
+            <p class="px-4 pb-1 pt-4 text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">
+              More
+            </p>
+            <RouterLink
+              v-for="item in moreItems"
               :key="item.to"
               :to="item.to"
               class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
@@ -148,14 +196,54 @@ import { client } from '@/composables'
 import { wsClient } from '@/services/socket/client'
 import type { NotificationResponse } from '@/services/api/notification/routes'
 
-const allNavItems = [
+const browseItems = [
   { label: 'Home', icon: 'pi pi-home', to: '/' },
-  { label: 'Search', icon: 'pi pi-search', to: '/search', featureFlag: 'search' },
-  { label: 'Recommendations', icon: 'pi pi-star', to: '/recommendations', featureFlag: 'recommendation' },
+  { label: 'Discover', icon: 'pi pi-compass', to: '/discover' },
+  { label: 'Search', icon: 'pi pi-search', to: '/search' },
+  { label: 'Recommendations', icon: 'pi pi-star', to: '/recommendations' },
+]
+
+const libraryItems = [
   { label: 'Library', icon: 'pi pi-bookmark', to: '/library' },
   { label: 'Playlists', icon: 'pi pi-list', to: '/playlists' },
   { label: 'Recently Played', icon: 'pi pi-history', to: '/recently-played' },
 ]
+
+const socialItems = [
+  { label: 'Social Hub', icon: 'pi pi-users', to: '/social' },
+  { label: 'Notifications', icon: 'pi pi-bell', to: '/notifications' },
+]
+
+const moreItems = [
+  { label: 'Profile', icon: 'pi pi-user', to: '/profile' },
+  { label: 'Settings', icon: 'pi pi-cog', to: '/settings' },
+  { label: 'AI Mood Explorer', icon: 'pi pi-magic', to: '/ai/mood-explorer' },
+  { label: 'AI Playlist Generator', icon: 'pi pi-sync', to: '/ai/playlist-generator' },
+  { label: 'Subscription', icon: 'pi pi-credit-card', to: '/subscription' },
+  { label: 'Gamification', icon: 'pi pi-trophy', to: '/gamification' },
+  { label: 'Contributions', icon: 'pi pi-cloud-upload', to: '/contributions' },
+  { label: 'Creator Dashboard', icon: 'pi pi-chart-bar', to: '/creator-dashboard' },
+]
+
+const pageTitleMap: Record<string, string> = {
+  '/': 'Home',
+  '/discover': 'Discover',
+  '/search': 'Search',
+  '/recommendations': 'Recommendations',
+  '/library': 'Library',
+  '/playlists': 'Playlists',
+  '/recently-played': 'Recently Played',
+  '/notifications': 'Notifications',
+  '/social': 'Social Hub',
+  '/profile': 'Profile',
+  '/settings': 'Settings',
+  '/subscription': 'Subscription',
+  '/contributions': 'Contributions',
+  '/creator-dashboard': 'Creator Dashboard',
+  '/gamification': 'Gamification',
+  '/ai/mood-explorer': 'AI Mood Explorer',
+  '/ai/playlist-generator': 'AI Playlist Generator',
+}
 
 const route = useRoute()
 const store = useUserAuthStore()
@@ -241,11 +329,7 @@ const initials = computed(() => {
     : name.slice(0, 2).toUpperCase()
 })
 
-const navItems = computed(() =>
-  allNavItems.filter(
-    (item) => !item.featureFlag || ff.isEnabled(item.featureFlag as FeatureFlagKey),
-  ),
-)
+const allNavItems = [...browseItems, ...libraryItems, ...socialItems, ...moreItems]
 
 const activeNavBase = computed(() => {
   const path = route.path
@@ -258,11 +342,28 @@ const activeNavBase = computed(() => {
 })
 
 const pageTitle = computed(() => {
-  const match = allNavItems.find((item) => {
-    if (item.to === '/') return route.path === '/'
-    return route.path.startsWith(item.to)
-  })
-  return match?.label || 'Music'
+  const path = route.path
+  let bestMatch = 'Music'
+  let bestLength = 0
+
+  for (const [prefix, title] of Object.entries(pageTitleMap)) {
+    if (path.startsWith(prefix) && prefix.length > bestLength) {
+      bestMatch = title
+      bestLength = prefix.length
+    }
+  }
+
+  if (path.startsWith('/playlist/')) return 'Playlist'
+  if (path.startsWith('/track/')) return 'Track'
+  if (path.startsWith('/album/')) return 'Album'
+  if (path.startsWith('/artist/')) return 'Artist'
+  if (path.startsWith('/user/')) return 'Profile'
+  if (path.startsWith('/social/party/')) return 'Listening Party'
+  if (path.startsWith('/social/room/')) return 'Live Room'
+  if (path.startsWith('/social/club/')) return 'Music Club'
+  if (path.startsWith('/recommendations/')) return 'Recommendations'
+
+  return bestMatch
 })
 
 function onToggleLyrics() {

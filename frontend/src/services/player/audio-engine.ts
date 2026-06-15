@@ -138,7 +138,25 @@ class AudioEngine {
     })
 
     this.audio.addEventListener('error', () => {
-      const error = new Error(this.audio.error?.message || 'Audio playback error')
+      const mediaError = this.audio.error
+      let message = 'Audio playback error'
+      if (mediaError) {
+        switch (mediaError.code) {
+          case MediaError.MEDIA_ERR_ABORTED:
+            message = 'Playback was aborted'
+            break
+          case MediaError.MEDIA_ERR_NETWORK:
+            message = 'Network error — check your connection'
+            break
+          case MediaError.MEDIA_ERR_DECODE:
+            message = 'Could not decode audio'
+            break
+          case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+            message = 'Audio format not supported or stream unavailable'
+            break
+        }
+      }
+      const error = new Error(message)
       this.emit('error', error)
     })
   }

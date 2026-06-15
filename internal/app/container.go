@@ -2,17 +2,22 @@ package app
 
 import (
 	"context"
+	"time"
+
 	"music/internal/modules/analytics"
 	"music/internal/modules/auth"
 	"music/internal/modules/catalog/album"
 	artist "music/internal/modules/catalog/artist"
 	"music/internal/modules/catalog/genre"
 	"music/internal/modules/catalog/track"
+	"music/internal/modules/creator"
 	"music/internal/modules/follow"
+	"music/internal/modules/gamification"
 	"music/internal/modules/health"
 	"music/internal/modules/history"
 	"music/internal/modules/ingestion"
 	"music/internal/modules/ingestion/enrichment"
+	"music/internal/modules/ingestion/finalization"
 	"music/internal/modules/library"
 	"music/internal/modules/lyrics"
 	"music/internal/modules/media"
@@ -20,11 +25,14 @@ import (
 	"music/internal/modules/player"
 	"music/internal/modules/playlist"
 	"music/internal/modules/queue"
+	"music/internal/modules/reactions"
 	"music/internal/modules/recommendation"
 	"music/internal/modules/search"
+	"music/internal/modules/social"
 	"music/internal/modules/subscription"
 	"music/internal/platform/events"
 	platformstorage "music/internal/platform/storage"
+	"music/internal/platform/ws"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -38,6 +46,7 @@ type Container struct {
 	SQLX *sqlx.DB
 	Bus  *events.Bus
 	RDB  *redis.Client
+	WSHub *ws.Hub
 
 	Storage platformstorage.Storage
 
@@ -97,11 +106,24 @@ type Container struct {
 	PlayerService *player.Service
 	PlayerHandler *player.Handler
 
-	IngestionService *ingestion.Service
-	IngestionHandler *ingestion.Handler
+	IngestionService       *ingestion.Service
+	IngestionHandler       *ingestion.Handler
+	IngestionFinalization  *finalization.Service
 
 	SearchService *search.Service
 	SearchHandler *search.Handler
+
+	SocialService *social.Service
+	SocialHandler *social.Handler
+
+	ReactionsService *reactions.Service
+	ReactionsHandler *reactions.Handler
+
+	GamificationService *gamification.Service
+	GamificationHandler *gamification.Handler
+
+	CreatorService *creator.Service
+	CreatorHandler *creator.Handler
 }
 
 func NewContainer(a *App) *Container {
@@ -120,7 +142,7 @@ func NewContainer(a *App) *Container {
 	c.buildHealth(a)
 	c.buildStorage(a)
 	c.buildAuth(a)
-	c.buildMedia()
+	c.buildMedia(a)
 	c.buildCatalog()
 	c.buildLyrics()
 	c.buildPlaylist()
@@ -135,6 +157,10 @@ func NewContainer(a *App) *Container {
 	c.buildPlayer()
 	c.buildIngestion(a)
 	c.buildSearch(a)
+	c.buildSocial(a)
+	c.buildReactions()
+	c.buildGamification()
+	c.buildCreator()
 	c.subscribeEvents()
 
 	return c
@@ -185,7 +211,7 @@ func (c *Container) buildAuth(a *App) {
 	c.OptionalAuthMW = auth.OptionalAuthMiddleware(tokenManager)
 }
 
-func (c *Container) buildMedia() {
+func (c *Container) buildMedia(a *App) {
 	mediaRepo := media.NewRepository(c.SQLX)
 
 	c.MediaService = media.NewService(c.Storage, mediaRepo, media.Config{
@@ -208,6 +234,7 @@ func (c *Container) buildMedia() {
 			"audio/aac",
 			"application/octet-stream",
 		},
+		StorageProviderName: a.Config.Storage.Driver,
 	})
 
 	c.MediaHandler = media.NewHandler(c.MediaService)
@@ -309,8 +336,14 @@ func (c *Container) buildIngestion(a *App) {
 
 	enricher := enrichment.NewEnricher(mbClient, lfmClient, spotClient, zap.L())
 
+	c.IngestionFinalization = finalization.NewService(c.SQLX, c.Storage, zap.L())
 	c.IngestionService = ingestion.NewService(c.Storage, ingestionRepo, enricher)
 	c.IngestionHandler = ingestion.NewHandler(c.IngestionService)
+	c.IngestionHandler.SetFinalizer(c.IngestionFinalization)
+
+	cleanupSvc := ingestion.NewCleanupService(ingestionRepo, zap.L())
+	c.IngestionHandler.SetCleanup(cleanupSvc)
+	cleanupSvc.StartPeriodicCleanup(context.Background(), 1*time.Hour, 24*time.Hour)
 }
 
 func (c *Container) buildSearch(a *App) {
@@ -332,6 +365,35 @@ func (c *Container) buildSearch(a *App) {
 
 	c.SearchService = search.NewService(osClient)
 	c.SearchHandler = search.NewHandler(c.SearchService)
+}
+
+func (c *Container) buildSocial(a *App) {
+	c.WSHub = ws.NewHub(a.Logger)
+	go c.WSHub.Run(context.Background())
+
+	socialRepo := social.NewRepository(c.SQLX)
+	partyBroadcaster := social.NewPartyBroadcaster(c.WSHub)
+	roomBroadcaster := social.NewRoomBroadcaster(c.WSHub)
+	c.SocialService = social.NewService(socialRepo, partyBroadcaster, roomBroadcaster)
+	c.SocialHandler = social.NewHandler(c.SocialService)
+}
+
+func (c *Container) buildReactions() {
+	reactionsRepo := reactions.NewRepository(c.SQLX)
+	c.ReactionsService = reactions.NewService(reactionsRepo)
+	c.ReactionsHandler = reactions.NewHandler(c.ReactionsService)
+}
+
+func (c *Container) buildGamification() {
+	gamificationRepo := gamification.NewRepository(c.SQLX)
+	c.GamificationService = gamification.NewService(gamificationRepo)
+	c.GamificationHandler = gamification.NewHandler(c.GamificationService)
+}
+
+func (c *Container) buildCreator() {
+	creatorRepo := creator.NewRepository(c.SQLX)
+	c.CreatorService = creator.NewService(creatorRepo)
+	c.CreatorHandler = creator.NewHandler(c.CreatorService)
 }
 
 func (c *Container) subscribeEvents() {

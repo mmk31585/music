@@ -150,6 +150,10 @@ func (s *Service) ResolveAudioStorageKey(audioURL string) (string, error) {
 func (s *Service) ResolveAudioURL(ctx context.Context, audioURL string) (string, error) {
 	log.Println("ResolveAudioURL input:", audioURL)
 
+	if ctx.Err() != nil {
+		return "", ctx.Err()
+	}
+
 	key, err := s.ResolveAudioStorageKey(audioURL)
 	if err != nil {
 		log.Println("ResolveAudioStorageKey error:", err)
@@ -161,7 +165,7 @@ func (s *Service) ResolveAudioURL(ctx context.Context, audioURL string) (string,
 	exists, err := s.storage.Exists(ctx, key)
 	if err != nil {
 		log.Println("storage.Exists error:", err)
-		return "", err
+		return "", ErrAudioNotFound
 	}
 
 	log.Println("storage.Exists result:", exists)
@@ -173,7 +177,7 @@ func (s *Service) ResolveAudioURL(ctx context.Context, audioURL string) (string,
 	resolvedURL, err := s.storage.GetURL(ctx, key)
 	if err != nil {
 		log.Println("storage.GetURL error:", err)
-		return "", err
+		return "", ErrAudioNotFound
 	}
 
 	log.Println("storage.GetURL result:", resolvedURL)

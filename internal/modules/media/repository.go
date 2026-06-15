@@ -150,6 +150,56 @@ func (r *Repository) FindByChecksum(ctx context.Context, checksum string) (*Medi
 	return &item, nil
 }
 
+func (r *Repository) List(ctx context.Context) ([]Media, error) {
+	var items []Media
+
+	err := r.db.SelectContext(ctx, &items, `
+		SELECT
+			id,
+			media_type,
+			storage_provider,
+			bucket,
+			object_key,
+			public_url,
+			mime_type,
+			file_size,
+			checksum_sha256,
+			duration_seconds,
+			width,
+			height,
+			original_filename,
+			metadata::text AS metadata,
+			created_by,
+			created_at,
+			updated_at
+		FROM media
+		ORDER BY created_at DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
+func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
+	result, err := r.db.ExecContext(ctx, `DELETE FROM media WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return catalogCommon.ErrNotFound
+	}
+
+	return nil
+}
+
 func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*Media, error) {
 	var item Media
 

@@ -37,6 +37,9 @@ func (h *Handler) ListPublic(c *gin.Context) {
 		return
 	}
 
+	if items == nil {
+		items = []Track{}
+	}
 	c.JSON(http.StatusOK, items)
 }
 
@@ -59,6 +62,9 @@ func (h *Handler) ListAdmin(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list tracks"})
 		return
+	}
+	if items == nil {
+		items = []Track{}
 	}
 	c.JSON(http.StatusOK, items)
 }
@@ -215,6 +221,9 @@ func (h *Handler) Credits(c *gin.Context) {
 		return
 	}
 
+	if items == nil {
+		items = []TrackCredit{}
+	}
 	c.JSON(http.StatusOK, items)
 }
 
@@ -239,6 +248,9 @@ func (h *Handler) ReplaceCredits(c *gin.Context) {
 		return
 	}
 
+	if items == nil {
+		items = []TrackCredit{}
+	}
 	c.JSON(http.StatusOK, items)
 }
 func (h *Handler) Artists(c *gin.Context) {

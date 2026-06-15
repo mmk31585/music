@@ -201,16 +201,41 @@
         <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100">
           Recent Drafts
         </h3>
-        <SelectButton
-          v-model="statusFilter"
-          :options="statusOptions"
-          option-label="label"
-          option-value="value"
-          allow-empty
-          class="text-sm"
-          @change="loadDrafts"
-        />
+        <div class="flex items-center gap-3">
+          <Button
+            v-if="bulkReviewHint"
+            label="Review All Pending"
+            icon="pi pi-list"
+            size="small"
+            severity="info"
+            outlined
+            @click="goBulkReview"
+          />
+          <SelectButton
+            v-model="statusFilter"
+            :options="statusOptions"
+            option-label="label"
+            option-value="value"
+            allow-empty
+            class="text-sm"
+            @change="loadDrafts"
+          />
+        </div>
       </div>
+
+      <Message
+        v-if="bulkReviewHint"
+        severity="info"
+        :closable="true"
+        class="mb-4"
+      >
+        <div class="flex items-center gap-2">
+          <i class="pi pi-info-circle"></i>
+          <span>You have <strong>{{ draftsInReview }}</strong> drafts pending review.
+            <a class="cursor-pointer underline" @click="goBulkReview">Review all pending</a>
+            to process them sequentially.</span>
+        </div>
+      </Message>
 
       <DataTable
         :value="drafts"
@@ -321,6 +346,8 @@ const statusOptions = [
   { label: 'Review', value: 'review' },
   { label: 'Accepted', value: 'accepted' },
   { label: 'Rejected', value: 'rejected' },
+  { label: 'Published', value: 'published' },
+  { label: 'Enrich. Failed', value: 'enrichment_failed' },
 ]
 const statusFilter = ref('')
 const drafts = ref<DraftListItem[]>([])
@@ -328,6 +355,9 @@ const loadingDrafts = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(20)
 const totalItems = ref(0)
+
+const bulkReviewHint = computed(() => draftsInReview.value >= 10)
+const draftsInReview = computed(() => drafts.value.filter(d => d.status === 'review').length)
 
 const lyricsSnippet = computed(() => {
   const lyrics = uploadResult.value?.extractedMetadata?.lyrics
@@ -419,6 +449,13 @@ function confidenceSeverity(confidence: string) {
 
 function openReview(id: string) {
   router.push({ name: 'admin.ingestion.review', params: { id } })
+}
+
+function goBulkReview() {
+  const reviewId = drafts.value.find(d => d.status === 'review')?.id
+  if (reviewId) {
+    router.push({ name: 'admin.ingestion.review', params: { id: reviewId } })
+  }
 }
 
 function triggerFileInput() {
@@ -550,6 +587,8 @@ function statusSeverity(status: string) {
     case 'review': return 'info'
     case 'accepted': return 'success'
     case 'rejected': return 'danger'
+    case 'published': return 'success'
+    case 'enrichment_failed': return 'danger'
     default: return undefined
   }
 }

@@ -25,6 +25,66 @@
       <Message severity="error" :closable="false">{{ error }}</Message>
     </div>
 
+    <template v-else-if="published && publishResult">
+      <div class="py-12 text-center">
+        <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20">
+          <i class="pi pi-check-circle text-3xl text-green-400"></i>
+        </div>
+        <h2 class="mb-2 text-2xl font-bold text-white">Published to Catalog</h2>
+        <p class="mb-8 text-surface-400">{{ draftDetail?.originalFilename }} has been published successfully.</p>
+        <div class="mx-auto mb-8 grid max-w-md gap-4">
+          <a
+            v-if="publishResult.artistId"
+            :href="`/admin/catalog/artists/${publishResult.artistId}`"
+            class="flex items-center gap-3 rounded-lg border border-surface-700 bg-surface-800 p-4 text-left transition-colors hover:bg-surface-700"
+          >
+            <i class="pi pi-user text-xl text-primary"></i>
+            <div>
+              <p class="text-sm font-medium text-white">View Artist in Catalog</p>
+              <p class="text-xs text-surface-500">{{ finalMetadata.artist.name }}</p>
+            </div>
+          </a>
+          <a
+            v-if="publishResult.albumId"
+            :href="`/admin/catalog/albums/${publishResult.albumId}`"
+            class="flex items-center gap-3 rounded-lg border border-surface-700 bg-surface-800 p-4 text-left transition-colors hover:bg-surface-700"
+          >
+            <i class="pi pi-book text-xl text-primary"></i>
+            <div>
+              <p class="text-sm font-medium text-white">View Album in Catalog</p>
+              <p class="text-xs text-surface-500">{{ finalMetadata.album.title }}</p>
+            </div>
+          </a>
+          <a
+            v-if="publishResult.trackId"
+            :href="`/admin/catalog/tracks/${publishResult.trackId}`"
+            class="flex items-center gap-3 rounded-lg border border-surface-700 bg-surface-800 p-4 text-left transition-colors hover:bg-surface-700"
+          >
+            <i class="pi pi-music text-xl text-primary"></i>
+            <div>
+              <p class="text-sm font-medium text-white">View Track in Catalog</p>
+              <p class="text-xs text-surface-500">{{ finalMetadata.track.title }}</p>
+            </div>
+          </a>
+          <a
+            :href="publishResult.audioUrl"
+            target="_blank"
+            class="flex items-center gap-3 rounded-lg border border-surface-700 bg-surface-800 p-4 text-left transition-colors hover:bg-surface-700"
+          >
+            <i class="pi pi-external-link text-xl text-primary"></i>
+            <div>
+              <p class="text-sm font-medium text-white">Audio File URL</p>
+              <p class="truncate text-xs text-surface-500">{{ publishResult.audioUrl }}</p>
+            </div>
+          </a>
+        </div>
+        <div class="flex justify-center gap-3">
+          <Button label="Back to Drafts" icon="pi pi-arrow-left" severity="secondary" @click="goBack" />
+          <Button label="Upload Another" icon="pi pi-upload" @click="router.push({ name: 'admin.ingestion' })" />
+        </div>
+      </div>
+    </template>
+
     <template v-else>
       <div class="mb-8">
         <div class="flex items-center gap-2">
@@ -620,7 +680,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import AdminSectionHeader from '@/components/admin/AdminSectionHeader.vue'
 import { useIngestionApi } from '@/services/api/ingestion/routes'
@@ -631,6 +691,7 @@ import type {
   SaveFinalMetadataRequest,
   ArtistSearchResult,
   AlbumSearchResult,
+  FinalizeResult,
 } from '@/services/api/ingestion/types'
 import { useToast } from 'primevue/usetoast'
 
@@ -648,6 +709,8 @@ const error = ref<string | null>(null)
 const publishing = ref(false)
 const publishingError = ref<string | null>(null)
 const rejecting = ref(false)
+const published = ref(false)
+const publishResult = ref<FinalizeResult | null>(null)
 const rejectDialogVisible = ref(false)
 const rejectReason = ref('')
 const lyricsExpanded = ref(false)
@@ -874,9 +937,11 @@ async function publish() {
   publishingError.value = null
   try {
     await ingestionApi.saveFinalMetadata(draftId, { ...finalMetadata })
+    const result = await ingestionApi.finalizeDraft(draftId)
+    publishResult.value = result
     hasUnsavedChanges.value = false
-    toast.add({ severity: 'success', summary: 'Draft published', detail: 'The draft has been accepted and saved to the catalog.', life: 5000 })
-    setTimeout(() => router.push({ name: 'admin.ingestion' }), 1500)
+    published.value = true
+    toast.add({ severity: 'success', summary: 'Draft published', detail: 'The draft has been published to the catalog.', life: 5000 })
   } catch (err: any) {
     publishingError.value = err?.message || 'Failed to publish draft.'
   } finally {
@@ -903,17 +968,40 @@ async function rejectDraft() {
   }
 }
 
+function handleKeydown(e: KeyboardEvent) {
+  if (rejectDialogVisible.value || loading.value || published.value) return
+  const tag = (e.target as HTMLElement)?.tagName
+  const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+  if (e.key === 'Escape') {
+    if (!isInput && step.value > 0) {
+      e.preventDefault()
+      step.value--
+    }
+  } else if (e.key === 'Enter') {
+    if (!isInput) {
+      e.preventDefault()
+      if (step.value < 3 && canProceed.value) {
+        step.value++
+      } else if (step.value === 3 && isValid.value) {
+        publish()
+      }
+    }
+  }
+}
+
 watch(finalMetadata, () => {
   hasUnsavedChanges.value = true
 }, { deep: true })
 
 onMounted(() => {
   loadDraft()
+  window.addEventListener('keydown', handleKeydown)
 })
 
 onUnmounted(() => {
   if (artistSearchTimer) clearTimeout(artistSearchTimer)
   if (albumSearchTimer) clearTimeout(albumSearchTimer)
+  window.removeEventListener('keydown', handleKeydown)
 })
 
 onBeforeRouteLeave((_to, _from, next) => {

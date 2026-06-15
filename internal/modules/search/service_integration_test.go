@@ -21,9 +21,9 @@ func TestSearch_WithMockOS_HappyPath(t *testing.T) {
 	defer ts.Close()
 
 	client := newOSClientForTest(t, ts.URL)
-	svc := NewService(client, nil)
+	svc := NewService(client.Client())
 
-	resp, err := svc.Search(context.Background(), "test query", "all", 10)
+	resp, err := svc.Search(context.Background(), "test query", 10)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 
@@ -48,66 +48,6 @@ func TestSearch_WithMockOS_HappyPath(t *testing.T) {
 	assert.Equal(t, "Test Playlist", resp.Playlists[0].Name)
 }
 
-func TestSearch_WithMockOS_TracksOnly(t *testing.T) {
-	ts := newMockOSServer(t)
-	defer ts.Close()
-
-	client := newOSClientForTest(t, ts.URL)
-	svc := NewService(client, nil)
-
-	resp, err := svc.Search(context.Background(), "test", "tracks", 10)
-	require.NoError(t, err)
-	require.Len(t, resp.Tracks, 1)
-	assert.Empty(t, resp.Albums)
-	assert.Empty(t, resp.Artists)
-	assert.Empty(t, resp.Playlists)
-}
-
-func TestSearch_WithMockOS_AlbumsOnly(t *testing.T) {
-	ts := newMockOSServer(t)
-	defer ts.Close()
-
-	client := newOSClientForTest(t, ts.URL)
-	svc := NewService(client, nil)
-
-	resp, err := svc.Search(context.Background(), "test", "albums", 10)
-	require.NoError(t, err)
-	assert.Empty(t, resp.Tracks)
-	require.Len(t, resp.Albums, 1)
-	assert.Empty(t, resp.Artists)
-	assert.Empty(t, resp.Playlists)
-}
-
-func TestSearch_WithMockOS_ArtistsOnly(t *testing.T) {
-	ts := newMockOSServer(t)
-	defer ts.Close()
-
-	client := newOSClientForTest(t, ts.URL)
-	svc := NewService(client, nil)
-
-	resp, err := svc.Search(context.Background(), "test", "artists", 10)
-	require.NoError(t, err)
-	assert.Empty(t, resp.Tracks)
-	assert.Empty(t, resp.Albums)
-	require.Len(t, resp.Artists, 1)
-	assert.Empty(t, resp.Playlists)
-}
-
-func TestSearch_WithMockOS_PlaylistsOnly(t *testing.T) {
-	ts := newMockOSServer(t)
-	defer ts.Close()
-
-	client := newOSClientForTest(t, ts.URL)
-	svc := NewService(client, nil)
-
-	resp, err := svc.Search(context.Background(), "test", "playlists", 10)
-	require.NoError(t, err)
-	assert.Empty(t, resp.Tracks)
-	assert.Empty(t, resp.Albums)
-	assert.Empty(t, resp.Artists)
-	require.Len(t, resp.Playlists, 1)
-}
-
 func TestSearch_WithMockOS_EmptyResults(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -120,9 +60,9 @@ func TestSearch_WithMockOS_EmptyResults(t *testing.T) {
 	defer ts.Close()
 
 	client := newOSClientForTest(t, ts.URL)
-	svc := NewService(client, nil)
+	svc := NewService(client.Client())
 
-	resp, err := svc.Search(context.Background(), "nonexistent", "all", 10)
+	resp, err := svc.Search(context.Background(), "nonexistent", 10)
 	require.NoError(t, err)
 	assert.Empty(t, resp.Tracks)
 	assert.Empty(t, resp.Albums)
@@ -145,25 +85,21 @@ func TestSearch_WithMockOS_RankedQueryBuilt(t *testing.T) {
 	defer ts.Close()
 
 	client := newOSClientForTest(t, ts.URL)
-	svc := NewService(client, &Repository{})
+	svc := NewService(client.Client())
 
-	_, err := svc.Search(context.Background(), "hello world", "all", 10)
+	_, err := svc.Search(context.Background(), "hello world", 10)
 	require.NoError(t, err)
 
-	// Find the track search body (contains "title^3" field or "function_score")
+	// Find the track search body (contains "title^3" field)
 	var trackBody string
 	for _, b := range requestBodies {
-		if strings.Contains(b, "title") && strings.Contains(b, "function_score") {
+		if strings.Contains(b, "title") {
 			trackBody = b
 			break
 		}
 	}
 	require.NotEmpty(t, trackBody, "should have found a track search request. bodies: %v", requestBodies)
 
-	assert.Contains(t, trackBody, "function_score")
-	assert.Contains(t, trackBody, "field_value_factor")
-	assert.Contains(t, trackBody, "popularity")
-	assert.Contains(t, trackBody, "gauss")
 	assert.Contains(t, trackBody, "multi_match")
 	assert.Contains(t, trackBody, "fuzziness")
 }
@@ -181,38 +117,10 @@ func TestSearch_WithMockOS_ServerError(t *testing.T) {
 	defer ts.Close()
 
 	client := newOSClientForTest(t, ts.URL)
-	svc := NewService(client, &Repository{})
+	svc := NewService(client.Client())
 
-	resp, err := svc.Search(context.Background(), "test", "tracks", 10)
-	require.NoError(t, err)
-	assert.Empty(t, resp.Tracks)
-}
-
-func TestSuggestions_WithMockOS(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodGet {
-			fmt.Fprint(w, `{"name":"test-cluster","version":{"number":"7.10.0","distribution":"opensearch"}}`)
-			return
-		}
-		fmt.Fprint(w, `{
-			"took":1,"timed_out":false,
-			"hits":{"total":{"value":2},"hits":[
-				{"_source":{"title":"Test Track"}},
-				{"_source":{"name":"Test Artist"}}
-			]}
-		}`)
-	}))
-	defer ts.Close()
-
-	client := newOSClientForTest(t, ts.URL)
-	svc := NewService(client, nil)
-
-	suggestions, err := svc.Suggestions(context.Background(), "test", 5)
-	require.NoError(t, err)
-	require.Len(t, suggestions, 2)
-	assert.Equal(t, "Test Track", suggestions[0])
-	assert.Equal(t, "Test Artist", suggestions[1])
+	_, err := svc.Search(context.Background(), "test", 10)
+	require.Error(t, err)
 }
 
 // -- helpers --

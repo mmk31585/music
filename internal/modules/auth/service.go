@@ -3,16 +3,17 @@ package auth
 import (
 	"context"
 	"strings"
+	"time"
 
 	apperrors "music/internal/common/errors"
 )
 
 type Service struct {
-	repo   *Repository
+	repo   RepositoryInterface
 	tokens *TokenManager
 }
 
-func NewService(repo *Repository, tokens *TokenManager) *Service {
+func NewService(repo RepositoryInterface, tokens *TokenManager) *Service {
 	return &Service{
 		repo:   repo,
 		tokens: tokens,
@@ -141,6 +142,78 @@ func (s *Service) createAuthResponse(ctx context.Context, user User, userAgent, 
 		TokenType:    "Bearer",
 		ExpiresIn:    int64(accessExpiresAt.Sub(accessExpiresAt.Add(-s.tokens.accessTTL)).Seconds()),
 	}, nil
+}
+
+func (s *Service) AdminListUsers(ctx context.Context, params ListUsersParams) (AdminListUsersResponse, error) {
+	users, total, err := s.repo.ListUsers(ctx, params)
+	if err != nil {
+		return AdminListUsersResponse{}, err
+	}
+
+	items := make([]AdminUserItem, len(users))
+	for i, u := range users {
+		items[i] = toAdminUserItem(u)
+	}
+
+	return AdminListUsersResponse{
+		Items:    items,
+		Total:    total,
+		Page:     params.Page,
+		PageSize: params.PageSize,
+	}, nil
+}
+
+func (s *Service) AdminGetUser(ctx context.Context, id string) (AdminUserItem, error) {
+	user, err := s.repo.FindUserByID(ctx, id)
+	if err != nil {
+		return AdminUserItem{}, err
+	}
+	return toAdminUserItem(user), nil
+}
+
+func (s *Service) AdminUpdateUser(ctx context.Context, id string, req AdminUpdateUserRequest) (AdminUserItem, error) {
+	updates := make(map[string]any)
+	if req.Role != nil {
+		updates["role"] = *req.Role
+	}
+	if req.IsActive != nil {
+		updates["is_active"] = *req.IsActive
+	}
+	if req.EmailVerified != nil {
+		updates["email_verified"] = *req.EmailVerified
+	}
+
+	if len(updates) > 0 {
+		if err := s.repo.UpdateUser(ctx, id, updates); err != nil {
+			return AdminUserItem{}, err
+		}
+	}
+
+	return s.AdminGetUser(ctx, id)
+}
+
+func (s *Service) AdminDeleteUser(ctx context.Context, id string) error {
+	return s.repo.DeleteUser(ctx, id)
+}
+
+func toAdminUserItem(user User) AdminUserItem {
+	verified := user.EmailVerifiedAt != nil
+	var updatedAt *time.Time
+	if !user.UpdatedAt.IsZero() {
+		updatedAt = &user.UpdatedAt
+	}
+	return AdminUserItem{
+		ID:            user.ID,
+		Email:         user.Email,
+		Username:      user.Username,
+		DisplayName:   user.DisplayName,
+		Role:          user.Role,
+		IsActive:      user.IsActive,
+		EmailVerified: verified,
+		AvatarURL:     user.AvatarURL,
+		CreatedAt:     user.CreatedAt,
+		UpdatedAt:     updatedAt,
+	}
 }
 
 func toAuthUser(user User) AuthUser {

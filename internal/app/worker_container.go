@@ -68,8 +68,8 @@ func (c *WorkerContainer) Run(ctx context.Context) error {
 		go func(w BackgroundWorker) {
 			defer wg.Done()
 
-			c.App.Logger.Error("worker failed", zap.String("name", w.Name()))
 			if err := w.Run(ctx); err != nil && err != context.Canceled {
+				c.App.Logger.Error("worker failed", zap.String("name", w.Name()), zap.Error(err))
 				errCh <- err
 			}
 		}(worker)

@@ -53,6 +53,8 @@ type DraftListItem struct {
 	Format           string       `json:"format"`
 	DurationSeconds  *float64     `json:"durationSeconds,omitempty"`
 	Status           DraftStatus  `json:"status"`
+	FileHash         string       `json:"fileHash,omitempty"`
+	Stale            bool         `json:"stale"`
 	Title            string       `json:"title,omitempty"`
 	Artist           string       `json:"artist,omitempty"`
 	Album            string       `json:"album,omitempty"`
@@ -142,4 +144,16 @@ type AlbumSearchResult struct {
 	ArtistName string  `json:"artistName"`
 	CoverURL   string  `json:"coverUrl,omitempty"`
 	ReleaseYear *int   `json:"releaseYear,omitempty"`
+}
+
+type IngestionStats struct {
+	PublishedThisMonth int            `json:"publishedThisMonth"`
+	PendingReview      int            `json:"pendingReview"`
+	TotalDrafts        int            `json:"totalDrafts"`
+	ByStatus           map[string]int `json:"byStatus"`
+}
+
+type IngestionConfigResponse struct {
+	MaxUploadSize      int64 `json:"maxUploadSize"`
+	EnrichmentEnabled  bool  `json:"enrichmentEnabled"`
 }

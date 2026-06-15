@@ -25,17 +25,30 @@ fmt:
 	go fmt ./...
 
 infra-up:
-	$(DOCKER_COMPOSE) up -d
+	$(DOCKER_COMPOSE) up -d postgres redis opensearch minio
 
 infra-down:
 	$(DOCKER_COMPOSE) down
 
 infra-restart:
 	$(DOCKER_COMPOSE) down
-	$(DOCKER_COMPOSE) up -d
+	$(DOCKER_COMPOSE) up -d postgres redis
 
 infra-logs:
 	$(DOCKER_COMPOSE) logs -f
+
+docker-up:
+	$(DOCKER_COMPOSE) up -d --build
+
+docker-down:
+	$(DOCKER_COMPOSE) down
+
+docker-logs:
+	$(DOCKER_COMPOSE) logs -f
+
+docker-rebuild:
+	$(DOCKER_COMPOSE) build --no-cache api
+	$(DOCKER_COMPOSE) build --no-cache frontend
 
 migrate-up:
 	./scripts/migrate.sh up
@@ -51,9 +64,3 @@ dev: infra-up
 
 dev-worker: infra-up
 	go run ./cmd/worker
-
-minio:
-	@echo "MinIO API: http://localhost:9000"
-	@echo "MinIO Console: http://localhost:9001"
-	@echo "Username: minio"
-	@echo "Password: minio123"

@@ -66,6 +66,13 @@ export const useUserAuthStore = defineStore('auth', () => {
     })
   }
 
+  function setRefreshToken(refreshToken: string) {
+    if (state.value) {
+      state.value = { ...state.value, refresh_token: refreshToken }
+      persistToken(state.value)
+    }
+  }
+
   function clearToken() {
     state.value = null
     tokenStorage.remove()
@@ -227,6 +234,7 @@ export const useUserAuthStore = defineStore('auth', () => {
     me,
     restore,
     setToken,
+    setRefreshToken,
     setSession,
     clearToken,
     clearUser,

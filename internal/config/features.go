@@ -18,7 +18,7 @@ type FeaturesConfig struct {
 
 func loadFeaturesConfig() FeaturesConfig {
 	aiEnabled := getEnvAsBool("FEATURE_AI_ENABLED", true)
-	if envVal := getEnv("FEATURE_AI_ENABLED", ""); envVal == "" {
+	if v := getEnv("FEATURE_AI_ENABLED", ""); v == "" {
 		aiEnabled = getEnvAsBool("AI_ENABLED", true)
 	}
 

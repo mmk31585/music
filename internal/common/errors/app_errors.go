@@ -1,6 +1,9 @@
 package errors
 
-import "net/http"
+import (
+	"errors"
+	"net/http"
+)
 
 type AppError struct {
 	Code       string      `json:"code"`
@@ -84,4 +87,19 @@ func MethodNotAllowed(message string, details interface{}) *AppError {
 	}
 
 	return New(http.StatusMethodNotAllowed, CodeMethodNotAllowed, message, details)
+}
+
+func IsConflict(err error) bool {
+	var appErr *AppError
+	return errors.As(err, &appErr) && appErr.Code == CodeConflict
+}
+
+func IsUnauthorized(err error) bool {
+	var appErr *AppError
+	return errors.As(err, &appErr) && appErr.Code == CodeUnauthorized
+}
+
+func IsForbidden(err error) bool {
+	var appErr *AppError
+	return errors.As(err, &appErr) && appErr.Code == CodeForbidden
 }

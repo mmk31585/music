@@ -17,12 +17,16 @@ export type TrackCreditPayload = {
 
 export type TrackFormPayload = {
   title: string
-  artist_id: string | number
+  artist_id?: string | number
   album_id?: string | number | null
+  album_artist_id?: string | number | null
   duration_seconds?: number | null
   audio_url?: string | null
   cover_url?: string | null
 
+  artist_ids?: Array<string | number>
+  featured_artist_ids?: Array<string | number>
+  credits?: TrackCreditPayload[]
   artists?: TrackCreditPayload[]
   genre_ids?: Array<string | number>
 
@@ -45,7 +49,15 @@ export type TrackFormPayload = {
   coverFile?: File | null
 }
 
-function normalizeArtists(payload: TrackFormPayload): TrackArtistRequest[] {
+function buildArtistsFromPayload(payload: TrackFormPayload): TrackArtistRequest[] {
+  if (payload.credits?.length) {
+    return payload.credits.map((credit, index) => ({
+      artist_id: credit.artist_id,
+      role: credit.role,
+      position: index,
+    }))
+  }
+
   if (payload.artists?.length) {
     return payload.artists.map((artist, index) => ({
       artist_id: artist.artist_id,
@@ -54,9 +66,15 @@ function normalizeArtists(payload: TrackFormPayload): TrackArtistRequest[] {
     }))
   }
 
+  const primaryArtistId = payload.artist_ids?.[0] ?? payload.artist_id
+
+  if (!primaryArtistId) {
+    throw new Error('artist_id is required')
+  }
+
   return [
     {
-      artist_id: payload.artist_id,
+      artist_id: primaryArtistId,
       role: 'primary',
       position: 0,
     },
@@ -64,7 +82,7 @@ function normalizeArtists(payload: TrackFormPayload): TrackArtistRequest[] {
 }
 
 function toCreatePayload(payload: TrackFormPayload): TrackCreatePayload {
-  const primaryArtistId = payload.artist_ids?.[0]
+  const primaryArtistId = payload.artist_ids?.[0] ?? payload.artist_id
 
   if (!primaryArtistId) {
     throw new Error('artist_id is required')
@@ -73,19 +91,7 @@ function toCreatePayload(payload: TrackFormPayload): TrackCreatePayload {
   return {
     title: payload.title,
     artist_id: primaryArtistId,
-    artists: (payload.credits ?? []).length
-      ? payload.credits!.map((credit, index) => ({
-          artist_id: credit.artist_id,
-          role: credit.role,
-          position: index,
-        }))
-      : [
-          {
-            artist_id: primaryArtistId,
-            role: 'primary',
-            position: 0,
-          },
-        ],
+    artists: buildArtistsFromPayload(payload),
     album_id: payload.album_id ?? null,
     duration_seconds: payload.duration_seconds ?? null,
     audio_url: payload.audio_url ?? null,
@@ -98,10 +104,12 @@ function toCreatePayload(payload: TrackFormPayload): TrackCreatePayload {
 
 
 function toUpdatePayload(payload: TrackFormPayload): TrackUpdatePayload {
+  const primaryArtistId = payload.artist_ids?.[0] ?? payload.artist_id
+
   return {
     title: payload.title,
-    artist_id: payload.artist_id ?? null,
-    artists: normalizeArtists(payload),
+    artist_id: primaryArtistId ?? null,
+    artists: buildArtistsFromPayload(payload),
     album_id: payload.album_id ?? null,
     duration_seconds: payload.duration_seconds ?? null,
     audio_url: payload.audio_url ?? null,
@@ -113,11 +121,11 @@ function toUpdatePayload(payload: TrackFormPayload): TrackUpdatePayload {
 }
 
 function getUploadedAudioUrl(uploaded: UploadResponse): string | null {
-  return uploaded.audio_url ?? uploaded.audioUrl ?? uploaded.url ?? null
+  return uploaded.url ?? uploaded.file_url ?? uploaded.fileUrl ?? null
 }
 
 function getUploadedCoverUrl(uploaded: UploadResponse): string | null {
-  return uploaded.cover_url ?? uploaded.coverUrl ?? uploaded.url ?? null
+  return uploaded.url ?? uploaded.file_url ?? uploaded.fileUrl ?? null
 }
 
 export function useAdminTracks() {

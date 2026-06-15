@@ -17,4 +17,14 @@ func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, authMW gin.HandlerFun
 		protected.Use(authMW)
 		protected.GET("/me", handler.Me)
 	}
+
+	// Admin user management
+	admin := rg.Group("/admin/users")
+	admin.Use(authMW, RequireRole("admin"))
+	{
+		admin.GET("", handler.AdminListUsers)
+		admin.GET("/:id", handler.AdminGetUser)
+		admin.PATCH("/:id", handler.AdminUpdateUser)
+		admin.DELETE("/:id", handler.AdminDeleteUser)
+	}
 }

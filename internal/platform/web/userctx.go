@@ -8,7 +8,7 @@ import (
 )
 
 func GetUserIDString(c *gin.Context) (string, bool) {
-	keys := []string{"userID", "userId", "user_id", "sub"}
+	keys := []string{"auth_user_id", "userID", "userId", "user_id", "sub"}
 
 	for _, key := range keys {
 		value, exists := c.Get(key)
@@ -33,7 +33,7 @@ func GetUserIDString(c *gin.Context) (string, bool) {
 }
 
 func GetOptionalUserUUID(c *gin.Context) *uuid.UUID {
-	keys := []string{"userID", "userId", "user_id", "sub"}
+	keys := []string{"auth_user_id", "userID", "userId", "user_id", "sub"}
 
 	for _, key := range keys {
 		value, exists := c.Get(key)

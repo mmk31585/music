@@ -1,6 +1,7 @@
 package player
 
 import (
+	"context"
 	"errors"
 	"log"
 	"net/http"
@@ -178,7 +179,20 @@ func (h *Handler) handleError(c *gin.Context, err error) {
 			"message": "invalid media url",
 		})
 
+	case errors.Is(err, context.Canceled):
+		c.JSON(499, gin.H{
+			"success": false,
+			"message": "request cancelled",
+		})
+
+	case errors.Is(err, context.DeadlineExceeded):
+		c.JSON(http.StatusGatewayTimeout, gin.H{
+			"success": false,
+			"message": "request timeout",
+		})
+
 	default:
+		log.Println("player handler unexpected error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"message": "internal server error",

@@ -28,6 +28,13 @@
 
       <div class="flex items-center gap-3">
         <RouterLink
+          to="/"
+          class="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-1.5 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-white"
+        >
+          <i class="pi pi-home text-xs" />
+          <span class="hidden sm:inline">Back to app</span>
+        </RouterLink>
+        <RouterLink
           to="/admin/media"
           class="inline-flex items-center gap-2 rounded-full bg-[#1db954] px-4 py-1.5 text-sm font-semibold text-black transition hover:opacity-90"
         >

@@ -60,12 +60,12 @@ SELECT
 	a.name AS artist_name,
 	t.album_id,
 	al.title AS album_title,
-	t.genre,
+	(SELECT g.name FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id LIMIT 1) AS genre,
 	t.cover_url,
 	t.audio_url,
 	t.duration_seconds
 FROM tracks t
-LEFT JOIN artist a ON a.id = t.artist_id
+LEFT JOIN artists a ON a.id = t.artist_id
 LEFT JOIN albums al ON al.id = t.album_id
 `
 }
@@ -79,16 +79,16 @@ SELECT
 	a.name AS artist_name,
 	t.album_id,
 	al.title AS album_title,
-	t.genre,
+	(SELECT g.name FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id LIMIT 1) AS genre,
 	t.cover_url,
 	t.audio_url,
 	t.duration_seconds
 FROM tracks t
 JOIN play_history ph ON ph.track_id = t.id
-LEFT JOIN artist a ON a.id = t.artist_id
+LEFT JOIN artists a ON a.id = t.artist_id
 LEFT JOIN albums al ON al.id = t.album_id
 WHERE ph.played_at >= NOW() - INTERVAL '30 days'
-GROUP BY t.id, t.title, t.artist_id, a.name, t.album_id, al.title, t.genre, t.cover_url, t.audio_url, t.duration_seconds
+GROUP BY t.id, t.title, t.artist_id, a.name, t.album_id, al.title, t.cover_url, t.audio_url, t.duration_seconds
 ORDER BY COUNT(ph.id) DESC, t.title ASC
 LIMIT $1
 `
@@ -108,13 +108,13 @@ SELECT
 	a.name AS artist_name,
 	t.album_id,
 	al.title AS album_title,
-	t.genre,
+	(SELECT g.name FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id LIMIT 1) AS genre,
 	t.cover_url,
 	t.audio_url,
 	t.duration_seconds,
 	(COALESCE(lt.like_count, 0) * 3 + COALESCE(ph.play_count, 0))::float AS score
 FROM tracks t
-LEFT JOIN artist a ON a.id = t.artist_id
+LEFT JOIN artists a ON a.id = t.artist_id
 LEFT JOIN albums al ON al.id = t.album_id
 LEFT JOIN (
 	SELECT track_id, COUNT(*) AS like_count
@@ -193,19 +193,19 @@ FROM (
 		a.name AS artist_name,
 		t.album_id,
 		al.title AS album_title,
-		t.genre,
+		(SELECT g.name FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id LIMIT 1) AS genre,
 		t.cover_url,
 		t.audio_url,
 		t.duration_seconds,
 		ph.played_at
 	FROM play_history ph
 	JOIN tracks t ON t.id = ph.track_id
-	LEFT JOIN artist a ON a.id = t.artist_id
+	LEFT JOIN artists a ON a.id = t.artist_id
 	LEFT JOIN albums al ON al.id = t.album_id
 	WHERE ph.user_id = $1
 	ORDER BY t.id, ph.played_at DESC
 ) x
-ORDER BY x.id
+ORDER BY x.played_at DESC
 LIMIT $2
 `
 	var items []TrackItem
@@ -217,9 +217,9 @@ LIMIT $2
 
 func (r *repository) GetTrackMeta(ctx context.Context, trackID string) (*TrackMeta, error) {
 	query := `
-SELECT id, artist_id, album_id, genre
-FROM tracks
-WHERE id = $1
+SELECT t.id, t.artist_id, t.album_id, (SELECT g.name FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id LIMIT 1) AS genre
+FROM tracks t
+WHERE t.id = $1
 LIMIT 1
 `
 	var meta TrackMeta
@@ -249,7 +249,8 @@ func (r *repository) GetSimilarTracksByMeta(ctx context.Context, trackID string,
 		argPos++
 	}
 	if genre != nil && *genre != "" {
-		scoreParts = append(scoreParts, fmt.Sprintf("CASE WHEN t.genre = $%d THEN 4 ELSE 0 END", argPos))
+		subq := fmt.Sprintf("SELECT 1 FROM track_genres tg_%[1]d JOIN genres g_%[1]d ON g_%[1]d.id = tg_%[1]d.genre_id WHERE tg_%[1]d.track_id = t.id AND g_%[1]d.name = $%[1]d", argPos)
+		scoreParts = append(scoreParts, fmt.Sprintf("CASE WHEN EXISTS (%s) THEN 4 ELSE 0 END", subq))
 		args = append(args, *genre)
 		argPos++
 	}
@@ -267,13 +268,13 @@ SELECT
 	a.name AS artist_name,
 	t.album_id,
 	al.title AS album_title,
-	t.genre,
+	(SELECT g.name FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id LIMIT 1) AS genre,
 	t.cover_url,
 	t.audio_url,
 	t.duration_seconds,
 	(%s)::float AS score
 FROM tracks t
-LEFT JOIN artist a ON a.id = t.artist_id
+LEFT JOIN artists a ON a.id = t.artist_id
 LEFT JOIN albums al ON al.id = t.album_id
 WHERE t.id <> $1
 ORDER BY score DESC, t.title ASC
@@ -339,7 +340,7 @@ LIMIT $2
 
 func (r *repository) GetTracksByGenre(ctx context.Context, genre string, limit int) ([]TrackItem, error) {
 	query := baseTrackSelect() + `
-WHERE t.genre = $1
+WHERE EXISTS (SELECT 1 FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id AND g.name = $1)
 ORDER BY t.title ASC
 LIMIT $2
 `
@@ -385,13 +386,15 @@ LIMIT $2
 
 func (r *repository) GetTopGenres(ctx context.Context, userID string, limit int) ([]string, error) {
 	query := `
-SELECT t.genre
+SELECT g.name
 FROM play_history ph
 JOIN tracks t ON t.id = ph.track_id
+JOIN track_genres tg ON tg.track_id = t.id
+JOIN genres g ON g.id = tg.genre_id
 WHERE ph.user_id = $1
-  AND t.genre IS NOT NULL
-  AND t.genre <> ''
-GROUP BY t.genre
+  AND g.name IS NOT NULL
+  AND g.name <> ''
+GROUP BY g.name
 ORDER BY COUNT(*) DESC
 LIMIT $2
 `
@@ -454,8 +457,22 @@ func (r *repository) GetTracksFromGenres(ctx context.Context, genres []string, l
 	}
 
 	inClause, args := buildInClause(1, genres)
-	query := baseTrackSelect() + fmt.Sprintf(`
-WHERE t.genre IN (%s)
+	query := fmt.Sprintf(`
+SELECT
+	t.id,
+	t.title,
+	t.artist_id,
+	a.name AS artist_name,
+	t.album_id,
+	al.title AS album_title,
+	(SELECT g.name FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id LIMIT 1) AS genre,
+	t.cover_url,
+	t.audio_url,
+	t.duration_seconds
+FROM tracks t
+LEFT JOIN artists a ON a.id = t.artist_id
+LEFT JOIN albums al ON al.id = t.album_id
+WHERE EXISTS (SELECT 1 FROM track_genres tg_2 JOIN genres g_2 ON g_2.id = tg_2.genre_id WHERE tg_2.track_id = t.id AND g_2.name IN (%s))
 ORDER BY t.title ASC
 LIMIT $%d
 `, inClause, len(args)+1)

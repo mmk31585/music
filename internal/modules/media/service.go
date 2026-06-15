@@ -25,8 +25,9 @@ type Config struct {
 	MaxImageSizeBytes int64
 	MaxAudioSizeBytes int64
 
-	AllowedImageMime []string
-	AllowedAudioMime []string
+	AllowedImageMime   []string
+	AllowedAudioMime   []string
+	StorageProviderName string
 }
 
 type Service struct {
@@ -151,9 +152,14 @@ func (s *Service) Upload(
 	size := int64(len(content))
 	metadata := buildUploadMetadata(category, header.Filename)
 
+	providerName := s.cfg.StorageProviderName
+	if providerName == "" {
+		providerName = "local"
+	}
+
 	mediaItem, err := s.repo.Create(ctx, CreateMediaRequest{
 		MediaType:        mediaTypeForCategory(category),
-		StorageProvider:  "local",
+		StorageProvider:  providerName,
 		Bucket:           nil,
 		ObjectKey:        key,
 		PublicURL:        &url,
@@ -231,6 +237,23 @@ func uploadResponseFromMedia(item *Media, duplicate bool) *UploadResponse {
 		Duplicate:       duplicate,
 		DurationSeconds: item.DurationSeconds,
 	}
+}
+
+func (s *Service) ListMedia(ctx context.Context) ([]Media, error) {
+	return s.repo.List(ctx)
+}
+
+func (s *Service) DeleteMedia(ctx context.Context, id uuid.UUID) error {
+	existing, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if err := s.storage.Delete(ctx, existing.ObjectKey); err != nil {
+		return fmt.Errorf("%w: %v", ErrStorageFailed, err)
+	}
+
+	return s.repo.Delete(ctx, id)
 }
 
 func (s *Service) DeleteUploadedFile(ctx context.Context, upload *UploadResponse) error {

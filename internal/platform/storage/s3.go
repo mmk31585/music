@@ -135,6 +135,33 @@ func (s *S3Storage) Exists(ctx context.Context, key string) (bool, error) {
 	return true, nil
 }
 
+func (s *S3Storage) Copy(ctx context.Context, srcKey, dstKey string) error {
+	srcKey = strings.TrimLeft(srcKey, "/")
+	dstKey = strings.TrimLeft(dstKey, "/")
+
+	_, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{
+		Bucket:     aws.String(s.bucket),
+		CopySource: aws.String(s.bucket + "/" + srcKey),
+		Key:        aws.String(dstKey),
+	})
+	return err
+}
+
+func (s *S3Storage) Get(ctx context.Context, key string) ([]byte, error) {
+	key = strings.TrimLeft(key, "/")
+
+	result, err := s.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer result.Body.Close()
+
+	return io.ReadAll(result.Body)
+}
+
 func (s *S3Storage) GetURL(ctx context.Context, key string) (string, error) {
 	key = strings.TrimLeft(key, "/")
 

@@ -6,7 +6,7 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 WORKDIR /app
 COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --prefer-offline --no-audit --no-fund
+    npm ci --no-audit --no-fund
 
 COPY . .
 RUN npm run build-only

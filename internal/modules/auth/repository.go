@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	apperrors "music/internal/common/errors"
@@ -197,6 +199,146 @@ func (r *Repository) scanUser(row pgx.Row) (User, error) {
 
 	return user, nil
 }
+func (r *Repository) FindPublicUser(ctx context.Context, id string) (User, error) {
+	query := `
+		SELECT id, email, username, display_name, password_hash, avatar_url, role, is_active, email_verified_at, created_at, updated_at
+		FROM users
+		WHERE id = $1 AND is_active = true
+		LIMIT 1
+	`
+
+	return r.scanUser(r.db.QueryRow(ctx, query, id))
+}
+
+func (r *Repository) ListUsers(ctx context.Context, params ListUsersParams) ([]User, int, error) {
+	where := "WHERE 1=1"
+	args := make([]any, 0)
+	argIdx := 1
+
+	if params.Search != "" {
+		where += fmt.Sprintf(" AND (email ILIKE $%d OR username ILIKE $%d OR display_name ILIKE $%d)", argIdx, argIdx, argIdx)
+		args = append(args, "%"+params.Search+"%")
+		argIdx++
+	}
+
+	var countQuery = "SELECT COUNT(*) FROM users " + where
+	var total int
+	err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	orderBy := "created_at DESC"
+	sortByMap := map[string]string{
+		"display_name": "display_name",
+		"email":        "email",
+		"username":     "username",
+		"role":         "role",
+		"is_active":    "is_active",
+		"created_at":   "created_at",
+	}
+	if col, ok := sortByMap[params.SortBy]; ok {
+		order := "DESC"
+		if params.SortOrder == "asc" || params.SortOrder == "ASC" {
+			order = "ASC"
+		}
+		orderBy = col + " " + order
+	}
+
+	offset := (params.Page - 1) * params.PageSize
+	limit := params.PageSize
+
+	query := fmt.Sprintf(`
+		SELECT id, email, username, display_name, password_hash, avatar_url, role, is_active, email_verified_at, created_at, updated_at
+		FROM users %s
+		ORDER BY %s
+		LIMIT $%d OFFSET $%d
+	`, where, orderBy, argIdx, argIdx+1)
+	args = append(args, limit, offset)
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	users := make([]User, 0)
+	for rows.Next() {
+		var user User
+		err := rows.Scan(
+			&user.ID, &user.Email, &user.Username, &user.DisplayName,
+			&user.PasswordHash, &user.AvatarURL, &user.Role, &user.IsActive,
+			&user.EmailVerifiedAt, &user.CreatedAt, &user.UpdatedAt,
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+		users = append(users, user)
+	}
+
+	return users, total, nil
+}
+
+func (r *Repository) UpdateUser(ctx context.Context, id string, updates map[string]any) error {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	setClauses := make([]string, 0, len(updates))
+	args := make([]any, 0, len(updates)+1)
+	argIdx := 1
+
+	columnMap := map[string]string{
+		"role":            "role",
+		"is_active":       "is_active",
+		"email_verified":  "email_verified_at",
+		"display_name":    "display_name",
+		"username":        "username",
+		"email":           "email",
+		"avatar_url":      "avatar_url",
+	}
+
+	for key, value := range updates {
+		col, ok := columnMap[key]
+		if !ok {
+			col = key
+		}
+		if key == "email_verified" {
+			if b, ok := value.(bool); ok && b {
+				value = "NOW()"
+				setClauses = append(setClauses, fmt.Sprintf("%s = NOW()", col))
+				continue
+			}
+			value = nil
+		}
+		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", col, argIdx))
+		args = append(args, value)
+		argIdx++
+	}
+
+	if len(setClauses) == 0 {
+		return nil
+	}
+
+	query := fmt.Sprintf("UPDATE users SET %s WHERE id = $%d", strings.Join(setClauses, ", "), argIdx)
+	args = append(args, id)
+
+	_, err := r.db.Exec(ctx, query, args...)
+	return err
+}
+
+func (r *Repository) UpdatePassword(ctx context.Context, id, passwordHash string) error {
+	query := `UPDATE users SET password_hash = $1 WHERE id = $2`
+	_, err := r.db.Exec(ctx, query, passwordHash, id)
+	return err
+}
+
+func (r *Repository) DeleteUser(ctx context.Context, id string) error {
+	query := `DELETE FROM users WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, id)
+	return err
+}
+
 func isUniqueViolation(err error) bool {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {

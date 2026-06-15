@@ -17,16 +17,9 @@ CREATE INDEX idx_event_outbox_status ON event_outbox(status, created_at);
 CREATE INDEX idx_event_outbox_type ON event_outbox(event_type);
 CREATE INDEX idx_event_outbox_created ON event_outbox(created_at);
 
--- Social: unified follow system
-CREATE TABLE IF NOT EXISTS user_follows (
-    follower_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    followed_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (follower_id, followed_id)
-);
-
-CREATE INDEX idx_user_follows_follower ON user_follows(follower_id, created_at DESC);
-CREATE INDEX idx_user_follows_followed ON user_follows(followed_id, created_at DESC);
+-- Social: unified follow system (table created in 000009 with followee_id)
+CREATE INDEX IF NOT EXISTS idx_user_follows_follower ON user_follows(follower_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_follows_followed ON user_follows(followee_id, created_at DESC);
 
 -- Social: activity feed
 CREATE TABLE activities (

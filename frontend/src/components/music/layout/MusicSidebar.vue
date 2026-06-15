@@ -16,8 +16,63 @@
     </RouterLink>
 
     <nav class="mt-6 space-y-1">
+      <p class="px-4 pb-1 pt-2 text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">
+        Browse
+      </p>
+
       <RouterLink
-        v-for="item in navItems"
+        v-for="item in mainNav"
+        :key="item.to"
+        :to="item.to"
+        class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
+        :class="isActive(item.to) ? 'bg-white/[0.10] text-white' : ''"
+      >
+        <i :class="item.icon" class="text-lg" />
+        <span>{{ item.label }}</span>
+      </RouterLink>
+    </nav>
+
+    <nav class="mt-6 space-y-1">
+      <p class="px-4 pb-1 pt-2 text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">
+        Library
+      </p>
+
+      <RouterLink
+        v-for="item in libraryNav"
+        :key="item.to"
+        :to="item.to"
+        class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
+        :class="isActive(item.to) ? 'bg-white/[0.10] text-white' : ''"
+      >
+        <i :class="item.icon" class="text-lg" />
+        <span>{{ item.label }}</span>
+      </RouterLink>
+    </nav>
+
+    <nav class="mt-6 space-y-1">
+      <p class="px-4 pb-1 pt-2 text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">
+        Social
+      </p>
+
+      <RouterLink
+        v-for="item in socialNav"
+        :key="item.to"
+        :to="item.to"
+        class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
+        :class="isActive(item.to) ? 'bg-white/[0.10] text-white' : ''"
+      >
+        <i :class="item.icon" class="text-lg" />
+        <span>{{ item.label }}</span>
+      </RouterLink>
+    </nav>
+
+    <nav class="mt-6 space-y-1">
+      <p class="px-4 pb-1 pt-2 text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">
+        More
+      </p>
+
+      <RouterLink
+        v-for="item in moreNav"
         :key="item.to"
         :to="item.to"
         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
@@ -56,37 +111,33 @@ import { useRoute } from 'vue-router'
 
 const route = useRoute()
 
-const navItems = [
-  {
-    label: 'Home',
-    icon: 'pi pi-home',
-    to: '/',
-  },
-  {
-    label: 'Search',
-    icon: 'pi pi-search',
-    to: '/search',
-  },
-  {
-    label: 'Recommendations',
-    icon: 'pi pi-star',
-    to: '/recommendations',
-  },
-  {
-    label: 'Library',
-    icon: 'pi pi-bookmark',
-    to: '/library',
-  },
-  {
-    label: 'Playlists',
-    icon: 'pi pi-list',
-    to: '/playlists',
-  },
-  {
-    label: 'Recently Played',
-    icon: 'pi pi-history',
-    to: '/recently-played',
-  },
+const mainNav = [
+  { label: 'Home', icon: 'pi pi-home', to: '/' },
+  { label: 'Discover', icon: 'pi pi-compass', to: '/discover' },
+  { label: 'Search', icon: 'pi pi-search', to: '/search' },
+  { label: 'Recommendations', icon: 'pi pi-star', to: '/recommendations' },
+]
+
+const libraryNav = [
+  { label: 'Library', icon: 'pi pi-bookmark', to: '/library' },
+  { label: 'Playlists', icon: 'pi pi-list', to: '/playlists' },
+  { label: 'Recently Played', icon: 'pi pi-history', to: '/recently-played' },
+]
+
+const socialNav = [
+  { label: 'Social Hub', icon: 'pi pi-users', to: '/social' },
+  { label: 'Notifications', icon: 'pi pi-bell', to: '/notifications' },
+]
+
+const moreNav = [
+  { label: 'Profile', icon: 'pi pi-user', to: '/profile' },
+  { label: 'Settings', icon: 'pi pi-cog', to: '/settings' },
+  { label: 'AI Mood Explorer', icon: 'pi pi-magic', to: '/ai/mood-explorer' },
+  { label: 'AI Playlist Generator', icon: 'pi pi-sync', to: '/ai/playlist-generator' },
+  { label: 'Subscription', icon: 'pi pi-credit-card', to: '/subscription' },
+  { label: 'Gamification', icon: 'pi pi-trophy', to: '/gamification' },
+  { label: 'Contributions', icon: 'pi pi-cloud-upload', to: '/contributions' },
+  { label: 'Creator Dashboard', icon: 'pi pi-chart-bar', to: '/creator-dashboard' },
 ]
 
 function isActive(to: string) {

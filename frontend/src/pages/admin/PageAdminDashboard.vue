@@ -70,6 +70,44 @@
       />
     </section>
 
+    <!-- Ingestion Stats -->
+    <section class="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <AdminStatCard
+        label="Published This Month"
+        :value="ingestionStats?.publishedThisMonth ?? 0"
+        hint="Tracks published via ingestion"
+        icon="pi pi-check-circle"
+        color="emerald"
+        :loading="loading"
+      />
+
+      <AdminStatCard
+        label="Pending Review"
+        :value="ingestionStats?.pendingReview ?? 0"
+        hint="Drafts awaiting review"
+        icon="pi pi-eye"
+        color="blue"
+        :loading="loading"
+      />
+
+      <AdminStatCard
+        label="Total Drafts"
+        :value="ingestionStats?.totalDrafts ?? 0"
+        hint="All ingestion drafts"
+        icon="pi pi-file"
+        color="purple"
+        :loading="loading"
+      />
+
+      <RouterLink
+        to="/admin/ingestion"
+        class="flex items-center justify-center gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-8 transition-colors hover:bg-white/[0.04]"
+      >
+        <i class="pi pi-arrow-right text-sm text-primary" />
+        <span class="text-sm font-medium text-white">Go to Ingestion</span>
+      </RouterLink>
+    </section>
+
     <!-- Quick Actions -->
     <section class="mb-8">
       <CatalogQuickActions />
@@ -253,11 +291,14 @@ import { useTracksApi, type Track } from '@/services/api/catalog/tracks'
 import { useArtistsApi, type Artist } from '@/services/api/catalog/artists'
 import { useAlbumsApi, type Album } from '@/services/api/catalog/albums'
 import { useGenresApi, type Genre } from '@/services/api/catalog/genres'
+import { useIngestionApi } from '@/services/api/ingestion/routes'
+import type { IngestionStats } from '@/services/api/ingestion/types'
 
 const { getTracks } = useTracksApi()
 const { getArtists } = useArtistsApi()
 const { getAlbums } = useAlbumsApi()
 const { getGenres } = useGenresApi()
+const ingestionApi = useIngestionApi()
 
 const loading = ref(false)
 const error = ref<unknown>(null)
@@ -266,6 +307,7 @@ const tracks = ref<Track[]>([])
 const artists = ref<Artist[]>([])
 const albums = ref<Album[]>([])
 const genres = ref<Genre[]>([])
+const ingestionStats = ref<IngestionStats | null>(null)
 
 const trackCount = computed(() => tracks.value.length)
 const artistCount = computed(() => artists.value.length)
@@ -353,9 +395,9 @@ async function fetchDashboard(): Promise<void> {
   error.value = null
 
   try {
-    const results = await Promise.allSettled([getTracks(), getArtists(), getAlbums(), getGenres()])
+    const results = await Promise.allSettled([getTracks(), getArtists(), getAlbums(), getGenres(), ingestionApi.getIngestionStats()])
 
-    const [tracksResult, artistsResult, albumsResult, genresResult] = results
+    const [tracksResult, artistsResult, albumsResult, genresResult, statsResult] = results
 
     if (tracksResult.status === 'fulfilled') {
       tracks.value = toArray<Track>(tracksResult.value)
@@ -388,6 +430,13 @@ async function fetchDashboard(): Promise<void> {
       genres.value = []
       error.value = genresResult.reason
     }
+
+    if (statsResult.status === 'fulfilled') {
+      ingestionStats.value = statsResult.value
+    } else {
+      console.error('Failed to fetch ingestion stats:', statsResult.reason)
+      ingestionStats.value = null
+    }
   } catch (err) {
     console.error('Failed to fetch dashboard:', err)
     error.value = err
@@ -396,6 +445,7 @@ async function fetchDashboard(): Promise<void> {
     artists.value = []
     albums.value = []
     genres.value = []
+    ingestionStats.value = null
   } finally {
     loading.value = false
   }

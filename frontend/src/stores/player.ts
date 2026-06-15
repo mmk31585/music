@@ -9,6 +9,7 @@ import {
   setMediaSessionPlaybackState,
   updateMediaSession,
 } from '@/services/player'
+import { useAppToast } from '@/composables/useAppToast'
 
 export const usePlayerStore = defineStore('player', () => {
   const playerApi = usePlayerApi()
@@ -100,11 +101,19 @@ export const usePlayerStore = defineStore('player', () => {
       await playNext()
     })
 
-    audioEngine.on('error', (err) => {
+    audioEngine.on('error', async (err) => {
       error.value = err.message
       isBuffering.value = false
       isPlaying.value = false
       setMediaSessionPlaybackState('none')
+      try {
+        const toast = useAppToast()
+        toast.error(err.message || 'Playback failed')
+      } catch { /* ignore */ }
+      const next = queueManager.getNext()
+      if (next) {
+        await playNext()
+      }
     })
   }
 

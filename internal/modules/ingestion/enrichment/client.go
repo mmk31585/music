@@ -26,31 +26,31 @@ type TrackQuery struct {
 }
 
 type MusicBrainzResult struct {
-	MBID        string
-	Title       string
-	ArtistName  string
-	ArtistMBID  string
-	AlbumName   string
-	AlbumMBID   string
-	ReleaseYear int
-	Duration    int
-	Genres      []string
+	MBID        string   `json:"mbid"`
+	Title       string   `json:"title"`
+	ArtistName  string   `json:"artistName"`
+	ArtistMBID  string   `json:"artistMbid"`
+	AlbumName   string   `json:"albumName"`
+	AlbumMBID   string   `json:"albumMbid"`
+	ReleaseYear int      `json:"releaseYear"`
+	Duration    int      `json:"duration"`
+	Genres      []string `json:"genres"`
 }
 
 type LastFMResult struct {
-	PlayCount     int
-	ListenerCount int
-	Tags          []string
-	ArtistBio     string
-	SimilarArtists []string
+	PlayCount      int      `json:"playCount"`
+	ListenerCount  int      `json:"listenerCount"`
+	Tags           []string `json:"tags"`
+	ArtistBio      string   `json:"artistBio"`
+	SimilarArtists []string `json:"similarArtists"`
 }
 
 type SpotifyResult struct {
-	SpotifyID      string
-	PreviewURL     string
-	AlbumCoverURL  string
-	ArtistImageURL string
-	Popularity     int
+	SpotifyID      string `json:"spotifyId"`
+	PreviewURL     string `json:"previewUrl"`
+	AlbumCoverURL  string `json:"albumCoverUrl"`
+	ArtistImageURL string `json:"artistImageUrl"`
+	Popularity     int    `json:"popularity"`
 }
 
 type EnrichedSuggestion struct {

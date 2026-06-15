@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { computed } from 'vue'
 
 const router = useRouter()
-
-const homeRoute = computed(() => '/')
 </script>
 
 <template>
@@ -16,26 +13,25 @@ const homeRoute = computed(() => '/')
             <h2
               class="mb-2 text-[50px] font-bold leading-none text-white sm:text-[80px] md:text-[100px]"
             >
-              ۴۰۴
+              404
             </h2>
             <h4 class="mb-3 text-[22px] font-semibold leading-tight text-white">
-              صفحه مورد نظر شما پیدا نشد!
+              Page not found
             </h4>
-            <p class="mb-8 text-lg text-white">لطفا دوباره تلاش نمایید</p>
+            <p class="mb-8 text-lg text-white">The page you're looking for doesn't exist or has been moved.</p>
 
             <div class="flex gap-3 justify-center items-center">
               <router-link
-                v-if="homeRoute"
-                :to="homeRoute"
+                to="/"
                 class="inline-block text-purple-500 rounded-lg border border-white px-8 py-3 text-center text-base font-semibold transition bg-white hover:text-black hover:bg-opacity-80 hover:shadow-xl"
               >
-                خانه
+                Go Home
               </router-link>
               <button
                 class="inline-block rounded-lg border border-white px-8 py-3 text-center text-base font-semibold text-white transition hover:bg-white hover:text-purple-500 hover:shadow-xl"
                 @click="router.go(-1)"
               >
-                بازگشت
+                Go Back
               </button>
             </div>
           </div>

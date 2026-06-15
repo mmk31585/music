@@ -5,7 +5,9 @@ import (
 	"music/internal/modules/analytics"
 	"music/internal/modules/auth"
 	"music/internal/modules/catalog"
+	"music/internal/modules/creator"
 	"music/internal/modules/follow"
+	"music/internal/modules/gamification"
 	"music/internal/modules/health"
 	"music/internal/modules/history"
 	"music/internal/modules/ingestion"
@@ -16,12 +18,15 @@ import (
 	"music/internal/modules/player"
 	"music/internal/modules/playlist"
 	"music/internal/modules/queue"
+	"music/internal/modules/reactions"
 	"music/internal/modules/recommendation"
 	"music/internal/modules/search"
+	"music/internal/modules/social"
 	"music/internal/modules/subscription"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -72,5 +77,44 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 
 	if c.SearchHandler != nil {
 		search.RegisterRoutes(api, c.SearchHandler, c.OptionalAuthMW, middleware.RateLimitOptional(c.RDB, 60))
+
+		// Alias for frontend compatibility: /catalog/search → /search
+		catalogSearch := api.Group("/catalog")
+		catalogSearch.Use(c.OptionalAuthMW, middleware.RateLimitOptional(c.RDB, 60))
+		catalogSearch.GET("/search", c.SearchHandler.Search)
 	}
+
+	tokenManager := auth.NewTokenManager(
+		a.Config.Auth.JWTAccessSecret,
+		a.Config.Auth.JWTRefreshSecret,
+		a.Config.Auth.AccessTTL,
+		a.Config.Auth.RefreshTTL,
+	)
+
+	api.GET("/ws", func(ctx *gin.Context) {
+		tokenStr := ctx.Query("token")
+		if tokenStr == "" {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
+			return
+		}
+
+		claims, err := tokenManager.ParseAccessToken(tokenStr)
+		if err != nil {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			return
+		}
+
+		userID, err := uuid.Parse(claims.UserID)
+		if err != nil {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
+			return
+		}
+
+		c.WSHub.HandleWebSocket(ctx.Writer, ctx.Request, userID)
+	})
+
+	reactions.RegisterRoutes(api, c.ReactionsHandler, c.AuthMW)
+	gamification.RegisterRoutes(api, c.GamificationHandler, c.AuthMW)
+	creator.RegisterRoutes(api, c.CreatorHandler, c.AuthMW)
+	social.RegisterRoutes(api, c.SocialHandler, c.AuthMW)
 }

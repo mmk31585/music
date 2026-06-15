@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+// TODO: RepositoryInterface is defined but never used as an injection type. Service uses concrete *Repository directly.
+// Either wire it into Service or remove.
 type RepositoryInterface interface {
 	CreateUser(ctx context.Context, user User) (User, error)
 	FindUserByEmailOrUsername(ctx context.Context, value string) (User, error)

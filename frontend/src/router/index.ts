@@ -35,7 +35,11 @@ router.beforeEach((to: RouteLocationNormalizedGeneric) => {
 
   // Guest mode: protect routes that require an account
   if (!isAuthenticated) {
-    const guestRestricted = ['/library', '/playlists', '/profile', '/settings', '/subscriptions']
+    const guestRestricted = [
+      '/library', '/playlists', '/profile', '/settings', '/subscription',
+      '/notifications', '/social', '/contributions', '/creator-dashboard',
+      '/gamification', '/ai/playlist-generator',
+    ]
     if (guestRestricted.some((path) => to.path.startsWith(path))) {
       return {
         name: 'auth.login',

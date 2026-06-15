@@ -1,34 +1,14 @@
 -- +goose Up
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-CREATE TABLE IF NOT EXISTS track_credits (
-                                             id UUID PRIMARY KEY DEFAULT gen_random_uuid()
-    );
-
-ALTER TABLE track_credits
-    ADD COLUMN IF NOT EXISTS track_id UUID;
-
-ALTER TABLE track_credits
-    ADD COLUMN IF NOT EXISTS artist_id UUID;
-
+-- track_credits was created in 000013 with columns: id, track_id, artist_id, name, role, position, created_at.
+-- This migration adds the credit_type column (a structured role) and ensures constraints exist.
 ALTER TABLE track_credits
     ADD COLUMN IF NOT EXISTS credit_type TEXT;
 
-ALTER TABLE track_credits
-    ADD COLUMN IF NOT EXISTS position INT NOT NULL DEFAULT 1;
-
-ALTER TABLE track_credits
-    ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
-
 UPDATE track_credits
-SET credit_type = 'unknown'
+SET credit_type = COALESCE(role, 'unknown')
 WHERE credit_type IS NULL;
-
-ALTER TABLE track_credits
-    ALTER COLUMN track_id SET NOT NULL;
-
-ALTER TABLE track_credits
-    ALTER COLUMN artist_id SET NOT NULL;
 
 ALTER TABLE track_credits
     ALTER COLUMN credit_type SET NOT NULL;

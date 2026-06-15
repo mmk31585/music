@@ -112,6 +112,54 @@ func (s *LocalStorage) GetURL(ctx context.Context, key string) (string, error) {
 	return s.baseURL + "/" + key, nil
 }
 
+func (s *LocalStorage) Get(ctx context.Context, key string) ([]byte, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	path, err := s.safePath(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return os.ReadFile(path)
+}
+
+func (s *LocalStorage) Copy(ctx context.Context, srcKey, dstKey string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	srcPath, err := s.safePath(srcKey)
+	if err != nil {
+		return err
+	}
+
+	dstPath, err := s.safePath(dstKey)
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(filepath.Dir(dstPath), 0755); err != nil {
+		return err
+	}
+
+	src, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	dst, err := os.Create(dstPath)
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	_, err = io.Copy(dst, src)
+	return err
+}
+
 func (s *LocalStorage) safePath(key string) (string, error) {
 	cleanKey := filepath.Clean(key)
 

@@ -94,6 +94,56 @@ func (h *Handler) UploadAdminMedia(c *gin.Context) {
 	response.Success(c, http.StatusCreated, "file uploaded successfully", res)
 }
 
+// ListAdminMedia godoc
+// @Summary List all media
+// @Description Returns all media items ordered by creation date descending
+// @Tags media
+// @Produce json
+// @Security Bearer
+// @Success 200 {object} response.SuccessResponse
+// @Failure 401 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /admin/media [get]
+func (h *Handler) ListAdminMedia(c *gin.Context) {
+	items, err := h.service.ListMedia(c.Request.Context())
+	if err != nil {
+		response.Error(c, appErr.Internal("failed to list media", err))
+		return
+	}
+
+	response.Success(c, http.StatusOK, "media list retrieved successfully", items)
+}
+
+// DeleteAdminMedia godoc
+// @Summary Delete a media item
+// @Description Deletes a media item by ID (removes file from storage and DB record)
+// @Tags media
+// @Produce json
+// @Security Bearer
+// @Param id path string true "Media ID (UUID)"
+// @Success 200 {object} response.SuccessResponse
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 401 {object} response.ErrorResponse
+// @Failure 404 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /admin/media/{id} [delete]
+func (h *Handler) DeleteAdminMedia(c *gin.Context) {
+	idStr := c.Param("id")
+
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		response.Error(c, appErr.BadRequest("invalid media ID", err))
+		return
+	}
+
+	if err := h.service.DeleteMedia(c.Request.Context(), id); err != nil {
+		response.Error(c, appErr.Internal("failed to delete media", err))
+		return
+	}
+
+	response.SuccessNoContent(c)
+}
+
 func detectUploadField(r *http.Request) (UploadCategory, string, error) {
 	if r.MultipartForm == nil || r.MultipartForm.File == nil {
 		return "", "", ErrNoFileProvided
@@ -145,7 +195,7 @@ func detectUploadField(r *http.Request) (UploadCategory, string, error) {
 	return selectedCategory, selectedName, nil
 }
 func getUserIDFromContext(c *gin.Context) *uuid.UUID {
-	keys := []string{"user_id", "userID", "userId", "sub"}
+	keys := []string{"auth_user_id", "user_id", "userID", "userId", "sub"}
 
 	for _, key := range keys {
 		raw, exists := c.Get(key)

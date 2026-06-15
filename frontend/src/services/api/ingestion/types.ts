@@ -204,6 +204,16 @@ export const AlbumSearchResultSchema = z.object({
 
 export type AlbumSearchResult = z.infer<typeof AlbumSearchResultSchema>
 
+export const FinalizeResultSchema = z.object({
+  artistId: z.string(),
+  albumId: z.string().optional(),
+  trackId: z.string(),
+  audioUrl: z.string(),
+  coverUrl: z.string().optional(),
+})
+
+export type FinalizeResult = z.infer<typeof FinalizeResultSchema>
+
 export const ListDraftsResponseSchema = z.object({
   items: z.array(DraftListItemSchema),
   total: z.number(),
@@ -212,3 +222,19 @@ export const ListDraftsResponseSchema = z.object({
 })
 
 export type ListDraftsResponse = z.infer<typeof ListDraftsResponseSchema>
+
+export const IngestionStatsSchema = z.object({
+  publishedThisMonth: z.number(),
+  pendingReview: z.number(),
+  totalDrafts: z.number(),
+  byStatus: z.record(z.string(), z.number()),
+})
+
+export type IngestionStats = z.infer<typeof IngestionStatsSchema>
+
+export const IngestionConfigSchema = z.object({
+  maxUploadSize: z.number(),
+  enrichmentEnabled: z.boolean(),
+})
+
+export type IngestionConfig = z.infer<typeof IngestionConfigSchema>

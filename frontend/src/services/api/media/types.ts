@@ -39,3 +39,14 @@ export const UploadResponseSchema = z.object({
 })
 
 export type UploadResponse = z.infer<typeof UploadResponseSchema>
+
+export interface Media {
+  id: string | number
+  objectKey: string
+  originalFilename?: string | null
+  fileSize?: number | null
+  mimeType?: string | null
+  mediaType?: string | null
+  publicUrl?: string | null
+  createdAt?: string | null
+}

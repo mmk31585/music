@@ -49,7 +49,7 @@ func (s *Service) EnrichDraft(ctx context.Context, draftID string) error {
 		return ErrDraftNotFound
 	}
 
-	if draft.Status != DraftStatusPending {
+	if draft.Status != DraftStatusPending && draft.Status != DraftStatusEnrichmentFailed {
 		return nil
 	}
 
@@ -70,25 +70,25 @@ func (s *Service) enrichAsync(draftID, title, artist, album string) {
 	result, err := s.enricher.Enrich(ctx, title, artist, album)
 	if err != nil {
 		zap.L().Error("enrichment failed", zap.String("draft_id", draftID), zap.Error(err))
-		_ = s.repo.UpdateDraftStatus(ctx, draftID, DraftStatusPending)
+		_ = s.repo.UpdateDraftStatus(ctx, draftID, DraftStatusEnrichmentFailed)
 		return
 	}
 
 	enrichedJSON, err := enrichment.SerializeResult(result)
 	if err != nil {
 		zap.L().Error("failed to serialize enrichment", zap.String("draft_id", draftID), zap.Error(err))
-		_ = s.repo.UpdateDraftStatus(ctx, draftID, DraftStatusPending)
+		_ = s.repo.UpdateDraftStatus(ctx, draftID, DraftStatusEnrichmentFailed)
 		return
 	}
 
 	newStatus := DraftStatusReview
 	if len(result.Suggestions) == 0 {
-		newStatus = DraftStatusPending
+		newStatus = DraftStatusEnrichmentFailed
 	}
 
 	if err := s.repo.UpdateDraftEnrichedMetadata(ctx, draftID, enrichedJSON, newStatus); err != nil {
 		zap.L().Error("failed to save enrichment", zap.String("draft_id", draftID), zap.Error(err))
-		_ = s.repo.UpdateDraftStatus(ctx, draftID, DraftStatusPending)
+		_ = s.repo.UpdateDraftStatus(ctx, draftID, DraftStatusEnrichmentFailed)
 		return
 	}
 }
@@ -131,6 +131,23 @@ func (s *Service) Upload(ctx context.Context, file multipart.File, header *multi
 
 	if len(content) == 0 {
 		return nil, ErrNoFileProvided
+	}
+
+	hash := sha256.Sum256(content)
+	fileHash := hex.EncodeToString(hash[:])
+
+	existing, err := s.repo.SearchByFileHash(ctx, fileHash)
+	if err != nil {
+		zap.L().Warn("failed to check duplicate hash", zap.Error(err))
+	} else if len(existing) > 0 {
+		for _, ex := range existing {
+			if ex.Status == DraftStatusPublished {
+				return nil, ErrDuplicateFile
+			}
+		}
+		zap.L().Warn("potential duplicate file (draft already exists)",
+			zap.String("existing_draft", existing[0].ID),
+		)
 	}
 
 	draftID := ulid.Make().String()
@@ -182,6 +199,7 @@ func (s *Service) Upload(ctx context.Context, file multipart.File, header *multi
 		DurationSeconds:   duration,
 		Bitrate:           bitrate,
 		Format:            format,
+		FileHash:          fileHash,
 		ExtractedMetadata: extractedJSON,
 	})
 	if err != nil {
@@ -313,7 +331,7 @@ func (s *Service) ListDrafts(ctx context.Context, status string, page, limit int
 
 	if status != "" {
 		valid := false
-		for _, s := range []DraftStatus{DraftStatusPending, DraftStatusEnriching, DraftStatusReview, DraftStatusAccepted, DraftStatusRejected} {
+		for _, s := range []DraftStatus{DraftStatusPending, DraftStatusEnriching, DraftStatusReview, DraftStatusAccepted, DraftStatusRejected, DraftStatusPublished, DraftStatusEnrichmentFailed} {
 			if DraftStatus(status) == s {
 				valid = true
 				break
@@ -343,6 +361,8 @@ func (s *Service) ListDrafts(ctx context.Context, status string, page, limit int
 			Format:           row.Format,
 			DurationSeconds:  row.DurationSeconds,
 			Status:           row.Status,
+			FileHash:         row.FileHash,
+			Stale:            row.Stale,
 			Title:            tags.Title,
 			Artist:           tags.Artist,
 			Album:            tags.Album,
@@ -401,7 +421,7 @@ func (s *Service) SaveFinalMetadata(ctx context.Context, id string, req SaveFina
 	if draft == nil {
 		return ErrDraftNotFound
 	}
-	if draft.Status != DraftStatusReview {
+	if draft.Status != DraftStatusReview && draft.Status != DraftStatusEnrichmentFailed {
 		return ErrInvalidStatus
 	}
 
@@ -445,6 +465,38 @@ func (s *Service) SearchAlbums(ctx context.Context, q string) ([]AlbumSearchResu
 	}
 	const limit = 20
 	return s.repo.SearchAlbums(ctx, q, limit)
+}
+
+func (s *Service) GetDraftRaw(ctx context.Context, id string) (*IngestionDraft, error) {
+	draft, err := s.repo.GetDraftByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if draft == nil {
+		return nil, ErrDraftNotFound
+	}
+	return draft, nil
+}
+
+func (s *Service) GetIngestionStats(ctx context.Context) (*IngestionStats, error) {
+	published, err := s.repo.CountPublishedThisMonth(ctx)
+	if err != nil {
+		return nil, err
+	}
+	byStatus, err := s.repo.CountDraftsByStatus(ctx)
+	if err != nil {
+		return nil, err
+	}
+	total := 0
+	for _, c := range byStatus {
+		total += c
+	}
+	return &IngestionStats{
+		PublishedThisMonth: published,
+		PendingReview:      byStatus[DraftStatusReview],
+		TotalDrafts:        total,
+		ByStatus:           map[string]int{"pending": byStatus[DraftStatusPending], "enriching": byStatus[DraftStatusEnriching], "review": byStatus[DraftStatusReview], "accepted": byStatus[DraftStatusAccepted], "rejected": byStatus[DraftStatusRejected], "published": byStatus[DraftStatusPublished], "enrichment_failed": byStatus[DraftStatusEnrichmentFailed]},
+	}, nil
 }
 
 func jsonToMap(rawJSON string) map[string]interface{} {

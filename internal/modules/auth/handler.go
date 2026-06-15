@@ -1,12 +1,13 @@
 package auth
 
 import (
-	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 
 	apperrors "music/internal/common/errors"
 	"music/internal/common/response"
@@ -16,12 +17,14 @@ import (
 type Handler struct {
 	service   *Service
 	validator *validator.Validator
+	logger    *zap.Logger
 }
 
 func NewHandler(service *Service, validator *validator.Validator) *Handler {
 	return &Handler{
 		service:   service,
 		validator: validator,
+		logger:    zap.L(),
 	}
 }
 
@@ -74,8 +77,7 @@ func (h *Handler) Login(c *gin.Context) {
 	var req LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		// Log the actual error before responding
-		fmt.Printf("Login bind error: %v\n", err) // or use zap
+		h.logger.Warn("login bind error", zap.Error(err))
 		response.Error(c, err)
 		return
 	}
@@ -185,6 +187,154 @@ func (h *Handler) Me(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "current user", result)
+}
+
+// AdminListUsers godoc
+// @Summary List all users (admin)
+// @Description Returns a paginated list of all users.
+// @Tags admin
+// @Produce json
+// @Security Bearer
+// @Param page query int false "Page number" default(1)
+// @Param page_size query int false "Items per page" default(20)
+// @Param sort_by query string false "Sort field" Enums(created_at,email,username,display_name,role,is_active)
+// @Param sort_order query string false "Sort order" Enums(asc,desc)
+// @Param search query string false "Search query"
+// @Success 200 {object} response.SuccessResponse
+// @Failure 401 {object} response.ErrorResponse
+// @Failure 403 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /admin/users [get]
+func (h *Handler) AdminListUsers(c *gin.Context) {
+	params := ListUsersParams{
+		Page:      1,
+		PageSize:  20,
+		SortBy:    "created_at",
+		SortOrder: "desc",
+	}
+
+	if page := c.Query("page"); page != "" {
+		if p, err := strconv.Atoi(page); err == nil && p > 0 {
+			params.Page = p
+		}
+	}
+	if pageSize := c.Query("page_size"); pageSize != "" {
+		if ps, err := strconv.Atoi(pageSize); err == nil && ps > 0 && ps <= 100 {
+			params.PageSize = ps
+		}
+	}
+	if sortBy := c.Query("sort_by"); sortBy != "" {
+		params.SortBy = sortBy
+	}
+	if sortOrder := c.Query("sort_order"); sortOrder != "" {
+		params.SortOrder = sortOrder
+	}
+	if search := c.Query("search"); search != "" {
+		params.Search = search
+	}
+
+	result, err := h.service.AdminListUsers(c.Request.Context(), params)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "users retrieved", result)
+}
+
+// AdminGetUser godoc
+// @Summary Get user by ID (admin)
+// @Description Returns a single user's details including sensitive fields.
+// @Tags admin
+// @Produce json
+// @Security Bearer
+// @Param id path string true "User ID"
+// @Success 200 {object} response.SuccessResponse
+// @Failure 401 {object} response.ErrorResponse
+// @Failure 403 {object} response.ErrorResponse
+// @Failure 404 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /admin/users/{id} [get]
+func (h *Handler) AdminGetUser(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		response.Error(c, apperrors.BadRequest("user id is required", nil))
+		return
+	}
+
+	result, err := h.service.AdminGetUser(c.Request.Context(), id)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "user retrieved", result)
+}
+
+// AdminUpdateUser godoc
+// @Summary Update user (admin)
+// @Description Updates a user's role, active status, or email verification status.
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path string true "User ID"
+// @Param request body AdminUpdateUserRequest true "Update payload"
+// @Success 200 {object} response.SuccessResponse
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 401 {object} response.ErrorResponse
+// @Failure 403 {object} response.ErrorResponse
+// @Failure 404 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /admin/users/{id} [put]
+func (h *Handler) AdminUpdateUser(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		response.Error(c, apperrors.BadRequest("user id is required", nil))
+		return
+	}
+
+	var req AdminUpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	result, err := h.service.AdminUpdateUser(c.Request.Context(), id, req)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "user updated", result)
+}
+
+// AdminDeleteUser godoc
+// @Summary Delete user (admin)
+// @Description Permanently deletes a user account.
+// @Tags admin
+// @Produce json
+// @Security Bearer
+// @Param id path string true "User ID"
+// @Success 200 {object} response.SuccessResponse
+// @Failure 401 {object} response.ErrorResponse
+// @Failure 403 {object} response.ErrorResponse
+// @Failure 404 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /admin/users/{id} [delete]
+func (h *Handler) AdminDeleteUser(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		response.Error(c, apperrors.BadRequest("user id is required", nil))
+		return
+	}
+
+	if err := h.service.AdminDeleteUser(c.Request.Context(), id); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success[any](c, http.StatusOK, "user deleted", nil)
 }
 
 // clientIP extracts the client IP from a Gin context

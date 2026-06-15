@@ -8,37 +8,43 @@ export const TrackArtistRequestSchema = z.object({
   position: z.number().int().nonnegative().optional(),
 })
 
+const TrackArtistSchema = z.object({
+  artistId: IdSchema,
+  name: z.string(),
+  slug: z.string().optional(),
+  role: z.string().optional(),
+  position: z.number().optional(),
+})
+
 export const TrackSchema = z
   .object({
     id: IdSchema,
     title: z.string(),
-    duration_seconds: z.number().optional().nullable(),
-    audio_url: z.string().optional().nullable(),
-    cover_url: z.string().optional().nullable(),
-    artist_id: IdSchema.optional().nullable(),
-    album_id: IdSchema.optional().nullable(),
-    genre_id: IdSchema.optional().nullable(),
-    artist_name: z.string().optional().nullable(),
-    album_title: z.string().optional().nullable(),
+    durationSeconds: z.number().optional().nullable(),
+    audioUrl: z.string().optional().nullable(),
+    coverUrl: z.string().optional().nullable(),
+    artistId: IdSchema.optional().nullable(),
+    albumId: IdSchema.optional().nullable(),
     genres: z.array(GenreSchema).optional().nullable(),
-    play_count: z.number().optional().nullable(),
-    track_number: z.number().optional().nullable(),
+    playCount: z.number().optional().nullable(),
+    trackNumber: z.number().optional().nullable(),
     explicit: z.boolean().optional().nullable(),
+    artists: z.array(TrackArtistSchema).optional().nullable(),
   })
   .transform((track) => ({
     id: track.id,
     title: track.title,
-    duration_seconds: track.duration_seconds ?? 0,
-    audio_url: track.audio_url ?? null,
-    cover_url: track.cover_url ?? null,
-    artist_id: track.artist_id ?? null,
-    album_id: track.album_id ?? null,
-    genre_id: track.genre_id ?? track.genres?.[0]?.id ?? null,
-    artist_name: track.artist_name ?? null,
-    album_title: track.album_title ?? null,
+    duration_seconds: track.durationSeconds ?? 0,
+    audio_url: track.audioUrl ?? null,
+    cover_url: track.coverUrl ?? null,
+    artist_id: track.artistId ?? null,
+    album_id: track.albumId ?? null,
+    genre_id: track.genres?.[0]?.id ?? null,
+    artist_name: track.artists?.find((a) => a.role === 'primary')?.name ?? track.artists?.[0]?.name ?? null,
+    album_title: null,
     genres: track.genres ?? [],
-    play_count: track.play_count ?? 0,
-    track_number: track.track_number ?? null,
+    play_count: track.playCount ?? 0,
+    track_number: track.trackNumber ?? null,
     explicit: track.explicit ?? false,
   }))
 
