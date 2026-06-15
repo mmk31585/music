@@ -233,9 +233,17 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
         .then((response) => {
           // The server may wrap the payload in a `data` field or return it directly.
           const raw = response.data ?? {}
+          let dataValue = raw?.data ?? raw
+
+          // Merge pagination metadata when the backend sends data as a plain
+          // array with pagination info in a top-level `meta` field.
+          if (Array.isArray(dataValue) && raw?.meta && typeof raw.meta === 'object') {
+            dataValue = { items: dataValue, ...raw.meta }
+          }
+
           const payload: ApiResponseProps<T | T[] | PaginatedProps<T>> = {
             type: raw?.type as ResponseTypes,
-            data: raw?.data ?? raw,
+            data: dataValue as T | T[] | PaginatedProps<T>,
             message: raw?.message as string,
             run_time: raw?.run_time as string,
           }

@@ -10,6 +10,10 @@ import (
 	"image/jpeg"
 	_ "image/gif"
 	_ "image/png"
+	"io"
+	"net/http"
+	"net/url"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -23,8 +27,9 @@ import (
 )
 
 const (
-	CatalogAudioDir = "catalog-audio"
-	CatalogCoverDir = "catalog-covers"
+	CatalogAudioDir     = "catalog-audio"
+	CatalogCoverDir     = "catalog-covers"
+	CatalogExternImages = "catalog-external-images"
 )
 
 type FinalizeResult struct {
@@ -108,6 +113,29 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 	var final DraftMetadata
 	if err := json.Unmarshal([]byte(finalMetaJSON), &final); err != nil {
 		return nil, fmt.Errorf("unmarshal final metadata: %w", err)
+	}
+
+	// Re-host external images to local storage
+	if final.Artist.ImageURL != "" && s.isExternalURL(final.Artist.ImageURL) {
+		if localURL, err := s.rehostExternalImage(ctx, final.Artist.ImageURL, draftID, "artist"); err != nil {
+			s.logger.Warn("failed to re-host artist image", zap.Error(err))
+		} else {
+			final.Artist.ImageURL = localURL
+		}
+	}
+	if final.Album.CoverURL != "" && s.isExternalURL(final.Album.CoverURL) {
+		if localURL, err := s.rehostExternalImage(ctx, final.Album.CoverURL, draftID, "album"); err != nil {
+			s.logger.Warn("failed to re-host album cover", zap.Error(err))
+		} else {
+			final.Album.CoverURL = localURL
+		}
+	}
+	if final.Track.CoverURL != "" && s.isExternalURL(final.Track.CoverURL) {
+		if localURL, err := s.rehostExternalImage(ctx, final.Track.CoverURL, draftID, "track"); err != nil {
+			s.logger.Warn("failed to re-host track cover", zap.Error(err))
+		} else {
+			final.Track.CoverURL = localURL
+		}
 	}
 
 	tx, err := s.db.BeginTxx(ctx, nil)
@@ -231,13 +259,9 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 	}
 
 	genres := splitGenres(final.Track.Genre)
-	genreIDs := make([]uuid.UUID, 0, len(genres))
-	for _, g := range genres {
-		gid, err := s.ensureGenreTx(ctx, tx, g)
-		if err != nil {
-			return nil, fmt.Errorf("genre %q: %w", g, err)
-		}
-		genreIDs = append(genreIDs, gid)
+	genreIDs, err := s.ensureGenresTx(ctx, tx, genres)
+	if err != nil {
+		return nil, fmt.Errorf("genres: %w", err)
 	}
 
 	var albumIDPtr *uuid.UUID
@@ -333,12 +357,18 @@ func (s *Service) insertTrackTx(ctx context.Context, tx *sqlx.Tx, p insertTrackP
 		return uuid.Nil, common.MapPGError(err)
 	}
 
-	for _, gid := range p.GenreIDs {
-		if _, err := tx.ExecContext(ctx, `
+	if len(p.GenreIDs) > 0 {
+		values := make([]string, 0, len(p.GenreIDs))
+		args := []any{trackID}
+		for i, gid := range p.GenreIDs {
+			values = append(values, fmt.Sprintf("($1, $%d)", i+2))
+			args = append(args, gid)
+		}
+		if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 			INSERT INTO track_genres (track_id, genre_id)
-			VALUES ($1, $2)
+			VALUES %s
 			ON CONFLICT DO NOTHING
-		`, trackID, gid); err != nil {
+		`, strings.Join(values, ", ")), args...); err != nil {
 			return uuid.Nil, common.MapPGError(err)
 		}
 	}
@@ -397,7 +427,10 @@ func (s *Service) upsertAlbumTx(ctx context.Context, tx *sqlx.Tx, meta *AlbumMet
 	err := tx.GetContext(ctx, &albumID, `
 		INSERT INTO albums (artist_id, title, slug, cover_url, release_date, album_type)
 		VALUES ($1, $2, $3, $4, $5, $6)
-		ON CONFLICT (artist_id, slug) DO UPDATE SET title = EXCLUDED.title
+		ON CONFLICT (artist_id, slug) DO UPDATE SET
+			title = EXCLUDED.title,
+			cover_url = COALESCE(EXCLUDED.cover_url, albums.cover_url),
+			release_date = COALESCE(EXCLUDED.release_date, albums.release_date)
 		RETURNING id
 	`,
 		artistID,
@@ -420,6 +453,46 @@ func (s *Service) upsertAlbumTx(ctx context.Context, tx *sqlx.Tx, meta *AlbumMet
 	}
 
 	return albumID, nil
+}
+
+func (s *Service) ensureGenresTx(ctx context.Context, tx *sqlx.Tx, names []string) ([]uuid.UUID, error) {
+	if len(names) == 0 {
+		return nil, nil
+	}
+	values := make([]string, 0, len(names))
+	slugArgs := make([]any, 0, len(names))
+	for i, name := range names {
+		slug := common.Slugify(name)
+		values = append(values, fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2))
+		slugArgs = append(slugArgs, name, slug)
+	}
+	var ids []uuid.UUID
+	err := tx.SelectContext(ctx, &ids, fmt.Sprintf(`
+		WITH new_ids AS (
+			INSERT INTO genres (name, slug)
+			VALUES %s
+			ON CONFLICT (slug) DO NOTHING
+			RETURNING id
+		)
+		SELECT id FROM new_ids
+		UNION ALL
+		SELECT id FROM genres WHERE slug IN (%s)
+	`, strings.Join(values, ", "), commaSlugs(len(names))), slugArgs...)
+	if err != nil {
+		return nil, err
+	}
+	if len(ids) != len(names) {
+		return nil, fmt.Errorf("expected %d genre ids, got %d", len(names), len(ids))
+	}
+	return ids, nil
+}
+
+func commaSlugs(n int) string {
+	parts := make([]string, 0, n)
+	for i := 0; i < n; i++ {
+		parts = append(parts, fmt.Sprintf("$%d", i*2+2))
+	}
+	return strings.Join(parts, ", ")
 }
 
 func (s *Service) ensureGenreTx(ctx context.Context, tx *sqlx.Tx, name string) (uuid.UUID, error) {
@@ -490,12 +563,19 @@ func splitGenres(genre string) []string {
 		return nil
 	}
 	parts := strings.Split(genre, ",")
+	seen := make(map[string]bool, len(parts))
 	out := make([]string, 0, len(parts))
 	for _, p := range parts {
 		p = strings.TrimSpace(p)
-		if p != "" {
-			out = append(out, p)
+		if p == "" {
+			continue
 		}
+		slug := common.Slugify(p)
+		if seen[slug] {
+			continue
+		}
+		seen[slug] = true
+		out = append(out, p)
 	}
 	return out
 }
@@ -582,4 +662,62 @@ func looksLikeLRC(content string) bool {
 		return strings.HasPrefix(line, "[")
 	}
 	return false
+}
+
+func (s *Service) isExternalURL(rawURL string) bool {
+	baseURL := s.getBaseURLPrefix(context.Background())
+	if baseURL == "" {
+		return strings.HasPrefix(rawURL, "http://") || strings.HasPrefix(rawURL, "https://")
+	}
+	return strings.HasPrefix(rawURL, "http://") || strings.HasPrefix(rawURL, "https://") && !strings.HasPrefix(rawURL, baseURL)
+}
+
+func (s *Service) rehostExternalImage(ctx context.Context, imageURL, draftID, entityType string) (string, error) {
+	parsed, err := url.Parse(imageURL)
+	if err != nil {
+		return "", fmt.Errorf("parse url: %w", err)
+	}
+
+	ext := filepath.Ext(parsed.Path)
+	if ext == "" {
+		ext = ".jpg"
+	}
+	key := fmt.Sprintf("%s/%s-%s%s", CatalogExternImages, draftID, entityType, ext)
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, imageURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("create request: %w", err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("download: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("download returned status %d", resp.StatusCode)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("read body: %w", err)
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "image/jpeg"
+	}
+
+	if err := s.storage.Upload(ctx, key, bytes.NewReader(data), int64(len(data)), contentType); err != nil {
+		return "", fmt.Errorf("store: %w", err)
+	}
+
+	localURL, err := s.storage.GetURL(ctx, key)
+	if err != nil {
+		return "", fmt.Errorf("get url: %w", err)
+	}
+
+	return localURL, nil
 }

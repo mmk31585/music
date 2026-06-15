@@ -1,6 +1,10 @@
 package player
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+
+	"music/internal/modules/auth"
+)
 
 func RegisterPublicRoutes(router *gin.RouterGroup, handler *Handler) {
 	playerGroup := router.Group("/player")
@@ -11,7 +15,7 @@ func RegisterPublicRoutes(router *gin.RouterGroup, handler *Handler) {
 }
 func RegisterPrivateRoutes(router *gin.RouterGroup, handler *Handler, authMW gin.HandlerFunc) {
 	playerGroup := router.Group("/admin/player")
-	playerGroup.Use(authMW)
+	playerGroup.Use(authMW, auth.RequireRole("admin"))
 	{
 		playerGroup.GET("/tracks/:id", handler.GetAdminPlaybackTrack)
 		playerGroup.GET("/tracks/:id/stream", handler.StreamAdminTrack)

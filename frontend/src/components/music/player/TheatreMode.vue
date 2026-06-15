@@ -173,67 +173,15 @@
                 >
               </div>
 
-              <div v-if="lyricsLoading" class="flex flex-1 items-center justify-center">
-                <div class="w-3/4 space-y-4">
-                  <div
-                    v-for="i in 6"
-                    :key="i"
-                    class="h-5 animate-pulse rounded bg-white/[0.06]"
-                    :style="{ width: `${55 + ((i * 7) % 30)}%` }"
-                  />
-                </div>
-              </div>
-
-              <div
-                v-else-if="lyricsError || !lyricsContent"
-                class="flex flex-1 flex-col items-center justify-center gap-3 text-center"
-              >
-                <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5">
-                  <i class="pi pi-align-left text-3xl text-white/15" />
-                </div>
-                <p class="text-sm text-white/25">No lyrics available</p>
-                <p class="text-xs text-white/15">Contribute lyrics to see them here</p>
-              </div>
-
-              <div
-                v-else
-                ref="lyricsContainer"
-                class="relative flex-1 scrollbar-thin overflow-y-auto pr-2"
-              >
-                <div class="flex min-h-full flex-col items-center justify-center py-8">
-                  <div
-                    v-for="(line, idx) in parsedLines"
-                    :key="idx"
-                    ref="lyricLinesRef"
-                    class="theatre-lyric-line cursor-pointer px-4 py-3 text-center text-xl leading-relaxed transition-all duration-500 ease-out"
-                    :class="{
-                      'scale-105 font-bold text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]':
-                        idx === activeLineIndex,
-                      'text-white/15 hover:text-white/35': isPastLine(idx),
-                      'text-white/25 hover:text-white/50': idx !== activeLineIndex && !isPastLine(idx),
-                    }"
-                    @click="seekTo(line.timeSeconds)"
-                  >
-                    <template v-if="idx === activeLineIndex && karaokeMode">
-                      <span
-                        v-for="(word, wIdx) in line.words"
-                        :key="wIdx"
-                        class="transition-all duration-150"
-                        :class="
-                          wIdx === activeWordMap.get(idx)
-                            ? 'text-[#1db954] drop-shadow-[0_0_12px_rgba(29,185,84,0.6)]'
-                            : 'text-white/40'
-                        "
-                      >
-                        {{ word.text
-                        }}<template v-if="wIdx < (line.words?.length ?? 0) - 1">&nbsp;</template>
-                      </span>
-                    </template>
-                    <template v-else>
-                      {{ line.text }}
-                    </template>
-                  </div>
-                </div>
+              <div class="relative flex-1">
+                <KaraokeLyrics
+                  :content="lyricsContent"
+                  :type="lyricsType"
+                  :current-time="currentTime"
+                  :loading="lyricsLoading"
+                  :karaoke="karaokeMode"
+                  @seek="seekTo"
+                />
               </div>
             </div>
           </div>
@@ -247,11 +195,10 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { usePlayerControls } from '@/composables/player'
 import { useAlbumColors } from '@/composables/useAlbumColors'
+import KaraokeLyrics from './KaraokeLyrics.vue'
 import { useLyricsApi, type Lyrics } from '@/services/api/lyrics'
 import type { PlaybackTrack } from '@/services/api/player'
-import type { ParsedLine } from '@/composables/lyrics'
 import { onImgError } from '@/utils/helpers'
-import { parseLRCLines, parsePlainLines } from '@/composables/lyrics'
 
 const props = defineProps<{ visible: boolean }>()
 const emit = defineEmits<{
@@ -352,78 +299,6 @@ const lyricsLanguage = ref<string | null>(null)
 const lyricsContent = computed(() => lyricsData.value?.content || '')
 const lyricsType = computed(() => lyricsData.value?.type || 'plain')
 
-const parsedLines = ref<ParsedLine[]>([])
-
-watch(
-  [lyricsType, lyricsContent],
-  () => {
-    if (!lyricsContent.value) {
-      parsedLines.value = []
-      return
-    }
-    parsedLines.value =
-      lyricsType.value === 'lrc'
-        ? parseLRCLines(lyricsContent.value)
-        : parsePlainLines(lyricsContent.value)
-  },
-  { immediate: true },
-)
-
-const activeLineIndex = computed(() => {
-  const t = currentTime.value
-  const lines = parsedLines.value
-  for (let i = lines.length - 1; i >= 0; i--) {
-    if (t >= lines[i]!.timeSeconds) return i
-  }
-  return -1
-})
-
-function isPastLine(idx: number) {
-  return activeLineIndex.value >= 0 && idx < activeLineIndex.value
-}
-
-const activeWordMap = computed(() => {
-  const map = new Map<number, number>()
-  if (!currentTrack.value) return map
-  const t = currentTime.value
-  for (let i = 0; i < parsedLines.value.length; i++) {
-    const line = parsedLines.value[i]
-    if (!line) continue
-    if (!line.words || line.words.length === 0) {
-      map.set(i, -1)
-      continue
-    }
-    let found = -1
-    for (let w = 0; w < line.words.length; w++) {
-      const word = line.words[w]
-      const nextWord = line.words[w + 1]
-      if (!word) continue
-      const start = word.timeSeconds >= 0 ? word.timeSeconds : line.timeSeconds
-      const end = nextWord?.timeSeconds ?? line.timeSeconds + 4
-      if (t >= start && t < end) {
-        found = w
-        break
-      }
-    }
-    map.set(i, found)
-  }
-  return map
-})
-
-const lyricsContainer = ref<HTMLElement | null>(null)
-const lyricLinesRef = ref<HTMLElement[]>([])
-
-let autoScrollTimer: ReturnType<typeof setTimeout> | null = null
-
-watch(activeLineIndex, (idx) => {
-  if (autoScrollTimer) clearTimeout(autoScrollTimer)
-  autoScrollTimer = setTimeout(() => {
-    if (idx < 0 || !lyricsContainer.value) return
-    const target = lyricLinesRef.value[idx]
-    target?.scrollIntoView({ block: 'center', behavior: 'smooth' })
-  }, 80)
-})
-
 async function fetchLyrics(trackId: string) {
   lyricsLoading.value = true
   lyricsError.value = false
@@ -455,7 +330,6 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  if (autoScrollTimer) clearTimeout(autoScrollTimer)
 })
 </script>
 

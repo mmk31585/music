@@ -28,7 +28,7 @@ func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) TrackExists(ctx context.Context, trackID int64) (bool, error) {
+func (r *Repository) TrackExists(ctx context.Context, trackID string) (bool, error) {
 	var exists bool
 	err := r.db.QueryRowContext(ctx,
 		`SELECT EXISTS(SELECT 1 FROM tracks WHERE id = $1)`,
@@ -37,7 +37,7 @@ func (r *Repository) TrackExists(ctx context.Context, trackID int64) (bool, erro
 	return exists, err
 }
 
-func (r *Repository) AlbumExists(ctx context.Context, albumID int64) (bool, error) {
+func (r *Repository) AlbumExists(ctx context.Context, albumID string) (bool, error) {
 	var exists bool
 	err := r.db.QueryRowContext(ctx,
 		`SELECT EXISTS(SELECT 1 FROM albums WHERE id = $1)`,
@@ -46,7 +46,7 @@ func (r *Repository) AlbumExists(ctx context.Context, albumID int64) (bool, erro
 	return exists, err
 }
 
-func (r *Repository) ArtistExists(ctx context.Context, artistID int64) (bool, error) {
+func (r *Repository) ArtistExists(ctx context.Context, artistID string) (bool, error) {
 	var exists bool
 	err := r.db.QueryRowContext(ctx,
 		`SELECT EXISTS(SELECT 1 FROM artists WHERE id = $1)`,
@@ -55,7 +55,7 @@ func (r *Repository) ArtistExists(ctx context.Context, artistID int64) (bool, er
 	return exists, err
 }
 
-func (r *Repository) LikeTrack(ctx context.Context, userID, trackID int64) error {
+func (r *Repository) LikeTrack(ctx context.Context, userID, trackID string) error {
 	_, err := r.db.ExecContext(ctx,
 		`INSERT INTO liked_tracks (user_id, track_id) VALUES ($1, $2)`,
 		userID, trackID,
@@ -69,7 +69,7 @@ func (r *Repository) LikeTrack(ctx context.Context, userID, trackID int64) error
 	return nil
 }
 
-func (r *Repository) UnlikeTrack(ctx context.Context, userID, trackID int64) error {
+func (r *Repository) UnlikeTrack(ctx context.Context, userID, trackID string) error {
 	res, err := r.db.ExecContext(ctx,
 		`DELETE FROM liked_tracks WHERE user_id = $1 AND track_id = $2`,
 		userID, trackID,
@@ -88,7 +88,7 @@ func (r *Repository) UnlikeTrack(ctx context.Context, userID, trackID int64) err
 	return nil
 }
 
-func (r *Repository) LikeAlbum(ctx context.Context, userID, albumID int64) error {
+func (r *Repository) LikeAlbum(ctx context.Context, userID, albumID string) error {
 	_, err := r.db.ExecContext(ctx,
 		`INSERT INTO liked_albums (user_id, album_id) VALUES ($1, $2)`,
 		userID, albumID,
@@ -102,7 +102,7 @@ func (r *Repository) LikeAlbum(ctx context.Context, userID, albumID int64) error
 	return nil
 }
 
-func (r *Repository) UnlikeAlbum(ctx context.Context, userID, albumID int64) error {
+func (r *Repository) UnlikeAlbum(ctx context.Context, userID, albumID string) error {
 	res, err := r.db.ExecContext(ctx,
 		`DELETE FROM liked_albums WHERE user_id = $1 AND album_id = $2`,
 		userID, albumID,
@@ -121,7 +121,7 @@ func (r *Repository) UnlikeAlbum(ctx context.Context, userID, albumID int64) err
 	return nil
 }
 
-func (r *Repository) FollowArtist(ctx context.Context, userID, artistID int64) error {
+func (r *Repository) FollowArtist(ctx context.Context, userID, artistID string) error {
 	_, err := r.db.ExecContext(ctx,
 		`INSERT INTO followed_artists (user_id, artist_id) VALUES ($1, $2)`,
 		userID, artistID,
@@ -135,7 +135,7 @@ func (r *Repository) FollowArtist(ctx context.Context, userID, artistID int64) e
 	return nil
 }
 
-func (r *Repository) UnfollowArtist(ctx context.Context, userID, artistID int64) error {
+func (r *Repository) UnfollowArtist(ctx context.Context, userID, artistID string) error {
 	res, err := r.db.ExecContext(ctx,
 		`DELETE FROM followed_artists WHERE user_id = $1 AND artist_id = $2`,
 		userID, artistID,
@@ -154,7 +154,7 @@ func (r *Repository) UnfollowArtist(ctx context.Context, userID, artistID int64)
 	return nil
 }
 
-func (r *Repository) AddPlayHistory(ctx context.Context, userID, trackID int64) error {
+func (r *Repository) AddPlayHistory(ctx context.Context, userID, trackID string) error {
 	_, err := r.db.ExecContext(ctx,
 		`INSERT INTO play_history (user_id, track_id) VALUES ($1, $2)`,
 		userID, trackID,
@@ -162,7 +162,7 @@ func (r *Repository) AddPlayHistory(ctx context.Context, userID, trackID int64) 
 	return err
 }
 
-func (r *Repository) ListLikedTracks(ctx context.Context, userID int64) ([]LibraryTrackItem, error) {
+func (r *Repository) ListLikedTracks(ctx context.Context, userID string) ([]LibraryTrackItem, error) {
 	query := `
 		SELECT
 			t.id,
@@ -214,7 +214,7 @@ func (r *Repository) ListLikedTracks(ctx context.Context, userID int64) ([]Libra
 	return items, rows.Err()
 }
 
-func (r *Repository) ListLikedAlbums(ctx context.Context, userID int64) ([]LibraryAlbumItem, error) {
+func (r *Repository) ListLikedAlbums(ctx context.Context, userID string) ([]LibraryAlbumItem, error) {
 	query := `
 		SELECT
 			al.id,
@@ -257,7 +257,7 @@ func (r *Repository) ListLikedAlbums(ctx context.Context, userID int64) ([]Libra
 	return items, rows.Err()
 }
 
-func (r *Repository) ListFollowedArtists(ctx context.Context, userID int64) ([]LibraryArtistItem, error) {
+func (r *Repository) ListFollowedArtists(ctx context.Context, userID string) ([]LibraryArtistItem, error) {
 	query := `
 		SELECT
 			ar.id,
@@ -293,7 +293,7 @@ func (r *Repository) ListFollowedArtists(ctx context.Context, userID int64) ([]L
 	return items, rows.Err()
 }
 
-func (r *Repository) ListPlayHistory(ctx context.Context, userID int64, limit int) ([]LibraryTrackItem, error) {
+func (r *Repository) ListPlayHistory(ctx context.Context, userID string, limit int) ([]LibraryTrackItem, error) {
 	query := `
 		SELECT
 			t.id,
@@ -346,7 +346,7 @@ func (r *Repository) ListPlayHistory(ctx context.Context, userID int64, limit in
 	return items, rows.Err()
 }
 
-func (r *Repository) ListRecentlyPlayed(ctx context.Context, userID int64, limit int) ([]LibraryTrackItem, error) {
+func (r *Repository) ListRecentlyPlayed(ctx context.Context, userID string, limit int) ([]LibraryTrackItem, error) {
 	query := `
 		SELECT
 			t.id,

@@ -9,8 +9,11 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
@@ -21,9 +24,10 @@ import (
 )
 
 const (
-	MaxUploadSize     = 200 << 20
-	StorageAudioDir   = "ingestion-audio"
-	StorageCoverDir   = "ingestion-covers"
+	MaxUploadSize       = 200 << 20
+	StorageAudioDir     = "ingestion-audio"
+	StorageCoverDir     = "ingestion-covers"
+	StorageEnrichDir    = "enrichment-images"
 )
 
 type Service struct {
@@ -74,6 +78,35 @@ func (s *Service) enrichAsync(draftID, title, artist, album string) {
 		return
 	}
 
+	if result.Spotify != nil {
+		if result.Spotify.AlbumCoverURL != "" {
+			if localURL, err := s.downloadAndStoreImage(ctx, result.Spotify.AlbumCoverURL, draftID, "album-cover"); err != nil {
+				zap.L().Warn("failed to download album cover", zap.String("draft_id", draftID), zap.Error(err))
+			} else {
+				result.Spotify.AlbumCoverURL = localURL
+				for i, sug := range result.Suggestions {
+					if sug.Field == "album_cover_url" {
+						result.Suggestions[i].Value = localURL
+						break
+					}
+				}
+			}
+		}
+		if result.Spotify.ArtistImageURL != "" {
+			if localURL, err := s.downloadAndStoreImage(ctx, result.Spotify.ArtistImageURL, draftID, "artist-image"); err != nil {
+				zap.L().Warn("failed to download artist image", zap.String("draft_id", draftID), zap.Error(err))
+			} else {
+				result.Spotify.ArtistImageURL = localURL
+				for i, sug := range result.Suggestions {
+					if sug.Field == "artist_image_url" {
+						result.Suggestions[i].Value = localURL
+						break
+					}
+				}
+			}
+		}
+	}
+
 	enrichedJSON, err := enrichment.SerializeResult(result)
 	if err != nil {
 		zap.L().Error("failed to serialize enrichment", zap.String("draft_id", draftID), zap.Error(err))
@@ -82,15 +115,62 @@ func (s *Service) enrichAsync(draftID, title, artist, album string) {
 	}
 
 	newStatus := DraftStatusReview
-	if len(result.Suggestions) == 0 {
-		newStatus = DraftStatusEnrichmentFailed
-	}
 
 	if err := s.repo.UpdateDraftEnrichedMetadata(ctx, draftID, enrichedJSON, newStatus); err != nil {
 		zap.L().Error("failed to save enrichment", zap.String("draft_id", draftID), zap.Error(err))
 		_ = s.repo.UpdateDraftStatus(ctx, draftID, DraftStatusEnrichmentFailed)
 		return
 	}
+}
+
+func (s *Service) downloadAndStoreImage(ctx context.Context, imageURL, draftID, suffix string) (string, error) {
+	parsed, err := url.Parse(imageURL)
+	if err != nil {
+		return "", fmt.Errorf("parse url: %w", err)
+	}
+
+	ext := filepath.Ext(parsed.Path)
+	if ext == "" {
+		ext = ".jpg"
+	}
+	key := fmt.Sprintf("%s/%s-%s%s", StorageEnrichDir, draftID, suffix, ext)
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, imageURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("create request: %w", err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("download: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("download returned status %d", resp.StatusCode)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("read body: %w", err)
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "image/jpeg"
+	}
+
+	if err := s.storage.Upload(ctx, key, bytes.NewReader(data), int64(len(data)), contentType); err != nil {
+		return "", fmt.Errorf("store: %w", err)
+	}
+
+	localURL, err := s.storage.GetURL(ctx, key)
+	if err != nil {
+		return "", fmt.Errorf("get url: %w", err)
+	}
+
+	return localURL, nil
 }
 
 func (s *Service) GetDraftSuggestions(ctx context.Context, id string) (*enrichment.EnrichmentResult, error) {
@@ -103,7 +183,7 @@ func (s *Service) GetDraftSuggestions(ctx context.Context, id string) (*enrichme
 	}
 
 	if draft.EnrichedMetadata == nil || *draft.EnrichedMetadata == "" {
-		return &enrichment.EnrichmentResult{Attempted: false}, nil
+		return &enrichment.EnrichmentResult{Suggestions: []enrichment.EnrichedSuggestion{}, Attempted: false}, nil
 	}
 
 	return enrichment.DeserializeResult(*draft.EnrichedMetadata)
@@ -465,6 +545,47 @@ func (s *Service) SearchAlbums(ctx context.Context, q string) ([]AlbumSearchResu
 	}
 	const limit = 20
 	return s.repo.SearchAlbums(ctx, q, limit)
+}
+
+func (s *Service) UploadDraftImage(ctx context.Context, draftID, entityType string, file multipart.File, ext string) (string, error) {
+	draft, err := s.repo.GetDraftByID(ctx, draftID)
+	if err != nil {
+		return "", err
+	}
+	if draft == nil {
+		return "", ErrDraftNotFound
+	}
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return "", fmt.Errorf("read file: %w", err)
+	}
+
+	imageKey := fmt.Sprintf("%s/%s-%s-image%s", StorageEnrichDir, draftID, entityType, ext)
+	mime := detectImageMime(ext)
+
+	if err := s.storage.Upload(ctx, imageKey, bytes.NewReader(content), int64(len(content)), mime); err != nil {
+		return "", fmt.Errorf("store image: %w", err)
+	}
+
+	imageURL, err := s.storage.GetURL(ctx, imageKey)
+	if err != nil {
+		_ = s.storage.Delete(ctx, imageKey)
+		return "", fmt.Errorf("get url: %w", err)
+	}
+
+	return imageURL, nil
+}
+
+func detectImageMime(ext string) string {
+	switch ext {
+	case ".png":
+		return "image/png"
+	case ".webp":
+		return "image/webp"
+	default:
+		return "image/jpeg"
+	}
 }
 
 func (s *Service) GetDraftRaw(ctx context.Context, id string) (*IngestionDraft, error) {

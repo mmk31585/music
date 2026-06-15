@@ -119,8 +119,12 @@ func TestSearch_WithMockOS_ServerError(t *testing.T) {
 	client := newOSClientForTest(t, ts.URL)
 	svc := NewService(client.Client())
 
-	_, err := svc.Search(context.Background(), "test", 10)
-	require.Error(t, err)
+	resp, err := svc.Search(context.Background(), "test", 10)
+	require.NoError(t, err)
+	require.Empty(t, resp.Tracks)
+	require.Empty(t, resp.Albums)
+	require.Empty(t, resp.Artists)
+	require.Empty(t, resp.Playlists)
 }
 
 // -- helpers --

@@ -6,6 +6,7 @@ import (
 	"music/internal/modules/auth"
 	"music/internal/modules/catalog"
 	"music/internal/modules/creator"
+	"music/internal/modules/dashboard"
 	"music/internal/modules/follow"
 	"music/internal/modules/gamification"
 	"music/internal/modules/health"
@@ -13,6 +14,7 @@ import (
 	"music/internal/modules/ingestion"
 	"music/internal/modules/library"
 	"music/internal/modules/lyrics"
+	"music/internal/modules/moderation"
 	"music/internal/modules/media"
 	"music/internal/modules/notification"
 	"music/internal/modules/player"
@@ -70,6 +72,8 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 
 	analytics.RegisterRoutes(api, c.AnalyticsHandler)
 	notification.RegisterRoutes(api, c.NotificationHandler, c.AuthMW)
+	moderation.RegisterRoutes(api, c.ModerationHandler, c.AuthMW)
+	dashboard.RegisterAdminRoutes(api, c.DashboardHandler, c.AuthMW)
 	subscription.RegisterRoutes(api, c.SubscriptionHandler, c.AuthMW)
 
 	player.RegisterPublicRoutes(api, c.PlayerHandler)

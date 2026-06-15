@@ -3,6 +3,8 @@ package ingestion
 import (
 	"errors"
 	"net/http"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -188,8 +190,9 @@ func (h *Handler) RejectDraft(c *gin.Context) {
 	}
 
 	var req RejectDraftRequest
-	req.Reason = c.DefaultQuery("reason", "")
-	_ = c.ShouldBindJSON(&req)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		req.Reason = c.DefaultQuery("reason", "")
+	}
 
 	if err := h.service.RejectDraft(c.Request.Context(), id, req.Reason); err != nil {
 		if errors.Is(err, ErrDraftNotFound) {
@@ -252,7 +255,7 @@ func (h *Handler) FinalizeDraft(c *gin.Context) {
 
 	result, err := h.finalizer.Finalize(c.Request.Context(), draft.ID, string(draft.Status), draft.FilePath, draft.Format, finalMeta)
 	if err != nil {
-		response.Error(c, appErr.Internal("failed to finalize draft", err))
+		response.Error(c, appErr.Internal("failed to finalize draft: "+err.Error(), err))
 		return
 	}
 
@@ -295,6 +298,45 @@ func (h *Handler) TriggerCleanup(c *gin.Context) {
 		return
 	}
 	response.OK(c, "cleanup completed", gin.H{"flagged": flagged})
+}
+
+func (h *Handler) UploadDraftImage(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		response.Error(c, appErr.BadRequest("draft ID is required", nil))
+		return
+	}
+
+	entityType := c.Param("entity")
+	if entityType != "artist" && entityType != "album" && entityType != "track" && entityType != "cover" {
+		response.Error(c, appErr.BadRequest("entity must be 'artist', 'album', 'track', or 'cover'", nil))
+		return
+	}
+
+	file, header, err := c.Request.FormFile("image")
+	if err != nil {
+		response.Error(c, appErr.BadRequest("no image file provided in 'image' field", err))
+		return
+	}
+	defer file.Close()
+
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".webp" {
+		response.Error(c, appErr.BadRequest("unsupported image format (allowed: jpg, png, webp)", nil))
+		return
+	}
+
+	imageURL, err := h.service.UploadDraftImage(c.Request.Context(), id, entityType, file, ext)
+	if err != nil {
+		if errors.Is(err, ErrDraftNotFound) {
+			response.Error(c, appErr.NotFound("draft not found", nil))
+			return
+		}
+		response.Error(c, appErr.Internal("failed to upload image", err))
+		return
+	}
+
+	response.OK(c, "image uploaded", gin.H{"url": imageURL})
 }
 
 func (h *Handler) GetConfig(c *gin.Context) {

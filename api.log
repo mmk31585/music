@@ -1,11 +1,10 @@
-2026-06-15T21:31:57.438+0330	INFO	app/bootstrap.go:33	running database migrations
-2026/06/15 21:31:57 goose: no migrations to run. current version: 27
+2026-06-15T22:26:20.811+0330	INFO	app/bootstrap.go:33	running database migrations
+2026/06/15 22:26:20 goose: no migrations to run. current version: 27
 [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
  - using env:	export GIN_MODE=release
  - using code:	gin.SetMode(gin.ReleaseMode)
 
-[GIN-debug] GET    /uploads/*filepath        --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (5 handlers)
-[GIN-debug] HEAD   /uploads/*filepath        --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (5 handlers)
+[GIN-debug] GET    /uploads/*filepath        --> music/internal/app.registerMediaRoutes.func1 (5 handlers)
 [GIN-debug] GET    /api/v1/swagger/*any      --> github.com/swaggo/gin-swagger.CustomWrapHandler.func1 (5 handlers)
 [GIN-debug] GET    /api/v1/metrics           --> music/internal/app.(*App).RegisterRoutes.WrapH.func3 (5 handlers)
 [GIN-debug] GET    /api/v1/favicon.ico       --> music/internal/app.(*App).RegisterRoutes.func1 (5 handlers)
@@ -124,6 +123,16 @@
 [GIN-debug] GET    /api/v1/notifications     --> music/internal/modules/notification.(*Handler).ListNotifications-fm (6 handlers)
 [GIN-debug] POST   /api/v1/notifications/:id/read --> music/internal/modules/notification.(*Handler).MarkAsRead-fm (6 handlers)
 [GIN-debug] POST   /api/v1/notifications/read-all --> music/internal/modules/notification.(*Handler).MarkAllAsRead-fm (6 handlers)
+[GIN-debug] POST   /api/v1/moderation/report --> music/internal/modules/moderation.(*Handler).Report-fm (5 handlers)
+[GIN-debug] GET    /api/v1/moderation/pending --> music/internal/modules/moderation.(*Handler).ListPending-fm (6 handlers)
+[GIN-debug] GET    /api/v1/moderation/status/:status --> music/internal/modules/moderation.(*Handler).ListByStatus-fm (6 handlers)
+[GIN-debug] GET    /api/v1/moderation/reports/:id --> music/internal/modules/moderation.(*Handler).GetReport-fm (6 handlers)
+[GIN-debug] POST   /api/v1/moderation/resolve/:id --> music/internal/modules/moderation.(*Handler).Resolve-fm (6 handlers)
+[GIN-debug] POST   /api/v1/moderation/bulk   --> music/internal/modules/moderation.(*Handler).BulkAction-fm (6 handlers)
+[GIN-debug] POST   /api/v1/moderation/flag   --> music/internal/modules/moderation.(*Handler).FlagContent-fm (6 handlers)
+[GIN-debug] GET    /api/v1/moderation/flags  --> music/internal/modules/moderation.(*Handler).ListFlags-fm (6 handlers)
+[GIN-debug] GET    /api/v1/moderation/stats  --> music/internal/modules/moderation.(*Handler).GetStats-fm (6 handlers)
+[GIN-debug] GET    /api/v1/moderation/actions --> music/internal/modules/moderation.(*Handler).GetActions-fm (6 handlers)
 [GIN-debug] GET    /api/v1/subscription/plans --> music/internal/modules/subscription.(*Handler).ListPlans-fm (5 handlers)
 [GIN-debug] GET    /api/v1/subscription/me   --> music/internal/modules/subscription.(*Handler).CurrentSubscription-fm (6 handlers)
 [GIN-debug] GET    /api/v1/subscription/history --> music/internal/modules/subscription.(*Handler).ListSubscriptions-fm (6 handlers)
@@ -197,8 +206,8 @@
 [GIN-debug] POST   /api/v1/social/clubs/:id/posts --> music/internal/modules/social.(*Handler).CreateClubPost-fm (6 handlers)
 [GIN-debug] POST   /api/v1/social/discussions --> music/internal/modules/social.(*Handler).CreateDiscussion-fm (6 handlers)
 [GIN-debug] POST   /api/v1/social/ratings    --> music/internal/modules/social.(*Handler).CreateRating-fm (6 handlers)
-2026-06-15T21:31:57.462+0330	INFO	api/main.go:44	starting server	{"addr": "0.0.0.0:8080", "env": "development"}
-2026-06-15T21:32:02.642+0330	WARN	middleware/logger.go:68	http request	{"request_id": "", "status": 401, "method": "GET", "path": "/api/v1/social/feed", "ip": "::1", "user_agent": "curl/8.18.0", "referer": "", "latency": "133.048µs", "body_size": 75}
+2026-06-15T22:26:20.835+0330	INFO	api/main.go:44	starting server	{"addr": "0.0.0.0:8080", "env": "development"}
+2026-06-15T22:26:22.822+0330	WARN	middleware/logger.go:68	http request	{"request_id": "", "status": 401, "method": "GET", "path": "/api/v1/moderation/stats", "ip": "::1", "user_agent": "curl/8.18.0", "referer": "", "latency": "4.380966ms", "body_size": 75}
 music/internal/app.Bootstrap.GinZapLogger.func2
 	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:68
 github.com/gin-gonic/gin.(*Context).Next
@@ -219,9 +228,116 @@ net/http.serverHandler.ServeHTTP
 	/usr/lib/golang/src/net/http/server.go:3311
 net/http.(*conn).serve
 	/usr/lib/golang/src/net/http/server.go:2073
-2026-06-15T21:32:24.668+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/auth/me", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/search", "latency": "2.543072ms", "body_size": 186, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
-2026-06-15T21:32:24.757+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/search", "latency": "2.970154ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
-2026-06-15T21:32:28.778+0330	ERROR	middleware/logger.go:66	http request	{"request_id": "", "status": 500, "method": "GET", "path": "/api/v1/catalog/search?q=woa&limit=20", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/search", "latency": "37.250231ms", "body_size": 43, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:26:26.980+0330	WARN	middleware/logger.go:68	http request	{"request_id": "", "status": 401, "method": "GET", "path": "/api/v1/moderation/flags", "ip": "::1", "user_agent": "curl/8.18.0", "referer": "", "latency": "34.712µs", "body_size": 75}
+music/internal/app.Bootstrap.GinZapLogger.func2
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:68
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/common/middleware.CORS.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/cors.go:57
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/app.Bootstrap.SecurityHeaders.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/security.go:15
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+github.com/gin-gonic/gin.(*Engine).handleHTTPRequest
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:722
+github.com/gin-gonic/gin.(*Engine).ServeHTTP
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:672
+net/http.serverHandler.ServeHTTP
+	/usr/lib/golang/src/net/http/server.go:3311
+net/http.(*conn).serve
+	/usr/lib/golang/src/net/http/server.go:2073
+2026-06-15T22:26:26.988+0330	WARN	middleware/logger.go:68	http request	{"request_id": "", "status": 401, "method": "GET", "path": "/api/v1/moderation/pending", "ip": "::1", "user_agent": "curl/8.18.0", "referer": "", "latency": "40.648µs", "body_size": 75}
+music/internal/app.Bootstrap.GinZapLogger.func2
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:68
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/common/middleware.CORS.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/cors.go:57
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/app.Bootstrap.SecurityHeaders.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/security.go:15
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+github.com/gin-gonic/gin.(*Engine).handleHTTPRequest
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:722
+github.com/gin-gonic/gin.(*Engine).ServeHTTP
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:672
+net/http.serverHandler.ServeHTTP
+	/usr/lib/golang/src/net/http/server.go:3311
+net/http.(*conn).serve
+	/usr/lib/golang/src/net/http/server.go:2073
+2026-06-15T22:26:26.996+0330	WARN	middleware/logger.go:68	http request	{"request_id": "", "status": 401, "method": "GET", "path": "/api/v1/moderation/stats", "ip": "::1", "user_agent": "curl/8.18.0", "referer": "", "latency": "31.708µs", "body_size": 75}
+music/internal/app.Bootstrap.GinZapLogger.func2
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:68
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/common/middleware.CORS.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/cors.go:57
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/app.Bootstrap.SecurityHeaders.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/security.go:15
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+github.com/gin-gonic/gin.(*Engine).handleHTTPRequest
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:722
+github.com/gin-gonic/gin.(*Engine).ServeHTTP
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:672
+net/http.serverHandler.ServeHTTP
+	/usr/lib/golang/src/net/http/server.go:3311
+net/http.(*conn).serve
+	/usr/lib/golang/src/net/http/server.go:2073
+2026-06-15T22:27:17.488+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 304, "method": "GET", "path": "/uploads/ingestion-covers/01KV69WZJQJEWDTVF75RRV15A2-cover.jpg", "ip": "127.0.0.1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "388.809µs", "body_size": -1}
+2026-06-15T22:27:28.454+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "PATCH", "path": "/api/v1/admin/ingestion/drafts/01KV69WZJQJEWDTVF75RRV15A2/final-metadata", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin/ingestion/review/01KV69WZJQJEWDTVF75RRV15A2", "latency": "6.672686ms", "body_size": 68, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:28.616+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "POST", "path": "/api/v1/admin/ingestion/drafts/01KV69WZJQJEWDTVF75RRV15A2/finalize", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin/ingestion/review/01KV69WZJQJEWDTVF75RRV15A2", "latency": "148.161206ms", "body_size": 724, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:32.386+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/artists", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin/catalog", "latency": "5.331164ms", "body_size": 174, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:32.391+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/tracks", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin/catalog", "latency": "16.005435ms", "body_size": 883, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:32.391+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/genres", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin/catalog", "latency": "5.099429ms", "body_size": 140, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:32.394+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin/catalog", "latency": "11.951329ms", "body_size": 477, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:32.431+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/uploads/catalog-covers/c60c8c29-3c46-40ca-9c3e-92859c263c6d/cover.jpg", "ip": "127.0.0.1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "6.239527ms", "body_size": 291819}
+2026-06-15T22:27:35.933+0330	INFO	ws/hub.go:84	ws client connected	{"user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:35.933+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/ws?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYmM5MDU4My1mNGExLTRiZmUtYjIyZC04ZGVmZDExODkwYzEiLCJlbWFpbCI6ImFkbWluQGV4YW1wbGUuY29tIiwicm9sZSI6ImFkbWluIiwic3ViIjoiZmJjOTA1ODMtZjRhMS00YmZlLWIyMmQtOGRlZmQxMTg5MGMxIiwiZXhwIjoxNzgxNTUwNTcyLCJpYXQiOjE3ODE1NDk2NzIsImp0aSI6IjQ0M2YyYjJiLTY3Y2EtNGZkOS1hNTY0LWIwODZmY2NjNTNkOCJ9.GutDxQlAAt2T4ckLO5SH79-CjAuPUWbhHzMklYQDgdg", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "", "latency": "164.547µs", "body_size": 0}
+2026-06-15T22:27:35.959+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "6.025112ms", "body_size": 477, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:35.959+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/artists", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.667612ms", "body_size": 174, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:36.140+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "3.482801ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:36.141+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/recent?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "4.425735ms", "body_size": 65, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:36.148+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/popular?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "15.146172ms", "body_size": 66}
+2026-06-15T22:27:36.150+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/recently-played", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "12.596108ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:36.153+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/for-you?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "20.050254ms", "body_size": 64, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:38.233+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "3.333409ms", "body_size": 475, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:38.242+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "3.173262ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:38.270+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/tracks", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "5.917835ms", "body_size": 883, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:38.370+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "1.512914ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:38.546+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/uploads/ingestion-covers/01KV69WZJQJEWDTVF75RRV15A2-cover.jpg", "ip": "127.0.0.1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "571.027µs", "body_size": 291819}
+2026-06-15T22:27:40.011+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/popular?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "5.362732ms", "body_size": 66}
+2026-06-15T22:27:40.023+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/for-you?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "8.883947ms", "body_size": 64, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:40.032+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/recent?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "2.724459ms", "body_size": 65, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:40.040+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "5.885987ms", "body_size": 477, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:40.043+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/artists", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "4.407716ms", "body_size": 174, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:40.047+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/recently-played", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "5.843175ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:40.050+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.830134ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:43.881+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "1.851087ms", "body_size": 475, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:43.883+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "1.03268ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:43.909+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/tracks", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "2.457384ms", "body_size": 883, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:43.910+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "1.544691ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:53.162+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/popular?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "4.445151ms", "body_size": 66}
+2026-06-15T22:27:53.173+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/recent?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.996078ms", "body_size": 65, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:53.174+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/for-you?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "10.777498ms", "body_size": 64, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:53.181+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/artists", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.641213ms", "body_size": 174, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:53.181+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "3.860436ms", "body_size": 477, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:53.186+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/recently-played", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.470869ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:53.191+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "2.524292ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:54.566+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/artists/7176fd45-0665-4bdd-a760-0bbf781df3d6", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "2.257846ms", "body_size": 172, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:54.571+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/tracks", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "3.89382ms", "body_size": 883, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:54.572+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "1.996777ms", "body_size": 477, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:54.580+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "1.275591ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:54.769+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/artists", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "1.272447ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:56.078+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/uploads/catalog-covers/c60c8c29-3c46-40ca-9c3e-92859c263c6d/cover.jpg", "ip": "127.0.0.1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "", "latency": "834.609µs", "body_size": 291819}
+2026-06-15T22:27:56.093+0330	ERROR	middleware/logger.go:66	http request	{"request_id": "", "status": 500, "method": "GET", "path": "/api/v1/recommendations/similar/f0341083-7ac7-4036-8505-ee7b86967637?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "1.889081ms", "body_size": 60}
 music/internal/app.Bootstrap.GinZapLogger.func2
 	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:66
 github.com/gin-gonic/gin.(*Context).Next
@@ -242,61 +358,22 @@ net/http.serverHandler.ServeHTTP
 	/usr/lib/golang/src/net/http/server.go:3311
 net/http.(*conn).serve
 	/usr/lib/golang/src/net/http/server.go:2073
-2026-06-15T21:32:35.555+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/popular?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "5.289244ms", "body_size": 66}
-2026-06-15T21:32:35.564+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/recent?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "2.569193ms", "body_size": 65, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
-2026-06-15T21:32:35.565+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/for-you?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "11.282493ms", "body_size": 64, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
-2026-06-15T21:32:35.566+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "2.361555ms", "body_size": 2, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
-2026-06-15T21:32:35.569+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/artists", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "3.034827ms", "body_size": 2, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
-2026-06-15T21:32:35.575+0330	WARN	middleware/logger.go:68	http request	{"request_id": "", "status": 401, "method": "GET", "path": "/api/v1/library/recently-played", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "117.892µs", "body_size": 42, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
-music/internal/app.Bootstrap.GinZapLogger.func2
-	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:68
-github.com/gin-gonic/gin.(*Context).Next
-	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
-music/internal/common/middleware.CORS.func1
-	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/cors.go:57
-github.com/gin-gonic/gin.(*Context).Next
-	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
-music/internal/app.Bootstrap.SecurityHeaders.func1
-	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/security.go:15
-github.com/gin-gonic/gin.(*Context).Next
-	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
-github.com/gin-gonic/gin.(*Engine).handleHTTPRequest
-	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:722
-github.com/gin-gonic/gin.(*Engine).ServeHTTP
-	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:672
-net/http.serverHandler.ServeHTTP
-	/usr/lib/golang/src/net/http/server.go:3311
-net/http.(*conn).serve
-	/usr/lib/golang/src/net/http/server.go:2073
-2026-06-15T21:32:35.578+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.359397ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
-2026-06-15T21:32:35.636+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "POST", "path": "/api/v1/auth/refresh", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "24.011475ms", "body_size": 1014}
-2026-06-15T21:32:35.658+0330	WARN	middleware/logger.go:68	http request	{"request_id": "", "status": 401, "method": "GET", "path": "/api/v1/library/recently-played", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "131.512µs", "body_size": 42, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
-music/internal/app.Bootstrap.GinZapLogger.func2
-	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:68
-github.com/gin-gonic/gin.(*Context).Next
-	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
-music/internal/common/middleware.CORS.func1
-	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/cors.go:57
-github.com/gin-gonic/gin.(*Context).Next
-	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
-music/internal/app.Bootstrap.SecurityHeaders.func1
-	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/security.go:15
-github.com/gin-gonic/gin.(*Context).Next
-	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
-github.com/gin-gonic/gin.(*Engine).handleHTTPRequest
-	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:722
-github.com/gin-gonic/gin.(*Engine).ServeHTTP
-	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:672
-net/http.serverHandler.ServeHTTP
-	/usr/lib/golang/src/net/http/server.go:3311
-net/http.(*conn).serve
-	/usr/lib/golang/src/net/http/server.go:2073
-2026-06-15T21:32:50.941+0330	INFO	ws/hub.go:84	ws client connected	{"user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
-2026-06-15T21:32:50.941+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/ws?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYmM5MDU4My1mNGExLTRiZmUtYjIyZC04ZGVmZDExODkwYzEiLCJlbWFpbCI6ImFkbWluQGV4YW1wbGUuY29tIiwicm9sZSI6InVzZXIiLCJzdWIiOiJmYmM5MDU4My1mNGExLTRiZmUtYjIyZC04ZGVmZDExODkwYzEiLCJleHAiOjE3ODE1NDY3OTEsImlhdCI6MTc4MTU0NTg5MSwianRpIjoiNWQwMzg0NGItYzlhNS00YjZkLTliNWUtMjQxZTkyNDMwMDBlIn0.uazsuSmMKFIRHWnULMy0I2ISSkl5izxqvXnbl5sNF_0", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "", "latency": "310.516µs", "body_size": 0}
-2026-06-15T21:33:20.702+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "4.241621ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
-2026-06-15T21:33:47.406+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "3.048726ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
-2026-06-15T21:33:53.079+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.868333ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
-2026-06-15T21:34:23.073+0330	ERROR	middleware/logger.go:66	http request	{"request_id": "", "status": 500, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "870.995µs", "body_size": 40, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:27:56.098+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/tracks/f0341083-7ac7-4036-8505-ee7b86967637/lyrics", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "1.843894ms", "body_size": 2304}
+2026/06/15 22:27:56 StreamTrack handler hit, id: f0341083-7ac7-4036-8505-ee7b86967637
+2026/06/15 22:27:56 {f0341083-7ac7-4036-8505-ee7b86967637 Bad Habit  Steve Lacy  0x34b5f8fd9220 http://localhost:8080/uploads/catalog-audio/7176fd45-0665-4bdd-a760-0bbf781df3d6/01KV69WZJQJEWDTVF75RRV15A2-dd5425fc82604127-1_1---bad-habit---steve-lacy-(320).mp3 0x34b5f8fd9230 0x34b5f8fc4fc0 true 2026-06-15 22:27:28.469137 +0330 +0330}
+2026/06/15 22:27:56 StreamTrack track audio_url: http://localhost:8080/uploads/catalog-audio/7176fd45-0665-4bdd-a760-0bbf781df3d6/01KV69WZJQJEWDTVF75RRV15A2-dd5425fc82604127-1_1---bad-habit---steve-lacy-(320).mp3
+2026/06/15 22:27:56 ResolveAudioURL input: http://localhost:8080/uploads/catalog-audio/7176fd45-0665-4bdd-a760-0bbf781df3d6/01KV69WZJQJEWDTVF75RRV15A2-dd5425fc82604127-1_1---bad-habit---steve-lacy-(320).mp3
+2026/06/15 22:27:56 resolved storage key: catalog-audio/7176fd45-0665-4bdd-a760-0bbf781df3d6/01KV69WZJQJEWDTVF75RRV15A2-dd5425fc82604127-1_1---bad-habit---steve-lacy-(320).mp3
+2026/06/15 22:27:56 storage.Exists result: true
+2026/06/15 22:27:56 storage.GetURL result: http://localhost:8080/uploads/catalog-audio/7176fd45-0665-4bdd-a760-0bbf781df3d6/01KV69WZJQJEWDTVF75RRV15A2-dd5425fc82604127-1_1---bad-habit---steve-lacy-(320).mp3
+2026/06/15 22:27:56 StreamTrack redirecting to: http://localhost:8080/uploads/catalog-audio/7176fd45-0665-4bdd-a760-0bbf781df3d6/01KV69WZJQJEWDTVF75RRV15A2-dd5425fc82604127-1_1---bad-habit---steve-lacy-(320).mp3
+2026-06-15T22:27:56.124+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 302, "method": "GET", "path": "/api/v1/player/tracks/f0341083-7ac7-4036-8505-ee7b86967637/stream", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "2.573461ms", "body_size": 186}
+2026-06-15T22:27:56.467+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/uploads/catalog-covers/c60c8c29-3c46-40ca-9c3e-92859c263c6d/cover.jpg", "ip": "127.0.0.1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "699.815µs", "body_size": 291819}
+2026-06-15T22:28:11.200+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 206, "method": "GET", "path": "/uploads/catalog-audio/7176fd45-0665-4bdd-a760-0bbf781df3d6/01KV69WZJQJEWDTVF75RRV15A2-dd5425fc82604127-1_1---bad-habit---steve-lacy-(320).mp3", "ip": "127.0.0.1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "15.00070483s", "body_size": 9299487}
+2026-06-15T22:28:18.411+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "2.738916ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:30:45.080+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 206, "method": "GET", "path": "/uploads/catalog-audio/7176fd45-0665-4bdd-a760-0bbf781df3d6/01KV69WZJQJEWDTVF75RRV15A2-dd5425fc82604127-1_1---bad-habit---steve-lacy-(320).mp3", "ip": "127.0.0.1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "658.329µs", "body_size": 298986}
+2026-06-15T22:38:13.268+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "2.027717ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:19.707+0330	ERROR	middleware/logger.go:66	http request	{"request_id": "", "status": 500, "method": "GET", "path": "/api/v1/recommendations/similar/f0341083-7ac7-4036-8505-ee7b86967637?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.377071ms", "body_size": 60}
 music/internal/app.Bootstrap.GinZapLogger.func2
 	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:66
 github.com/gin-gonic/gin.(*Context).Next
@@ -317,7 +394,15 @@ net/http.serverHandler.ServeHTTP
 	/usr/lib/golang/src/net/http/server.go:3311
 net/http.(*conn).serve
 	/usr/lib/golang/src/net/http/server.go:2073
-2026-06-15T21:34:53.076+0330	ERROR	middleware/logger.go:66	http request	{"request_id": "", "status": 500, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "764.487µs", "body_size": 40, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:19.722+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/tracks/f0341083-7ac7-4036-8505-ee7b86967637/lyrics", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "12.234188ms", "body_size": 2304}
+2026-06-15T22:38:19.726+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.578984ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:19.932+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/popular?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "2.771671ms", "body_size": 66}
+2026-06-15T22:38:19.940+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/for-you?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "4.879497ms", "body_size": 64, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:19.940+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/recent?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "2.598254ms", "body_size": 65, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:19.941+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/artists", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.323363ms", "body_size": 174, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:19.942+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.82336ms", "body_size": 477, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:19.946+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/recently-played", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "5.295196ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:30.383+0330	ERROR	middleware/logger.go:66	http request	{"request_id": "", "status": 500, "method": "GET", "path": "/api/v1/recommendations/similar/f0341083-7ac7-4036-8505-ee7b86967637?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/library", "latency": "3.226132ms", "body_size": 60}
 music/internal/app.Bootstrap.GinZapLogger.func2
 	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:66
 github.com/gin-gonic/gin.(*Context).Next
@@ -338,7 +423,219 @@ net/http.serverHandler.ServeHTTP
 	/usr/lib/golang/src/net/http/server.go:3311
 net/http.(*conn).serve
 	/usr/lib/golang/src/net/http/server.go:2073
-2026-06-15T21:35:23.200+0330	WARN	middleware/logger.go:68	http request	{"request_id": "", "status": 404, "method": "GET", "path": "/", "ip": "127.0.0.1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "", "latency": "25.702µs", "body_size": -1}
+2026-06-15T22:38:30.389+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/tracks/f0341083-7ac7-4036-8505-ee7b86967637/lyrics", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/library", "latency": "1.846896ms", "body_size": 2304}
+2026-06-15T22:38:30.395+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/library", "latency": "925.334µs", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:30.612+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/tracks", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/library", "latency": "1.847595ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:30.612+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/artists", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/library", "latency": "808.768µs", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:30.613+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/library", "latency": "1.895227ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:34.222+0330	ERROR	middleware/logger.go:66	http request	{"request_id": "", "status": 500, "method": "GET", "path": "/api/v1/recommendations/similar/f0341083-7ac7-4036-8505-ee7b86967637?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/recently-played", "latency": "2.514654ms", "body_size": 60}
+music/internal/app.Bootstrap.GinZapLogger.func2
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:66
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/common/middleware.CORS.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/cors.go:57
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/app.Bootstrap.SecurityHeaders.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/security.go:15
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+github.com/gin-gonic/gin.(*Engine).handleHTTPRequest
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:722
+github.com/gin-gonic/gin.(*Engine).ServeHTTP
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:672
+net/http.serverHandler.ServeHTTP
+	/usr/lib/golang/src/net/http/server.go:3311
+net/http.(*conn).serve
+	/usr/lib/golang/src/net/http/server.go:2073
+2026-06-15T22:38:34.227+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/tracks/f0341083-7ac7-4036-8505-ee7b86967637/lyrics", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/recently-played", "latency": "1.705606ms", "body_size": 2304}
+2026-06-15T22:38:34.230+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/recently-played", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/recently-played", "latency": "2.407796ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:34.234+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/recently-played", "latency": "2.813158ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:36.841+0330	ERROR	middleware/logger.go:66	http request	{"request_id": "", "status": 500, "method": "GET", "path": "/api/v1/recommendations/similar/f0341083-7ac7-4036-8505-ee7b86967637?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/discover", "latency": "1.532818ms", "body_size": 60}
+music/internal/app.Bootstrap.GinZapLogger.func2
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:66
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/common/middleware.CORS.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/cors.go:57
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/app.Bootstrap.SecurityHeaders.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/security.go:15
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+github.com/gin-gonic/gin.(*Engine).handleHTTPRequest
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:722
+github.com/gin-gonic/gin.(*Engine).ServeHTTP
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:672
+net/http.serverHandler.ServeHTTP
+	/usr/lib/golang/src/net/http/server.go:3311
+net/http.(*conn).serve
+	/usr/lib/golang/src/net/http/server.go:2073
+2026-06-15T22:38:36.848+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/tracks/f0341083-7ac7-4036-8505-ee7b86967637/lyrics", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/discover", "latency": "1.438532ms", "body_size": 2304}
+2026-06-15T22:38:36.850+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/popular?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/discover", "latency": "2.376716ms", "body_size": 66}
+2026-06-15T22:38:36.861+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/recent?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/discover", "latency": "3.372591ms", "body_size": 65, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:36.865+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/for-you?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/discover", "latency": "9.745515ms", "body_size": 64, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:36.873+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/discover", "latency": "1.68668ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:37.272+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/history?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/discover", "latency": "2.496774ms", "body_size": 78, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:37.282+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/social/feed?limit=20&types=upload", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/discover", "latency": "12.965012ms", "body_size": 78, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:47.296+0330	ERROR	middleware/logger.go:66	http request	{"request_id": "", "status": 500, "method": "GET", "path": "/api/v1/recommendations/similar/f0341083-7ac7-4036-8505-ee7b86967637?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.12599ms", "body_size": 60}
+music/internal/app.Bootstrap.GinZapLogger.func2
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:66
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/common/middleware.CORS.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/cors.go:57
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/app.Bootstrap.SecurityHeaders.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/security.go:15
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+github.com/gin-gonic/gin.(*Engine).handleHTTPRequest
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:722
+github.com/gin-gonic/gin.(*Engine).ServeHTTP
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:672
+net/http.serverHandler.ServeHTTP
+	/usr/lib/golang/src/net/http/server.go:3311
+net/http.(*conn).serve
+	/usr/lib/golang/src/net/http/server.go:2073
+2026-06-15T22:38:47.304+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/tracks/f0341083-7ac7-4036-8505-ee7b86967637/lyrics", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.064249ms", "body_size": 2304}
+2026-06-15T22:38:47.307+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/popular?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "2.490419ms", "body_size": 66}
+2026-06-15T22:38:47.319+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/for-you?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "7.85832ms", "body_size": 64, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:47.320+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/recent?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "2.559492ms", "body_size": 65, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:47.327+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "2.704623ms", "body_size": 477, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:47.329+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/artists", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.602171ms", "body_size": 174, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:47.331+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/recently-played", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "2.276982ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:47.336+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "829.232µs", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:49.559+0330	ERROR	middleware/logger.go:66	http request	{"request_id": "", "status": 500, "method": "GET", "path": "/api/v1/recommendations/similar/f0341083-7ac7-4036-8505-ee7b86967637?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "1.049862ms", "body_size": 60}
+music/internal/app.Bootstrap.GinZapLogger.func2
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:66
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/common/middleware.CORS.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/cors.go:57
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/app.Bootstrap.SecurityHeaders.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/security.go:15
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+github.com/gin-gonic/gin.(*Engine).handleHTTPRequest
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:722
+github.com/gin-gonic/gin.(*Engine).ServeHTTP
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:672
+net/http.serverHandler.ServeHTTP
+	/usr/lib/golang/src/net/http/server.go:3311
+net/http.(*conn).serve
+	/usr/lib/golang/src/net/http/server.go:2073
+2026-06-15T22:38:49.562+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/tracks/f0341083-7ac7-4036-8505-ee7b86967637/lyrics", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "826.088µs", "body_size": 2304}
+2026-06-15T22:38:49.567+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "1.403681ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:49.586+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "3.236399ms", "body_size": 475, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:49.662+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "925.892µs", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:49.918+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/tracks", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "2.98008ms", "body_size": 883, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:51.588+0330	ERROR	middleware/logger.go:66	http request	{"request_id": "", "status": 500, "method": "GET", "path": "/api/v1/recommendations/similar/f0341083-7ac7-4036-8505-ee7b86967637?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.067811ms", "body_size": 60}
+music/internal/app.Bootstrap.GinZapLogger.func2
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:66
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/common/middleware.CORS.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/cors.go:57
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/app.Bootstrap.SecurityHeaders.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/security.go:15
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+github.com/gin-gonic/gin.(*Engine).handleHTTPRequest
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:722
+github.com/gin-gonic/gin.(*Engine).ServeHTTP
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:672
+net/http.serverHandler.ServeHTTP
+	/usr/lib/golang/src/net/http/server.go:3311
+net/http.(*conn).serve
+	/usr/lib/golang/src/net/http/server.go:2073
+2026-06-15T22:38:51.592+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/tracks/f0341083-7ac7-4036-8505-ee7b86967637/lyrics", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "730.265µs", "body_size": 2304}
+2026-06-15T22:38:51.595+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/popular?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.437484ms", "body_size": 66}
+2026-06-15T22:38:51.600+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/for-you?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "4.679401ms", "body_size": 64, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:51.600+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/recent?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.404938ms", "body_size": 65, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:51.606+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/artists", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.093304ms", "body_size": 174, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:51.606+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "3.219498ms", "body_size": 477, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:51.611+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/recently-played", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.352766ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:51.612+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.444957ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:52.880+0330	ERROR	middleware/logger.go:66	http request	{"request_id": "", "status": 500, "method": "GET", "path": "/api/v1/recommendations/similar/f0341083-7ac7-4036-8505-ee7b86967637?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "1.191082ms", "body_size": 60}
+music/internal/app.Bootstrap.GinZapLogger.func2
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:66
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/common/middleware.CORS.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/cors.go:57
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/app.Bootstrap.SecurityHeaders.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/security.go:15
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+github.com/gin-gonic/gin.(*Engine).handleHTTPRequest
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:722
+github.com/gin-gonic/gin.(*Engine).ServeHTTP
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:672
+net/http.serverHandler.ServeHTTP
+	/usr/lib/golang/src/net/http/server.go:3311
+net/http.(*conn).serve
+	/usr/lib/golang/src/net/http/server.go:2073
+2026-06-15T22:38:52.884+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/tracks/f0341083-7ac7-4036-8505-ee7b86967637/lyrics", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "845.505µs", "body_size": 2304}
+2026-06-15T22:38:52.892+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "2.534559ms", "body_size": 477, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:52.894+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/tracks", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "6.000249ms", "body_size": 883, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:52.894+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/artists", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "1.165031ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:52.900+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "1.662584ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:38:52.913+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/artists/7176fd45-0665-4bdd-a760-0bbf781df3d6", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "1.800032ms", "body_size": 172, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:48:12.349+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/tracks/f0341083-7ac7-4036-8505-ee7b86967637/lyrics", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "646.036µs", "body_size": 2304}
+2026-06-15T22:48:12.349+0330	ERROR	middleware/logger.go:66	http request	{"request_id": "", "status": 500, "method": "GET", "path": "/api/v1/recommendations/similar/f0341083-7ac7-4036-8505-ee7b86967637?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "956.344µs", "body_size": 60}
+music/internal/app.Bootstrap.GinZapLogger.func2
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:66
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/common/middleware.CORS.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/cors.go:57
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/app.Bootstrap.SecurityHeaders.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/security.go:15
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+github.com/gin-gonic/gin.(*Engine).handleHTTPRequest
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:722
+github.com/gin-gonic/gin.(*Engine).ServeHTTP
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:672
+net/http.serverHandler.ServeHTTP
+	/usr/lib/golang/src/net/http/server.go:3311
+net/http.(*conn).serve
+	/usr/lib/golang/src/net/http/server.go:2073
+2026-06-15T22:48:21.379+0330	ERROR	middleware/logger.go:66	http request	{"request_id": "", "status": 500, "method": "GET", "path": "/api/v1/recommendations/similar/f0341083-7ac7-4036-8505-ee7b86967637?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "985.677µs", "body_size": 60}
+music/internal/app.Bootstrap.GinZapLogger.func2
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:66
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/common/middleware.CORS.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/cors.go:57
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/app.Bootstrap.SecurityHeaders.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/security.go:15
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+github.com/gin-gonic/gin.(*Engine).handleHTTPRequest
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:722
+github.com/gin-gonic/gin.(*Engine).ServeHTTP
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:672
+net/http.serverHandler.ServeHTTP
+	/usr/lib/golang/src/net/http/server.go:3311
+net/http.(*conn).serve
+	/usr/lib/golang/src/net/http/server.go:2073
+2026-06-15T22:48:21.382+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/tracks/f0341083-7ac7-4036-8505-ee7b86967637/lyrics", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "742.349µs", "body_size": 2304}
+2026-06-15T22:50:56.031+0330	WARN	middleware/logger.go:68	http request	{"request_id": "", "status": 401, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "365.342µs", "body_size": 76}
 music/internal/app.Bootstrap.GinZapLogger.func2
 	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:68
 github.com/gin-gonic/gin.(*Context).Next
@@ -351,15 +648,102 @@ music/internal/app.Bootstrap.SecurityHeaders.func1
 	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/security.go:15
 github.com/gin-gonic/gin.(*Context).Next
 	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
-github.com/gin-gonic/gin.serveError
-	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:766
 github.com/gin-gonic/gin.(*Engine).handleHTTPRequest
-	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:759
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:722
 github.com/gin-gonic/gin.(*Engine).ServeHTTP
 	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:672
 net/http.serverHandler.ServeHTTP
 	/usr/lib/golang/src/net/http/server.go:3311
 net/http.(*conn).serve
 	/usr/lib/golang/src/net/http/server.go:2073
-2026-06-15T21:35:25.491+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "12.371602ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
-2026-06-15T21:36:13.855+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "3.69965ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:50:56.148+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "POST", "path": "/api/v1/auth/refresh", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "6.879487ms", "body_size": 1017}
+2026-06-15T22:50:56.196+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "1.186542ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:51:00.850+0330	INFO	ws/hub.go:99	ws client disconnected	{"user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:57:42.868+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/auth/me", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "1.391176ms", "body_size": 187, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:57:43.129+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "1.114604ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:57:43.299+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/artists", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "1.629476ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:57:43.300+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/artists/7176fd45-0665-4bdd-a760-0bbf781df3d6", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "2.452142ms", "body_size": 172, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:57:43.301+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/tracks", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "3.48126ms", "body_size": 883, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:57:43.302+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "4.464561ms", "body_size": 477, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:57:43.626+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 304, "method": "GET", "path": "/uploads/catalog-covers/c60c8c29-3c46-40ca-9c3e-92859c263c6d/cover.jpg", "ip": "127.0.0.1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "483.514µs", "body_size": -1}
+2026-06-15T22:57:43.626+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 304, "method": "GET", "path": "/uploads/ingestion-covers/01KV69WZJQJEWDTVF75RRV15A2-cover.jpg", "ip": "127.0.0.1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "440.142µs", "body_size": -1}
+2026-06-15T22:57:45.864+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "2.336693ms", "body_size": 477, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:57:45.870+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.278312ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:57:45.987+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/popular?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "2.236611ms", "body_size": 66}
+2026-06-15T22:57:45.989+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/for-you?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "9.683761ms", "body_size": 64, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:57:45.990+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/recent?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "2.777255ms", "body_size": 65, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:57:45.993+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/artists", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "2.582815ms", "body_size": 174, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:57:45.994+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/recently-played", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.329507ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:57:48.414+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "2.001384ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:57:48.494+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "2.891306ms", "body_size": 475, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:57:48.511+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/tracks", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "3.837033ms", "body_size": 883, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:57:48.689+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "1.17795ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:57:48.820+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 304, "method": "GET", "path": "/uploads/ingestion-covers/01KV69WZJQJEWDTVF75RRV15A2-cover.jpg", "ip": "127.0.0.1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "622.429µs", "body_size": -1}
+2026-06-15T22:58:00.819+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/album/c60c8c29-3c46-40ca-9c3e-92859c263c6d", "latency": "4.22214ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:02.739+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/popular?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "4.692663ms", "body_size": 66}
+2026-06-15T22:58:02.753+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/for-you?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "7.128323ms", "body_size": 64, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:02.754+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/recommendations/recent?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "2.781586ms", "body_size": 65, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:02.756+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "2.726271ms", "body_size": 477, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:02.756+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/artists", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "2.226553ms", "body_size": 174, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:02.757+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/recently-played", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "3.06626ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:02.761+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "1.745204ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:05.284+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/artists/7176fd45-0665-4bdd-a760-0bbf781df3d6", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "2.763077ms", "body_size": 172, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:05.289+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/tracks", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "3.01311ms", "body_size": 883, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:05.290+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "2.362396ms", "body_size": 477, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:05.295+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/library/artists", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "1.225023ms", "body_size": 26, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:05.297+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/notifications?limit=1", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "1.357513ms", "body_size": 36, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:07.035+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 304, "method": "GET", "path": "/uploads/catalog-covers/c60c8c29-3c46-40ca-9c3e-92859c263c6d/cover.jpg", "ip": "127.0.0.1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "", "latency": "525µs", "body_size": -1}
+2026-06-15T22:58:07.121+0330	ERROR	middleware/logger.go:66	http request	{"request_id": "", "status": 500, "method": "GET", "path": "/api/v1/recommendations/similar/f0341083-7ac7-4036-8505-ee7b86967637?limit=10", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "3.150768ms", "body_size": 60}
+music/internal/app.Bootstrap.GinZapLogger.func2
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/logger.go:66
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/common/middleware.CORS.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/cors.go:57
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+music/internal/app.Bootstrap.SecurityHeaders.func1
+	/run/media/space/6A2447ED2447BAB9/projects/music/internal/common/middleware/security.go:15
+github.com/gin-gonic/gin.(*Context).Next
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/context.go:192
+github.com/gin-gonic/gin.(*Engine).handleHTTPRequest
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:722
+github.com/gin-gonic/gin.(*Engine).ServeHTTP
+	/home/space/go/pkg/mod/github.com/gin-gonic/gin@v1.12.0/gin.go:672
+net/http.serverHandler.ServeHTTP
+	/usr/lib/golang/src/net/http/server.go:3311
+net/http.(*conn).serve
+	/usr/lib/golang/src/net/http/server.go:2073
+2026-06-15T22:58:07.123+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/tracks/f0341083-7ac7-4036-8505-ee7b86967637/lyrics", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "2.486783ms", "body_size": 2304}
+2026/06/15 22:58:07 StreamTrack handler hit, id: f0341083-7ac7-4036-8505-ee7b86967637
+2026/06/15 22:58:07 {f0341083-7ac7-4036-8505-ee7b86967637 Bad Habit  Steve Lacy  0x34b5f8257c00 http://localhost:8080/uploads/catalog-audio/7176fd45-0665-4bdd-a760-0bbf781df3d6/01KV69WZJQJEWDTVF75RRV15A2-dd5425fc82604127-1_1---bad-habit---steve-lacy-(320).mp3 0x34b5f8257c50 0x34b5f8fc4620 true 2026-06-15 22:27:28.469137 +0330 +0330}
+2026/06/15 22:58:07 StreamTrack track audio_url: http://localhost:8080/uploads/catalog-audio/7176fd45-0665-4bdd-a760-0bbf781df3d6/01KV69WZJQJEWDTVF75RRV15A2-dd5425fc82604127-1_1---bad-habit---steve-lacy-(320).mp3
+2026/06/15 22:58:07 ResolveAudioURL input: http://localhost:8080/uploads/catalog-audio/7176fd45-0665-4bdd-a760-0bbf781df3d6/01KV69WZJQJEWDTVF75RRV15A2-dd5425fc82604127-1_1---bad-habit---steve-lacy-(320).mp3
+2026/06/15 22:58:07 resolved storage key: catalog-audio/7176fd45-0665-4bdd-a760-0bbf781df3d6/01KV69WZJQJEWDTVF75RRV15A2-dd5425fc82604127-1_1---bad-habit---steve-lacy-(320).mp3
+2026/06/15 22:58:07 storage.Exists result: true
+2026/06/15 22:58:07 storage.GetURL result: http://localhost:8080/uploads/catalog-audio/7176fd45-0665-4bdd-a760-0bbf781df3d6/01KV69WZJQJEWDTVF75RRV15A2-dd5425fc82604127-1_1---bad-habit---steve-lacy-(320).mp3
+2026/06/15 22:58:07 StreamTrack redirecting to: http://localhost:8080/uploads/catalog-audio/7176fd45-0665-4bdd-a760-0bbf781df3d6/01KV69WZJQJEWDTVF75RRV15A2-dd5425fc82604127-1_1---bad-habit---steve-lacy-(320).mp3
+2026-06-15T22:58:07.293+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 302, "method": "GET", "path": "/api/v1/player/tracks/f0341083-7ac7-4036-8505-ee7b86967637/stream", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/artist/7176fd45-0665-4bdd-a760-0bbf781df3d6", "latency": "2.859389ms", "body_size": 186}
+2026-06-15T22:58:07.966+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 304, "method": "GET", "path": "/uploads/catalog-covers/c60c8c29-3c46-40ca-9c3e-92859c263c6d/cover.jpg", "ip": "127.0.0.1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "643.172µs", "body_size": -1}
+2026-06-15T22:58:19.922+0330	INFO	ws/hub.go:84	ws client connected	{"user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:19.922+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/ws?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYmM5MDU4My1mNGExLTRiZmUtYjIyZC04ZGVmZDExODkwYzEiLCJlbWFpbCI6ImFkbWluQGV4YW1wbGUuY29tIiwicm9sZSI6ImFkbWluIiwic3ViIjoiZmJjOTA1ODMtZjRhMS00YmZlLWIyMmQtOGRlZmQxMTg5MGMxIiwiZXhwIjoxNzgxNTUyMTU2LCJpYXQiOjE3ODE1NTEyNTYsImp0aSI6IjMyZDI4YmFlLTY5NmUtNDgwYS04ZGMxLTBiZTZmNWEzMDc2ZiJ9.tE7fBLNGrAqg_jlnNnAVnJOMcvV3s-0hZCARle2NAnw", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "", "latency": "411.228µs", "body_size": 0}
+2026-06-15T22:58:22.323+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 206, "method": "GET", "path": "/uploads/catalog-audio/7176fd45-0665-4bdd-a760-0bbf781df3d6/01KV69WZJQJEWDTVF75RRV15A2-dd5425fc82604127-1_1---bad-habit---steve-lacy-(320).mp3", "ip": "127.0.0.1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/", "latency": "15.000471713s", "body_size": 6570813}
+2026-06-15T22:58:31.530+0330	INFO	ws/hub.go:99	ws client disconnected	{"user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:33.696+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/auth/me", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin", "latency": "1.898018ms", "body_size": 187, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:34.306+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/tracks", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin", "latency": "2.904646ms", "body_size": 883, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:34.307+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/artists", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin", "latency": "1.17348ms", "body_size": 174, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:34.310+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/albums", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin", "latency": "1.321405ms", "body_size": 477, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:34.929+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/catalog/genres", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin", "latency": "1.156718ms", "body_size": 140, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:34.930+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/admin/ingestion/stats", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin", "latency": "1.709515ms", "body_size": 232, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:40.358+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/admin/ingestion/drafts?page=1&limit=20", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin/ingestion", "latency": "2.355271ms", "body_size": 1136, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:50.224+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 201, "method": "POST", "path": "/api/v1/admin/ingestion/upload", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin/ingestion", "latency": "135.646895ms", "body_size": 5071, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:50.284+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/admin/ingestion/drafts?page=1&limit=20", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin/ingestion", "latency": "3.984748ms", "body_size": 1779, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:52.249+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/admin/ingestion/drafts/01KV6C43EX27G1PAV4GHA9E4GX", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin/ingestion", "latency": "2.351989ms", "body_size": 4859, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T22:58:52.272+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/admin/ingestion/drafts?page=1&limit=20", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin/ingestion", "latency": "1.57507ms", "body_size": 1789, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T23:00:31.190+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/moderation/flags?limit=50", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin/moderation", "latency": "2.013955ms", "body_size": 34, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T23:00:31.192+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/moderation/pending?limit=50", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin/moderation", "latency": "2.945713ms", "body_size": 34, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T23:00:31.192+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/moderation/status/resolved?limit=50", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin/moderation", "latency": "2.356459ms", "body_size": 34, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T23:00:31.197+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/moderation/stats", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin/moderation", "latency": "6.335061ms", "body_size": 169, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T23:00:33.818+0330	INFO	middleware/logger.go:70	http request	{"request_id": "", "status": 200, "method": "GET", "path": "/api/v1/admin/ingestion/drafts?page=1&limit=20", "ip": "::1", "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0", "referer": "http://localhost:3000/admin/ingestion", "latency": "2.250439ms", "body_size": 1789, "user_id": "fbc90583-f4a1-4bfe-b22d-8defd11890c1"}
+2026-06-15T23:01:45.851+0330	INFO	api/main.go:58	shutdown signal received
+2026-06-15T23:01:45.854+0330	INFO	api/main.go:67	server stopped

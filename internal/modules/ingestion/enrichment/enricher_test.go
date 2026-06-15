@@ -12,8 +12,9 @@ func TestEnricher_AllAPIsReturnData(t *testing.T) {
 	mb := &mockMusicBrainz{result: fullMusicBrainzResult()}
 	lfm := &mockLastFM{result: fullLastFMResult()}
 	spot := &mockSpotify{result: fullSpotifyResult()}
+	lrc := &mockLRCLib{result: fullLRCLibResult()}
 
-	enricher := NewEnricher(mb, lfm, spot, zap.NewNop())
+	enricher := NewEnricher(mb, lfm, spot, lrc, zap.NewNop())
 	result, err := enricher.Enrich(context.Background(), "Test Song", "Test Artist", "Test Album")
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
@@ -59,8 +60,9 @@ func TestEnricher_PartialAPIFailure(t *testing.T) {
 	mb := &mockMusicBrainz{result: fullMusicBrainzResult()}
 	lfm := &mockLastFM{err: errors.New("rate limited")}
 	spot := &mockSpotify{result: fullSpotifyResult()}
+	lrc := &mockLRCLib{result: fullLRCLibResult()}
 
-	enricher := NewEnricher(mb, lfm, spot, zap.NewNop())
+	enricher := NewEnricher(mb, lfm, spot, lrc, zap.NewNop())
 	result, err := enricher.Enrich(context.Background(), "Test Song", "Test Artist", "")
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
@@ -85,8 +87,9 @@ func TestEnricher_AllAPIsFail(t *testing.T) {
 	mb := &mockMusicBrainz{err: errors.New("timeout")}
 	lfm := &mockLastFM{err: errors.New("not found")}
 	spot := &mockSpotify{err: errors.New("unauthorized")}
+	lrc := &mockLRCLib{result: nil}
 
-	enricher := NewEnricher(mb, lfm, spot, zap.NewNop())
+	enricher := NewEnricher(mb, lfm, spot, lrc, zap.NewNop())
 	result, err := enricher.Enrich(context.Background(), "Test Song", "Test Artist", "")
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
@@ -104,8 +107,9 @@ func TestEnricher_NoMatch(t *testing.T) {
 	mb := &mockMusicBrainz{result: nil}
 	lfm := &mockLastFM{result: nil}
 	spot := &mockSpotify{result: nil}
+	lrc := &mockLRCLib{result: nil}
 
-	enricher := NewEnricher(mb, lfm, spot, zap.NewNop())
+	enricher := NewEnricher(mb, lfm, spot, lrc, zap.NewNop())
 	result, err := enricher.Enrich(context.Background(), "Unknown Song", "Unknown Artist", "")
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
@@ -129,8 +133,9 @@ func TestEnricher_EmptyQuery(t *testing.T) {
 	mb := &mockMusicBrainz{result: fullMusicBrainzResult()}
 	lfm := &mockLastFM{result: fullLastFMResult()}
 	spot := &mockSpotify{result: fullSpotifyResult()}
+	lrc := &mockLRCLib{result: nil}
 
-	enricher := NewEnricher(mb, lfm, spot, zap.NewNop())
+	enricher := NewEnricher(mb, lfm, spot, lrc, zap.NewNop())
 	result, err := enricher.Enrich(context.Background(), "", "", "")
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
@@ -174,7 +179,7 @@ func TestSerializationRoundTrip(t *testing.T) {
 }
 
 func TestMergeResults_FullData(t *testing.T) {
-	result := MergeResults(fullMusicBrainzResult(), fullLastFMResult(), fullSpotifyResult())
+	result := MergeResults(fullMusicBrainzResult(), fullLastFMResult(), fullSpotifyResult(), nil)
 
 	fields := map[string]bool{}
 	for _, s := range result.Suggestions {
@@ -190,7 +195,7 @@ func TestMergeResults_FullData(t *testing.T) {
 }
 
 func TestMergeResults_PartialData(t *testing.T) {
-	result := MergeResults(nil, fullLastFMResult(), nil)
+	result := MergeResults(nil, fullLastFMResult(), nil, nil)
 
 	if result.MusicBrainz != nil {
 		t.Error("expected nil MusicBrainz")
@@ -216,7 +221,7 @@ func TestMergeResults_PartialData(t *testing.T) {
 }
 
 func TestMergeResult_Empty(t *testing.T) {
-	result := MergeResults(nil, nil, nil)
+	result := MergeResults(nil, nil, nil, nil)
 	if len(result.Suggestions) != 0 {
 		t.Error("expected no suggestions for empty merge")
 	}

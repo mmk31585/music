@@ -305,73 +305,14 @@
             v-if="activeTab === 'lyrics'"
             class="relative flex flex-1 flex-col overflow-hidden"
           >
-            <div class="pointer-events-none absolute inset-0 bg-black/30" />
-            <div class="relative z-10 flex-1 overflow-y-auto px-4 py-6 md:px-8">
-              <div
-                v-if="lyricsLoading"
-                class="flex flex-1 items-center justify-center"
-              >
-                <div class="w-3/4 space-y-4">
-                  <div
-                    v-for="i in 6"
-                    :key="i"
-                    class="h-5 animate-pulse rounded bg-white/[0.06]"
-                    :style="{ width: `${55 + ((i * 7) % 30)}%` }"
-                  />
-                </div>
-              </div>
-
-              <div
-                v-else-if="lyricsError || (!lyricsContent && !lyricsLoading)"
-                class="flex flex-1 flex-col items-center justify-center gap-4 text-center py-16"
-              >
-                <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5">
-                  <i class="pi pi-align-left text-3xl text-white/15" />
-                </div>
-                <p class="text-sm text-white/40">متن این آهنگ هنوز اضافه نشده</p>
-                <p class="text-xs text-white/20">لطفاً بعداً مراجعه کنید یا در تکمیل متن مشارکت کنید</p>
-                <button
-                  type="button"
-                  class="mt-2 rounded-full bg-white/10 px-5 py-2 text-xs font-medium text-white/60 transition-all hover:bg-white/20 hover:text-white"
-                  @click="goToContributions"
-                >
-                  کمک به ترجمه متن
-                </button>
-              </div>
-
-              <div
-                v-else
-                ref="lyricsContainer"
-                class="flex flex-col items-center justify-center py-8"
-              >
-                <div
-                  v-for="(line, idx) in parsedLines"
-                  :key="idx"
-                  ref="lyricLinesRef"
-                  class="cursor-pointer px-4 py-2.5 text-center leading-relaxed transition-all duration-500"
-                  :class="{
-                    'text-[20px] font-semibold text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]': idx === activeLineIndex,
-                    'text-[17px] text-[rgba(255,255,255,0.35)]': idx !== activeLineIndex && !isPastLine(idx),
-                    'text-[18px] text-[rgba(255,255,255,0.35)]': isPastLine(idx),
-                  }"
-                  @click="seekLyrics(line.timeSeconds)"
-                >
-                  <template v-if="karaokeMode && idx === activeLineIndex && line.words">
-                    <span
-                      v-for="(word, wIdx) in line.words"
-                      :key="wIdx"
-                      class="transition-all duration-150"
-                      :class="wIdx <= (activeWordMap.get(idx) ?? -1) ? 'text-[#1db954]' : 'text-white/40'"
-                    >
-                      {{ word.text }}<template v-if="wIdx < line.words.length - 1">&nbsp;</template>
-                    </span>
-                  </template>
-                  <template v-else>
-                    <span :class="idx === activeLineIndex ? 'text-white' : ''">{{ line.text }}</span>
-                  </template>
-                </div>
-              </div>
-            </div>
+            <KaraokeLyrics
+              :content="lyricsContent"
+              :type="lyricsType"
+              :current-time="currentTime"
+              :loading="lyricsLoading"
+              :karaoke="karaokeMode"
+              @seek="seekLyrics"
+            />
           </div>
 
           <div
@@ -579,10 +520,9 @@ import { useAlbumColors } from '@/composables/useAlbumColors'
 import { useLyricsApi, type Lyrics } from '@/services/api/lyrics'
 import { useRecommendationsApi, type RecommendationTrack } from '@/services/api/recommendation'
 import type { PlaybackTrack } from '@/services/api/player'
-import type { ParsedLine } from '@/composables/lyrics'
-import { parseLRCLines, parsePlainLines } from '@/composables/lyrics'
 import { onImgError } from '@/utils/helpers'
 import VisualizerSystem from './VisualizerSystem.vue'
+import KaraokeLyrics from './KaraokeLyrics.vue'
 
 const visible = defineModel<boolean>('visible', { default: false })
 
@@ -895,77 +835,6 @@ watch(
 const lyricsContent = computed(() => lyricsData.value?.content || '')
 const lyricsType = computed(() => lyricsData.value?.type || 'plain')
 
-const parsedLines = ref<ParsedLine[]>([])
-
-watch(
-  [lyricsType, lyricsContent],
-  () => {
-    if (!lyricsContent.value) {
-      parsedLines.value = []
-      return
-    }
-    parsedLines.value =
-      lyricsType.value === 'lrc'
-        ? parseLRCLines(lyricsContent.value)
-        : parsePlainLines(lyricsContent.value)
-  },
-  { immediate: true },
-)
-
-const activeLineIndex = computed(() => {
-  const t = currentTime.value
-  const lines = parsedLines.value
-  for (let i = lines.length - 1; i >= 0; i--) {
-    if (t >= lines[i]!.timeSeconds) return i
-  }
-  return -1
-})
-
-function isPastLine(idx: number) {
-  return activeLineIndex.value >= 0 && idx < activeLineIndex.value
-}
-
-const activeWordMap = computed(() => {
-  const map = new Map<number, number>()
-  if (!currentTrack.value) return map
-  const t = currentTime.value
-  for (let i = 0; i < parsedLines.value.length; i++) {
-    const line = parsedLines.value[i]!
-    if (!line.words || line.words.length === 0) {
-      map.set(i, -1)
-      continue
-    }
-    let found = -1
-    for (let w = 0; w < line.words.length; w++) {
-      const word = line.words[w]!
-      const nextWord = line.words[w + 1]
-      if (!word) continue
-      const start = word.timeSeconds >= 0 ? word.timeSeconds : line.timeSeconds
-      const end = nextWord?.timeSeconds ?? line.timeSeconds + 4
-      if (t >= start && t < end) {
-        found = w
-        break
-      }
-    }
-    map.set(i, found)
-  }
-  return map
-})
-
-const lyricsContainer = ref<HTMLElement | null>(null)
-const lyricLinesRef = ref<HTMLElement[]>([])
-
-let autoScrollTimer: ReturnType<typeof setTimeout> | null = null
-
-watch(activeLineIndex, (idx) => {
-  if (autoScrollTimer) clearTimeout(autoScrollTimer)
-  autoScrollTimer = setTimeout(() => {
-    if (idx < 0 || !lyricsContainer.value) return
-    const target = lyricLinesRef.value[idx]
-    target?.scrollIntoView({ block: 'center', behavior: 'smooth' })
-  }, 80)
-})
-
 async function fetchLyrics(trackId: string) {
   lyricsLoading.value = true
   lyricsError.value = false
@@ -1055,7 +924,6 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('popstate', close)
-  if (autoScrollTimer) clearTimeout(autoScrollTimer)
   clearSleepTimer()
 })
 </script>

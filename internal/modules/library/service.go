@@ -15,7 +15,7 @@ func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) LikeTrack(ctx context.Context, userID, trackID int64) error {
+func (s *Service) LikeTrack(ctx context.Context, userID string, trackID string) error {
 	exists, err := s.repo.TrackExists(ctx, trackID)
 	if err != nil {
 		return err
@@ -26,11 +26,11 @@ func (s *Service) LikeTrack(ctx context.Context, userID, trackID int64) error {
 	return s.repo.LikeTrack(ctx, userID, trackID)
 }
 
-func (s *Service) UnlikeTrack(ctx context.Context, userID, trackID int64) error {
+func (s *Service) UnlikeTrack(ctx context.Context, userID string, trackID string) error {
 	return s.repo.UnlikeTrack(ctx, userID, trackID)
 }
 
-func (s *Service) LikeAlbum(ctx context.Context, userID, albumID int64) error {
+func (s *Service) LikeAlbum(ctx context.Context, userID string, albumID string) error {
 	exists, err := s.repo.AlbumExists(ctx, albumID)
 	if err != nil {
 		return err
@@ -41,11 +41,11 @@ func (s *Service) LikeAlbum(ctx context.Context, userID, albumID int64) error {
 	return s.repo.LikeAlbum(ctx, userID, albumID)
 }
 
-func (s *Service) UnlikeAlbum(ctx context.Context, userID, albumID int64) error {
+func (s *Service) UnlikeAlbum(ctx context.Context, userID string, albumID string) error {
 	return s.repo.UnlikeAlbum(ctx, userID, albumID)
 }
 
-func (s *Service) FollowArtist(ctx context.Context, userID, artistID int64) error {
+func (s *Service) FollowArtist(ctx context.Context, userID string, artistID string) error {
 	exists, err := s.repo.ArtistExists(ctx, artistID)
 	if err != nil {
 		return err
@@ -56,11 +56,11 @@ func (s *Service) FollowArtist(ctx context.Context, userID, artistID int64) erro
 	return s.repo.FollowArtist(ctx, userID, artistID)
 }
 
-func (s *Service) UnfollowArtist(ctx context.Context, userID, artistID int64) error {
+func (s *Service) UnfollowArtist(ctx context.Context, userID string, artistID string) error {
 	return s.repo.UnfollowArtist(ctx, userID, artistID)
 }
 
-func (s *Service) AddPlayHistory(ctx context.Context, userID, trackID int64) error {
+func (s *Service) AddPlayHistory(ctx context.Context, userID string, trackID string) error {
 	exists, err := s.repo.TrackExists(ctx, trackID)
 	if err != nil {
 		return err
@@ -71,19 +71,19 @@ func (s *Service) AddPlayHistory(ctx context.Context, userID, trackID int64) err
 	return s.repo.AddPlayHistory(ctx, userID, trackID)
 }
 
-func (s *Service) ListLikedTracks(ctx context.Context, userID int64) ([]LibraryTrackItem, error) {
+func (s *Service) ListLikedTracks(ctx context.Context, userID string) ([]LibraryTrackItem, error) {
 	return s.repo.ListLikedTracks(ctx, userID)
 }
 
-func (s *Service) ListLikedAlbums(ctx context.Context, userID int64) ([]LibraryAlbumItem, error) {
+func (s *Service) ListLikedAlbums(ctx context.Context, userID string) ([]LibraryAlbumItem, error) {
 	return s.repo.ListLikedAlbums(ctx, userID)
 }
 
-func (s *Service) ListFollowedArtists(ctx context.Context, userID int64) ([]LibraryArtistItem, error) {
+func (s *Service) ListFollowedArtists(ctx context.Context, userID string) ([]LibraryArtistItem, error) {
 	return s.repo.ListFollowedArtists(ctx, userID)
 }
 
-func (s *Service) ListPlayHistory(ctx context.Context, userID int64, limit int) ([]LibraryTrackItem, error) {
+func (s *Service) ListPlayHistory(ctx context.Context, userID string, limit int) ([]LibraryTrackItem, error) {
 	if limit <= 0 {
 		limit = 50
 	}
@@ -93,7 +93,7 @@ func (s *Service) ListPlayHistory(ctx context.Context, userID int64, limit int) 
 	return s.repo.ListPlayHistory(ctx, userID, limit)
 }
 
-func (s *Service) ListRecentlyPlayed(ctx context.Context, userID int64, limit int) ([]LibraryTrackItem, error) {
+func (s *Service) ListRecentlyPlayed(ctx context.Context, userID string, limit int) ([]LibraryTrackItem, error) {
 	if limit <= 0 {
 		limit = 20
 	}

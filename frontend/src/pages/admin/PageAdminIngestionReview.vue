@@ -1,3 +1,4 @@
+<!-- TODO MEDIUM: Uses surface-* / primary-* PrimeVue classes. Should use slate-* / white/* admin dark theme. -->
 <template>
   <div class="mx-auto w-full max-w-5xl px-4 py-6 md:px-6 lg:px-8">
     <AdminSectionHeader
@@ -6,6 +7,22 @@
       :description="`${draftDetail?.originalFilename || ''} — ${formatDuration(draftDetail?.durationSeconds)}`"
     >
       <template #actions>
+        <Button
+          v-if="!enriching && !enrichment?.enrichment_attempted && draftDetail?.status === 'review'"
+          label="Enrich Now"
+          icon="pi pi-magic"
+          severity="warn"
+          size="small"
+          @click="triggerEnrich"
+        />
+        <Button
+          v-if="enriching"
+          label="Enriching..."
+          icon="pi pi-spin pi-spinner"
+          severity="warn"
+          size="small"
+          disabled
+        />
         <Button
           label="Back to List"
           icon="pi pi-arrow-left"
@@ -38,7 +55,14 @@
             :href="`/admin/catalog/artists/${publishResult.artistId}`"
             class="flex items-center gap-3 rounded-lg border border-surface-700 bg-surface-800 p-4 text-left transition-colors hover:bg-surface-700"
           >
-            <i class="pi pi-user text-xl text-primary"></i>
+            <img
+              v-if="finalMetadata.artist.imageUrl"
+              :src="finalMetadata.artist.imageUrl"
+              alt=""
+              class="h-10 w-10 flex-shrink-0 rounded-full object-cover"
+              @error="($event.target as HTMLImageElement).style.display='none'"
+            />
+            <i v-else class="pi pi-user text-xl text-primary"></i>
             <div>
               <p class="text-sm font-medium text-white">View Artist in Catalog</p>
               <p class="text-xs text-surface-500">{{ finalMetadata.artist.name }}</p>
@@ -49,7 +73,14 @@
             :href="`/admin/catalog/albums/${publishResult.albumId}`"
             class="flex items-center gap-3 rounded-lg border border-surface-700 bg-surface-800 p-4 text-left transition-colors hover:bg-surface-700"
           >
-            <i class="pi pi-book text-xl text-primary"></i>
+            <img
+              v-if="finalMetadata.album.coverUrl"
+              :src="finalMetadata.album.coverUrl"
+              alt=""
+              class="h-10 w-10 flex-shrink-0 rounded object-cover"
+              @error="($event.target as HTMLImageElement).style.display='none'"
+            />
+            <i v-else class="pi pi-book text-xl text-primary"></i>
             <div>
               <p class="text-sm font-medium text-white">View Album in Catalog</p>
               <p class="text-xs text-surface-500">{{ finalMetadata.album.title }}</p>
@@ -60,7 +91,14 @@
             :href="`/admin/catalog/tracks/${publishResult.trackId}`"
             class="flex items-center gap-3 rounded-lg border border-surface-700 bg-surface-800 p-4 text-left transition-colors hover:bg-surface-700"
           >
-            <i class="pi pi-music text-xl text-primary"></i>
+            <img
+              v-if="finalMetadata.track.coverUrl"
+              :src="finalMetadata.track.coverUrl"
+              alt=""
+              class="h-10 w-10 flex-shrink-0 rounded object-cover"
+              @error="($event.target as HTMLImageElement).style.display='none'"
+            />
+            <i v-else class="pi pi-music text-xl text-primary"></i>
             <div>
               <p class="text-sm font-medium text-white">View Track in Catalog</p>
               <p class="text-xs text-surface-500">{{ finalMetadata.track.title }}</p>
@@ -112,6 +150,18 @@
         </div>
       </div>
 
+      <div v-if="enriching" class="mb-8">
+        <Message severity="info" :closable="false">
+          <i class="pi pi-spin pi-spinner mr-2"></i>Enrichment in progress — covers, bio, and suggestions will appear once complete.
+        </Message>
+      </div>
+
+      <div v-if="!enrichment?.enrichment_attempted && !enriching && draftDetail?.status === 'review'" class="mb-8">
+        <Message severity="warn" :closable="false">
+          <i class="pi pi-exclamation-triangle mr-2"></i>No enrichment data available. Click "Enrich Now" above or fill in the fields manually.
+        </Message>
+      </div>
+
       <Transition name="fade" mode="out-in">
         <div :key="step">
           <!-- Step 1: Artist -->
@@ -121,17 +171,40 @@
               <p class="mt-1 text-sm text-surface-400">Confirm or edit the artist information.</p>
             </div>
 
-            <div class="mb-6 grid gap-6 md:grid-cols-2">
+            <div class="mb-6 grid gap-6 md:grid-cols-3">
               <div
                 v-if="enrichment?.spotify?.artistImageUrl"
                 class="flex-shrink-0"
               >
-                <p class="mb-2 text-xs font-medium text-surface-500">Suggested Image</p>
+                <p class="mb-2 text-xs font-medium text-surface-500">
+                  Suggested Image
+                  <i class="pi pi-spotify ml-1 text-green-400 text-[10px]"></i>
+                </p>
                 <img
                   :src="enrichment.spotify.artistImageUrl"
                   alt="Artist"
-                  class="h-36 w-36 rounded-lg object-cover shadow-md ring-2 ring-purple-500"
+                  class="h-32 w-32 cursor-pointer rounded-lg object-cover shadow-md ring-2 transition-all"
+                  :class="finalMetadata.artist.imageUrl === enrichment.spotify.artistImageUrl ? 'ring-green-500' : 'ring-purple-500 hover:ring-green-400'"
+                  @click="finalMetadata.artist.imageUrl = enrichment.spotify.artistImageUrl"
+                  title="Click to use this image"
                 />
+              </div>
+              <div v-if="finalMetadata.artist.imageUrl && finalMetadata.artist.imageUrl !== enrichment?.spotify?.artistImageUrl" class="flex-shrink-0">
+                <p class="mb-2 text-xs font-medium text-surface-500">Selected Image</p>
+                <img
+                  :src="finalMetadata.artist.imageUrl"
+                  alt="Selected"
+                  class="h-32 w-32 rounded-lg object-cover shadow-md ring-2 ring-green-500"
+                  @error="($event.target as HTMLImageElement).style.display='none'"
+                />
+              </div>
+              <div v-if="!finalMetadata.artist.imageUrl" class="flex flex-shrink-0 flex-col items-center justify-center gap-2">
+                <p class="mb-1 text-xs font-medium text-surface-500">No Image Yet</p>
+                <label class="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-surface-600 bg-surface-800 text-surface-400 transition-colors hover:border-primary hover:text-primary">
+                  <i class="pi pi-upload text-xl"></i>
+                  <span class="mt-1 text-[10px]">Upload</span>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="uploadArtistImage" />
+                </label>
               </div>
               <div v-if="enrichment?.lastfm?.artistBio" class="md:col-span-1">
                 <p class="mb-2 text-xs font-medium text-surface-500">
@@ -278,7 +351,7 @@
               <p class="mt-1 text-sm text-surface-400">Confirm or edit the album information.</p>
             </div>
 
-            <div v-if="suggestedAlbumCover || embeddedCover" class="mb-6 flex flex-wrap gap-6">
+            <div class="mb-6 flex flex-wrap gap-6">
               <div v-if="embeddedCover">
                 <p class="mb-2 text-xs font-medium text-surface-500">Embedded Cover</p>
                 <img
@@ -298,6 +371,23 @@
                   :class="finalMetadata.album.coverUrl === suggestedAlbumCover ? 'ring-green-500' : 'ring-transparent hover:ring-surface-400'"
                   @click="finalMetadata.album.coverUrl = suggestedAlbumCover"
                 />
+              </div>
+              <div v-if="finalMetadata.album.coverUrl && finalMetadata.album.coverUrl !== embeddedCover && finalMetadata.album.coverUrl !== suggestedAlbumCover" class="flex-shrink-0">
+                <p class="mb-2 text-xs font-medium text-surface-500">Selected</p>
+                <img
+                  :src="finalMetadata.album.coverUrl"
+                  alt="Selected"
+                  class="h-32 w-32 rounded-lg object-cover shadow-md ring-2 ring-green-500"
+                  @error="($event.target as HTMLImageElement).style.display='none'"
+                />
+              </div>
+              <div v-if="!finalMetadata.album.coverUrl" class="flex flex-shrink-0 flex-col items-center justify-center gap-2">
+                <p class="mb-1 text-xs font-medium text-surface-500">Upload Cover</p>
+                <label class="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-surface-600 bg-surface-800 text-surface-400 transition-colors hover:border-primary hover:text-primary">
+                  <i class="pi pi-upload text-xl"></i>
+                  <span class="mt-1 text-[10px]">Upload</span>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="uploadAlbumCover" />
+                </label>
               </div>
             </div>
 
@@ -449,6 +539,41 @@
               <p class="mt-1 text-sm text-surface-400">Review and edit the track details.</p>
             </div>
 
+            <div class="mb-6 flex flex-wrap gap-6">
+              <div v-if="embeddedCover">
+                <p class="mb-2 text-xs font-medium text-surface-500">Embedded Cover</p>
+                <img
+                  :src="embeddedCover"
+                  alt="Embedded"
+                  class="h-24 w-24 cursor-pointer rounded-lg object-cover shadow-md ring-2 transition-all"
+                  :class="finalMetadata.track.coverUrl === embeddedCover ? 'ring-green-500' : 'ring-transparent hover:ring-surface-400'"
+                  @click="finalMetadata.track.coverUrl = embeddedCover"
+                />
+              </div>
+              <div v-if="suggestedAlbumCover">
+                <p class="mb-2 text-xs font-medium text-surface-500">
+                  Spotify
+                  <i class="pi pi-spotify ml-1 text-green-400 text-[10px]"></i>
+                </p>
+                <img
+                  :src="suggestedAlbumCover"
+                  alt="Spotify"
+                  class="h-24 w-24 cursor-pointer rounded-lg object-cover shadow-md ring-2 transition-all"
+                  :class="finalMetadata.track.coverUrl === suggestedAlbumCover ? 'ring-green-500' : 'ring-transparent hover:ring-surface-400'"
+                  @click="finalMetadata.track.coverUrl = suggestedAlbumCover"
+                />
+              </div>
+              <div v-if="finalMetadata.track.coverUrl && finalMetadata.track.coverUrl !== embeddedCover && finalMetadata.track.coverUrl !== suggestedAlbumCover" class="flex-shrink-0">
+                <p class="mb-2 text-xs font-medium text-surface-500">Selected</p>
+                <img
+                  :src="finalMetadata.track.coverUrl"
+                  alt="Selected"
+                  class="h-24 w-24 rounded-lg object-cover shadow-md ring-2 ring-green-500"
+                  @error="($event.target as HTMLImageElement).style.display='none'"
+                />
+              </div>
+            </div>
+
             <div class="space-y-4 rounded-lg border border-surface-700 bg-surface-800 p-5">
               <div class="grid gap-4 md:grid-cols-2">
                 <div>
@@ -521,6 +646,12 @@
                   <label class="text-xs font-medium text-surface-400">Lyrics</label>
                   <div class="flex items-center gap-2">
                     <Badge
+                      v-if="findSuggestion('lyrics_type')"
+                      :value="findSuggestion('lyrics_type')!.value === 'lrc' ? 'Synced' : 'Plain'"
+                      :severity="findSuggestion('lyrics_type')!.value === 'lrc' ? 'success' : 'info'"
+                      size="small"
+                    />
+                    <Badge
                       v-if="findSuggestion('lyrics')"
                       :value="sourceLabel(findSuggestion('lyrics')!.source)"
                       :severity="sourceSeverity(findSuggestion('lyrics')!.source)"
@@ -544,6 +675,9 @@
                   :class="{ 'min-h-64': lyricsExpanded, 'min-h-24': !lyricsExpanded }"
                   placeholder="Lyrics..."
                 />
+                <p v-if="findSuggestion('lyrics_type')?.value === 'lrc'" class="mt-1 text-[11px] text-green-400">
+                  <i class="pi pi-check-circle mr-1"></i>Synced LRC lyrics detected — timestamps will sync with playback.
+                </p>
               </div>
 
               <div class="grid gap-4 md:grid-cols-2">
@@ -579,6 +713,13 @@
                 <h3 class="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
                   <i class="pi pi-user text-primary"></i>Artist
                 </h3>
+                <img
+                  v-if="finalMetadata.artist.imageUrl"
+                  :src="finalMetadata.artist.imageUrl"
+                  alt=""
+                  class="mb-2 h-24 w-24 rounded-lg object-cover shadow-sm"
+                  @error="($event.target as HTMLImageElement).style.display='none'"
+                />
                 <div class="space-y-1 text-xs">
                   <p><span class="text-surface-500">Action:</span> {{ finalMetadata.artist.action === 'link' ? 'Link existing' : 'Create new' }}</p>
                   <p><span class="text-surface-500">Name:</span> {{ finalMetadata.artist.name || '(empty)' }}</p>
@@ -589,6 +730,13 @@
                 <h3 class="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
                   <i class="pi pi-book text-primary"></i>Album
                 </h3>
+                <img
+                  v-if="finalMetadata.album.coverUrl"
+                  :src="finalMetadata.album.coverUrl"
+                  alt=""
+                  class="mb-2 h-24 w-24 rounded-lg object-cover shadow-sm"
+                  @error="($event.target as HTMLImageElement).style.display='none'"
+                />
                 <div class="space-y-1 text-xs">
                   <p><span class="text-surface-500">Action:</span> {{ finalMetadata.album.action === 'link' ? 'Link existing' : 'Create new' }}</p>
                   <p><span class="text-surface-500">Title:</span> {{ finalMetadata.album.title || '(empty)' }}</p>
@@ -599,6 +747,13 @@
                 <h3 class="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
                   <i class="pi pi-music text-primary"></i>Track
                 </h3>
+                <img
+                  v-if="finalMetadata.track.coverUrl"
+                  :src="finalMetadata.track.coverUrl"
+                  alt=""
+                  class="mb-2 h-24 w-24 rounded-lg object-cover shadow-sm"
+                  @error="($event.target as HTMLImageElement).style.display='none'"
+                />
                 <div class="space-y-1 text-xs">
                   <p><span class="text-surface-500">Title:</span> {{ finalMetadata.track.title || '(empty)' }}</p>
                   <p><span class="text-surface-500">Duration:</span> {{ formatDuration(finalMetadata.track.durationSeconds) }}</p>
@@ -695,6 +850,7 @@ import type {
 } from '@/services/api/ingestion/types'
 import { useToast } from 'primevue/usetoast'
 
+// TODO MEDIUM: This component is 1135 lines — too large. Split into ArtistStep, AlbumStep, TrackStep, ConfirmStep sub-components.
 defineOptions({ name: 'PageAdminIngestionReview' })
 
 const route = useRoute()
@@ -714,6 +870,8 @@ const publishResult = ref<FinalizeResult | null>(null)
 const rejectDialogVisible = ref(false)
 const rejectReason = ref('')
 const lyricsExpanded = ref(false)
+
+const enriching = ref(false)
 
 const draftDetail = ref<DraftDetailResponse | null>(null)
 const enrichment = ref<EnrichmentResult | null>(null)
@@ -740,6 +898,10 @@ const embeddedCover = computed(() => {
 
 const suggestedAlbumCover = computed(() => {
   return enrichment.value?.spotify?.albumCoverUrl || null
+})
+
+const suggestedArtistImage = computed(() => {
+  return enrichment.value?.spotify?.artistImageUrl || null
 })
 
 const selectedArtistId = ref<string | undefined>()
@@ -881,11 +1043,50 @@ async function loadDraft() {
     }
     draftDetail.value = detail
     enrichment.value = detail.enrichedMetadata || null
+    if (detail.status === 'enriching') {
+      enriching.value = true
+      pollEnrichment()
+    }
     prefillForm(detail)
   } catch (err: any) {
     error.value = err?.message || 'Failed to load draft.'
   } finally {
     loading.value = false
+  }
+}
+
+function pollEnrichment() {
+  const maxAttempts = 30
+  let attempts = 0
+  const timer = setInterval(async () => {
+    attempts++
+    try {
+      const detail = await ingestionApi.getDraftDetail(draftId)
+      draftDetail.value = detail
+      if (detail && detail.status !== 'enriching') {
+        clearInterval(timer)
+        enriching.value = false
+        enrichment.value = detail.enrichedMetadata || null
+        prefillForm(detail)
+      }
+    } catch {
+      // ignore polling errors
+    }
+    if (attempts >= maxAttempts) {
+      clearInterval(timer)
+      enriching.value = false
+    }
+  }, 2000)
+}
+
+async function triggerEnrich() {
+  enriching.value = true
+  try {
+    await ingestionApi.enrichDraft(draftId)
+    pollEnrichment()
+  } catch {
+    enriching.value = false
+    toast.add({ severity: 'error', summary: 'Failed to start enrichment', life: 3000 })
   }
 }
 
@@ -903,15 +1104,15 @@ function prefillForm(detail: DraftDetailResponse) {
 
   // Artist
   finalMetadata.artist.name = sugMap.get('artist') || tags?.artist || ''
-  finalMetadata.artist.bio = lfm?.artistBio || ''
-  finalMetadata.artist.imageUrl = spot?.artistImageUrl || ''
+  finalMetadata.artist.bio = lfm?.artistBio || sugMap.get('artist_bio') || ''
+  finalMetadata.artist.imageUrl = spot?.artistImageUrl || sugMap.get('artist_image_url') || ''
   if (mb?.artistMbid) finalMetadata.artist.musicbrainzMbid = mb.artistMbid
 
   // Album
   finalMetadata.album.title = sugMap.get('album') || tags?.album || ''
   finalMetadata.album.releaseYear = sugMap.get('year') || (tags?.year || undefined) as any
   finalMetadata.album.genre = sugMap.get('genre') || tags?.genre || ''
-  finalMetadata.album.coverUrl = spot?.albumCoverUrl || embeddedCover.value || ''
+  finalMetadata.album.coverUrl = spot?.albumCoverUrl || sugMap.get('album_cover_url') || embeddedCover.value || ''
   if (mb?.albumMbid) finalMetadata.album.musicbrainzReleaseId = mb.albumMbid
 
   // Track
@@ -919,7 +1120,7 @@ function prefillForm(detail: DraftDetailResponse) {
   finalMetadata.track.trackNumber = tags?.trackNumber || undefined
   finalMetadata.track.durationSeconds = Math.round(detail.durationSeconds || tags?.duration || 0)
   finalMetadata.track.genre = sugMap.get('genre') || tags?.genre || ''
-  finalMetadata.track.lyrics = tags?.lyrics || ''
+  finalMetadata.track.lyrics = sugMap.get('lyrics') || tags?.lyrics || ''
   finalMetadata.track.explicit = false
   finalMetadata.track.spotifyPreviewUrl = spot?.previewUrl || ''
   finalMetadata.track.coverUrl = embeddedCover.value || spot?.albumCoverUrl || ''
@@ -930,6 +1131,40 @@ function goBack() {
     if (!window.confirm('You have unsaved changes. Are you sure you want to leave?')) return
   }
   router.push({ name: 'admin.ingestion' })
+}
+
+async function uploadArtistImage(e: Event) {
+  const target = e.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+  try {
+    const res = await ingestionApi.uploadDraftImage(draftId, 'artist', file)
+    if (res?.url) {
+      finalMetadata.artist.imageUrl = res.url
+      hasUnsavedChanges.value = true
+      toast.add({ severity: 'success', summary: 'Image uploaded', detail: 'Artist image uploaded successfully.', life: 3000 })
+    }
+  } catch (err: any) {
+    toast.add({ severity: 'error', summary: 'Upload failed', detail: err?.message || 'Failed to upload image.', life: 5000 })
+  }
+  target.value = ''
+}
+
+async function uploadAlbumCover(e: Event) {
+  const target = e.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+  try {
+    const res = await ingestionApi.uploadDraftImage(draftId, 'album', file)
+    if (res?.url) {
+      finalMetadata.album.coverUrl = res.url
+      hasUnsavedChanges.value = true
+      toast.add({ severity: 'success', summary: 'Cover uploaded', detail: 'Album cover uploaded successfully.', life: 3000 })
+    }
+  } catch (err: any) {
+    toast.add({ severity: 'error', summary: 'Upload failed', detail: err?.message || 'Failed to upload image.', life: 5000 })
+  }
+  target.value = ''
 }
 
 async function publish() {
@@ -989,6 +1224,7 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
+// TODO MEDIUM: finalMetadata is reactive (not a ref). Ensure deep watch on reactive tracks changes properly.
 watch(finalMetadata, () => {
   hasUnsavedChanges.value = true
 }, { deep: true })
@@ -996,12 +1232,14 @@ watch(finalMetadata, () => {
 onMounted(() => {
   loadDraft()
   window.addEventListener('keydown', handleKeydown)
+  window.addEventListener('beforeunload', handleBeforeUnload)
 })
 
 onUnmounted(() => {
   if (artistSearchTimer) clearTimeout(artistSearchTimer)
   if (albumSearchTimer) clearTimeout(albumSearchTimer)
   window.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 
 onBeforeRouteLeave((_to, _from, next) => {
@@ -1013,11 +1251,6 @@ onBeforeRouteLeave((_to, _from, next) => {
     }
   }
   next()
-})
-
-window.addEventListener('beforeunload', handleBeforeUnload)
-onUnmounted(() => {
-  window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 
 function handleBeforeUnload(e: BeforeUnloadEvent) {

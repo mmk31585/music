@@ -138,6 +138,7 @@ async function fetchData() {
     plans.value = plansResult?.plans ?? []
     currentSub.value = subResult ?? null
     payments.value = paymentsResult?.payments ?? []
+  // TODO LOW: Silent catch — should show a toast on failure instead of swallowing errors.
   } catch {
     /* silent */
   } finally {

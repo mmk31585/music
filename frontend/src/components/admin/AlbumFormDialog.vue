@@ -58,10 +58,27 @@
       <!-- Cover URL -->
       <div>
         <label class="mb-1.5 block text-xs font-medium text-slate-400">Cover URL</label>
-        <InputText
-          v-model="form.cover_url"
-          placeholder="https://example.com/cover.jpg"
-          class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white placeholder:!text-slate-600 focus:!border-emerald-500/40"
+        <div class="flex gap-2">
+          <InputText
+            v-model="form.cover_url"
+            placeholder="https://example.com/cover.jpg"
+            class="flex-1 !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white placeholder:!text-slate-600 focus:!border-emerald-500/40"
+          />
+          <Button
+            icon="pi pi-upload"
+            severity="secondary"
+            outlined
+            :loading="uploading"
+            class="!rounded-xl !border-white/[0.08] !bg-white/[0.03] hover:!bg-white/[0.08]"
+            @click="triggerFileInput"
+          />
+        </div>
+        <input
+          ref="fileInput"
+          type="file"
+          accept="image/*"
+          class="hidden"
+          @change="handleFileUpload"
         />
       </div>
 
@@ -101,10 +118,12 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed, watch } from 'vue'
+import { reactive, computed, watch, ref } from 'vue'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
+import { useToast } from 'primevue/usetoast'
+import { useMediaApi } from '@/services/api/media/routes'
 import type { Album } from '@/services/api/catalog/albums'
 import type { AlbumFormPayload } from '@/composables/admin/useAdminAlbums'
 
@@ -120,11 +139,15 @@ const emit = defineEmits<{
 }>()
 
 const isEditing = computed(() => !!props.album)
+const toast = useToast()
+const mediaApi = useMediaApi()
+const fileInput = ref<HTMLInputElement | null>(null)
+const uploading = ref(false)
 
 const form = reactive({
   title: '',
   cover_url: null as string | null,
-  artist_id: null as string | number | null,
+  artist_id: null as string | null,
 })
 
 const errors = reactive<Record<string, string>>({})
@@ -135,7 +158,7 @@ watch(
     if (album) {
       form.title = album.title
       form.cover_url = album.cover_url
-      form.artist_id = album.artist_id
+      form.artist_id = album.artist_id != null ? String(album.artist_id) : null
     } else {
       form.title = ''
       form.cover_url = null
@@ -153,5 +176,29 @@ function handleSubmit() {
     return
   }
   emit('submit', { ...form })
+}
+
+function triggerFileInput() {
+  fileInput.value?.click()
+}
+
+async function handleFileUpload(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  uploading.value = true
+  try {
+    const res = await mediaApi.uploadAdminMedia('albumCover', file)
+    if (res?.url) {
+      form.cover_url = res.url
+      toast.add({ severity: 'success', summary: 'Uploaded', detail: 'Cover uploaded successfully', life: 3000 })
+    }
+  } catch {
+    toast.add({ severity: 'error', summary: 'Upload failed', detail: 'Could not upload cover', life: 4000 })
+  } finally {
+    uploading.value = false
+    input.value = ''
+  }
 }
 </script>

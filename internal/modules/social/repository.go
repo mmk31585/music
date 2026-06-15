@@ -65,7 +65,7 @@ func NewRepository(db *sqlx.DB) Repository {
 
 func (r *repository) Follow(ctx context.Context, followerID, followedID uuid.UUID) error {
 	_, err := r.db.ExecContext(ctx, `
-		INSERT INTO user_follows (follower_id, followed_id)
+		INSERT INTO user_follows (follower_id, followee_id)
 		VALUES ($1, $2)
 		ON CONFLICT DO NOTHING
 	`, followerID, followedID)
@@ -75,7 +75,7 @@ func (r *repository) Follow(ctx context.Context, followerID, followedID uuid.UUI
 func (r *repository) Unfollow(ctx context.Context, followerID, followedID uuid.UUID) error {
 	_, err := r.db.ExecContext(ctx, `
 		DELETE FROM user_follows
-		WHERE follower_id = $1 AND followed_id = $2
+		WHERE follower_id = $1 AND followee_id = $2
 	`, followerID, followedID)
 	return err
 }
@@ -85,7 +85,7 @@ func (r *repository) IsFollowing(ctx context.Context, followerID, followedID uui
 	err := r.db.GetContext(ctx, &exists, `
 		SELECT EXISTS (
 			SELECT 1 FROM user_follows
-			WHERE follower_id = $1 AND followed_id = $2
+			WHERE follower_id = $1 AND followee_id = $2
 		)
 	`, followerID, followedID)
 	return exists, err
@@ -94,15 +94,15 @@ func (r *repository) IsFollowing(ctx context.Context, followerID, followedID uui
 func (r *repository) GetFollowers(ctx context.Context, userID uuid.UUID, limit, offset int) ([]UserFollow, int, error) {
 	var total int
 	if err := r.db.GetContext(ctx, &total,
-		`SELECT COUNT(*) FROM user_follows WHERE followed_id = $1`, userID); err != nil {
+		`SELECT COUNT(*) FROM user_follows WHERE followee_id = $1`, userID); err != nil {
 		return nil, 0, err
 	}
 
 	var items []UserFollow
 	if err := r.db.SelectContext(ctx, &items, `
-		SELECT follower_id, followed_id, created_at
+		SELECT follower_id, followee_id, created_at
 		FROM user_follows
-		WHERE followed_id = $1
+		WHERE followee_id = $1
 		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3
 	`, userID, limit, offset); err != nil {
@@ -121,7 +121,7 @@ func (r *repository) GetFollowing(ctx context.Context, userID uuid.UUID, limit, 
 
 	var items []UserFollow
 	if err := r.db.SelectContext(ctx, &items, `
-		SELECT follower_id, followed_id, created_at
+		SELECT follower_id, followee_id, created_at
 		FROM user_follows
 		WHERE follower_id = $1
 		ORDER BY created_at DESC
@@ -136,7 +136,7 @@ func (r *repository) GetFollowing(ctx context.Context, userID uuid.UUID, limit, 
 func (r *repository) GetFollowerCount(ctx context.Context, userID uuid.UUID) (int, error) {
 	var count int
 	err := r.db.GetContext(ctx, &count,
-		`SELECT COUNT(*) FROM user_follows WHERE followed_id = $1`, userID)
+		`SELECT COUNT(*) FROM user_follows WHERE followee_id = $1`, userID)
 	return count, err
 }
 
@@ -164,7 +164,7 @@ func (r *repository) GetFeed(ctx context.Context, userID uuid.UUID, limit, offse
 		FROM activities a
 		JOIN users u ON u.id = a.user_id
 		WHERE a.user_id IN (
-			SELECT followed_id FROM user_follows WHERE follower_id = $1
+			SELECT followee_id FROM user_follows WHERE follower_id = $1
 			UNION ALL
 			SELECT $1
 		)

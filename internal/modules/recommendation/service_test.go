@@ -53,21 +53,33 @@ func (m *mockRepo) GetTracksByGenre(ctx context.Context, genre string, limit int
 
 func (m *mockRepo) GetFollowedArtistIDs(ctx context.Context, userID string, limit int) ([]string, error) {
 	args := m.Called(ctx, userID, limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).([]string), args.Error(1)
 }
 
 func (m *mockRepo) GetTopArtistIDs(ctx context.Context, userID string, limit int) ([]string, error) {
 	args := m.Called(ctx, userID, limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).([]string), args.Error(1)
 }
 
 func (m *mockRepo) GetTopGenres(ctx context.Context, userID string, limit int) ([]string, error) {
 	args := m.Called(ctx, userID, limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).([]string), args.Error(1)
 }
 
 func (m *mockRepo) GetLikedTrackIDs(ctx context.Context, userID string, limit int) ([]string, error) {
 	args := m.Called(ctx, userID, limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).([]string), args.Error(1)
 }
 
@@ -222,19 +234,16 @@ func TestForYou_Basic(t *testing.T) {
 	m := new(mockRepo)
 	svc := NewService(m)
 
-	coListen := []TrackItem{
-		{ID: "t1", Title: "Co-Listen 1", ArtistID: ptr("a1")},
-		{ID: "t2", Title: "Co-Listen 2", ArtistID: ptr("a2")},
+	tracks := []TrackItem{
+		{ID: "t1", Title: "Track 1", ArtistID: ptr("a1")},
+		{ID: "t2", Title: "Track 2", ArtistID: ptr("a2")},
 	}
-	m.On("GetCoListenTracks", mock.Anything, "user-1", 100).Return(coListen, nil)
 	m.On("GetFollowedArtistIDs", mock.Anything, "user-1", 10).Return([]string{}, nil)
 	m.On("GetTopArtistIDs", mock.Anything, "user-1", 10).Return([]string{}, nil)
 	m.On("GetTopGenres", mock.Anything, "user-1", 10).Return([]string{}, nil)
 	m.On("GetLikedTrackIDs", mock.Anything, "user-1", 10).Return([]string{}, nil)
-	m.On("GetLikedTrackIDs", mock.Anything, "user-1", 100).Return([]string{}, nil)
-	m.On("GetUserAffinities", mock.Anything, "user-1", "track", 500).Return([]UserAffinity{}, nil)
-	m.On("GetRecentlyPlayedIDs", mock.Anything, "user-1", 24).Return([]string{}, nil)
-	m.On("GetPopularTrackIDs", mock.Anything, 24).Return([]string{}, nil)
+	m.On("GetPopularTrackIDs", mock.Anything, 20).Return([]string{"t1", "t2"}, nil)
+	m.On("GetTracksByIDs", mock.Anything, []string{"t1", "t2"}).Return(tracks, nil)
 
 	items, err := svc.ForYou(context.Background(), "user-1", 10)
 
@@ -247,12 +256,10 @@ func TestForYou_WithExclusions(t *testing.T) {
 	m := new(mockRepo)
 	svc := NewService(m)
 
-	coListen := []TrackItem{
+	tracks := []TrackItem{
 		{ID: "t1", Title: "Liked Track", ArtistID: ptr("a1")},
-		{ID: "t2", Title: "Recent Track", ArtistID: ptr("a2")},
-		{ID: "t3", Title: "Fresh Track", ArtistID: ptr("a3")},
+		{ID: "t2", Title: "Fresh Track", ArtistID: ptr("a2")},
 	}
-	m.On("GetCoListenTracks", mock.Anything, "user-1", 100).Return(coListen, nil)
 	m.On("GetFollowedArtistIDs", mock.Anything, "user-1", 10).Return([]string{}, nil)
 	m.On("GetTopArtistIDs", mock.Anything, "user-1", 10).Return([]string{}, nil)
 	m.On("GetTopGenres", mock.Anything, "user-1", 10).Return([]string{}, nil)
@@ -262,18 +269,14 @@ func TestForYou_WithExclusions(t *testing.T) {
 	}, nil)
 	m.On("GetSimilarTracksByMeta", mock.Anything, "t1", ptr("a1"), (*string)(nil), ptr("Pop"), 20).
 		Return([]TrackItem{}, nil)
-	m.On("GetSimilarTracksByCooccurrence", mock.Anything, "t1", 10).
-		Return([]TrackItem{}, nil)
-	m.On("GetLikedTrackIDs", mock.Anything, "user-1", 100).Return([]string{"t1"}, nil)
-	m.On("GetUserAffinities", mock.Anything, "user-1", "track", 500).Return([]UserAffinity{}, nil)
-	m.On("GetRecentlyPlayedIDs", mock.Anything, "user-1", 24).Return([]string{"t2"}, nil)
-	m.On("GetPopularTrackIDs", mock.Anything, mock.Anything).Return([]string{}, nil)
+	m.On("GetPopularTrackIDs", mock.Anything, 20).Return([]string{"t1", "t2"}, nil)
+	m.On("GetTracksByIDs", mock.Anything, []string{"t1", "t2"}).Return(tracks, nil)
 
 	items, err := svc.ForYou(context.Background(), "user-1", 10)
 
 	assert.NoError(t, err)
 	assert.Len(t, items, 1)
-	assert.Equal(t, "t3", items[0].ID)
+	assert.Equal(t, "t2", items[0].ID)
 	m.AssertExpectations(t)
 }
 
@@ -281,7 +284,7 @@ func TestForYou_RepoError(t *testing.T) {
 	m := new(mockRepo)
 	svc := NewService(m)
 
-	m.On("GetCoListenTracks", mock.Anything, "user-1", 100).Return(nil, errors.New("db down"))
+	m.On("GetFollowedArtistIDs", mock.Anything, "user-1", 10).Return(nil, errors.New("db down"))
 
 	_, err := svc.ForYou(context.Background(), "user-1", 10)
 	assert.ErrorContains(t, err, "db down")

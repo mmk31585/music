@@ -89,7 +89,7 @@ export const MusicBrainzResultSchema = z.object({
   albumMbid: z.string().optional(),
   releaseYear: z.number().optional(),
   duration: z.number().optional(),
-  genres: z.array(z.string()).optional(),
+  genres: z.array(z.string()).catch([]),
 })
 
 export const LastFMResultSchema = z.object({
@@ -108,11 +108,25 @@ export const SpotifyResultSchema = z.object({
   popularity: z.number().optional(),
 })
 
+export const LRCLibResultSchema = z.object({
+  id: z.number().optional(),
+  trackName: z.string().optional(),
+  artistName: z.string().optional(),
+  albumName: z.string().optional(),
+  duration: z.number().optional(),
+  synced: z.boolean().optional(),
+  plainLyrics: z.string().optional(),
+  syncedLyrics: z.string().optional(),
+})
+
+export type LRCLibResult = z.infer<typeof LRCLibResultSchema>
+
 export const EnrichmentResultSchema = z.object({
   musicbrainz: MusicBrainzResultSchema.optional(),
   lastfm: LastFMResultSchema.optional(),
   spotify: SpotifyResultSchema.optional(),
-  suggestions: z.array(EnrichedSuggestionSchema),
+  lrclib: LRCLibResultSchema.optional(),
+  suggestions: z.array(EnrichedSuggestionSchema).catch([]),
   enrichment_attempted: z.boolean(),
 })
 

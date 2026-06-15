@@ -64,6 +64,7 @@ type EnrichmentResult struct {
 	MusicBrainz *MusicBrainzResult `json:"musicbrainz,omitempty"`
 	LastFM      *LastFMResult      `json:"lastfm,omitempty"`
 	Spotify     *SpotifyResult     `json:"spotify,omitempty"`
+	LRCLib      *LRCLibResult      `json:"lrclib,omitempty"`
 	Suggestions []EnrichedSuggestion `json:"suggestions"`
 	Attempted   bool               `json:"enrichment_attempted"`
 }

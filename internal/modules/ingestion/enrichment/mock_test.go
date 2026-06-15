@@ -80,6 +80,35 @@ func fullLastFMResult() *LastFMResult {
 	}
 }
 
+type mockLRCLib struct {
+	mu      sync.Mutex
+	result  *LRCLibResult
+	err     error
+	callCount int
+}
+
+func (m *mockLRCLib) SearchLyrics(ctx context.Context, query TrackQuery) (*LRCLibResult, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.callCount++
+	if m.err != nil {
+		return nil, m.err
+	}
+	return m.result, nil
+}
+
+func fullLRCLibResult() *LRCLibResult {
+	return &LRCLibResult{
+		ID:           1,
+		TrackName:    "Test Song",
+		ArtistName:   "Test Artist",
+		AlbumName:    "Test Album",
+		Duration:     240,
+		Synced:       true,
+		SyncedLyrics: "[00:00.00]Test lyric line\n[00:05.00]Another test line",
+	}
+}
+
 func fullSpotifyResult() *SpotifyResult {
 	return &SpotifyResult{
 		SpotifyID:      "spotify-id-abc",

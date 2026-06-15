@@ -290,6 +290,12 @@ export function useAdminTracks() {
     }
   }
 
+  // TODO MEDIUM: Add resetTracks() method — currently missing but called by useAdminCatalog.ts
+  function resetTracks() {
+    tracks.value = []
+    error.value = null
+  }
+
   return {
     tracks,
     loading,
@@ -300,5 +306,6 @@ export function useAdminTracks() {
     createTrack,
     updateTrack,
     deleteTrack,
+    resetTracks,
   }
 }

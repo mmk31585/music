@@ -288,31 +288,23 @@ import AdminSectionHeader from '@/components/admin/AdminSectionHeader.vue'
 import AdminStatCard from '@/components/admin/AdminStatCard.vue'
 import CatalogQuickActions from '@/components/admin/CatalogQuickActions.vue'
 import { useTracksApi, type Track } from '@/services/api/catalog/tracks'
-import { useArtistsApi, type Artist } from '@/services/api/catalog/artists'
-import { useAlbumsApi, type Album } from '@/services/api/catalog/albums'
-import { useGenresApi, type Genre } from '@/services/api/catalog/genres'
 import { useIngestionApi } from '@/services/api/ingestion/routes'
 import type { IngestionStats } from '@/services/api/ingestion/types'
 
 const { getTracks } = useTracksApi()
-const { getArtists } = useArtistsApi()
-const { getAlbums } = useAlbumsApi()
-const { getGenres } = useGenresApi()
 const ingestionApi = useIngestionApi()
 
 const loading = ref(false)
 const error = ref<unknown>(null)
 
 const tracks = ref<Track[]>([])
-const artists = ref<Artist[]>([])
-const albums = ref<Album[]>([])
-const genres = ref<Genre[]>([])
 const ingestionStats = ref<IngestionStats | null>(null)
+const stats = ref<{ track_count: number; artist_count: number; album_count: number; genre_count: number } | null>(null)
 
-const trackCount = computed(() => tracks.value.length)
-const artistCount = computed(() => artists.value.length)
-const albumCount = computed(() => albums.value.length)
-const genreCount = computed(() => genres.value.length)
+const trackCount = computed(() => stats.value?.track_count ?? tracks.value.length)
+const artistCount = computed(() => stats.value?.artist_count ?? 0)
+const albumCount = computed(() => stats.value?.album_count ?? 0)
+const genreCount = computed(() => stats.value?.genre_count ?? 0)
 
 const totalEntityCount = computed(() => {
   return trackCount.value + artistCount.value + albumCount.value + genreCount.value
@@ -395,9 +387,17 @@ async function fetchDashboard(): Promise<void> {
   error.value = null
 
   try {
-    const results = await Promise.allSettled([getTracks(), getArtists(), getAlbums(), getGenres(), ingestionApi.getIngestionStats()])
+    const [statsResult, tracksResult, ingestionResult] = await Promise.allSettled([
+      fetch('/api/v1/admin/dashboard/stats').then(r => r.json()).then(r => r.data),
+      getTracks(),
+      ingestionApi.getIngestionStats(),
+    ])
 
-    const [tracksResult, artistsResult, albumsResult, genresResult, statsResult] = results
+    if (statsResult.status === 'fulfilled' && statsResult.value) {
+      stats.value = statsResult.value
+    } else {
+      console.error('Failed to fetch dashboard stats:', statsResult.status === 'rejected' ? statsResult.reason : 'no data')
+    }
 
     if (tracksResult.status === 'fulfilled') {
       tracks.value = toArray<Track>(tracksResult.value)
@@ -407,44 +407,16 @@ async function fetchDashboard(): Promise<void> {
       error.value = tracksResult.reason
     }
 
-    if (artistsResult.status === 'fulfilled') {
-      artists.value = toArray<Artist>(artistsResult.value)
+    if (ingestionResult.status === 'fulfilled') {
+      ingestionStats.value = ingestionResult.value
     } else {
-      console.error('Failed to fetch dashboard artists:', artistsResult.reason)
-      artists.value = []
-      error.value = artistsResult.reason
-    }
-
-    if (albumsResult.status === 'fulfilled') {
-      albums.value = toArray<Album>(albumsResult.value)
-    } else {
-      console.error('Failed to fetch dashboard albums:', albumsResult.reason)
-      albums.value = []
-      error.value = albumsResult.reason
-    }
-
-    if (genresResult.status === 'fulfilled') {
-      genres.value = toArray<Genre>(genresResult.value)
-    } else {
-      console.error('Failed to fetch dashboard genres:', genresResult.reason)
-      genres.value = []
-      error.value = genresResult.reason
-    }
-
-    if (statsResult.status === 'fulfilled') {
-      ingestionStats.value = statsResult.value
-    } else {
-      console.error('Failed to fetch ingestion stats:', statsResult.reason)
+      console.error('Failed to fetch ingestion stats:', ingestionResult.reason)
       ingestionStats.value = null
     }
   } catch (err) {
     console.error('Failed to fetch dashboard:', err)
     error.value = err
-
     tracks.value = []
-    artists.value = []
-    albums.value = []
-    genres.value = []
     ingestionStats.value = null
   } finally {
     loading.value = false

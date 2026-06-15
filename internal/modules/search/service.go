@@ -21,15 +21,6 @@ func NewService(client *opensearch.Client) *Service {
 
 func (s *Service) Search(ctx context.Context, query string, limit int) (*SearchResponse, error) {
 	query = strings.TrimSpace(query)
-	if query == "" {
-		return &SearchResponse{
-			Query:     query,
-			Tracks:    []TrackResult{},
-			Albums:    []AlbumResult{},
-			Artists:   []ArtistResult{},
-			Playlists: []PlaylistResult{},
-		}, nil
-	}
 
 	if limit <= 0 {
 		limit = 10
@@ -38,33 +29,28 @@ func (s *Service) Search(ctx context.Context, query string, limit int) (*SearchR
 		limit = 50
 	}
 
-	tracks, err := s.searchTracks(ctx, query, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	albums, err := s.searchAlbums(ctx, query, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	artists, err := s.searchArtists(ctx, query, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	playlists, err := s.searchPlaylists(ctx, query, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	return &SearchResponse{
+	resp := &SearchResponse{
 		Query:     query,
-		Tracks:    tracks,
-		Albums:    albums,
-		Artists:   artists,
-		Playlists: playlists,
-	}, nil
+		Tracks:    []TrackResult{},
+		Albums:    []AlbumResult{},
+		Artists:   []ArtistResult{},
+		Playlists: []PlaylistResult{},
+	}
+
+	if query == "" {
+		return resp, nil
+	}
+
+	tracks, _ := s.searchTracks(ctx, query, limit)
+	albums, _ := s.searchAlbums(ctx, query, limit)
+	artists, _ := s.searchArtists(ctx, query, limit)
+	playlists, _ := s.searchPlaylists(ctx, query, limit)
+
+	resp.Tracks = tracks
+	resp.Albums = albums
+	resp.Artists = artists
+	resp.Playlists = playlists
+	return resp, nil
 }
 
 func (s *Service) searchTracks(ctx context.Context, q string, limit int) ([]TrackResult, error) {
@@ -153,7 +139,7 @@ func (s *Service) searchArtists(ctx context.Context, q string, limit int) ([]Art
 		},
 	}
 
-	respBody, err := s.doSearch(ctx, "artist", body)
+	respBody, err := s.doSearch(ctx, "artists", body)
 	if err != nil {
 		return nil, err
 	}

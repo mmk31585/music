@@ -60,10 +60,27 @@
       <!-- Image URL -->
       <div>
         <label class="mb-1.5 block text-xs font-medium text-slate-400">Image URL</label>
-        <InputText
-          v-model="form.image_url"
-          placeholder="https://example.com/artist.jpg"
-          class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white placeholder:!text-slate-600 focus:!border-emerald-500/40 focus:!ring-1 focus:!ring-emerald-500/20"
+        <div class="flex gap-2">
+          <InputText
+            v-model="form.image_url"
+            placeholder="https://example.com/artist.jpg"
+            class="flex-1 !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white placeholder:!text-slate-600 focus:!border-emerald-500/40 focus:!ring-1 focus:!ring-emerald-500/20"
+          />
+          <Button
+            icon="pi pi-upload"
+            severity="secondary"
+            outlined
+            :loading="uploading"
+            class="!rounded-xl !border-white/[0.08] !bg-white/[0.03] hover:!bg-white/[0.08]"
+            @click="triggerFileInput"
+          />
+        </div>
+        <input
+          ref="fileInput"
+          type="file"
+          accept="image/*"
+          class="hidden"
+          @change="handleFileUpload"
         />
       </div>
 
@@ -103,11 +120,13 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed, watch } from 'vue'
+import { reactive, computed, watch, ref } from 'vue'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
+import { useToast } from 'primevue/usetoast'
+import { useMediaApi } from '@/services/api/media/routes'
 import type { Artist } from '@/services/api/catalog/artists'
 import type { ArtistFormPayload } from '@/composables/admin/useAdminArtists'
 
@@ -123,6 +142,10 @@ const emit = defineEmits<{
 }>()
 
 const isEditing = computed(() => !!props.artist)
+const toast = useToast()
+const mediaApi = useMediaApi()
+const fileInput = ref<HTMLInputElement | null>(null)
+const uploading = ref(false)
 
 const form = reactive<ArtistFormPayload>({
   name: '',
@@ -176,5 +199,29 @@ function handleSubmit() {
 function onImageError(e: Event) {
   const img = e.target as HTMLImageElement
   img.style.display = 'none'
+}
+
+function triggerFileInput() {
+  fileInput.value?.click()
+}
+
+async function handleFileUpload(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  uploading.value = true
+  try {
+    const res = await mediaApi.uploadAdminMedia('artistImage', file)
+    if (res?.url) {
+      form.image_url = res.url
+      toast.add({ severity: 'success', summary: 'Uploaded', detail: 'Image uploaded successfully', life: 3000 })
+    }
+  } catch {
+    toast.add({ severity: 'error', summary: 'Upload failed', detail: 'Could not upload image', life: 4000 })
+  } finally {
+    uploading.value = false
+    input.value = ''
+  }
 }
 </script>

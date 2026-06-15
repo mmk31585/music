@@ -14,10 +14,10 @@ import (
 var ErrTrackNotFound = errors.New("track not found")
 
 type TrackMeta struct {
-	ID       string
-	ArtistID *string
-	AlbumID  *string
-	Genre    *string
+	ID       string   `db:"id"`
+	ArtistID *string  `db:"artist_id"`
+	AlbumID  *string  `db:"album_id"`
+	Genre    *string  `db:"genre"`
 }
 
 type Repository interface {
@@ -92,7 +92,7 @@ GROUP BY t.id, t.title, t.artist_id, a.name, t.album_id, al.title, t.cover_url, 
 ORDER BY COUNT(ph.id) DESC, t.title ASC
 LIMIT $1
 `
-	var items []TrackItem
+	items := make([]TrackItem, 0)
 	if err := r.db.SelectContext(ctx, &items, query, limit); err != nil {
 		return nil, err
 	}
@@ -208,7 +208,7 @@ FROM (
 ORDER BY x.played_at DESC
 LIMIT $2
 `
-	var items []TrackItem
+	items := make([]TrackItem, 0)
 	if err := r.db.SelectContext(ctx, &items, query, userID, limit); err != nil {
 		return nil, err
 	}
@@ -331,7 +331,7 @@ WHERE t.artist_id = $1
 ORDER BY t.title ASC
 LIMIT $2
 `
-	var items []TrackItem
+	items := make([]TrackItem, 0)
 	if err := r.db.SelectContext(ctx, &items, query, artistID, limit); err != nil {
 		return nil, err
 	}
@@ -344,7 +344,7 @@ WHERE EXISTS (SELECT 1 FROM track_genres tg JOIN genres g ON g.id = tg.genre_id 
 ORDER BY t.title ASC
 LIMIT $2
 `
-	var items []TrackItem
+	items := make([]TrackItem, 0)
 	if err := r.db.SelectContext(ctx, &items, query, genre, limit); err != nil {
 		return nil, err
 	}
@@ -444,7 +444,7 @@ LIMIT $%d
 
 	args = append(args, limit)
 
-	var items []TrackItem
+	items := make([]TrackItem, 0)
 	if err := r.db.SelectContext(ctx, &items, query, args...); err != nil {
 		return nil, err
 	}
@@ -479,7 +479,7 @@ LIMIT $%d
 
 	args = append(args, limit)
 
-	var items []TrackItem
+	items := make([]TrackItem, 0)
 	if err := r.db.SelectContext(ctx, &items, query, args...); err != nil {
 		return nil, err
 	}
@@ -496,7 +496,7 @@ func (r *repository) GetTracksByIDs(ctx context.Context, trackIDs []string) ([]T
 WHERE t.id IN (%s)
 `, inClause)
 
-	var items []TrackItem
+	items := make([]TrackItem, 0)
 	if err := r.db.SelectContext(ctx, &items, query, args...); err != nil {
 		return nil, err
 	}

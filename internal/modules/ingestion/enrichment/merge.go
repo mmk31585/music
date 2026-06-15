@@ -2,7 +2,7 @@ package enrichment
 
 import "strings"
 
-func MergeResults(mb *MusicBrainzResult, lfm *LastFMResult, spot *SpotifyResult) EnrichmentResult {
+func MergeResults(mb *MusicBrainzResult, lfm *LastFMResult, spot *SpotifyResult, lrc *LRCLibResult) EnrichmentResult {
 	result := EnrichmentResult{
 		MusicBrainz: mb,
 		LastFM:      lfm,
@@ -20,6 +20,7 @@ func MergeResults(mb *MusicBrainzResult, lfm *LastFMResult, spot *SpotifyResult)
 	result.Suggestions = append(result.Suggestions, mergePopularity(spot)...)
 	result.Suggestions = append(result.Suggestions, mergeArtistBio(lfm)...)
 	result.Suggestions = append(result.Suggestions, mergeSimilarArtists(lfm)...)
+	result.Suggestions = append(result.Suggestions, mergeLyrics(lrc)...)
 
 	return result
 }
@@ -208,6 +209,34 @@ func mergeArtistBio(lfm *LastFMResult) []EnrichedSuggestion {
 		Value:      lfm.ArtistBio,
 		Source:     SourceLastFM,
 		Confidence: ConfidenceFuzzy,
+	}}
+}
+
+func mergeLyrics(lrc *LRCLibResult) []EnrichedSuggestion {
+	if lrc == nil {
+		return nil
+	}
+	content := lrc.SyncedLyrics
+	if content == "" {
+		content = lrc.PlainLyrics
+	}
+	if content == "" {
+		return nil
+	}
+	lyricsType := "plain"
+	if lrc.Synced {
+		lyricsType = "lrc"
+	}
+	return []EnrichedSuggestion{{
+		Field:      "lyrics",
+		Value:      content,
+		Source:     "lrclib",
+		Confidence: ConfidenceExact,
+	}, {
+		Field:      "lyrics_type",
+		Value:      lyricsType,
+		Source:     "lrclib",
+		Confidence: ConfidenceExact,
 	}}
 }
 

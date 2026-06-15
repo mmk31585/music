@@ -11,6 +11,7 @@ import (
 	"music/internal/modules/catalog/genre"
 	"music/internal/modules/catalog/track"
 	"music/internal/modules/creator"
+	"music/internal/modules/dashboard"
 	"music/internal/modules/follow"
 	"music/internal/modules/gamification"
 	"music/internal/modules/health"
@@ -21,6 +22,7 @@ import (
 	"music/internal/modules/library"
 	"music/internal/modules/lyrics"
 	"music/internal/modules/media"
+	"music/internal/modules/moderation"
 	"music/internal/modules/notification"
 	"music/internal/modules/player"
 	"music/internal/modules/playlist"
@@ -100,6 +102,9 @@ type Container struct {
 	NotificationService *notification.Service
 	NotificationHandler *notification.Handler
 
+	ModerationService *moderation.Service
+	ModerationHandler *moderation.Handler
+
 	SubscriptionService *subscription.Service
 	SubscriptionHandler *subscription.Handler
 
@@ -124,6 +129,8 @@ type Container struct {
 
 	CreatorService *creator.Service
 	CreatorHandler *creator.Handler
+
+	DashboardHandler *dashboard.Handler
 }
 
 func NewContainer(a *App) *Container {
@@ -158,9 +165,11 @@ func NewContainer(a *App) *Container {
 	c.buildIngestion(a)
 	c.buildSearch(a)
 	c.buildSocial(a)
+	c.buildModeration()
 	c.buildReactions()
 	c.buildGamification()
 	c.buildCreator()
+	c.buildDashboard()
 	c.subscribeEvents()
 
 	return c
@@ -333,8 +342,9 @@ func (c *Container) buildIngestion(a *App) {
 	mbClient := enrichment.NewMusicBrainzClient(enrichCfg.MusicBrainz)
 	lfmClient := enrichment.NewLastFMClient(enrichCfg.LastFM)
 	spotClient := enrichment.NewSpotifyClient(enrichCfg.Spotify)
+	lrcClient := enrichment.NewLRCLibClient()
 
-	enricher := enrichment.NewEnricher(mbClient, lfmClient, spotClient, zap.L())
+	enricher := enrichment.NewEnricher(mbClient, lfmClient, spotClient, lrcClient, zap.L())
 
 	c.IngestionFinalization = finalization.NewService(c.SQLX, c.Storage, zap.L())
 	c.IngestionService = ingestion.NewService(c.Storage, ingestionRepo, enricher)
@@ -367,6 +377,12 @@ func (c *Container) buildSearch(a *App) {
 	c.SearchHandler = search.NewHandler(c.SearchService)
 }
 
+func (c *Container) buildModeration() {
+	moderationRepo := moderation.NewRepository(c.SQLX)
+	c.ModerationService = moderation.NewService(moderationRepo)
+	c.ModerationHandler = moderation.NewHandler(c.ModerationService)
+}
+
 func (c *Container) buildSocial(a *App) {
 	c.WSHub = ws.NewHub(a.Logger)
 	go c.WSHub.Run(context.Background())
@@ -394,6 +410,10 @@ func (c *Container) buildCreator() {
 	creatorRepo := creator.NewRepository(c.SQLX)
 	c.CreatorService = creator.NewService(creatorRepo)
 	c.CreatorHandler = creator.NewHandler(c.CreatorService)
+}
+
+func (c *Container) buildDashboard() {
+	c.DashboardHandler = dashboard.NewHandler(c.SQLX)
 }
 
 func (c *Container) subscribeEvents() {

@@ -2,7 +2,6 @@ package finalization
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"io"
 	"testing"
@@ -179,17 +178,9 @@ func TestFinalize_CreateArtistAndAlbum(t *testing.T) {
 		WithArgs("draft-2").
 		WillReturnRows(sqlmock.NewRows([]string{"asset_type", "url"}))
 
-	mock.ExpectQuery(`SELECT id FROM genres`).
-		WithArgs("rock").
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("cc0e8400-e29b-41d4-a716-446655440002"))
-
-	mock.ExpectQuery(`SELECT id FROM genres`).
-		WithArgs("pop").
-		WillReturnError(sql.ErrNoRows)
-
 	mock.ExpectQuery(`INSERT INTO genres`).
-		WithArgs("Pop", "pop").
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("dd0e8400-e29b-41d4-a716-446655440003"))
+		WithArgs("Rock", "rock", "Pop", "pop").
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("cc0e8400-e29b-41d4-a716-446655440002").AddRow("dd0e8400-e29b-41d4-a716-446655440003"))
 
 	mock.ExpectQuery(`INSERT INTO tracks`).
 		WithArgs("aa0e8400-e29b-41d4-a716-446655440000", sqlmock.AnyArg(), "New Track", "new-track", 240, 1, true, "/storage/catalog-audio/aa0e8400-e29b-41d4-a716-446655440000/draft-2-file.mp3", "https://img/cover.jpg").
@@ -200,11 +191,7 @@ func TestFinalize_CreateArtistAndAlbum(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	mock.ExpectExec(`INSERT INTO track_genres`).
-		WithArgs("ee0e8400-e29b-41d4-a716-446655440004", "cc0e8400-e29b-41d4-a716-446655440002").
-		WillReturnResult(sqlmock.NewResult(0, 1))
-
-	mock.ExpectExec(`INSERT INTO track_genres`).
-		WithArgs("ee0e8400-e29b-41d4-a716-446655440004", "dd0e8400-e29b-41d4-a716-446655440003").
+		WithArgs("ee0e8400-e29b-41d4-a716-446655440004", "cc0e8400-e29b-41d4-a716-446655440002", "dd0e8400-e29b-41d4-a716-446655440003").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	mock.ExpectExec(`UPDATE ingestion_drafts`).

@@ -171,6 +171,30 @@ export const useIngestionApi = () => {
     )
   }
 
+  const uploadDraftImage = async (
+    draftId: string,
+    entity: string,
+    file: File,
+    config?: UseRequestConfig<{ url: string }>,
+    requestConfig?: Pick<AxiosRequestConfig, 'onUploadProgress' | 'signal'>,
+  ) => {
+    const formData = new FormData()
+    formData.append('image', file)
+
+    return useRequest<{ url: string }>(
+      IngestionApiRoutes.ADMIN_UPLOAD_IMAGE.replace(':id', draftId).replace(':entity', entity),
+      {
+        method: 'POST',
+        data: formData,
+        ...requestConfig,
+      },
+      {
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
   const getIngestionStats = async (
     config?: UseRequestConfig<IngestionStats>,
   ) => {

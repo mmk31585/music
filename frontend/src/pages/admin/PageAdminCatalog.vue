@@ -300,6 +300,8 @@ const artists = ref<Artist[]>([])
 const albums = ref<Album[]>([])
 const genres = ref<Genre[]>([])
 
+// TODO HIGH: Fetching ALL catalog items just for preview counts is wasteful.
+// Use a dedicated stats endpoint when available. Also, Promise.all will crash all on single failure — use Promise.allSettled instead.
 async function fetchCatalog() {
   loading.value = true
   try {
@@ -318,8 +320,9 @@ async function fetchCatalog() {
   }
 }
 
+// TODO MEDIUM: formatDuration treats 0 as falsy — 0-second tracks show '—' instead of '0:00'.
 function formatDuration(value?: number | null): string {
-  if (!value) return '—'
+  if (value === null || value === undefined || value <= 0) return '—'
   const mins = Math.floor(value / 60)
   const secs = value % 60
   return `${mins}:${String(secs).padStart(2, '0')}`

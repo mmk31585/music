@@ -14,14 +14,16 @@ type Enricher struct {
 	musicBrainz MusicBrainzClient
 	lastFM      LastFMClient
 	spotify     SpotifyClient
+	lrclib      LRCLibClient
 	logger      *zap.Logger
 }
 
-func NewEnricher(mb MusicBrainzClient, lfm LastFMClient, spot SpotifyClient, logger *zap.Logger) *Enricher {
+func NewEnricher(mb MusicBrainzClient, lfm LastFMClient, spot SpotifyClient, lrc LRCLibClient, logger *zap.Logger) *Enricher {
 	return &Enricher{
 		musicBrainz: mb,
 		lastFM:      lfm,
 		spotify:     spot,
+		lrclib:      lrc,
 		logger:      logger,
 	}
 }
@@ -41,13 +43,14 @@ func (e *Enricher) Enrich(ctx context.Context, title, artist, album string) (*En
 	defer cancel()
 
 	var (
-		mbResult  *MusicBrainzResult
-		lfmResult *LastFMResult
+		mbResult   *MusicBrainzResult
+		lfmResult  *LastFMResult
 		spotResult *SpotifyResult
+		lrcResult  *LRCLibResult
 	)
 
 	var wg sync.WaitGroup
-	wg.Add(3)
+	wg.Add(4)
 
 	go func() {
 		defer wg.Done()
@@ -76,9 +79,18 @@ func (e *Enricher) Enrich(ctx context.Context, title, artist, album string) (*En
 		}
 	}()
 
+	go func() {
+		defer wg.Done()
+		var err error
+		lrcResult, err = e.lrclib.SearchLyrics(ctx, query)
+		if err != nil {
+			e.logger.Warn("lrclib enrichment failed", zap.Error(err))
+		}
+	}()
+
 	wg.Wait()
 
-	result := MergeResults(mbResult, lfmResult, spotResult)
+	result := MergeResults(mbResult, lfmResult, spotResult, lrcResult)
 	return &result, nil
 }
 
@@ -94,6 +106,9 @@ func DeserializeResult(raw string) (*EnrichmentResult, error) {
 	var result EnrichmentResult
 	if err := json.Unmarshal([]byte(raw), &result); err != nil {
 		return nil, fmt.Errorf("unmarshal enrichment result: %w", err)
+	}
+	if result.Suggestions == nil {
+		result.Suggestions = []EnrichedSuggestion{}
 	}
 	return &result, nil
 }

@@ -19,6 +19,7 @@ func RegisterAdminRoutes(rg *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc
 		admin.PATCH("/drafts/:id/final-metadata", h.SaveFinalMetadata)
 		admin.POST("/drafts/:id/reject", h.RejectDraft)
 		admin.POST("/drafts/:id/finalize", h.FinalizeDraft)
+		admin.POST("/drafts/:id/images/:entity", h.UploadDraftImage)
 		admin.GET("/stats", h.GetStats)
 		admin.POST("/cleanup", h.TriggerCleanup)
 		admin.GET("/config", h.GetConfig)

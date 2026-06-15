@@ -3,6 +3,7 @@ package lyrics
 import (
 	"context"
 	"errors"
+	"regexp"
 	"strings"
 
 	"music/internal/modules/lyrics/lrc"
@@ -12,6 +13,12 @@ var (
 	ErrForbiddenLyricsAccess = errors.New("forbidden lyrics access")
 	ErrInvalidLyricsLanguage = errors.New("invalid lyrics language")
 )
+
+var lrcPattern = regexp.MustCompile(`(?m)^\[\d{1,2}:\d{2}[\.:]\d{2,3}\]`)
+
+func isLRCLyrics(content string) bool {
+	return lrcPattern.MatchString(content)
+}
 
 type Service struct {
 	repo *Repository
@@ -28,8 +35,12 @@ func (s *Service) CreateLyrics(ctx context.Context, req CreateLyricsRequest) (Ly
 		return Lyrics{}, ErrInvalidLyricsLanguage
 	}
 
-	// Validate type
+	// Auto-detect LRC from content
 	req.Type = strings.TrimSpace(req.Type)
+	if isLRCLyrics(req.Content) {
+		req.Type = "lrc"
+	}
+
 	if req.Type != "plain" && req.Type != "lrc" {
 		return Lyrics{}, ErrInvalidLyricsType
 	}
@@ -44,6 +55,11 @@ func (s *Service) UpdateLyrics(ctx context.Context, lyricsID string, req UpdateL
 		if *req.Language == "" {
 			return Lyrics{}, ErrInvalidLyricsLanguage
 		}
+	}
+
+	// Auto-detect LRC from content
+	if req.Content != nil && req.Type != nil && *req.Type == "plain" && isLRCLyrics(*req.Content) {
+		*req.Type = "lrc"
 	}
 
 	// Validate type if provided

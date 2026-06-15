@@ -659,7 +659,6 @@ const userDetail = ref<AdminUser | null>(null)
 const detailLoading = ref(false)
 
 function viewUser(u: AdminUser) {
-  userDetail.value = u
   showDetailDialog.value = true
   detailLoading.value = true
   adminGetUser(u.id)

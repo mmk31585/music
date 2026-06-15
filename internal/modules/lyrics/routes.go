@@ -2,6 +2,8 @@ package lyrics
 
 import (
 	"github.com/gin-gonic/gin"
+
+	"music/internal/modules/auth"
 )
 
 func RegisterRoutes(api *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
@@ -11,7 +13,7 @@ func RegisterRoutes(api *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
 
 	// Admin routes (protected)
 	admin := api.Group("/admin")
-	admin.Use(authMW)
+	admin.Use(authMW, auth.RequireRole("admin"))
 	{
 		admin.POST("/lyrics", h.CreateLyrics)
 		admin.PUT("/lyrics/:id", h.UpdateLyrics)

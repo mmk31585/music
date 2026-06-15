@@ -73,8 +73,8 @@ func (h *Handler) UnlikeTrack(c *gin.Context) {
 		return
 	}
 
-	trackID, err := parseInt64Param(c, "trackId")
-	if err != nil {
+	trackID := parseUUIDParam(c, "trackId")
+	if trackID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid track id"})
 		return
 	}
@@ -170,8 +170,8 @@ func (h *Handler) UnlikeAlbum(c *gin.Context) {
 		return
 	}
 
-	albumID, err := parseInt64Param(c, "albumId")
-	if err != nil {
+	albumID := parseUUIDParam(c, "albumId")
+	if albumID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid album id"})
 		return
 	}
@@ -267,8 +267,8 @@ func (h *Handler) UnfollowArtist(c *gin.Context) {
 		return
 	}
 
-	artistID, err := parseInt64Param(c, "artistId")
-	if err != nil {
+	artistID := parseUUIDParam(c, "artistId")
+	if artistID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid artist id"})
 		return
 	}
@@ -422,18 +422,18 @@ func (h *Handler) handleError(c *gin.Context, err error) {
 	}
 }
 
-func getUserIDFromGin(c *gin.Context) (int64, bool) {
-	v, exists := c.Get("user_id")
+func getUserIDFromGin(c *gin.Context) (string, bool) {
+	v, exists := c.Get("auth_user_id")
 	if !exists {
-		return 0, false
+		return "", false
 	}
 
-	id, ok := v.(int64)
+	id, ok := v.(string)
 	return id, ok
 }
 
-func parseInt64Param(c *gin.Context, key string) (int64, error) {
-	return strconv.ParseInt(c.Param(key), 10, 64)
+func parseUUIDParam(c *gin.Context, key string) string {
+	return c.Param(key)
 }
 
 func parseLimit(c *gin.Context, defaultValue int) int {

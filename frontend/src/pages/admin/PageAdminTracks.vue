@@ -366,6 +366,8 @@ type CatalogOption = {
   cover_url?: string | null
 }
 
+// TODO HIGH: AnyTrack defeats TypeScript safety. The Track type should match actual API shape,
+// or normalizer functions should live in the API service layer. 10+ getter functions add 150+ fragile lines.
 type AnyTrack = Track & Record<string, any>
 
 const toast = useToast()
@@ -728,8 +730,9 @@ function getTrackSearchText(track: Track) {
   return normalizeSearch(parts.join(' '))
 }
 
+// TODO MEDIUM: formatDuration treats 0 as falsy — 0-second tracks show '—'.
 function formatDuration(value?: number | null): string {
-  if (!value) return '—'
+  if (value === null || value === undefined || value <= 0) return '—'
 
   const mins = Math.floor(value / 60)
   const secs = value % 60

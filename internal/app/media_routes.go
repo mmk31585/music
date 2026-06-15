@@ -42,6 +42,7 @@ func registerMediaRoutes(r *gin.Engine, mediaRoot string) {
 			return
 		}
 
+		c.Header("Cross-Origin-Resource-Policy", "cross-origin")
 		c.File(fullPath)
 	})
 }
