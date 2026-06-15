@@ -11,6 +11,8 @@ import (
 	"music/internal/modules/follow"
 	"music/internal/modules/health"
 	"music/internal/modules/history"
+	"music/internal/modules/ingestion"
+	"music/internal/modules/ingestion/enrichment"
 	"music/internal/modules/library"
 	"music/internal/modules/lyrics"
 	"music/internal/modules/media"
@@ -95,6 +97,9 @@ type Container struct {
 	PlayerService *player.Service
 	PlayerHandler *player.Handler
 
+	IngestionService *ingestion.Service
+	IngestionHandler *ingestion.Handler
+
 	SearchService *search.Service
 	SearchHandler *search.Handler
 }
@@ -128,6 +133,7 @@ func NewContainer(a *App) *Container {
 	c.buildNotification()
 	c.buildSubscription()
 	c.buildPlayer()
+	c.buildIngestion(a)
 	c.buildSearch(a)
 	c.subscribeEvents()
 
@@ -287,6 +293,24 @@ func (c *Container) buildPlayer() {
 	playerRepo := player.NewRepository(c.SQLX)
 	c.PlayerService = player.NewService(playerRepo, c.Storage, c.Bus)
 	c.PlayerHandler = player.NewHandler(c.PlayerService)
+}
+
+func (c *Container) buildIngestion(a *App) {
+	ingestionRepo := ingestion.NewRepository(c.SQLX)
+
+	enrichCfg := enrichment.DefaultConfig()
+	enrichCfg.LastFM.APIKey = a.Config.Enrichment.LastFmAPIKey
+	enrichCfg.Spotify.ClientID = a.Config.Enrichment.SpotifyClientID
+	enrichCfg.Spotify.ClientSecret = a.Config.Enrichment.SpotifyClientSecret
+
+	mbClient := enrichment.NewMusicBrainzClient(enrichCfg.MusicBrainz)
+	lfmClient := enrichment.NewLastFMClient(enrichCfg.LastFM)
+	spotClient := enrichment.NewSpotifyClient(enrichCfg.Spotify)
+
+	enricher := enrichment.NewEnricher(mbClient, lfmClient, spotClient, zap.L())
+
+	c.IngestionService = ingestion.NewService(c.Storage, ingestionRepo, enricher)
+	c.IngestionHandler = ingestion.NewHandler(c.IngestionService)
 }
 
 func (c *Container) buildSearch(a *App) {

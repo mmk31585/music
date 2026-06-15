@@ -8,6 +8,7 @@ import (
 	"music/internal/modules/follow"
 	"music/internal/modules/health"
 	"music/internal/modules/history"
+	"music/internal/modules/ingestion"
 	"music/internal/modules/library"
 	"music/internal/modules/lyrics"
 	"music/internal/modules/media"
@@ -40,6 +41,8 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	auth.RegisterRoutes(api, c.AuthHandler, c.AuthMW)
 
 	media.RegisterAdminRoutes(api, c.MediaHandler, c.AuthMW)
+
+	ingestion.RegisterAdminRoutes(api, c.IngestionHandler, c.AuthMW)
 
 	catalogHandlers := catalog.Handlers{
 		Artist: c.ArtistHandler,

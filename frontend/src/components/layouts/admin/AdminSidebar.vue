@@ -123,6 +123,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Users', icon: 'pi pi-user', to: '/admin/users' },
       { label: 'Media', icon: 'pi pi-upload', to: '/admin/media' },
+      { label: 'Music Ingestion', icon: 'pi pi-cloud-upload', to: '/admin/ingestion' },
       { label: 'Moderation', icon: 'pi pi-shield', to: '/admin/moderation' },
     ],
   },
