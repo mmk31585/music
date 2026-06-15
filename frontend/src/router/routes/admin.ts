@@ -59,6 +59,18 @@ export const adminRoutes: RouteRecordRaw[] = [
         meta: { title: 'Media' },
       },
       {
+        path: 'ingestion',
+        name: 'admin.ingestion',
+        component: () => import('@/pages/admin/PageAdminIngestion.vue'),
+        meta: { title: 'Music Ingestion' },
+      },
+      {
+        path: 'ingestion/review/:id',
+        name: 'admin.ingestion.review',
+        component: () => import('@/pages/admin/PageAdminIngestionReview.vue'),
+        meta: { title: 'Review Draft' },
+      },
+      {
         path: 'moderation',
         name: 'admin.moderation',
         component: () => import('@/pages/admin/PageAdminModeration.vue'),
