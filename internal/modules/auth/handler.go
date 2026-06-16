@@ -337,6 +337,23 @@ func (h *Handler) AdminDeleteUser(c *gin.Context) {
 	response.Success[any](c, http.StatusOK, "user deleted", nil)
 }
 
+func (h *Handler) GetPublicProfile(c *gin.Context) {
+	user, err := h.service.GetPublicProfile(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "user not found"})
+		return
+	}
+
+	response.Success(c, http.StatusOK, "ok", gin.H{
+		"id":         user.ID,
+		"username":   user.Username,
+		"full_name":  user.DisplayName,
+		"avatar_url": user.AvatarURL,
+		"created_at": user.CreatedAt,
+		"updated_at": user.UpdatedAt,
+	})
+}
+
 // clientIP extracts the client IP from a Gin context
 func clientIP(c *gin.Context) string {
 	// Try X-Forwarded-For

@@ -5,6 +5,8 @@ import (
 )
 
 func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, authMW gin.HandlerFunc) {
+	rg.GET("/users/:id/profile", handler.GetPublicProfile)
+
 	auth := rg.Group("/auth")
 	{
 		auth.POST("/register", handler.Register)

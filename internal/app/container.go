@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"music/internal/modules/ai"
 	"music/internal/modules/analytics"
 	"music/internal/modules/auth"
 	"music/internal/modules/catalog/album"
@@ -137,6 +138,8 @@ type Container struct {
 
 	ImportService *importcmd.Service
 	ImportHandler *importcmd.Handler
+
+	AIHandler *ai.Handler
 }
 
 func NewContainer(a *App) *Container {
@@ -177,6 +180,7 @@ func NewContainer(a *App) *Container {
 	c.buildCreator()
 	c.buildDashboard()
 	c.buildImport()
+	c.buildAI(a)
 	c.subscribeEvents()
 
 	return c
@@ -417,6 +421,16 @@ func (c *Container) buildCreator() {
 	creatorRepo := creator.NewRepository(c.SQLX)
 	c.CreatorService = creator.NewService(creatorRepo)
 	c.CreatorHandler = creator.NewHandler(c.CreatorService)
+}
+
+func (c *Container) buildAI(a *App) {
+	aiRepo := ai.NewRepository(c.SQLX)
+	aiClient := ai.NewOpenAIClient(
+		a.Config.AI.OpenAIEndpoint,
+		a.Config.AI.OpenAIKey,
+		a.Config.AI.EmbeddingModel,
+	)
+	c.AIHandler = ai.NewHandler(ai.NewService(aiRepo, aiClient, zap.L(), a.Config.AI.Enabled))
 }
 
 func (c *Container) buildDashboard() {

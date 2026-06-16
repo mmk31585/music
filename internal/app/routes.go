@@ -2,6 +2,7 @@ package app
 
 import (
 	"music/internal/common/middleware"
+	ai "music/internal/modules/ai"
 	"music/internal/modules/analytics"
 	"music/internal/modules/auth"
 	"music/internal/modules/catalog"
@@ -123,4 +124,5 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	gamification.RegisterRoutes(api, c.GamificationHandler, c.AuthMW)
 	creator.RegisterRoutes(api, c.CreatorHandler, c.AuthMW)
 	social.RegisterRoutes(api, c.SocialHandler, c.AuthMW)
+	ai.RegisterRoutes(api, c.AIHandler, c.AuthMW)
 }

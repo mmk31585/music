@@ -192,6 +192,14 @@ func (s *Service) AdminUpdateUser(ctx context.Context, id string, req AdminUpdat
 	return s.AdminGetUser(ctx, id)
 }
 
+func (s *Service) GetPublicProfile(ctx context.Context, id string) (*User, error) {
+	user, err := s.repo.FindPublicUser(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (s *Service) AdminDeleteUser(ctx context.Context, id string) error {
 	return s.repo.DeleteUser(ctx, id)
 }
