@@ -675,9 +675,26 @@
                   :class="{ 'min-h-64': lyricsExpanded, 'min-h-24': !lyricsExpanded }"
                   placeholder="Lyrics..."
                 />
-                <p v-if="findSuggestion('lyrics_type')?.value === 'lrc'" class="mt-1 text-[11px] text-green-400">
-                  <i class="pi pi-check-circle mr-1"></i>Synced LRC lyrics detected — timestamps will sync with playback.
-                </p>
+                <div v-if="findSuggestion('lyrics_type')?.value === 'lrc'" class="mt-1">
+                  <p class="text-[11px] text-green-400">
+                    <i class="pi pi-check-circle mr-1"></i>Synced LRC lyrics — timestamps will sync with playback.
+                  </p>
+                  <button
+                    class="mt-1 text-[11px] text-primary-400 underline hover:text-primary-300"
+                    @click="showLyricsPreview = !showLyricsPreview"
+                  >
+                    {{ showLyricsPreview ? 'Hide preview' : 'Preview synced lyrics' }}
+                  </button>
+                  <div
+                    v-if="showLyricsPreview"
+                    class="mt-2 max-h-48 overflow-y-auto rounded-lg bg-white/[0.04] p-3 font-mono text-xs leading-relaxed"
+                  >
+                    <div v-for="(line, li) in parsedLRCLines" :key="li" class="flex gap-3">
+                      <span class="w-16 flex-shrink-0 text-right text-slate-500">{{ line.time }}</span>
+                      <span class="text-white">{{ line.text }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div class="grid gap-4 md:grid-cols-2">
@@ -851,6 +868,8 @@ import type {
 import { useToast } from 'primevue/usetoast'
 
 // TODO MEDIUM: This component is 1135 lines — too large. Split into ArtistStep, AlbumStep, TrackStep, ConfirmStep sub-components.
+// TODO MEDIUM: pollEnrichment uses polling (2s x 30 = 60s). Use WebSocket or SSE instead.
+// TODO LOW: Album upsert in finalization doesn't use embedded cover as fallback when user doesn't provide one.
 defineOptions({ name: 'PageAdminIngestionReview' })
 
 const route = useRoute()
@@ -870,6 +889,7 @@ const publishResult = ref<FinalizeResult | null>(null)
 const rejectDialogVisible = ref(false)
 const rejectReason = ref('')
 const lyricsExpanded = ref(false)
+const showLyricsPreview = ref(false)
 
 const enriching = ref(false)
 
@@ -914,6 +934,24 @@ const artistSearching = ref(false)
 const albumSearching = ref(false)
 let artistSearchTimer: ReturnType<typeof setTimeout> | null = null
 let albumSearchTimer: ReturnType<typeof setTimeout> | null = null
+
+const parsedLRCLines = computed(() => {
+  const text = finalMetadata.track.lyrics
+  if (!text) return []
+  const lines: { time: string; text: string }[] = []
+  for (const line of text.split('\n')) {
+    const match = line.match(/^\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/)
+    if (match) {
+      const m = parseInt(match[1])
+      const s = parseInt(match[2])
+      const time = `${m}:${s.toString().padStart(2, '0')}`
+      lines.push({ time, text: match[4].trim() })
+    } else if (line.trim()) {
+      lines.push({ time: '', text: line.trim() })
+    }
+  }
+  return lines
+})
 
 const canProceed = computed(() => {
   if (step.value === 0) return finalMetadata.artist.name.trim().length > 0

@@ -1,6 +1,10 @@
 package playlist
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type CreatePlaylistRequest struct {
 	Name        string  `json:"name" binding:"required,min=1,max=255"`
@@ -17,17 +21,17 @@ type UpdatePlaylistRequest struct {
 }
 
 type AddTrackRequest struct {
-	TrackID int64 `json:"track_id" binding:"required"`
+	TrackID uuid.UUID `json:"track_id" binding:"required"`
 }
 
 type ReorderTrackRequest struct {
-	TrackID     int64 `json:"track_id" binding:"required"`
-	NewPosition int   `json:"new_position" binding:"required"`
+	TrackID     uuid.UUID `json:"track_id" binding:"required"`
+	NewPosition int       `json:"new_position" binding:"required"`
 }
 
 type PlaylistResponse struct {
-	ID          int64               `json:"id"`
-	UserID      int64               `json:"user_id"`
+	ID          uuid.UUID           `json:"id"`
+	UserID      uuid.UUID           `json:"user_id"`
 	Name        string              `json:"name"`
 	Description *string             `json:"description,omitempty"`
 	CoverURL    *string             `json:"cover_url,omitempty"`
@@ -38,8 +42,8 @@ type PlaylistResponse struct {
 }
 
 type PlaylistListItemResponse struct {
-	ID          int64     `json:"id"`
-	UserID      int64     `json:"user_id"`
+	ID          uuid.UUID `json:"id"`
+	UserID      uuid.UUID `json:"user_id"`
 	Name        string    `json:"name"`
 	Description *string   `json:"description,omitempty"`
 	CoverURL    *string   `json:"cover_url,omitempty"`

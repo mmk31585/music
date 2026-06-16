@@ -101,6 +101,8 @@
 </template>
 
 <script setup lang="ts">
+// TODO MEDIUM: Media from ingestion flow (uploaded audio/covers) don't appear here — they're in ingestion_drafts, not media table.
+// TODO LOW: No pagination — large media lists may impact performance.
 import { ref, onMounted } from 'vue'
 import Button from 'primevue/button'
 import AdminDeleteConfirm from '@/components/admin/AdminDeleteConfirm.vue'

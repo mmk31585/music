@@ -59,6 +59,12 @@ export const adminRoutes: RouteRecordRaw[] = [
         meta: { title: 'Media' },
       },
       {
+        path: 'import',
+        name: 'admin.import',
+        component: () => import('@/pages/admin/PageAdminImport.vue'),
+        meta: { title: 'Import from Internet' },
+      },
+      {
         path: 'ingestion',
         name: 'admin.ingestion',
         component: () => import('@/pages/admin/PageAdminIngestion.vue'),

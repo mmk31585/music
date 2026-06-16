@@ -3,9 +3,11 @@ package playlist
 import (
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+
+	"music/internal/platform/web"
 )
 
 type Handler struct {
@@ -30,7 +32,7 @@ func NewHandler(service *Service) *Handler {
 // @Failure 500 {object} map[string]interface{}
 // @Router /playlists [post]
 func (h *Handler) CreatePlaylist(c *gin.Context) {
-	userID, ok := getUserIDFromGin(c)
+	userID, ok := web.GetRequiredUserUUID(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "unauthorized"})
 		return
@@ -61,7 +63,7 @@ func (h *Handler) CreatePlaylist(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param id path int true "Playlist ID"
+// @Param id path string true "Playlist ID"
 // @Param request body UpdatePlaylistRequest true "Update playlist request"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]interface{}
@@ -71,13 +73,13 @@ func (h *Handler) CreatePlaylist(c *gin.Context) {
 // @Failure 500 {object} map[string]interface{}
 // @Router /playlists/{id} [put]
 func (h *Handler) UpdatePlaylist(c *gin.Context) {
-	userID, ok := getUserIDFromGin(c)
+	userID, ok := web.GetRequiredUserUUID(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "unauthorized"})
 		return
 	}
 
-	playlistID, err := parseInt64Param(c, "id")
+	playlistID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid playlist id"})
 		return
@@ -108,7 +110,7 @@ func (h *Handler) UpdatePlaylist(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param id path int true "Playlist ID"
+// @Param id path string true "Playlist ID"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]interface{}
 // @Failure 401 {object} map[string]interface{}
@@ -117,13 +119,13 @@ func (h *Handler) UpdatePlaylist(c *gin.Context) {
 // @Failure 500 {object} map[string]interface{}
 // @Router /playlists/{id} [delete]
 func (h *Handler) DeletePlaylist(c *gin.Context) {
-	userID, ok := getUserIDFromGin(c)
+	userID, ok := web.GetRequiredUserUUID(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "unauthorized"})
 		return
 	}
 
-	playlistID, err := parseInt64Param(c, "id")
+	playlistID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid playlist id"})
 		return
@@ -146,7 +148,7 @@ func (h *Handler) DeletePlaylist(c *gin.Context) {
 // @Tags playlists
 // @Accept json
 // @Produce json
-// @Param id path int true "Playlist ID"
+// @Param id path string true "Playlist ID"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]interface{}
 // @Failure 403 {object} map[string]interface{}
@@ -154,14 +156,14 @@ func (h *Handler) DeletePlaylist(c *gin.Context) {
 // @Failure 500 {object} map[string]interface{}
 // @Router /playlists/{id} [get]
 func (h *Handler) GetPlaylist(c *gin.Context) {
-	playlistID, err := parseInt64Param(c, "id")
+	playlistID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid playlist id"})
 		return
 	}
 
-	var requesterID *int64
-	if userID, ok := getUserIDFromGin(c); ok {
+	var requesterID *uuid.UUID
+	if userID, ok := web.GetRequiredUserUUID(c); ok {
 		requesterID = &userID
 	}
 
@@ -211,7 +213,7 @@ func (h *Handler) ListPublicPlaylists(c *gin.Context) {
 // @Failure 500 {object} map[string]interface{}
 // @Router /playlists/me [get]
 func (h *Handler) ListMyPlaylists(c *gin.Context) {
-	userID, ok := getUserIDFromGin(c)
+	userID, ok := web.GetRequiredUserUUID(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "unauthorized"})
 		return
@@ -236,7 +238,7 @@ func (h *Handler) ListMyPlaylists(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param id path int true "Playlist ID"
+// @Param id path string true "Playlist ID"
 // @Param request body AddTrackRequest true "Add track request"
 // @Success 201 {object} map[string]interface{}
 // @Failure 400 {object} map[string]interface{}
@@ -247,13 +249,13 @@ func (h *Handler) ListMyPlaylists(c *gin.Context) {
 // @Failure 500 {object} map[string]interface{}
 // @Router /playlists/{id}/tracks [post]
 func (h *Handler) AddTrack(c *gin.Context) {
-	userID, ok := getUserIDFromGin(c)
+	userID, ok := web.GetRequiredUserUUID(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "unauthorized"})
 		return
 	}
 
-	playlistID, err := parseInt64Param(c, "id")
+	playlistID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid playlist id"})
 		return
@@ -283,8 +285,8 @@ func (h *Handler) AddTrack(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param id path int true "Playlist ID"
-// @Param trackId path int true "Track ID"
+// @Param id path string true "Playlist ID"
+// @Param trackId path string true "Track ID"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]interface{}
 // @Failure 401 {object} map[string]interface{}
@@ -293,19 +295,19 @@ func (h *Handler) AddTrack(c *gin.Context) {
 // @Failure 500 {object} map[string]interface{}
 // @Router /playlists/{id}/tracks/{trackId} [delete]
 func (h *Handler) RemoveTrack(c *gin.Context) {
-	userID, ok := getUserIDFromGin(c)
+	userID, ok := web.GetRequiredUserUUID(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "unauthorized"})
 		return
 	}
 
-	playlistID, err := parseInt64Param(c, "id")
+	playlistID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid playlist id"})
 		return
 	}
 
-	trackID, err := parseInt64Param(c, "trackId")
+	trackID, err := uuid.Parse(c.Param("trackId"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid track id"})
 		return
@@ -329,7 +331,7 @@ func (h *Handler) RemoveTrack(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param id path int true "Playlist ID"
+// @Param id path string true "Playlist ID"
 // @Param request body ReorderTrackRequest true "Reorder track request"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]interface{}
@@ -339,13 +341,13 @@ func (h *Handler) RemoveTrack(c *gin.Context) {
 // @Failure 500 {object} map[string]interface{}
 // @Router /playlists/{id}/tracks/reorder [put]
 func (h *Handler) ReorderTrack(c *gin.Context) {
-	userID, ok := getUserIDFromGin(c)
+	userID, ok := web.GetRequiredUserUUID(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "unauthorized"})
 		return
 	}
 
-	playlistID, err := parseInt64Param(c, "id")
+	playlistID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid playlist id"})
 		return
@@ -387,19 +389,4 @@ func (h *Handler) handleError(c *gin.Context, err error) {
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "internal server error"})
 	}
-}
-
-func parseInt64Param(c *gin.Context, key string) (int64, error) {
-	return strconv.ParseInt(c.Param(key), 10, 64)
-}
-
-// Replace this with your real auth helper.
-func getUserIDFromGin(c *gin.Context) (int64, bool) {
-	v, exists := c.Get("user_id")
-	if !exists {
-		return 0, false
-	}
-
-	id, ok := v.(int64)
-	return id, ok
 }

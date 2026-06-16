@@ -10,15 +10,16 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - musicapp_postgres_data:/var/lib/postgresql/data
+      - /run/media/space/8632457A32456FEB1/postgres_data/data:/var/lib/postgresql/data
+    command: ["-c", "unix_socket_directories="]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d musicapp"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d musicapp -h localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
-    image: redis:7.4
+    image: redis:7.4-alpine
     container_name: musicapp_redis
     restart: unless-stopped
     ports:
@@ -30,7 +31,7 @@ services:
       retries: 5
 
   opensearch:
-    image: opensearchproject/opensearch:2
+    image: opensearchproject/opensearch:3.2.0
     container_name: musicapp_opensearch
     restart: unless-stopped
     environment:
@@ -53,11 +54,6 @@ services:
     container_name: musicapp_minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
-    security_opt:
-      - label=disable
-    cap_add:
-      - SYS_ADMIN
-      - DAC_OVERRIDE
     environment:
       MINIO_ROOT_USER: "${MINIO_ROOT_USER:-minioadmin}"
       MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-minioadmin}"
@@ -129,6 +125,5 @@ services:
         condition: service_started
 
 volumes:
-  musicapp_postgres_data:
   musicapp_minio_data:
   musicapp_uploads:

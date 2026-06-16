@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
-	"image/jpeg"
 	_ "image/gif"
+	"image/jpeg"
 	_ "image/png"
 	"io"
 	"net/http"
@@ -69,22 +69,22 @@ type AlbumMeta struct {
 }
 
 type TrackMeta struct {
-	Title            string `json:"title"`
-	TrackNumber      int    `json:"trackNumber,omitempty"`
-	DurationSeconds  int    `json:"durationSeconds"`
-	Genre            string `json:"genre,omitempty"`
-	Lyrics           string `json:"lyrics,omitempty"`
-	Explicit         bool   `json:"explicit"`
+	Title             string `json:"title"`
+	TrackNumber       int    `json:"trackNumber,omitempty"`
+	DurationSeconds   int    `json:"durationSeconds"`
+	Genre             string `json:"genre,omitempty"`
+	Lyrics            string `json:"lyrics,omitempty"`
+	Explicit          bool   `json:"explicit"`
 	SpotifyPreviewURL string `json:"spotifyPreviewUrl,omitempty"`
-	CoverURL         string `json:"coverUrl,omitempty"`
+	CoverURL          string `json:"coverUrl,omitempty"`
 }
 
 type DraftRef struct {
-	ID         string
-	Status     string
-	FinalMeta  string
-	FilePath   string
-	Format     string
+	ID        string
+	Status    string
+	FinalMeta string
+	FilePath  string
+	Format    string
 }
 
 type AssetRef struct {
@@ -115,6 +115,7 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 		return nil, fmt.Errorf("unmarshal final metadata: %w", err)
 	}
 
+	// TODO LOW: Album cover_url only uses final.Album.CoverURL. If user provides no cover and embedded cover exists (asset type "cover"), the album gets NULL cover. Fall back to embedded cover for album too.
 	// Re-host external images to local storage
 	if final.Artist.ImageURL != "" && s.isExternalURL(final.Artist.ImageURL) {
 		if localURL, err := s.rehostExternalImage(ctx, final.Artist.ImageURL, draftID, "artist"); err != nil {
@@ -719,5 +720,22 @@ func (s *Service) rehostExternalImage(ctx context.Context, imageURL, draftID, en
 		return "", fmt.Errorf("get url: %w", err)
 	}
 
+	if err := s.recordMedia(ctx, key, localURL, contentType, int64(len(data))); err != nil {
+		s.logger.Warn("failed to record media in db", zap.Error(err))
+	}
+
 	return localURL, nil
+}
+
+func (s *Service) recordMedia(ctx context.Context, objectKey, publicURL, mimeType string, fileSize int64) error {
+	mediaType := "image"
+	if strings.HasPrefix(mimeType, "audio/") {
+		mediaType = "audio"
+	}
+	_, err := s.db.ExecContext(ctx, `
+		INSERT INTO media (media_type, storage_provider, object_key, public_url, mime_type, file_size, metadata)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT DO NOTHING
+	`, mediaType, "minio", objectKey, publicURL, mimeType, fileSize, `{"source": "ingestion-rehost"}`)
+	return err
 }

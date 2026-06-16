@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"time"
 
 	"music/internal/modules/analytics"
@@ -16,6 +18,7 @@ import (
 	"music/internal/modules/gamification"
 	"music/internal/modules/health"
 	"music/internal/modules/history"
+	"music/internal/modules/importcmd"
 	"music/internal/modules/ingestion"
 	"music/internal/modules/ingestion/enrichment"
 	"music/internal/modules/ingestion/finalization"
@@ -45,9 +48,9 @@ import (
 )
 
 type Container struct {
-	SQLX *sqlx.DB
-	Bus  *events.Bus
-	RDB  *redis.Client
+	SQLX  *sqlx.DB
+	Bus   *events.Bus
+	RDB   *redis.Client
 	WSHub *ws.Hub
 
 	Storage platformstorage.Storage
@@ -111,9 +114,9 @@ type Container struct {
 	PlayerService *player.Service
 	PlayerHandler *player.Handler
 
-	IngestionService       *ingestion.Service
-	IngestionHandler       *ingestion.Handler
-	IngestionFinalization  *finalization.Service
+	IngestionService      *ingestion.Service
+	IngestionHandler      *ingestion.Handler
+	IngestionFinalization *finalization.Service
 
 	SearchService *search.Service
 	SearchHandler *search.Handler
@@ -131,6 +134,9 @@ type Container struct {
 	CreatorHandler *creator.Handler
 
 	DashboardHandler *dashboard.Handler
+
+	ImportService *importcmd.Service
+	ImportHandler *importcmd.Handler
 }
 
 func NewContainer(a *App) *Container {
@@ -170,6 +176,7 @@ func NewContainer(a *App) *Container {
 	c.buildGamification()
 	c.buildCreator()
 	c.buildDashboard()
+	c.buildImport()
 	c.subscribeEvents()
 
 	return c
@@ -414,6 +421,15 @@ func (c *Container) buildCreator() {
 
 func (c *Container) buildDashboard() {
 	c.DashboardHandler = dashboard.NewHandler(c.SQLX)
+}
+
+func (c *Container) buildImport() {
+	c.ImportService = importcmd.NewService(zap.L())
+	downloadDir := os.Getenv("IMPORT_DOWNLOAD_DIR")
+	if downloadDir == "" {
+		downloadDir = filepath.Join(os.TempDir(), "music-imports")
+	}
+	c.ImportHandler = importcmd.NewHandler(c.ImportService, c.IngestionService, downloadDir)
 }
 
 func (c *Container) subscribeEvents() {

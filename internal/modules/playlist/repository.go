@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -25,7 +26,7 @@ func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) CreatePlaylist(ctx context.Context, req CreatePlaylistRequest, userID int64) (Playlist, error) {
+func (r *Repository) CreatePlaylist(ctx context.Context, req CreatePlaylistRequest, userID uuid.UUID) (Playlist, error) {
 	query := `
 		INSERT INTO playlists (user_id, name, description, cover_url, is_public)
 		VALUES ($1, $2, $3, $4, $5)
@@ -53,7 +54,7 @@ func (r *Repository) CreatePlaylist(ctx context.Context, req CreatePlaylistReque
 	return p, err
 }
 
-func (r *Repository) UpdatePlaylist(ctx context.Context, playlistID, userID int64, req UpdatePlaylistRequest) (Playlist, error) {
+func (r *Repository) UpdatePlaylist(ctx context.Context, playlistID, userID uuid.UUID, req UpdatePlaylistRequest) (Playlist, error) {
 	query := `
 		UPDATE playlists
 		SET
@@ -92,7 +93,7 @@ func (r *Repository) UpdatePlaylist(ctx context.Context, playlistID, userID int6
 	return p, err
 }
 
-func (r *Repository) DeletePlaylist(ctx context.Context, playlistID, userID int64) error {
+func (r *Repository) DeletePlaylist(ctx context.Context, playlistID, userID uuid.UUID) error {
 	res, err := r.db.ExecContext(ctx,
 		`DELETE FROM playlists WHERE id = $1 AND user_id = $2`,
 		playlistID, userID,
@@ -113,7 +114,7 @@ func (r *Repository) DeletePlaylist(ctx context.Context, playlistID, userID int6
 	return nil
 }
 
-func (r *Repository) GetPlaylistByID(ctx context.Context, playlistID int64) (Playlist, error) {
+func (r *Repository) GetPlaylistByID(ctx context.Context, playlistID uuid.UUID) (Playlist, error) {
 	query := `
 		SELECT id, user_id, name, description, cover_url, is_public, created_at, updated_at
 		FROM playlists
@@ -139,7 +140,7 @@ func (r *Repository) GetPlaylistByID(ctx context.Context, playlistID int64) (Pla
 	return p, err
 }
 
-func (r *Repository) ListPlaylistTracks(ctx context.Context, playlistID int64) ([]PlaylistTrackItem, error) {
+func (r *Repository) ListPlaylistTracks(ctx context.Context, playlistID uuid.UUID) ([]PlaylistTrackItem, error) {
 	query := `
 		SELECT
 			pt.id,
@@ -234,7 +235,7 @@ func (r *Repository) ListPublicPlaylists(ctx context.Context) ([]PlaylistListIte
 	return items, rows.Err()
 }
 
-func (r *Repository) ListUserPlaylists(ctx context.Context, userID int64) ([]PlaylistListItemResponse, error) {
+func (r *Repository) ListUserPlaylists(ctx context.Context, userID uuid.UUID) ([]PlaylistListItemResponse, error) {
 	query := `
 		SELECT
 			p.id,
@@ -281,7 +282,7 @@ func (r *Repository) ListUserPlaylists(ctx context.Context, userID int64) ([]Pla
 	return items, rows.Err()
 }
 
-func (r *Repository) TrackExists(ctx context.Context, trackID int64) (bool, error) {
+func (r *Repository) TrackExists(ctx context.Context, trackID uuid.UUID) (bool, error) {
 	var exists bool
 	err := r.db.QueryRowContext(ctx,
 		`SELECT EXISTS(SELECT 1 FROM tracks WHERE id = $1)`,
@@ -290,7 +291,7 @@ func (r *Repository) TrackExists(ctx context.Context, trackID int64) (bool, erro
 	return exists, err
 }
 
-func (r *Repository) GetPlaylistTrackCount(ctx context.Context, playlistID int64) (int, error) {
+func (r *Repository) GetPlaylistTrackCount(ctx context.Context, playlistID uuid.UUID) (int, error) {
 	var count int
 	err := r.db.QueryRowContext(ctx,
 		`SELECT COUNT(*) FROM playlist_tracks WHERE playlist_id = $1`,
@@ -299,7 +300,7 @@ func (r *Repository) GetPlaylistTrackCount(ctx context.Context, playlistID int64
 	return count, err
 }
 
-func (r *Repository) GetTrackPosition(ctx context.Context, playlistID, trackID int64) (int, error) {
+func (r *Repository) GetTrackPosition(ctx context.Context, playlistID, trackID uuid.UUID) (int, error) {
 	var pos int
 	err := r.db.QueryRowContext(ctx,
 		`SELECT position FROM playlist_tracks WHERE playlist_id = $1 AND track_id = $2`,
@@ -313,12 +314,12 @@ func (r *Repository) GetTrackPosition(ctx context.Context, playlistID, trackID i
 	return pos, err
 }
 
-func (r *Repository) AddTrack(ctx context.Context, playlistID, trackID int64) error {
-	tx, err := r.db.BeginTx(ctx, nil)
+func (r *Repository) AddTrack(ctx context.Context, playlistID, trackID uuid.UUID) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	defer rollback(tx)
+	defer func() { _ = tx.Rollback() }()
 
 	var exists bool
 	if err := tx.QueryRowContext(ctx,
@@ -353,12 +354,12 @@ func (r *Repository) AddTrack(ctx context.Context, playlistID, trackID int64) er
 	return tx.Commit()
 }
 
-func (r *Repository) RemoveTrack(ctx context.Context, playlistID, trackID int64) error {
-	tx, err := r.db.BeginTx(ctx, nil)
+func (r *Repository) RemoveTrack(ctx context.Context, playlistID, trackID uuid.UUID) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	defer rollback(tx)
+	defer func() { _ = tx.Rollback() }()
 
 	var oldPosition int
 	err = tx.QueryRowContext(ctx,
@@ -399,12 +400,12 @@ func (r *Repository) RemoveTrack(ctx context.Context, playlistID, trackID int64)
 	return tx.Commit()
 }
 
-func (r *Repository) ReorderTrack(ctx context.Context, playlistID, trackID int64, newPosition int) error {
-	tx, err := r.db.BeginTx(ctx, nil)
+func (r *Repository) ReorderTrack(ctx context.Context, playlistID, trackID uuid.UUID, newPosition int) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	defer rollback(tx)
+	defer func() { _ = tx.Rollback() }()
 
 	var oldPosition int
 	err = tx.QueryRowContext(ctx,
@@ -468,10 +469,6 @@ func (r *Repository) ReorderTrack(ctx context.Context, playlistID, trackID int64
 	}
 
 	return tx.Commit()
-}
-
-func rollback(tx *sql.Tx) {
-	_ = tx.Rollback()
 }
 
 func isUniqueViolation(err error) bool {
