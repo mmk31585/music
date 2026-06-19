@@ -1,6 +1,6 @@
  # Muse — Project TODO
 
-> Last updated: 2026-06-16
+> Last updated: 2026-06-19
 > Sources: inline code TODOs, architecture audits
 
 ---
@@ -248,6 +248,28 @@ Buttons lack systematic ARIA labels. Table action buttons, dialogs, empty states
 ### 40. RTL/LTR consistency
 
 App mixes English UI copy, Persian locale, and LTR/RTL assumptions. Some components may not flip correctly in RTL mode.
+
+---
+
+## ✅ Recently Completed (2026-06-19)
+
+### 41. Import by Artist feature (search + batch)
+
+Backend `GET /admin/import/artist?name=...` searches MusicBrainz (fallback from Deezer) for artist discography. Returns albums grouped with Cover Art Archive images, tracks with durations/sources. Frontend `PageAdminImportArtist.vue` has album-grid UI with multi-select (per-track, per-album, select-all), batch import trigger, and progress bar.
+
+**Files:** `internal/modules/importcmd/artist_search.go`, `handler.go`, `import_service.go`, `routes.go`, `dto.go`, `frontend/src/pages/admin/PageAdminImportArtist.vue`, `frontend/src/router/routes/admin.ts`, `AdminSidebar.vue`, `frontend/src/services/api/importcmd/routes.ts`, `frontend/src/services/api/importcmd/types.ts`
+
+### 42. Import worker consumer group fix
+
+Worker created Redis consumer group with `$` (start from latest), so jobs enqueued *before* the worker started were never delivered. Changed to `"0"` (start from beginning), ensuring all existing stream messages are available.
+
+**File:** `internal/modules/importcmd/worker/worker.go:186`
+
+### 43. Import worker JSON payload unwrap fix
+
+Worker's `poll()` received double-wrapped JSON `{"payload":{"id":...,"title":...}}` inside a Redis field also named `payload`. Fixed with `json.RawMessage` intermediate unmarshal so `Job` struct fields populate correctly instead of silently zeroing out.
+
+**File:** `internal/modules/importcmd/worker/worker.go:235-240`
 
 ---
 

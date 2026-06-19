@@ -147,7 +147,7 @@ const toast = useToast()
 
 const selectedMood = ref('')
 const loading = ref(false)
-const tracks = ref<any[]>([])
+const tracks = ref<Record<string, unknown>[]>([])
 
 const moodOptions = MOOD_OPTIONS
 

@@ -28,11 +28,11 @@
     </div>
 
     <!-- Tab Content -->
-    <div v-show="activeTab === 'submit'">
+    <div v-if="activeTab === 'submit'">
       <ContributionSubmitForm @submitted="onSubmitted" />
     </div>
 
-    <div v-show="activeTab === 'my'">
+    <div v-if="activeTab === 'my'">
       <div v-if="loadingMy" class="space-y-3">
         <SkeletonLoader v-for="i in 3" :key="i" variant="lines" :lines="3" />
       </div>
@@ -96,7 +96,7 @@
                 type="button"
                 class="spring flex h-8 w-8 items-center justify-center rounded-full text-white/30 transition-all hover:bg-white/10 hover:text-white/60"
                 @click="viewHistory(c)"
-                title="View history"
+                aria-label="View history"
               >
                 <i aria-hidden="true" class="pi pi-history text-xs" />
               </button>
@@ -137,11 +137,11 @@
       </div>
     </div>
 
-    <div v-show="activeTab === 'leaderboard'">
+    <div v-if="activeTab === 'leaderboard'">
       <ContributionLeaderboard :contributors="leaderboardData" :loading="loadingLeaderboard" />
     </div>
 
-    <div v-show="activeTab === 'moderate'">
+    <div v-if="activeTab === 'moderate'">
       <div v-if="loadingPending" class="space-y-3">
         <SkeletonLoader v-for="i in 3" :key="i" variant="lines" :lines="4" />
       </div>
@@ -173,7 +173,7 @@
             <span
               v-if="c.ai_verdict"
               class="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-white/30"
-              >AI: {{ c.ai_verdict }} ({{ (c.ai_confidence! * 100).toFixed(0) }}%)</span
+              >AI: {{ c.ai_verdict }} ({{ ((c.ai_confidence ?? 0) * 100).toFixed(0) }}%)</span
             >
           </div>
 
@@ -186,6 +186,7 @@
             type="button"
             class="mb-3 text-xs text-white/30 transition-colors hover:text-white/50"
             @click="showData = showData === c.id ? null : c.id"
+            aria-label="Toggle contribution data"
           >
             <i
               class="pi pi-chevron-right mr-1 text-[10px]"
@@ -273,10 +274,11 @@ function loadTab(key: string) {
 async function loadMyContributions(page = 1) {
   loadingMy.value = true
   try {
-    const res: any = await api.listMy({ page, page_size: 20 })
-    myContributions.value = res?.data ?? []
-    myMeta.value = res?.meta ?? null
-  } catch {
+    const res = await api.listMy({ page, page_size: 20 })
+    myContributions.value = (res as Record<string, unknown>)?.data as Contribution[] ?? []
+    myMeta.value = (res as Record<string, unknown>)?.meta as { page: number; page_size: number; total: number } | null ?? null
+  } catch (err) {
+    console.error('Failed to load contributions:', err)
     myContributions.value = []
   } finally {
     loadingMy.value = false
@@ -286,9 +288,10 @@ async function loadMyContributions(page = 1) {
 async function loadPending() {
   loadingPending.value = true
   try {
-    const res: any = await api.listPending({ page: 1, page_size: 50 })
-    pendingItems.value = res?.data ?? []
-  } catch {
+    const res = await api.listPending({ page: 1, page_size: 50 })
+    pendingItems.value = (res as Record<string, unknown>)?.data as Contribution[] ?? []
+  } catch (err) {
+    console.error('Failed to load pending:', err)
     pendingItems.value = []
   } finally {
     loadingPending.value = false
@@ -298,9 +301,10 @@ async function loadPending() {
 async function loadLeaderboard() {
   loadingLeaderboard.value = true
   try {
-    const res: any = await api.getLeaderboard({ limit: 20 })
-    leaderboardData.value = res ?? []
-  } catch {
+    const res = await api.getLeaderboard({ limit: 20 })
+    leaderboardData.value = (res as ContributorStats[]) ?? []
+  } catch (err) {
+    console.error('Failed to load leaderboard:', err)
     leaderboardData.value = []
   } finally {
     loadingLeaderboard.value = false
@@ -315,9 +319,10 @@ async function viewHistory(c: Contribution) {
   expandedContribution.value = c.id
   loadingHistory.value = true
   try {
-    const res: any = await api.getHistory(c.id)
-    historyItems.value = res ?? []
-  } catch {
+    const res = await api.getHistory(c.id)
+    historyItems.value = (res as ContributionHistoryItem[]) ?? []
+  } catch (err) {
+    console.error('Failed to load history:', err)
     historyItems.value = []
   } finally {
     loadingHistory.value = false
@@ -330,7 +335,8 @@ async function reviewContribution(id: string, action: 'approve' | 'reject') {
     await api.review(id, { action })
     pendingItems.value = pendingItems.value.filter((c) => c.id !== id)
     toast.add({ severity: 'success', summary: `Contribution ${action}d`, life: 2000 })
-  } catch {
+  } catch (err) {
+    console.error(`Failed to ${action} contribution:`, err)
     toast.add({ severity: 'error', summary: `Failed to ${action} contribution`, life: 3000 })
   } finally {
     reviewingId.value = null
@@ -382,7 +388,7 @@ function formatDate(dateStr: string) {
   })
 }
 
-function formatContributionData(data: any): string {
+function formatContributionData(data: unknown): string {
   if (typeof data === 'string') {
     try {
       return JSON.stringify(JSON.parse(data), null, 2)

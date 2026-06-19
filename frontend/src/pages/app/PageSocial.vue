@@ -33,6 +33,7 @@
         class="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-medium text-white/40 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-white/60"
         @click="loadData"
         :disabled="loading"
+        aria-label="Refresh"
       >
         <span :class="loading ? 'animate-spin' : ''">⟳</span>
         Refresh
@@ -40,6 +41,7 @@
       <button
         class="inline-flex items-center gap-1.5 rounded-xl bg-[#1db954] px-5 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760]"
         @click="showCreateModal = true"
+        :aria-label="'Create ' + (activeTab === 'parties' ? 'Party' : activeTab === 'rooms' ? 'Room' : 'Club')"
       >
         <i aria-hidden="true" class="pi pi-plus text-xs" />
         {{ activeTab === 'parties' ? 'Party' : activeTab === 'rooms' ? 'Room' : 'Club' }}
@@ -47,7 +49,7 @@
     </div>
 
     <!-- Loading spinner -->
-    <div v-if="loading" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-if="loading" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="status">
       <SkeletonLoader v-for="i in 6" :key="i" variant="card" />
     </div>
 
@@ -65,6 +67,7 @@
         <div
           v-if="!parties.length"
           class="col-span-full flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/[0.06] py-16 text-center"
+          role="status"
         >
           <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
             <i aria-hidden="true" class="pi pi-users text-xl text-slate-500" />
@@ -85,6 +88,7 @@
         <div
           v-if="!rooms.length"
           class="col-span-full flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/[0.06] py-16 text-center"
+          role="status"
         >
           <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
             <i aria-hidden="true" class="pi pi-megaphone text-xl text-slate-500" />
@@ -114,6 +118,7 @@
           <div
             v-if="!clubs.length"
             class="col-span-full flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/[0.06] py-16 text-center"
+            role="status"
           >
             <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
               <i aria-hidden="true" class="pi pi-building text-xl text-slate-500" />
@@ -124,28 +129,40 @@
       </div>
 
       <!-- Tab: Discussions -->
-      <div v-show="activeTab === 'discussions'" class="glass-strong rounded-2xl p-6 md:p-8">
+      <div v-show="activeTab === 'discussions'" class="glass-strong rounded-2xl p-6 md:p-8" aria-live="polite">
         <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
             v-model="discussionFilter.target_type"
             type="text"
             placeholder="Type (track, album, playlist, artist)"
+            aria-label="Discussion type filter"
             class="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-white/20"
           />
           <input
             v-model="discussionFilter.target_id"
             type="text"
             placeholder="ID"
+            aria-label="Discussion ID filter"
             class="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-white/20"
           />
           <button
-            class="rounded-lg bg-[#1db954]/10 px-4 py-2.5 text-sm font-medium text-[#1db954] transition hover:bg-[#1db954]/20"
+            class="inline-flex items-center gap-1.5 rounded-lg bg-[#1db954]/10 px-4 py-2.5 text-sm font-medium text-[#1db954] transition hover:bg-[#1db954]/20 disabled:opacity-40"
+            :disabled="discussionsLoading"
             @click="loadDiscussions"
           >
-            Browse
+            <span v-if="discussionsLoading" class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#1db954] border-t-transparent" />
+            <template v-else>Browse</template>
           </button>
         </div>
-        <DiscussionThread :discussions="discussions" :user-names="userNames" @create="handleCreateDiscussion" />
+        <div v-if="discussionsError" class="mb-4 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          {{ discussionsError }}
+        </div>
+        <DiscussionThread
+          :discussions="discussions"
+          :user-names="userNames"
+          :is-posting="discussionPosting"
+          @create="handleCreateDiscussion"
+        />
       </div>
     </template>
 
@@ -169,12 +186,14 @@
               v-model="createForm.title"
               type="text"
               :placeholder="activeTab === 'clubs' ? 'Club name' : 'Title'"
+              aria-label="Title"
               class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 transition outline-none focus:border-white/20"
             />
             <textarea
               v-model="createForm.description"
               placeholder="Description (optional)"
               rows="3"
+              aria-label="Description"
               class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 transition outline-none focus:border-white/20"
             />
             <label class="flex items-center gap-3">
@@ -193,9 +212,15 @@
             >Cancel</button>
             <button
               class="flex-1 rounded-xl bg-[#1db954] py-3 text-sm font-bold text-black transition hover:bg-[#1db954]/90 disabled:opacity-40"
-              :disabled="!createForm.title.trim()"
+              :disabled="!createForm.title.trim() || isCreating"
               @click="handleCreate"
-            >Create</button>
+            >
+              <span v-if="isCreating" class="inline-flex items-center gap-2">
+                <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
+                Creating...
+              </span>
+              <span v-else>Create</span>
+            </button>
           </div>
         </div>
       </div>
@@ -206,6 +231,7 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAppToast } from '@/composables/useAppToast'
 import { SkeletonLoader } from '@/components/common'
 import { useSocialApi } from '@/services/api/social'
 import { usePlayerApi } from '@/services/api/player'
@@ -217,12 +243,17 @@ import MusicClubCard from '@/components/social/MusicClubCard.vue'
 import DiscussionThread from '@/components/social/DiscussionThread.vue'
 
 const router = useRouter()
+const toast = useAppToast()
 const api = useSocialApi()
 const playerApi = usePlayerApi()
 
 const loading = ref(true)
 const activeTab = ref('parties')
 const showCreateModal = ref(false)
+const isCreating = ref(false)
+const discussionsLoading = ref(false)
+const discussionsError = ref('')
+const discussionPosting = ref(false)
 
 const tabs = [
   { key: 'parties', label: 'Listening Parties' },
@@ -250,9 +281,10 @@ async function fetchUserName(userId: string) {
   if (userNames.value[userId]) return
   try {
     const profile = await useUserApi().getPublicUserProfile(userId)
-    const p = profile as any
-    userNames.value[userId] = p.full_name || p.username || userId.slice(0, 8)
-  } catch {
+    const p = profile as Record<string, unknown>
+    userNames.value[userId] = String(p.full_name || p.username || userId.slice(0, 8))
+  } catch (err) {
+    console.error('Failed to fetch user name:', err)
     userNames.value[userId] = userId.slice(0, 8)
   }
 }
@@ -262,7 +294,8 @@ async function fetchTrackName(trackId: string) {
   try {
     const track = await playerApi.getPlaybackTrack(trackId)
     trackNames.value[trackId] = `${track.artistName} - ${track.title}`
-  } catch {
+  } catch (err) {
+    console.error('Failed to fetch track name:', err)
     trackNames.value[trackId] = trackId.slice(0, 12)
   }
 }
@@ -299,8 +332,12 @@ async function loadData() {
 }
 
 async function loadDiscussions() {
-  if (!discussionFilter.target_type || !discussionFilter.target_id) return
-  loading.value = true
+  if (!discussionFilter.target_type || !discussionFilter.target_id) {
+    toast.warn('Please enter both type and ID to browse discussions')
+    return
+  }
+  discussionsLoading.value = true
+  discussionsError.value = ''
   try {
     const res = await api.getDiscussions({
       target_type: discussionFilter.target_type,
@@ -308,17 +345,24 @@ async function loadDiscussions() {
       limit: 50,
     })
     discussions.value = (res || []).filter(Boolean)
+    if (!discussions.value.length) {
+      toast.info('No discussions found for this filter')
+    }
     const userIds = new Set<string>()
     discussions.value.forEach((d: Discussion) => userIds.add(d.user_id))
     await Promise.all(Array.from(userIds).map(fetchUserName))
-  } catch {
+  } catch (err: any) {
+    discussionsError.value = err?.response?.data?.message || err.message || 'Failed to load discussions'
     discussions.value = []
+    toast.error(discussionsError.value)
   } finally {
-    loading.value = false
+    discussionsLoading.value = false
   }
 }
 
 async function handleCreate() {
+  if (!createForm.title.trim() || isCreating.value) return
+  isCreating.value = true
   try {
     if (activeTab.value === 'parties') {
       await api.createParty({
@@ -326,6 +370,7 @@ async function handleCreate() {
         description: createForm.description,
         is_public: createForm.is_public,
       })
+      toast.success('Listening party created!')
       loadData()
     } else if (activeTab.value === 'rooms') {
       await api.createRoom({
@@ -333,6 +378,7 @@ async function handleCreate() {
         description: createForm.description,
         is_public: createForm.is_public,
       })
+      toast.success('Live room created!')
       loadData()
     } else if (activeTab.value === 'clubs') {
       await api.createClub({
@@ -340,37 +386,52 @@ async function handleCreate() {
         description: createForm.description,
         is_public: createForm.is_public,
       })
+      toast.success('Music club created!')
       loadData()
     }
     showCreateModal.value = false
     createForm.title = ''
     createForm.description = ''
     createForm.is_public = true
-  } catch { /* silent */ }
+  } catch (err: any) {
+    toast.apiError(err, 'Failed to create')
+  } finally {
+    isCreating.value = false
+  }
 }
 
 async function handleJoinParty(id: string) {
   try {
     await api.joinParty(id)
+    toast.success('Joined party!')
     router.push({ name: 'social.party', params: { id } })
-  } catch { /* silent */ }
+  } catch (err: any) {
+    toast.apiError(err, 'Failed to join party')
+  }
 }
 
 async function handleJoinRoom(id: string) {
   try {
     await api.joinRoom(id)
+    toast.success('Joined room!')
     router.push({ name: 'social.room', params: { id } })
-  } catch { /* silent */ }
+  } catch (err: any) {
+    toast.apiError(err, 'Failed to join room')
+  }
 }
 
 async function handleJoinClub(id: string) {
   try {
     await api.joinClub(id)
+    toast.success('Joined club!')
     router.push({ name: 'social.club', params: { id } })
-  } catch { /* silent */ }
+  } catch (err: any) {
+    toast.apiError(err, 'Failed to join club')
+  }
 }
 
 async function handleCreateDiscussion(content: string, parentId?: string) {
+  discussionPosting.value = true
   try {
     await api.createDiscussion({
       target_type: discussionFilter.target_type,
@@ -378,8 +439,13 @@ async function handleCreateDiscussion(content: string, parentId?: string) {
       content,
       parent_id: parentId,
     })
+    toast.success(parentId ? 'Reply posted!' : 'Comment posted!')
     loadDiscussions()
-  } catch { /* silent */ }
+  } catch (err: any) {
+    toast.apiError(err, 'Failed to post')
+  } finally {
+    discussionPosting.value = false
+  }
 }
 
 onMounted(loadData)

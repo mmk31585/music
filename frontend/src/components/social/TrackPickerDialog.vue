@@ -15,6 +15,7 @@
               type="button"
               class="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-xs text-slate-400 transition hover:bg-white/20"
               @click="close"
+              aria-label="Close"
             >
               <i aria-hidden="true" class="pi pi-times" />
             </button>
@@ -27,6 +28,8 @@
               v-model="query"
               type="text"
               placeholder="Search tracks..."
+              aria-label="Search tracks"
+              autofocus
               class="flex-1 bg-transparent px-3 py-3 text-sm text-white outline-none placeholder:text-slate-500"
               @input="onInput"
               @keydown="onKeydown"
@@ -153,10 +156,10 @@ async function doSearch() {
 
   searching.value = true
   try {
-    const res = await searchApi.searchCatalog({ query: term, type: 'tracks', limit: 10 }, { signal: abortController.signal } as Record<string, any>)
+    const res = await searchApi.searchCatalog({ query: term, type: 'tracks', limit: 10 }, { signal: abortController.signal } as Record<string, unknown>)
     results.value = res.tracks ?? []
   } catch (err) {
-    if ((err as Record<string, any>)?.name === 'AbortError' || (err as Record<string, any>)?.code === 'ERR_CANCELED') return
+    if ((err as Record<string, unknown>)?.name === 'AbortError' || (err as Record<string, unknown>)?.code === 'ERR_CANCELED') return
     results.value = []
   } finally {
     searching.value = false

@@ -28,11 +28,12 @@ func NewEnricher(mb MusicBrainzClient, lfm LastFMClient, spot SpotifyClient, lrc
 	}
 }
 
-func (e *Enricher) Enrich(ctx context.Context, title, artist, album string) (*EnrichmentResult, error) {
+func (e *Enricher) Enrich(ctx context.Context, title, artist, album string, durationSeconds int) (*EnrichmentResult, error) {
 	query := TrackQuery{
-		Title:  title,
-		Artist: artist,
-		Album:  album,
+		Title:    title,
+		Artist:   artist,
+		Album:    album,
+		Duration: durationSeconds,
 	}
 
 	if query.Title == "" && query.Artist == "" {
@@ -112,5 +113,3 @@ func DeserializeResult(raw string) (*EnrichmentResult, error) {
 	}
 	return &result, nil
 }
-
-

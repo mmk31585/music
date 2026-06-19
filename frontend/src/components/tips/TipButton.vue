@@ -18,7 +18,7 @@
         <div class="glass-strong mx-4 w-full max-w-sm rounded-2xl p-6">
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-bold text-white">Send a Tip</h3>
-            <button class="text-white/30 hover:text-white/50" @click="visible = false">
+            <button aria-label="Close dialog" class="text-white/30 hover:text-white/50" @click="visible = false">
               <i aria-hidden="true" class="pi pi-times" />
             </button>
           </div>
@@ -45,6 +45,7 @@
                 <input
                   v-model.number="customAmount"
                   placeholder="Custom"
+                  aria-label="Custom tip amount"
                   class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-white/20"
                   type="number"
                   min="1000"
@@ -60,6 +61,7 @@
                 v-model="message"
                 rows="2"
                 placeholder="Say something nice..."
+                aria-label="Tip message"
                 class="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-white/20"
               />
             </div>
@@ -150,7 +152,8 @@ async function sendTip() {
       sent.value = true
       window.open(res.redirect_url, '_blank')
     }
-  } catch {
+  } catch (err) {
+    console.error('Failed to send tip:', err)
     toast.add({ severity: 'error', summary: 'Tip failed', life: 3000 })
   } finally {
     sending.value = false

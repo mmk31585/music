@@ -7,6 +7,15 @@
     >
       <template #actions>
         <Button
+          label="Enrich All"
+          icon="pi pi-sync"
+          size="small"
+          severity="secondary"
+          :loading="enrichingAll"
+          class="!text-purple-400 !rounded-xl"
+          @click="handleEnrichAll"
+        />
+        <Button
           label="Add track"
           icon="pi pi-plus"
           size="small"
@@ -27,6 +36,7 @@
         <InputText
           v-model="searchQuery"
           placeholder="Search tracks, artists, albums, genres..."
+          aria-label="Search tracks"
           class="!h-9 !w-full !rounded-lg !border-white/[0.08] !bg-white/[0.03] !text-sm !text-white placeholder:!text-slate-600 sm:!w-80"
         />
       </div>
@@ -349,6 +359,8 @@ import TrackFormDialog from '@/components/admin/TrackFormDialog.vue'
 import AdminDeleteConfirm from '@/components/admin/AdminDeleteConfirm.vue'
 
 import { useAdminTracks, type TrackFormPayload } from '@/composables/admin/useAdminTracks'
+import { useTracksApi } from '@/services/api/catalog/tracks'
+import { useLyricsApi } from '@/services/api/lyrics'
 import { useAdminArtists } from '@/composables/admin/useAdminArtists'
 import { useAdminAlbums } from '@/composables/admin/useAdminAlbums'
 import { useAdminGenres } from '@/composables/admin/useAdminGenres'
@@ -368,7 +380,7 @@ type CatalogOption = {
 
 // TODO HIGH: AnyTrack defeats TypeScript safety. The Track type should match actual API shape,
 // or normalizer functions should live in the API service layer. 10+ getter functions add 150+ fragile lines.
-type AnyTrack = Track & Record<string, any>
+type AnyTrack = Track & Record<string, unknown>
 
 const toast = useToast()
 
@@ -390,10 +402,13 @@ const { albums, fetchAlbums } = useAdminAlbums()
 
 const { genres, fetchGenres } = useAdminGenres()
 
+const tracksApi = useTracksApi()
+const { getTrackLyrics } = useLyricsApi()
 const searchQuery = ref('')
 const viewMode = ref<'table' | 'card'>('table')
 const showForm = ref(false)
 const showDelete = ref(false)
+const enrichingAll = ref(false)
 const selectedTrack = ref<Track | null>(null)
 const deleteTarget = ref<Track | null>(null)
 
@@ -428,8 +443,23 @@ function openCreate() {
   showForm.value = true
 }
 
-function openEdit(track: Track) {
-  selectedTrack.value = track
+async function openEdit(track: Track) {
+  // Start with the track data from the list
+  const augmented: AnyTrack = { ...track }
+
+  // Fetch lyrics from the backend — they aren't included in the tracks list
+  try {
+    const lyrics = await getTrackLyrics(track.id, undefined, { silent: true })
+    if (lyrics?.content) {
+      augmented.lyrics = lyrics.content
+      augmented.lyrics_language = lyrics.language || 'en'
+      augmented.lyrics_type = lyrics.type === 'synced' ? 'synced' : 'plain'
+    }
+  } catch (err) {
+    console.error('Failed to fetch lyrics:', err)
+  }
+
+  selectedTrack.value = augmented as Track
   showForm.value = true
 }
 
@@ -509,8 +539,30 @@ async function handleDelete() {
   }
 }
 
+async function handleEnrichAll() {
+  enrichingAll.value = true
+  try {
+    await tracksApi.adminEnrichAllTracks()
+    toast.add({
+      severity: 'success',
+      summary: 'Enrichment started',
+      detail: 'All tracks are being enriched in the background.',
+      life: 4000,
+    })
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'Enrichment failed to start',
+      detail: err instanceof Error ? err.message : 'Unknown error',
+      life: 3000,
+    })
+  } finally {
+    enrichingAll.value = false
+  }
+}
+
 function normalizeCatalogOptions(
-  items: any[] | undefined | null,
+  items: Array<Record<string, unknown>> | undefined | null,
 ) {
   if (!Array.isArray(items)) return []
 
@@ -539,7 +591,7 @@ function normalizeSearch(value: string) {
   return value.toLowerCase().trim().replace(/\s+/g, ' ')
 }
 
-function compactStrings(values: Array<any>) {
+function compactStrings(values: Array<Record<string, unknown>>) {
   return values
     .filter((value) => value !== null && value !== undefined && String(value).trim().length > 0)
     .map((value) => String(value).trim())
@@ -595,28 +647,27 @@ function getTrackArtistNamesByRole(track: Track, roles: string[]) {
 
   const fromArtists = Array.isArray(t.artists)
     ? t.artists
-        .filter((item: any) => {
-          const it = item as Record<string, any>
-          const role = String(it.role ?? '').toLowerCase()
+        .filter((item: Record<string, unknown>) => {
+          const role = String(item.role ?? '').toLowerCase()
 
           if (normalizedRoles.includes('primary')) {
-            if (it.is_primary === true) return true
+            if (item.is_primary === true) return true
           }
 
           return normalizedRoles.includes(role)
         })
-        .map((item: any) => {
-          const it = item as Record<string, any>
-          return it.name ?? it.artist_name ?? (it.artist as Record<string, any>)?.name ?? (it.artist as Record<string, any>)?.title
+        .map((item: Record<string, unknown>) => {
+          const artist = item.artist as Record<string, unknown> | undefined
+          return item.name ?? item.artist_name ?? artist?.name ?? artist?.title
         })
     : []
 
   const fromCredits = Array.isArray(t.credits)
     ? t.credits
-        .filter((item: any) => normalizedRoles.includes(String((item as Record<string, any>).role ?? '').toLowerCase()))
-        .map((item: any) => {
-          const it = item as Record<string, any>
-          return it.name ?? it.artist_name ?? (it.artist as Record<string, any>)?.name ?? (it.artist as Record<string, any>)?.title
+        .filter((item: Record<string, unknown>) => normalizedRoles.includes(String(item.role ?? '').toLowerCase()))
+        .map((item: Record<string, unknown>) => {
+          const artist = item.artist as Record<string, unknown> | undefined
+          return item.name ?? item.artist_name ?? artist?.name ?? artist?.title
         })
     : []
 
@@ -636,9 +687,9 @@ function getTrackPrimaryArtistNames(track: Track) {
       t.primary_artist_name,
       t.artist?.name,
       ...(Array.isArray(t.primary_artists)
-        ? t.primary_artists.map((item: any) => {
-            const it = item as Record<string, any>
-            return it.name ?? it.artist_name ?? (it.artist as Record<string, any>)?.name
+        ? t.primary_artists.map((item: Record<string, unknown>) => {
+            const artist = item.artist as Record<string, unknown> | undefined
+            return item.name ?? item.artist_name ?? artist?.name
           })
         : []),
     ]),
@@ -655,9 +706,9 @@ function getTrackFeaturedArtistNames(track: Track) {
   return uniqStrings(
     compactStrings([
       ...(Array.isArray(t.featured_artists)
-        ? t.featured_artists.map((item: any) => {
-            const it = item as Record<string, any>
-            return it.name ?? it.artist_name ?? (it.artist as Record<string, any>)?.name
+        ? t.featured_artists.map((item: Record<string, unknown>) => {
+            const artist = item.artist as Record<string, unknown> | undefined
+            return item.name ?? item.artist_name ?? artist?.name
           })
         : []),
     ]),
@@ -686,9 +737,9 @@ function getTrackGenreNames(track: Track) {
   const t = track as AnyTrack
 
   const fromGenres = Array.isArray(t.genres)
-    ? t.genres.map((item: any) => {
-        const it = item as Record<string, any>
-        return it.name ?? it.genre_name ?? (it.genre as Record<string, any>)?.name
+    ? t.genres.map((item: Record<string, unknown>) => {
+        const genre = item.genre as Record<string, unknown> | undefined
+        return item.name ?? item.genre_name ?? genre?.name
       })
     : []
 
@@ -706,9 +757,9 @@ function getTrackCreditNames(track: Track) {
 
   return uniqStrings(
     compactStrings(
-      t.credits.map((item: any) => {
-        const it = item as Record<string, any>
-        return it.name ?? it.artist_name ?? (it.artist as Record<string, any>)?.name
+      t.credits.map((item: Record<string, unknown>) => {
+        const artist = item.artist as Record<string, unknown> | undefined
+        return item.name ?? item.artist_name ?? artist?.name
       }),
     ),
   )

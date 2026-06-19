@@ -35,7 +35,7 @@
       </div>
 
       <!-- Top Tracks -->
-      <section class="mt-14">
+      <section class="mt-14" aria-live="polite">
         <template v-if="displayedTracks.length">
           <div class="flex items-baseline justify-between gap-4">
             <div>

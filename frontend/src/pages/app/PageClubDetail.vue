@@ -147,7 +147,21 @@
                 بحث جدید
               </button>
             </div>
+            <div v-if="discussionsLoading" class="flex items-center justify-center py-8">
+              <span class="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-[#1db954]" />
+            </div>
+            <div
+              v-else-if="discussionsError"
+              class="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-400"
+            >
+              {{ discussionsError }}
+              <button
+                class="mr-2 underline hover:text-red-300"
+                @click="retryLoadDiscussions"
+              >Retry</button>
+            </div>
             <ClubDiscussionThread
+              v-else
               :discussions="discussions"
               :current-user-id="authUserId"
               :current-user-role="detail?.member_role ?? ''"
@@ -246,6 +260,7 @@ import { useSocialApi } from '@/services/api/social'
 import { usePlaylistsApi } from '@/services/api/playlist'
 import { useCollaborativePlaylist } from '@/composables/useCollaborativePlaylist'
 import { useUserAuthStore } from '@/stores'
+import { useAppToast } from '@/composables/useAppToast'
 import type { ClubDetailResponse } from '@/services/api/social'
 import type { ClubDiscussion } from '@/services/api/social'
 import type { PlaylistTrackItem } from '@/services/api/playlist'
@@ -257,6 +272,7 @@ const router = useRouter()
 const route = useRoute()
 const socialApi = useSocialApi()
 const playlistApi = usePlaylistsApi()
+const toast = useAppToast()
 
 const auth = useUserAuthStore()
 
@@ -318,8 +334,12 @@ const discussions = ref<ClubDiscussion[]>([])
 const showCreateDiscussion = ref(false)
 const discussionLimit = ref(20)
 const discussionOffset = ref(0)
+const discussionsLoading = ref(false)
+const discussionsError = ref('')
 
 async function loadDiscussions() {
+  discussionsLoading.value = true
+  discussionsError.value = ''
   try {
     const data = await socialApi.listClubDiscussions(clubId, { limit: discussionLimit.value, offset: discussionOffset.value })
     const items = Array.isArray(data) ? data : []
@@ -328,9 +348,17 @@ async function loadDiscussions() {
     } else {
       discussions.value = [...discussions.value, ...items]
     }
-  } catch {
-    // ignore
+  } catch (err: any) {
+    discussionsError.value = err?.response?.data?.message || err.message || 'Failed to load discussions'
+    toast.error(discussionsError.value)
+  } finally {
+    discussionsLoading.value = false
   }
+}
+
+function retryLoadDiscussions() {
+  discussionOffset.value = 0
+  loadDiscussions()
 }
 
 function loadMoreDiscussions() {
@@ -342,7 +370,10 @@ async function handleDeleteDiscussion(discussionId: string) {
   try {
     await socialApi.deleteClubDiscussion(discussionId)
     discussions.value = discussions.value.filter(d => d.id !== discussionId)
-  } catch { /* ignore */ }
+    toast.success('Discussion deleted')
+  } catch (err: any) {
+    toast.apiError(err, 'Failed to delete discussion')
+  }
 }
 
 async function loadDetail() {
@@ -354,8 +385,9 @@ async function loadDetail() {
       const playlistDetail = await playlistApi.getPlaylist(res.club.playlist_id)
       playlistTracks.value = playlistDetail.tracks ?? []
     }
-  } catch {
-    error.value = 'خطا در بارگذاری کلاب'
+  } catch (err: any) {
+    error.value = err?.response?.data?.message || err.message || 'خطا در بارگذاری کلاب'
+    toast.error(error.value)
   } finally {
     loading.value = false
   }
@@ -364,35 +396,50 @@ async function loadDetail() {
 async function handleJoin() {
   try {
     await socialApi.joinClub(clubId)
+    toast.success('Joined club!')
     await loadDetail()
-  } catch { /* ignore */ }
+    discussionOffset.value = 0
+    loadDiscussions()
+  } catch (err: any) {
+    toast.apiError(err, 'Failed to join club')
+  }
 }
 
 async function handleLeave() {
   try {
     showLeaveConfirm.value = false
     await socialApi.leaveClub(clubId)
+    toast.info('Left club')
     await loadDetail()
-  } catch { /* ignore */ }
+  } catch (err: any) {
+    toast.apiError(err, 'Failed to leave club')
+  }
 }
 
 async function handleLaunchParty() {
   try {
     const party = await socialApi.launchParty(clubId, { title: detail.value?.club.name, is_public: true })
     if (party?.id) {
+      toast.success('Party launched!')
       router.push({ name: 'social.party', params: { id: party.id } })
     }
-  } catch { /* ignore */ }
+  } catch (err: any) {
+    toast.apiError(err, 'Failed to launch party')
+  }
 }
 
 async function handleAddTrack(track: Track) {
   try {
     const pid = playlistId.value
     if (!pid) return
+    toast.info('Adding track...')
     await playlistApi.addTrack(pid, { track_id: String(track.id) })
     showTrackPicker.value = false
+    toast.success('Track added to playlist')
     await loadDetail()
-  } catch { /* ignore */ }
+  } catch (err: any) {
+    toast.apiError(err, 'Failed to add track')
+  }
 }
 
 function onDiscussionCreated() {

@@ -59,7 +59,7 @@
               v-if="finalMetadata.artist.imageUrl"
               :src="finalMetadata.artist.imageUrl"
               alt=""
-              class="h-10 w-10 flex-shrink-0 rounded-full object-cover"
+              class="h-10 w-10 shrink-0 rounded-full object-cover"
               @error="($event.target as HTMLImageElement).style.display='none'"
             />
             <i aria-hidden="true" v-else class="pi pi-user text-xl text-primary"></i>
@@ -77,7 +77,7 @@
               v-if="finalMetadata.album.coverUrl"
               :src="finalMetadata.album.coverUrl"
               alt=""
-              class="h-10 w-10 flex-shrink-0 rounded object-cover"
+              class="h-10 w-10 shrink-0 rounded object-cover"
               @error="($event.target as HTMLImageElement).style.display='none'"
             />
             <i aria-hidden="true" v-else class="pi pi-book text-xl text-primary"></i>
@@ -95,7 +95,7 @@
               v-if="finalMetadata.track.coverUrl"
               :src="finalMetadata.track.coverUrl"
               alt=""
-              class="h-10 w-10 flex-shrink-0 rounded object-cover"
+              class="h-10 w-10 shrink-0 rounded object-cover"
               @error="($event.target as HTMLImageElement).style.display='none'"
             />
             <i aria-hidden="true" v-else class="pi pi-music text-xl text-primary"></i>
@@ -393,7 +393,7 @@
                   @click="finalMetadata.album.coverUrl = suggestedAlbumCover"
                 />
               </div>
-              <div v-if="suggestedLastfmAlbumCover" class="flex-shrink-0">
+              <div v-if="suggestedLastfmAlbumCover" class="shrink-0">
                 <p class="mb-2 text-xs font-medium text-surface-500 flex items-center gap-1">
                   <i aria-hidden="true" class="pi pi-star-fill text-yellow-400"></i>Last.fm
                 </p>
@@ -405,7 +405,7 @@
                   @click="finalMetadata.album.coverUrl = suggestedLastfmAlbumCover"
                 />
               </div>
-              <div v-if="finalMetadata.album.coverUrl && finalMetadata.album.coverUrl !== embeddedCover && finalMetadata.album.coverUrl !== suggestedAlbumCover && finalMetadata.album.coverUrl !== suggestedLastfmAlbumCover" class="flex-shrink-0">
+              <div v-if="finalMetadata.album.coverUrl && finalMetadata.album.coverUrl !== embeddedCover && finalMetadata.album.coverUrl !== suggestedAlbumCover && finalMetadata.album.coverUrl !== suggestedLastfmAlbumCover" class="shrink-0">
                 <p class="mb-2 text-xs font-medium text-surface-500">Selected</p>
                 <img
                   :src="finalMetadata.album.coverUrl"
@@ -414,7 +414,7 @@
                   @error="($event.target as HTMLImageElement).style.display='none'"
                 />
               </div>
-              <div v-if="!finalMetadata.album.coverUrl" class="flex flex-shrink-0 flex-col items-center justify-center gap-2">
+              <div v-if="!finalMetadata.album.coverUrl" class="flex shrink-0 flex-col items-center justify-center gap-2">
                 <p class="mb-1 text-xs font-medium text-surface-500">Upload Cover</p>
                 <label class="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-surface-600 bg-surface-800 text-surface-400 transition-colors hover:border-primary hover:text-primary">
                   <i aria-hidden="true" class="pi pi-upload text-xl"></i>
@@ -607,7 +607,7 @@
                   @click="finalMetadata.track.coverUrl = suggestedLastfmAlbumCover"
                 />
               </div>
-              <div v-if="finalMetadata.track.coverUrl && finalMetadata.track.coverUrl !== embeddedCover && finalMetadata.track.coverUrl !== suggestedAlbumCover && finalMetadata.track.coverUrl !== suggestedLastfmAlbumCover" class="flex-shrink-0">
+              <div v-if="finalMetadata.track.coverUrl && finalMetadata.track.coverUrl !== embeddedCover && finalMetadata.track.coverUrl !== suggestedAlbumCover && finalMetadata.track.coverUrl !== suggestedLastfmAlbumCover" class="shrink-0">
                 <p class="mb-2 text-xs font-medium text-surface-500">Selected</p>
                 <img
                   :src="finalMetadata.track.coverUrl"
@@ -1230,7 +1230,8 @@ function debouncedArtistSearch() {
     try {
       const res = await ingestionApi.searchArtists(q)
       artistSearchResults.value = Array.isArray(res) ? res : []
-    } catch {
+    } catch (err) {
+      console.error('Artist search failed:', err)
       artistSearchResults.value = []
     } finally {
       artistSearching.value = false
@@ -1250,7 +1251,8 @@ function debouncedAlbumSearch() {
     try {
       const res = await ingestionApi.searchAlbums(q)
       albumSearchResults.value = Array.isArray(res) ? res : []
-    } catch {
+    } catch (err) {
+      console.error('Album search failed:', err)
       albumSearchResults.value = []
     } finally {
       albumSearching.value = false
@@ -1274,7 +1276,7 @@ async function loadDraft() {
       pollEnrichment()
     }
     prefillForm(detail)
-  } catch (err: any) {
+  } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load draft.'
   } finally {
     loading.value = false
@@ -1295,8 +1297,8 @@ function pollEnrichment() {
         enrichment.value = detail.enrichedMetadata || null
         prefillForm(detail)
       }
-    } catch {
-      // ignore polling errors
+    } catch (err) {
+      console.error('Polling error:', err)
     }
     if (attempts >= maxAttempts) {
       clearInterval(timer)
@@ -1310,7 +1312,8 @@ async function triggerEnrich() {
   try {
     await ingestionApi.enrichDraft(draftId)
     pollEnrichment()
-  } catch {
+  } catch (err) {
+    console.error('Enrichment failed:', err)
     enriching.value = false
     toast.add({ severity: 'error', summary: 'Failed to start enrichment', life: 3000 })
   }
@@ -1323,7 +1326,7 @@ function prefillForm(detail: DraftDetailResponse) {
   const lfm = enrichment.value?.lastfm
   const spot = enrichment.value?.spotify
 
-  const sugMap = new Map<string, any>()
+  const sugMap = new Map<string, string>()
   for (const s of sug) {
     sugMap.set(s.field, s.value)
   }
@@ -1370,7 +1373,7 @@ async function uploadArtistImage(e: Event) {
       hasUnsavedChanges.value = true
       toast.add({ severity: 'success', summary: 'Image uploaded', detail: 'Artist image uploaded successfully.', life: 3000 })
     }
-  } catch (err: any) {
+  } catch (err) {
     toast.add({ severity: 'error', summary: 'Upload failed', detail: err instanceof Error ? err.message : 'Failed to upload image.', life: 5000 })
   }
   target.value = ''
@@ -1387,7 +1390,7 @@ async function uploadAlbumCover(e: Event) {
       hasUnsavedChanges.value = true
       toast.add({ severity: 'success', summary: 'Cover uploaded', detail: 'Album cover uploaded successfully.', life: 3000 })
     }
-  } catch (err: any) {
+  } catch (err) {
     toast.add({ severity: 'error', summary: 'Upload failed', detail: err instanceof Error ? err.message : 'Failed to upload image.', life: 5000 })
   }
   target.value = ''
@@ -1403,7 +1406,7 @@ async function publish() {
     hasUnsavedChanges.value = false
     published.value = true
     toast.add({ severity: 'success', summary: 'Draft published', detail: 'The draft has been published to the catalog.', life: 5000 })
-  } catch (err: any) {
+  } catch (err) {
     publishingError.value = err instanceof Error ? err.message : 'Failed to publish draft.'
   } finally {
     publishing.value = false
@@ -1422,8 +1425,8 @@ async function rejectDraft() {
     rejectDialogVisible.value = false
     toast.add({ severity: 'info', summary: 'Draft rejected', detail: 'The draft has been rejected.', life: 4000 })
     setTimeout(() => router.push({ name: 'admin.ingestion' }), 1500)
-  } catch {
-    // error handled by useRequest
+  } catch (err) {
+    console.error('Reject draft failed:', err)
   } finally {
     rejecting.value = false
   }
@@ -1450,10 +1453,15 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
-// TODO MEDIUM: finalMetadata is reactive (not a ref). Ensure deep watch on reactive tracks changes properly.
-watch(finalMetadata, () => {
-  hasUnsavedChanges.value = true
-}, { deep: true })
+watch(
+  () => ({
+    artist: finalMetadata.artist,
+    album: finalMetadata.album,
+    track: finalMetadata.track,
+  }),
+  () => { hasUnsavedChanges.value = true },
+  { deep: true }
+)
 
 onMounted(() => {
   loadDraft()

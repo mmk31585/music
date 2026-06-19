@@ -50,6 +50,7 @@
             <button
               type="button"
               class="flex h-10 w-10 items-center justify-center rounded-full text-white/50 transition-all hover:bg-white/10 hover:text-white"
+              aria-label="Close"
               @click="close"
             >
               <i aria-hidden="true" class="pi pi-chevron-down text-lg" />
@@ -98,19 +99,25 @@
           >
             <button
               type="button"
-              class="flex flex-col items-center gap-1 transition-all hover:text-white active:scale-90"
-              :class="shuffleMode ? '' : 'text-white/40'"
-              :style="shuffleMode ? { color: accentColor } : {}"
+              class="relative flex flex-col items-center gap-1 transition-all hover:text-white active:scale-90"
+              :class="shuffleMode !== 'off' ? '' : 'text-white/40'"
+              :style="shuffleMode !== 'off' ? { color: accentColor } : {}"
+              :title="shuffleMode === 'off' ? 'Shuffle off' : shuffleMode === 'queue' ? 'Shuffle queue' : shuffleMode === 'catalog' ? 'Random catalog tracks' : 'Similar tracks'"
               @click="toggleShuffle"
             >
               <i aria-hidden="true" class="pi pi-sort-alt text-lg" />
               <span class="text-[8px] font-medium">Shuffle</span>
+              <span
+                v-if="shuffleMode !== 'off'"
+                class="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#a855f7] text-[8px] font-bold text-white"
+              >{{ shuffleMode === 'queue' ? 'Q' : shuffleMode === 'catalog' ? 'R' : 'S' }}</span>
             </button>
 
             <button
               type="button"
               class="text-white/50 transition-all hover:text-white active:scale-90 disabled:opacity-30"
               :disabled="!hasPrevious"
+              aria-label="Previous track"
               @click="playPrevious"
             >
               <i aria-hidden="true" class="pi pi-step-backward text-2xl" />
@@ -130,6 +137,7 @@
               "
               :class="!isPlaying ? 'hover:bg-[var(--accent-hover,#1db954)]' : ''"
               :disabled="!currentTrack"
+              :aria-label="isPlaying ? 'Pause' : 'Play'"
               @click="togglePlayPause"
             >
               <i aria-hidden="true" v-if="isBuffering" class="pi pi-spin pi-spinner text-xl" />
@@ -149,6 +157,7 @@
               type="button"
               class="text-white/50 transition-all hover:text-white active:scale-90 disabled:opacity-30"
               :disabled="!hasNext"
+              aria-label="Next track"
               @click="playNext"
             >
               <i aria-hidden="true" class="pi pi-step-forward text-2xl" />
@@ -174,6 +183,7 @@
               <button
                 type="button"
                 class="flex h-10 w-10 items-center justify-center rounded-full text-white/40 transition-all hover:bg-white/10 hover:text-white"
+                :aria-label="muted ? 'Unmute' : 'Mute'"
                 @click="toggleMute"
               >
                 <i aria-hidden="true" :class="volumeIcon" class="text-base" />
@@ -208,6 +218,7 @@
             <button
               type="button"
               class="flex h-10 w-10 items-center justify-center rounded-full text-white/40 transition-all hover:bg-white/10 hover:text-white"
+              aria-label="Fullscreen"
               @click="$emit('open-fullscreen')"
             >
               <i aria-hidden="true" class="pi pi-expand text-base" />

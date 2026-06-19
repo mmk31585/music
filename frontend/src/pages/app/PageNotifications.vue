@@ -15,7 +15,7 @@
       </button>
     </div>
 
-    <section v-if="today.length" class="mb-8">
+    <section v-if="today.length" class="mb-8" aria-live="polite">
       <p class="mb-3 text-xs font-semibold tracking-wider text-slate-500 uppercase">Today</p>
       <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
         <NotificationItem
@@ -28,7 +28,7 @@
       </div>
     </section>
 
-    <section v-if="thisWeek.length" class="mb-8">
+    <section v-if="thisWeek.length" class="mb-8" aria-live="polite">
       <p class="mb-3 text-xs font-semibold tracking-wider text-slate-500 uppercase">This Week</p>
       <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
         <NotificationItem
@@ -41,7 +41,7 @@
       </div>
     </section>
 
-    <section v-if="earlier.length" class="mb-8">
+    <section v-if="earlier.length" class="mb-8" aria-live="polite">
       <p class="mb-3 text-xs font-semibold tracking-wider text-slate-500 uppercase">Earlier</p>
       <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
         <NotificationItem
@@ -57,6 +57,7 @@
     <div
       v-if="!notifications.length && !loading && !error"
       class="flex flex-col items-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-6 py-20 text-center"
+      role="status"
     >
       <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
         <i aria-hidden="true" class="pi pi-bell text-2xl text-slate-400" />
@@ -83,7 +84,7 @@
       </button>
     </div>
 
-    <div v-if="loading" class="space-y-3">
+    <div v-if="loading" class="space-y-3" role="status">
       <div v-for="i in 5" :key="i" class="flex items-center gap-4">
         <div class="h-9 w-9 animate-pulse rounded-full bg-white/[0.06]" />
         <div class="flex-1 space-y-2">
@@ -167,7 +168,8 @@ async function handleMarkAllRead() {
     await notifApi.markAllRead()
     notifications.value = notifications.value.map((n) => ({ ...n, isRead: true }))
     toast.add({ severity: 'success', summary: 'All marked as read', life: 2000 })
-  } catch {
+  } catch (err) {
+    console.error('Failed to mark all as read:', err)
     toast.add({ severity: 'error', summary: 'Failed to mark all as read', life: 2000 })
   }
 }

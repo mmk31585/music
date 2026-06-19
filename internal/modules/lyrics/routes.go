@@ -16,6 +16,7 @@ func RegisterRoutes(api *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
 	admin.Use(authMW, auth.RequireRole("admin"))
 	{
 		admin.POST("/lyrics", h.CreateLyrics)
+		admin.POST("/lyrics/fetch/:trackId", h.FetchFromLRC)
 		admin.PUT("/lyrics/:id", h.UpdateLyrics)
 		admin.DELETE("/lyrics/:id", h.DeleteLyrics)
 	}

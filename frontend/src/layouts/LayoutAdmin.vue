@@ -13,7 +13,11 @@
         <div
           v-if="mobileOpen"
           class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+          role="button"
+          tabindex="0"
           @click="mobileOpen = false"
+          @keydown.enter="mobileOpen = false"
+          @keydown.space.prevent="mobileOpen = false"
         />
       </Transition>
 

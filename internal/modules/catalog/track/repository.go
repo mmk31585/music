@@ -271,6 +271,44 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*Track, error) 
 	return &item, nil
 }
 
+func (r *Repository) Random(ctx context.Context, limit int) ([]Track, error) {
+	var items []Track
+	err := r.db.SelectContext(ctx, &items, `
+		SELECT
+			id,
+			artist_id,
+			album_id,
+			title,
+			slug,
+			duration_seconds,
+			track_number,
+			explicit,
+			audio_url,
+			cover_url,
+			audio_media_id,
+			cover_media_id,
+			play_count,
+			is_public,
+			created_at,
+			updated_at
+		FROM tracks
+		WHERE is_public = TRUE
+		ORDER BY RANDOM()
+		LIMIT $1
+	`, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range items {
+		if err := r.hydrate(ctx, &items[i]); err != nil {
+			return nil, err
+		}
+	}
+
+	return items, nil
+}
+
 func (r *Repository) List(ctx context.Context, limit, offset int, publicOnly bool) ([]Track, error) {
 	var items []Track
 

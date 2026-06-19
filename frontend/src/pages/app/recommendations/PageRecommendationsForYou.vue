@@ -44,12 +44,17 @@
     <div
       v-else
       class="mt-10 grid gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+      aria-live="polite"
     >
       <div
         v-for="(track, idx) in items"
         :key="track.id"
+        role="button"
+        tabindex="0"
         class="group cursor-pointer"
         @click="play(track, idx)"
+        @keydown.enter="play(track, idx)"
+        @keydown.space.prevent="play(track, idx)"
       >
         <div
           class="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-white/10 shadow-lg ring-1 ring-white/10 transition group-hover:ring-pink-500/50"
@@ -108,8 +113,8 @@ async function fetchForYou() {
   try {
     const response = await api.getForYou({ limit: 50 })
     items.value = response.items
-  } catch {
-    // silent
+  } catch (err) {
+    console.error('Failed to fetch for-you recommendations:', err)
   } finally {
     loading.value = false
   }

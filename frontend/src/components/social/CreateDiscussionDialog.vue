@@ -13,6 +13,8 @@
             v-model="title"
             type="text"
             placeholder="عنوان بحث"
+            aria-label="عنوان بحث"
+            autofocus
             class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 outline-none transition focus:border-white/20"
             dir="rtl"
           />
@@ -20,9 +22,16 @@
             v-model="body"
             placeholder="متن بحث..."
             rows="5"
+            aria-label="متن بحث"
             class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 outline-none transition focus:border-white/20"
             dir="rtl"
           />
+          <div
+            v-if="errorMessage"
+            class="rounded-lg bg-red-500/10 px-4 py-2.5 text-xs text-red-400"
+          >
+            {{ errorMessage }}
+          </div>
         </div>
 
         <div class="mt-6 flex gap-3">
@@ -48,6 +57,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useSocialApi } from '@/services/api/social'
+import { useAppToast } from '@/composables/useAppToast'
 
 const props = defineProps<{
   visible: boolean
@@ -59,24 +69,30 @@ const emit = defineEmits<{
 }>()
 
 const socialApi = useSocialApi()
+const toast = useAppToast()
 
 const title = ref('')
 const body = ref('')
 const creating = ref(false)
+const errorMessage = ref('')
 
 async function handleCreate() {
   if (!title.value.trim() || !body.value.trim() || creating.value) return
   creating.value = true
+  errorMessage.value = ''
   try {
     const d = await socialApi.createClubDiscussion(props.clubId, {
       title: title.value.trim(),
       body: body.value.trim(),
     })
     if (d?.id) {
+      toast.success('Discussion created!')
       emit('created', d.id)
     }
-  } catch {
-    // ignore
+  } catch (err: any) {
+    const msg = err?.response?.data?.message || err.message || 'Failed to create discussion'
+    errorMessage.value = msg
+    toast.apiError(err, 'Failed to create discussion')
   } finally {
     creating.value = false
   }

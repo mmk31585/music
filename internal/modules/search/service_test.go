@@ -8,7 +8,7 @@ import (
 )
 
 func TestSearch_EmptyQuery(t *testing.T) {
-	svc := NewService(nil)
+	svc := NewService(nil, nil)
 	resp, err := svc.Search(context.Background(), "", 10)
 	assert.NoError(t, err)
 	assert.Equal(t, "", resp.Query)

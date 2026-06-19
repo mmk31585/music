@@ -51,7 +51,7 @@
         </button>
       </div>
 
-      <div v-else class="mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      <div v-else class="mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" aria-live="polite">
         <RouterLink
           v-for="playlist in playlists"
           :key="playlist.id"
@@ -154,7 +154,8 @@ async function fetchPlaylists() {
   try {
     const data = await playlistsApi.getMyPlaylists()
     playlists.value = Array.isArray(data) ? data : []
-  } catch {
+  } catch (err) {
+    console.error('Failed to fetch playlists:', err)
     playlists.value = []
   } finally {
     loading.value = false
@@ -178,8 +179,8 @@ async function handleCreate() {
     } else {
       await fetchPlaylists()
     }
-  } catch {
-    // silent
+  } catch (err) {
+    console.error('Failed to create playlist:', err)
   } finally {
     creating.value = false
   }

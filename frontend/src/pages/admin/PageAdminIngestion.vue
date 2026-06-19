@@ -573,7 +573,7 @@ async function uploadFile(file: File) {
       enrichPollingStart(result.draftId)
     }
     await loadDrafts()
-  } catch (err: any) {
+  } catch (err) {
     const errObj = err as { code?: string; message?: string } | null
     if (errObj?.code !== 'ERR_CANCELED' && errObj?.message !== 'canceled') {
       uploadError.value = errObj?.message || 'Upload failed. Please try again.'
@@ -595,7 +595,8 @@ async function triggerEnrich(draftId: string) {
   try {
     await ingestionApi.enrichDraft(draftId)
     enrichPollingStart(draftId)
-  } catch {
+  } catch (err) {
+    console.error('Failed to start enrichment:', err)
     uploadError.value = 'Failed to start enrichment.'
   }
 }
@@ -619,8 +620,8 @@ function enrichPollingStart(draftId: string) {
         await loadDrafts()
         return
       }
-    } catch {
-      // ignore polling errors
+    } catch (err) {
+      console.error('Polling error:', err)
     }
 
     if (enrichAttempt.value >= enrichMaxAttempts) {
@@ -649,7 +650,8 @@ async function loadDrafts() {
     })
     drafts.value = response.items || []
     totalItems.value = response.total || 0
-  } catch {
+  } catch (err) {
+    console.error('Failed to load drafts:', err)
     drafts.value = []
     totalItems.value = 0
     draftsError.value = 'Failed to load drafts.'
@@ -663,10 +665,9 @@ function onFilterChange() {
   loadDrafts()
 }
 
-function handlePageChange(event: any) {
-  const ev = event as { first: number; rows: number }
-  currentPage.value = Math.floor(ev.first / ev.rows) + 1
-  pageSize.value = ev.rows
+function handlePageChange(event: { first: number; rows: number }) {
+  currentPage.value = Math.floor(event.first / event.rows) + 1
+  pageSize.value = event.rows
   loadDrafts()
 }
 
@@ -702,7 +703,8 @@ function formatDate(dateStr: string): string {
     const d = new Date(dateStr)
     if (isNaN(d.getTime())) return dateStr
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-  } catch {
+  } catch (err) {
+    console.error('Date formatting failed:', err)
     return dateStr
   }
 }

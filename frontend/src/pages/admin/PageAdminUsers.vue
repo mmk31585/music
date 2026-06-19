@@ -662,7 +662,7 @@ function viewUser(u: AdminUser) {
   showDetailDialog.value = true
   detailLoading.value = true
   adminGetUser(u.id)
-    .then((res: any) => {
+    .then((res: Record<string, unknown>) => {
       if (res) userDetail.value = res
     })
     .catch(() => {

@@ -31,6 +31,8 @@
           v-for="(line, idx) in parsedCache"
           :key="idx"
           ref="lineRefs"
+          role="button"
+          tabindex="0"
           class="cursor-pointer px-4 py-3 text-center text-lg leading-relaxed transition-all duration-500 ease-out md:text-xl"
           :class="{
             'scale-105 font-bold text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]':
@@ -39,6 +41,8 @@
             'text-white/25 hover:text-white/50': idx !== activeLineIdx && !isPast(idx),
           }"
           @click="onLineClick(line.timeSeconds)"
+          @keydown.enter="onLineClick(line.timeSeconds)"
+          @keydown.space.prevent="onLineClick(line.timeSeconds)"
         >
           <template v-if="line.isActive && karaoke">
             <span

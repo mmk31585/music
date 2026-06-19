@@ -18,6 +18,7 @@
               v-model="query"
               type="text"
               placeholder="Search tracks, artists, albums, playlists..."
+              aria-label="Search tracks, artists, albums, playlists"
               class="flex-1 bg-transparent px-3 py-4 text-sm text-white outline-none placeholder:text-slate-500"
               @keydown="onKeydown"
               @input="onInput"
@@ -25,6 +26,7 @@
             <button
               v-if="query"
               type="button"
+              aria-label="Clear search"
               class="spring mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs text-slate-400 transition hover:bg-white/20"
               @click="clearQuery"
             >
@@ -110,7 +112,7 @@
           </div>
 
           <!-- Results -->
-          <div v-if="query && !searching" class="max-h-[60vh] overflow-y-auto p-2">
+          <div v-if="query && !searching" class="max-h-[60vh] overflow-y-auto p-2" aria-live="polite">
             <div v-if="noResults" class="flex flex-col items-center gap-4 p-12 text-center">
               <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5">
                 <i aria-hidden="true" class="pi pi-search text-3xl text-slate-600" />
@@ -129,8 +131,12 @@
                   Top Result
                 </p>
                 <div
+                  role="button"
+                  tabindex="0"
                   class="group spring flex cursor-pointer items-center gap-4 rounded-xl bg-white/[0.04] p-3 transition-all hover:bg-white/[0.08]"
                   @click="selectTrack(results.tracks[0])"
+                  @keydown.enter="selectTrack(results.tracks[0])"
+                  @keydown.space.prevent="selectTrack(results.tracks[0])"
                 >
                   <div class="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-white/10 shadow-lg">
                     <img
@@ -170,11 +176,15 @@
                   v-for="(item, i) in results.tracks.slice(0, 5)"
                   :key="item.id"
                   :ref="(el) => setItemRef('track', i, el)"
+                  role="button"
+                  tabindex="0"
                   class="spring flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
                   :class="
                     highlightedIndex === `track-${i}` ? 'bg-white/[0.10]' : 'hover:bg-white/[0.06]'
                   "
                   @click="selectTrack(item)"
+                  @keydown.enter="selectTrack(item)"
+                  @keydown.space.prevent="selectTrack(item)"
                   @mouseenter="highlightedIndex = `track-${i}`"
                 >
                   <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
@@ -442,7 +452,8 @@ function loadRecent() {
   try {
     const raw = localStorage.getItem('music_recent_searches')
     recentSearches.value = raw ? JSON.parse(raw) : []
-  } catch {
+  } catch (err) {
+    console.error('Failed to load recent searches:', err)
     recentSearches.value = []
   }
 }
@@ -453,7 +464,9 @@ function saveRecent(term: string) {
     list = [term, ...list.filter((t) => t !== term)].slice(0, 8)
     localStorage.setItem('music_recent_searches', JSON.stringify(list))
     recentSearches.value = list
-  } catch {}
+  } catch (err) {
+    console.error('Failed to save recent searches:', err)
+  }
 }
 
 function clearRecent() {
@@ -498,9 +511,10 @@ async function doSearch() {
       !results.value.albums?.length &&
       !results.value.playlists?.length
     saveRecent(term)
-  } catch (err: any) {
+  } catch (err: unknown) {
     const abortErr = err as { name?: string; code?: string }
     if (abortErr?.name === 'AbortError' || abortErr?.code === 'ERR_CANCELED') return
+    console.error('Failed to search catalog:', err)
     results.value = { tracks: [], artists: [], albums: [], playlists: [] }
     noResults.value = true
   } finally {
@@ -519,7 +533,7 @@ function getFlatItems(): { group: string; index: number; el?: HTMLElement }[] {
   for (const group of ['track', 'artist', 'album', 'playlist'] as const) {
     const key = group === 'playlist' ? 'playlists' : (`${group}s` as keyof SearchResults)
     const items = results.value[key] ?? []
-    items.forEach((_: any, i: number) =>
+    items.forEach((_: unknown, i: number) =>
       flat.push({ group, index: i, el: itemRefs[`${group}-${i}`] }),
     )
   }

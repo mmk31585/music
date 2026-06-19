@@ -69,6 +69,10 @@ type Repository interface {
 	PickRandomTrack(ctx context.Context) (*uuid.UUID, error)
 	GetRoomMembers(ctx context.Context, roomID uuid.UUID) (int, error)
 
+	// Enriched queue queries (JOIN with tracks/artists/albums/users)
+	GetNowPlayingWithTrack(ctx context.Context, roomID uuid.UUID) (*NowPlayingResponse, error)
+	GetCandidatesWithTrackAndUser(ctx context.Context, roomID, userID uuid.UUID) ([]CandidateResponse, error)
+
 	// Stage & Raise-Hand
 	GetHandRaise(ctx context.Context, roomID, userID uuid.UUID) (*HandRaise, error)
 	RaiseHand(ctx context.Context, roomID, userID uuid.UUID) error
@@ -221,7 +225,7 @@ func (r *repository) GetFeed(ctx context.Context, userID uuid.UUID, limit, offse
 
 	query += ` ORDER BY a.created_at DESC LIMIT $2 OFFSET $3 `
 
-	var items []ActivityFeedItem
+	items := make([]ActivityFeedItem, 0)
 	err := r.db.SelectContext(ctx, &items, query, args...)
 	return items, err
 }
@@ -267,13 +271,22 @@ func (r *repository) ListActiveParties(ctx context.Context, limit, offset int) (
 }
 
 func (r *repository) UpdatePartyStatus(ctx context.Context, id uuid.UUID, status string, trackID *uuid.UUID) error {
+	if trackID != nil {
+		_, err := r.db.ExecContext(ctx, `
+			UPDATE listening_parties
+			SET status = $2::text,
+			    ended_at = CASE WHEN $2::text = 'ended' THEN NOW() ELSE ended_at END,
+			    current_track_id = $3
+			WHERE id = $1
+		`, id, status, *trackID)
+		return err
+	}
 	_, err := r.db.ExecContext(ctx, `
 		UPDATE listening_parties
-		SET status = $2,
-		    ended_at = CASE WHEN $2 = 'ended' THEN NOW() ELSE ended_at END,
-		    current_track_id = CASE WHEN $3 IS NOT NULL THEN $3 ELSE current_track_id END
+		SET status = $2::text,
+		    ended_at = CASE WHEN $2::text = 'ended' THEN NOW() ELSE ended_at END
 		WHERE id = $1
-	`, id, status, trackID)
+	`, id, status)
 	return err
 }
 
@@ -316,7 +329,9 @@ func (r *repository) GetPartyParticipants(ctx context.Context, partyID uuid.UUID
 // --- Live Rooms ---
 
 func (r *repository) CreateRoom(ctx context.Context, room *LiveRoom) error {
-	room.ID = uuid.New()
+	if room.ID == uuid.Nil {
+		room.ID = uuid.New()
+	}
 	_, err := r.db.NamedExecContext(ctx, `
 		INSERT INTO live_rooms (id, host_id, title, description, cover_url, is_public, status, created_at)
 		VALUES (:id, :host_id, :title, :description, :cover_url, :is_public, :status, :created_at)
@@ -617,7 +632,7 @@ func (r *repository) SuggestTrack(ctx context.Context, c *QueueCandidate) error 
 }
 
 func (r *repository) GetCandidates(ctx context.Context, roomID uuid.UUID) ([]QueueCandidate, error) {
-	var items []QueueCandidate
+	items := make([]QueueCandidate, 0)
 	err := r.db.SelectContext(ctx, &items, `
 		SELECT id, room_id, track_id, suggested_by, vote_count, created_at
 		FROM room_queue_candidates
@@ -727,8 +742,112 @@ func (r *repository) GetNowPlaying(ctx context.Context, roomID uuid.UUID) (*Room
 	return &np, nil
 }
 
+func (r *repository) GetNowPlayingWithTrack(ctx context.Context, roomID uuid.UUID) (*NowPlayingResponse, error) {
+	var row nowPlayingTrackRow
+	err := r.db.GetContext(ctx, &row, `
+		SELECT
+			np.room_id, np.track_id, np.started_at, np.suggested_by, np.source,
+			t.title, t.duration_seconds, t.cover_url,
+			a.name AS artist_name,
+			al.title AS album_title,
+			u.username, u.avatar_url AS user_avatar_url
+		FROM room_now_playing np
+		JOIN tracks t ON t.id = np.track_id
+		JOIN artists a ON a.id = t.artist_id
+		LEFT JOIN albums al ON al.id = t.album_id
+		LEFT JOIN users u ON u.id = np.suggested_by
+		WHERE np.room_id = $1
+	`, roomID)
+	if err != nil {
+		return nil, err
+	}
+
+	duration := row.DurationSeconds
+	resp := &NowPlayingResponse{
+		Track: TrackSummaryResponse{
+			ID:              row.TrackID.String(),
+			Title:           row.Title,
+			ArtistName:      row.ArtistName,
+			AlbumTitle:      row.AlbumTitle,
+			CoverURL:        row.CoverURL,
+			DurationSeconds: &duration,
+		},
+		StartedAt: row.StartedAt,
+		Source:    row.Source,
+	}
+
+	if row.SuggestedBy != nil && row.Username != nil {
+		username := *row.Username
+		resp.SuggestedBy = &UserSummaryResponse{
+			ID:        row.SuggestedBy.String(),
+			Username:  username,
+			AvatarURL: row.UserAvatarURL,
+		}
+	}
+
+	return resp, nil
+}
+
+func (r *repository) GetCandidatesWithTrackAndUser(ctx context.Context, roomID, userID uuid.UUID) ([]CandidateResponse, error) {
+	var rows []candidateTrackRow
+	err := r.db.SelectContext(ctx, &rows, `
+		SELECT
+			c.id, c.room_id, c.track_id, c.suggested_by, c.vote_count, c.created_at,
+			CASE WHEN v.id IS NOT NULL THEN true ELSE false END AS has_voted,
+			t.title, t.duration_seconds, t.cover_url,
+			a.name AS artist_name,
+			al.title AS album_title,
+			u.username, u.avatar_url AS user_avatar_url
+		FROM room_queue_candidates c
+		JOIN tracks t ON t.id = c.track_id
+		JOIN artists a ON a.id = t.artist_id
+		LEFT JOIN albums al ON al.id = t.album_id
+		JOIN users u ON u.id = c.suggested_by
+		LEFT JOIN room_queue_votes v ON v.candidate_id = c.id AND v.user_id = $2
+		WHERE c.room_id = $1
+		ORDER BY c.vote_count DESC, c.created_at ASC
+	`, roomID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]CandidateResponse, 0, len(rows))
+	for _, row := range rows {
+		duration := row.DurationSeconds
+		items = append(items, CandidateResponse{
+			ID:     row.ID,
+			RoomID: row.RoomID,
+			Track: TrackSummaryResponse{
+				ID:              row.TrackID.String(),
+				Title:           row.Title,
+				ArtistName:      row.ArtistName,
+				AlbumTitle:      row.AlbumTitle,
+				CoverURL:        row.CoverURL,
+				DurationSeconds: &duration,
+			},
+			SuggestedBy: UserSummaryResponse{
+				ID:        row.SuggestedBy.String(),
+				Username:  row.Username,
+				AvatarURL: row.UserAvatarURL,
+			},
+			VoteCount: row.VoteCount,
+			HasVoted:  row.HasVoted,
+			CreatedAt: row.CreatedAt,
+		})
+	}
+
+	return items, nil
+}
+
 func (r *repository) SetNowPlaying(ctx context.Context, np *RoomNowPlaying) error {
-	_, err := r.db.NamedExecContext(ctx, `
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Upsert room_now_playing
+	if _, err := tx.NamedExecContext(ctx, `
 		INSERT INTO room_now_playing (room_id, track_id, started_at, suggested_by, source)
 		VALUES (:room_id, :track_id, :started_at, :suggested_by, :source)
 		ON CONFLICT (room_id) DO UPDATE SET
@@ -736,8 +855,20 @@ func (r *repository) SetNowPlaying(ctx context.Context, np *RoomNowPlaying) erro
 			started_at = EXCLUDED.started_at,
 			suggested_by = EXCLUDED.suggested_by,
 			source = EXCLUDED.source
-	`, np)
-	return err
+	`, np); err != nil {
+		return err
+	}
+
+	// If this room corresponds to a listening party, sync its current_track_id
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE listening_parties
+		SET current_track_id = $2
+		WHERE id = $1 AND status != 'ended'
+	`, np.RoomID, np.TrackID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (r *repository) RemoveCandidate(ctx context.Context, candidateID uuid.UUID) error {
@@ -748,7 +879,7 @@ func (r *repository) RemoveCandidate(ctx context.Context, candidateID uuid.UUID)
 }
 
 func (r *repository) GetCandidatesWithVoteState(ctx context.Context, roomID, userID uuid.UUID) ([]CandidateWithVoteState, error) {
-	var items []CandidateWithVoteState
+	items := make([]CandidateWithVoteState, 0)
 	err := r.db.SelectContext(ctx, &items, `
 		SELECT
 			c.id, c.room_id, c.track_id, c.suggested_by, c.vote_count, c.created_at,

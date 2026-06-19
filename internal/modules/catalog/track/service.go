@@ -29,6 +29,13 @@ func (s *Service) List(ctx context.Context, limit, offset int, publicOnly bool) 
 	return s.repo.List(ctx, limit, offset, publicOnly)
 }
 
+func (s *Service) Random(ctx context.Context, limit int) ([]Track, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	return s.repo.Random(ctx, limit)
+}
+
 func (s *Service) Update(ctx context.Context, id string, req UpdateRequest) (*Track, error) {
 	uid, err := common.ParseUUID(id)
 	if err != nil {

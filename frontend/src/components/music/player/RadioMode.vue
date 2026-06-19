@@ -24,6 +24,7 @@
           <button
             type="button"
             class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white"
+            aria-label="Close"
             @click="close"
           >
             <i aria-hidden="true" class="pi pi-chevron-down text-lg" />
@@ -37,6 +38,7 @@
             type="button"
             class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white"
             :disabled="!canSkip"
+            aria-label="Skip track"
             @click="skipTrack"
           >
             <i aria-hidden="true" class="pi pi-forward text-lg" />
@@ -77,39 +79,42 @@
               </div>
 
               <div class="mt-5 flex items-center gap-5">
-                <button
-                  type="button"
-                  class="spring flex h-12 w-12 items-center justify-center rounded-full text-white/60 transition-all hover:bg-white/10 hover:text-white disabled:opacity-20"
-                  :disabled="!hasPrevious"
-                  @click="playPrevious"
-                >
-                  <i aria-hidden="true" class="pi pi-step-backward text-xl" />
-                </button>
+          <button
+            type="button"
+            class="spring flex h-12 w-12 items-center justify-center rounded-full text-white/60 transition-all hover:bg-white/10 hover:text-white disabled:opacity-20"
+            :disabled="!hasPrevious"
+            aria-label="Previous track"
+            @click="playPrevious"
+          >
+            <i aria-hidden="true" class="pi pi-step-backward text-xl" />
+          </button>
 
-                <button
-                  type="button"
-                  class="glow-green spring relative flex h-16 w-16 items-center justify-center rounded-full bg-white text-black shadow-2xl transition-all hover:scale-105 hover:bg-[#1db954] hover:text-white disabled:opacity-40"
-                  :class="{ '!bg-[#1db954] !text-white': isPlaying }"
-                  :disabled="!currentTrack || isLoadingTrack"
-                  @click="togglePlayPause"
-                >
-                  <i aria-hidden="true" v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-xl" />
-                  <i
-                    v-else
-                    :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'"
-                    class="text-xl"
-                  />
-                  <div
-                    v-if="isPlaying"
-                    class="absolute -inset-2 animate-ping rounded-full border-2 border-[#1db954]/30"
-                  />
-                </button>
+          <button
+            type="button"
+            class="glow-green spring relative flex h-16 w-16 items-center justify-center rounded-full bg-white text-black shadow-2xl transition-all hover:scale-105 hover:bg-[#1db954] hover:text-white disabled:opacity-40"
+            :class="{ '!bg-[#1db954] !text-white': isPlaying }"
+            :disabled="!currentTrack || isLoadingTrack"
+            :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'"
+            @click="togglePlayPause"
+          >
+            <i aria-hidden="true" v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-xl" />
+            <i
+              v-else
+              :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'"
+              class="text-xl"
+            />
+            <div
+              v-if="isPlaying"
+              class="absolute -inset-2 animate-ping rounded-full border-2 border-[#1db954]/30"
+            />
+          </button>
 
-                <button
-                  type="button"
-                  class="spring flex h-12 w-12 items-center justify-center rounded-full text-white/60 transition-all hover:bg-white/10 hover:text-white"
-                  @click="skipTrack"
-                >
+          <button
+            type="button"
+            class="spring flex h-12 w-12 items-center justify-center rounded-full text-white/60 transition-all hover:bg-white/10 hover:text-white"
+            aria-label="Next track"
+            @click="skipTrack"
+          >
                   <i aria-hidden="true" class="pi pi-step-forward text-xl" />
                 </button>
               </div>
@@ -170,8 +175,12 @@
                   <div
                     v-for="(track, idx) in upcomingTracks"
                     :key="track.id"
+                    role="button"
+                    tabindex="0"
                     class="group spring flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition-all hover:bg-white/[0.06]"
                     @click="playUpcoming(idx)"
+                    @keydown.enter="playUpcoming(idx)"
+                    @keydown.space.prevent="playUpcoming(idx)"
                   >
                     <span class="w-5 text-center text-xs text-white/20 tabular-nums">{{
                       idx + 1
@@ -257,8 +266,12 @@
                   <div
                     v-for="rec in similarTracks"
                     :key="rec.id"
+                    role="button"
+                    tabindex="0"
                     class="group spring flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition-all hover:bg-white/[0.06]"
                     @click="addSimilar(rec)"
+                    @keydown.enter="addSimilar(rec)"
+                    @keydown.space.prevent="addSimilar(rec)"
                   >
                     <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg">
                       <img

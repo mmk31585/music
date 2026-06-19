@@ -93,24 +93,22 @@ func (s *DownloadService) Download(ctx context.Context, url, dir string) (*Downl
 		"--embed-thumbnail", "--add-metadata",
 		"--output", outputTemplate, "--no-playlist",
 		"--no-warnings", "--no-update", "--socket-timeout", "10",
-		"--print", "filename", "--extractor-args", "youtube:skip=webpage",
+		"--extractor-args", "youtube:skip=webpage",
 	}
 	dlArgs = append(dlArgs, s.proxyArgs()...)
 	dlArgs = append(dlArgs, url)
 
 	dlCmd := exec.CommandContext(ctx, "yt-dlp", dlArgs...)
-	var dlOut, dlErr bytes.Buffer
-	dlCmd.Stdout = &dlOut
+	var dlErr bytes.Buffer
+	dlCmd.Stdout = nil // redirected to file by --output
 	dlCmd.Stderr = &dlErr
 
 	if err := dlCmd.Run(); err != nil {
 		return nil, fmt.Errorf("download: %w (stderr: %s)", err, strings.TrimSpace(dlErr.String()))
 	}
 
-	localPath := strings.TrimSpace(dlOut.String())
-	if localPath == "" {
-		return nil, fmt.Errorf("no output file from yt-dlp")
-	}
+	// Construct the output path from the template + metadata
+	localPath := filepath.Join(dir, meta.Title+"-"+timestamp+".mp3")
 
 	uploader := meta.Uploader
 	if uploader == "" {
@@ -183,8 +181,15 @@ func (w *ImportWorker) Run(ctx context.Context) error {
 }
 
 func (w *ImportWorker) ensureStreamGroup(ctx context.Context) error {
-	err := w.rdb.XGroupCreateMkStream(ctx, streamKey, consumerGroup, "$").Err()
-	if err != nil && err.Error() != "BUSYGROUP Consumer Group name already exists" {
+	err := w.rdb.XGroupCreateMkStream(ctx, streamKey, consumerGroup, "0").Err()
+	if err != nil {
+		if err.Error() == "BUSYGROUP Consumer Group name already exists" {
+			// Reset cursor to beginning so all existing messages
+			// become available for delivery via XReadGroup ">".
+			// Without this, messages enqueued before worker restart
+			// are never delivered because the group cursor is past them.
+			return w.rdb.XGroupSetID(ctx, streamKey, consumerGroup, "0").Err()
+		}
 		return err
 	}
 	return nil
@@ -199,20 +204,47 @@ func (w *ImportWorker) poll(ctx context.Context) {
 		Block:    1 * time.Second,
 	}).Result()
 
-	if err != nil || len(msgs) == 0 || len(msgs[0].Messages) == 0 {
+	if err != nil {
+		if err != redis.Nil {
+			w.logger.Warn("import poll XReadGroup error", zap.Error(err))
+		}
+		return
+	}
+	if len(msgs) == 0 || len(msgs[0].Messages) == 0 {
 		return
 	}
 
 	msg := msgs[0].Messages[0]
 	msgID := msg.ID
+	w.logger.Debug("import poll received message", zap.String("msg_id", msgID),
+		zap.Any("values", msg.Values))
 
-	var job Job
 	payload, ok := msg.Values["payload"].(string)
 	if !ok {
+		w.logger.Warn("import job payload field is not a string",
+			zap.String("msg_id", msgID),
+			zap.Any("type", fmt.Sprintf("%T", msg.Values["payload"])),
+			zap.Any("value", msg.Values["payload"]))
 		w.rdb.XAck(ctx, streamKey, consumerGroup, msgID)
 		return
 	}
-	if err := json.Unmarshal([]byte(payload), &job); err != nil {
+
+	w.logger.Debug("import poll payload string", zap.String("msg_id", msgID),
+		zap.String("payload_len", strconv.Itoa(len(payload))),
+		zap.String("payload_prefix", payload[:min(len(payload), 100)]))
+
+	// The payload is double-wrapped: Enqueue stores {"payload":{job JSON}}
+	// so we need to unwrap the outer payload field first.
+	var job Job
+	var wrapper struct {
+		Payload json.RawMessage `json:"payload"`
+	}
+	if err := json.Unmarshal([]byte(payload), &wrapper); err != nil {
+		w.logger.Warn("invalid job wrapper", zap.Error(err))
+		w.rdb.XAck(ctx, streamKey, consumerGroup, msgID)
+		return
+	}
+	if err := json.Unmarshal(wrapper.Payload, &job); err != nil {
 		w.logger.Warn("invalid job payload", zap.Error(err))
 		w.rdb.XAck(ctx, streamKey, consumerGroup, msgID)
 		return
@@ -256,34 +288,44 @@ func (w *ImportWorker) processJob(ctx context.Context, job *Job) {
 	w.setProgress(job.ID, StatusResolving, 5, "resolving", "", "")
 
 	// Resolve to downloadable URL if needed (e.g., Spotify URL needs yt-dlp resolve)
-	resolveQuery := acquisition.ResolveQuery{
-		Title:  job.Title,
-		Artist: job.Artist,
-	}
+	downloadURL := job.URL
 
-	var downloadURL string
-	if job.Source == "spotify" || job.Source == "deezer" || job.Source == "musicbrainz" || job.Source == "lastfm" {
-		resolveStart := time.Now()
-		candidate, err := w.resolver.Resolve(ctx, resolveQuery)
-		metrics.ObserveImportJobStage("resolve", resolveStart)
-		if err != nil {
-			w.setProgress(job.ID, StatusFailed, 0, "resolve_failed", "", err.Error())
+	if downloadURL == "" {
+		resolveQuery := acquisition.ResolveQuery{
+			Title:  job.Title,
+			Artist: job.Artist,
+		}
+
+		if job.Source == "spotify" || job.Source == "deezer" || job.Source == "musicbrainz" || job.Source == "lastfm" {
+			resolveStart := time.Now()
+			candidate, err := w.resolver.Resolve(ctx, resolveQuery)
+			metrics.ObserveImportJobStage("resolve", resolveStart)
+			if err != nil {
+				w.setProgress(job.ID, StatusFailed, 0, "resolve_failed", "", err.Error())
+				metrics.IncImportJob("failed")
+				return
+			}
+			if candidate == nil {
+				w.setProgress(job.ID, StatusFailed, 0, "resolve_failed", "", "no downloadable source found")
+				metrics.IncImportJob("failed")
+				return
+			}
+			downloadURL = candidate.URL
+			w.logger.Info("track resolved to downloadable URL",
+				zap.String("source", candidate.Source),
+				zap.String("quality", candidate.Quality),
+				zap.String("url", downloadURL),
+			)
+		} else {
+			// URL is empty and source doesn't need resolution — can't proceed
+			w.setProgress(job.ID, StatusFailed, 0, "resolve_failed", "", "no URL provided and source does not support auto-resolution")
 			metrics.IncImportJob("failed")
 			return
 		}
-		if candidate == nil {
-			w.setProgress(job.ID, StatusFailed, 0, "resolve_failed", "", "no downloadable source found")
-			metrics.IncImportJob("failed")
-			return
-		}
-		downloadURL = candidate.URL
-		w.logger.Info("track resolved to downloadable URL",
-			zap.String("source", candidate.Source),
-			zap.String("quality", candidate.Quality),
+	} else {
+		w.logger.Info("using provided download URL, skipping resolution",
 			zap.String("url", downloadURL),
 		)
-	} else {
-		downloadURL = job.URL
 	}
 
 	w.setProgress(job.ID, StatusDownloading, 20, "downloading", "", "")

@@ -24,6 +24,7 @@
         <div class="flex items-center gap-2">
           <button
             type="button"
+            aria-label="Back"
             class="text-xs text-white/40 transition-colors hover:text-white/60"
             @click="step = 1; selectedType = null"
           >
@@ -55,6 +56,7 @@
         v-model="form.target_id"
         type="text"
         placeholder="Target ID (UUID)"
+        aria-label="Target ID"
         class="w-full rounded-xl bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 ring-1 ring-white/[0.06] transition-all outline-none focus:ring-[#1db954]/50"
       />
 
@@ -63,6 +65,7 @@
           v-model="form.locale"
           type="text"
           placeholder="Language code (e.g., fa, en, ar)"
+          aria-label="Language code"
           class="w-full rounded-xl bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 ring-1 ring-white/[0.06] transition-all outline-none focus:ring-[#1db954]/50"
         />
       </div>
@@ -70,6 +73,7 @@
       <textarea
         v-model="rawData"
         :rows="8"
+        aria-label="Contribution content"
         placeholder="Paste your contribution content here...
 For lyrics: paste the full lyrics text
 For LRC format: [00:00.00]Line 1&#10;[00:05.00]Line 2"
@@ -80,6 +84,7 @@ For LRC format: [00:00.00]Line 1&#10;[00:05.00]Line 2"
         v-model="form.summary"
         type="text"
         placeholder="Brief summary of your change (optional)"
+        aria-label="Summary"
         class="w-full rounded-xl bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 ring-1 ring-white/[0.06] transition-all outline-none focus:ring-[#1db954]/50"
       />
 
@@ -201,7 +206,7 @@ async function submit() {
   success.value = false
 
   try {
-    let data: any
+    let data: unknown
     if (selectedType.value === 'lyrics') {
       const lines = rawData.value.trim().split('\n')
       const hasTimestamps = lines.some((l) => /^\[\d{2}:\d{2}(\.\d+)?\]/.test(l.trim()))
@@ -229,11 +234,12 @@ async function submit() {
     })
 
     success.value = true
-    successStatus.value = (res as Record<string, any>)?.status || 'pending'
+    successStatus.value = (res as Record<string, unknown>)?.status as string || 'pending'
     emit('submitted')
     setTimeout(reset, 2000)
-  } catch (e: any) {
-    error.value = (e as Record<string, any>)?.message || 'Failed to submit'
+  } catch (err) {
+    console.error('Failed to submit contribution:', err)
+    error.value = (err as Record<string, unknown>)?.message as string || 'Failed to submit'
   } finally {
     submitting.value = false
   }

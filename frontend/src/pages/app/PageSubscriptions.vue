@@ -198,7 +198,8 @@ async function loadData() {
     plans.value = plansRes?.plans ?? []
     currentSub.value = subRes
     payments.value = paymentsRes?.payments ?? []
-  } catch {
+  } catch (err) {
+    console.error('Failed to load subscription data:', err)
     toast.add({ severity: 'error', summary: 'Failed to load subscription data', life: 3000 })
   } finally {
     loading.value = false
@@ -216,8 +217,9 @@ async function selectPlan(plan: Plan) {
       await api.checkout({ planId: plan.id, callbackUrl: window.location.origin + '/subscription' })
       toast.add({ severity: 'success', summary: `${plan.name} activated!`, life: 3000 })
       await loadData()
-    } catch {
-      toast.add({ severity: 'error', summary: 'Failed to activate plan', life: 3000 })
+  } catch (err) {
+    console.error('Failed to activate plan:', err)
+    toast.add({ severity: 'error', summary: 'Failed to activate plan', life: 3000 })
     }
     return
   }
@@ -231,7 +233,8 @@ async function selectPlan(plan: Plan) {
       checkoutUrl.value = res.redirectUrl
       showCheckout.value = true
     }
-  } catch {
+  } catch (err) {
+    console.error('Checkout failed:', err)
     toast.add({ severity: 'error', summary: 'Checkout failed', life: 3000 })
   }
 }
@@ -241,7 +244,8 @@ async function cancelSubscription() {
     await api.cancel()
     toast.add({ severity: 'info', summary: 'Subscription canceled', life: 3000 })
     await loadData()
-  } catch {
+  } catch (err) {
+    console.error('Cancel failed:', err)
     toast.add({ severity: 'error', summary: 'Cancel failed', life: 3000 })
   }
 }

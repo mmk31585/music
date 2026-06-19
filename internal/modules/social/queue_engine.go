@@ -51,26 +51,45 @@ func (e *QueueEngine) SuggestTrack(ctx context.Context, roomID, trackID, userID 
 		return fmt.Errorf("suggest track: %w", err)
 	}
 
-	// If the candidate already existed (no insert), we still treat it as a vote
-	if candidate.ID == uuid.Nil {
-		existing, err := e.repo.GetCandidates(ctx, rid)
-		if err != nil {
-			return err
-		}
-		for _, c := range existing {
-			if c.TrackID == tid {
-				candidate = &c
-				break
+	// Auto-cast a vote from the suggester.
+	// For a new candidate, candidate.ID was set by the repo.
+	// For duplicates (ON CONFLICT DO NOTHING), candidate.ID doesn't exist
+	// in the DB, so look up the actual candidate row first.
+	if candidate.ID != uuid.Nil {
+		if err := e.repo.CastVoteTx(ctx, candidate.ID, uid); err != nil {
+			// Candidate may have already existed (ON CONFLICT DO NOTHING) —
+			// look up the real candidate and cast the vote there.
+			existing, lookupErr := e.repo.GetCandidates(ctx, rid)
+			if lookupErr != nil {
+				return lookupErr
+			}
+			for _, c := range existing {
+				if c.TrackID == tid {
+					candidate = &c
+					break
+				}
+			}
+			if candidate.ID != uuid.Nil {
+				_ = e.repo.CastVoteTx(ctx, candidate.ID, uid)
 			}
 		}
 	}
 
-	// Auto-cast a vote from the suggester
-	if candidate.ID != uuid.Nil {
-		_ = e.repo.CastVoteTx(ctx, candidate.ID, uid)
+	// If nothing is currently playing, auto-advance so this (or the top-voted) track
+	// starts playing immediately. This is the expected UX for parties and rooms:
+	// suggest a track → it plays.
+	np, _ := e.repo.GetNowPlaying(ctx, rid)
+	if np == nil {
+		e.logger.Info("no track playing — auto-advancing queue after suggest",
+			zap.String("room_id", rid.String()))
+		if _, err := e.AdvanceQueue(ctx, roomID); err != nil {
+			e.logger.Warn("auto-advance after suggest failed",
+				zap.String("room_id", rid.String()), zap.Error(err))
+		}
+	} else {
+		e.broadcastQueueState(ctx, rid)
 	}
 
-	e.broadcastQueueState(ctx, rid)
 	return nil
 }
 
@@ -204,13 +223,13 @@ func (e *QueueEngine) GetQueueState(ctx context.Context, roomID, requestingUserI
 		uid = uuid.Nil
 	}
 
-	nowPlaying, _ := e.repo.GetNowPlaying(ctx, rid)
-	candidates, err := e.repo.GetCandidatesWithVoteState(ctx, rid, uid)
+	nowPlaying, _ := e.repo.GetNowPlayingWithTrack(ctx, rid)
+	candidates, err := e.repo.GetCandidatesWithTrackAndUser(ctx, rid, uid)
 	if err != nil {
 		return nil, fmt.Errorf("get candidates: %w", err)
 	}
 	if candidates == nil {
-		candidates = []CandidateWithVoteState{}
+		candidates = []CandidateResponse{}
 	}
 
 	return &QueueStateResponse{

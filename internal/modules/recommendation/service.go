@@ -184,6 +184,10 @@ func (s *service) ForYou(ctx context.Context, userID string, limit int) ([]Track
 		addItems(items, 1)
 	}
 
+	if len(candidates) == 0 {
+		return s.PopularTracks(ctx, limit)
+	}
+
 	// Optionally exclude already liked tracks from results
 	likedSet := map[string]struct{}{}
 	for _, id := range likedTrackIDs {
@@ -201,6 +205,10 @@ func (s *service) ForYou(ctx context.Context, userID string, limit int) ([]Track
 		if len(result) >= limit {
 			break
 		}
+	}
+
+	if len(result) == 0 {
+		return s.PopularTracks(ctx, limit)
 	}
 
 	return result, nil

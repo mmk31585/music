@@ -156,6 +156,8 @@ func sanitizeExtractedTags(t *ExtractedTags) {
 }
 
 func sanitizeString(s string) string {
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.ReplaceAll(s, "\r", "\n")
 	return strings.Map(func(r rune) rune {
 		if r == 0 {
 			return -1
@@ -190,5 +192,3 @@ func parseExtractedTags(rawJSON string) *ExtractedTags {
 	}
 	return &tags
 }
-
-

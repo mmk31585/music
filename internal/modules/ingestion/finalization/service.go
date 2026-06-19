@@ -102,7 +102,11 @@ func NewService(db *sqlx.DB, storage platformstorage.Storage, logger *zap.Logger
 	return &Service{db: db, storage: storage, logger: logger}
 }
 
-func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilepath, draftFormat, finalMetaJSON string) (*FinalizeResult, error) {
+type extractedMeta struct {
+	Lyrics string `json:"lyrics"`
+}
+
+func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilepath, draftFormat, finalMetaJSON string, extractedMetaJSON ...string) (*FinalizeResult, error) {
 	if draftStatus != "accepted" {
 		return nil, fmt.Errorf("draft must be in accepted status, got %s", draftStatus)
 	}
@@ -113,6 +117,17 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 	var final DraftMetadata
 	if err := json.Unmarshal([]byte(finalMetaJSON), &final); err != nil {
 		return nil, fmt.Errorf("unmarshal final metadata: %w", err)
+	}
+
+	// Fall back to embedded lyrics from extracted metadata if none provided in final metadata
+	if final.Track.Lyrics == "" && len(extractedMetaJSON) > 0 && extractedMetaJSON[0] != "" {
+		var ext extractedMeta
+		if err := json.Unmarshal([]byte(extractedMetaJSON[0]), &ext); err == nil && ext.Lyrics != "" {
+			final.Track.Lyrics = ext.Lyrics
+			s.logger.Info("lyrics extracted from embedded metadata",
+				zap.String("draft_id", draftID),
+			)
+		}
 	}
 
 	assets, err := s.getAssetsByDraftID(ctx, draftID)
@@ -300,6 +315,17 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 	s.logger.Info("track created", zap.String("track_id", trackID.String()))
 
 	if final.Track.Lyrics != "" {
+		// Convert plain lyrics to approximate LRC when we have duration
+		if !looksLikeLRC(final.Track.Lyrics) && final.Track.DurationSeconds > 0 {
+			lrc := plainToApproximateLRC(final.Track.Lyrics, final.Track.DurationSeconds)
+			if lrc != "" {
+				final.Track.Lyrics = lrc
+				s.logger.Info("converted plain lyrics to approximate LRC",
+					zap.String("track_id", trackID.String()),
+					zap.Int("duration", final.Track.DurationSeconds))
+			}
+		}
+
 		lyricsType := "plain"
 		if looksLikeLRC(final.Track.Lyrics) {
 			lyricsType = "lrc"
@@ -687,6 +713,52 @@ func looksLikeLRC(content string) bool {
 		return strings.HasPrefix(line, "[")
 	}
 	return false
+}
+
+// plainToApproximateLRC converts plain text lyrics to approximate LRC format
+// by evenly distributing lines across the track duration.
+func plainToApproximateLRC(plain string, durationSeconds int) string {
+	lines := strings.Split(plain, "\n")
+	if len(lines) == 0 {
+		return ""
+	}
+
+	// Strip trailing empty lines
+	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
+		lines = lines[:len(lines)-1]
+	}
+	if len(lines) == 0 {
+		return ""
+	}
+
+	// Only count non-empty lines for timing, but keep all lines for structure
+	lineCount := 0
+	for _, line := range lines {
+		if strings.TrimSpace(line) != "" {
+			lineCount++
+		}
+	}
+	if lineCount == 0 {
+		return ""
+	}
+
+	interval := float64(durationSeconds) / float64(lineCount)
+	var b strings.Builder
+	lineIdx := 0
+	for _, line := range lines {
+		text := strings.TrimSpace(line)
+		if text == "" {
+			b.WriteString("\n")
+			continue
+		}
+		sec := float64(lineIdx) * interval
+		min := int(sec) / 60
+		s := int(sec) % 60
+		cs := int((sec - float64(int(sec))) * 100)
+		b.WriteString(fmt.Sprintf("[%02d:%02d.%02d]%s\n", min, s, cs, text))
+		lineIdx++
+	}
+	return b.String()
 }
 
 func (s *Service) isExternalURL(rawURL string) bool {

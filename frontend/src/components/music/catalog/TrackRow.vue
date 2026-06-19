@@ -56,8 +56,8 @@
 
       <button
         type="button"
+        aria-label="More options"
         class="hidden rounded-full p-2 text-slate-400 transition group-hover:block hover:bg-white/10 hover:text-white"
-        title="More"
         @click.stop="openContextMenu"
       >
         <i aria-hidden="true" class="pi pi-ellipsis-h" />

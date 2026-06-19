@@ -8,8 +8,8 @@
     <form class="space-y-5" @submit.prevent="onSubmit">
       <div>
         <label for="login-email" class="mb-2 block text-sm font-medium text-slate-300">Email</label>
-        <InputText id="login-email" v-model="form.email" type="email" placeholder="you@example.com" class="w-full" />
-        <small v-if="errors.email" class="mt-1 block text-red-400">
+        <InputText id="login-email" v-model="form.email" type="email" placeholder="you@example.com" class="w-full" aria-label="Email" />
+        <small v-if="errors.email" class="mt-1 block text-red-400" role="alert">
           {{ errors.email }}
         </small>
       </div>
@@ -24,8 +24,9 @@
           input-class="w-full"
           :feedback="false"
           toggle-mask
+          aria-label="Password"
         />
-        <small v-if="errors.password" class="mt-1 block text-red-400">
+        <small v-if="errors.password" class="mt-1 block text-red-400" role="alert">
           {{ errors.password }}
         </small>
       </div>

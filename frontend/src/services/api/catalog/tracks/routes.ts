@@ -136,14 +136,59 @@ export const useTracksApi = () => {
     )
   }
 
+  const getRandomTracks = async (
+    params?: { limit?: number },
+    config?: UseRequestConfig<Track[]>,
+  ) => {
+    return useRequest<Track, true>(
+      TrackApiRoutes.RANDOM,
+      { method: 'GET', params },
+      {
+        schema: TrackSchema,
+        silent: true,
+        ...config,
+      },
+    )
+  }
+
+  const adminEnrichTrack = async (
+    id: string | number,
+    scope?: 'all' | 'lyrics' | 'cover' | 'artist',
+    config?: UseRequestConfig<any>,
+  ) => {
+    const query = scope && scope !== 'all' ? `?scope=${scope}` : ''
+    return useRequest<any>(
+      `${TrackApiRoutes.ADMIN_ENRICH.replace(':trackId', String(id))}${query}`,
+      { method: 'POST' },
+      {
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
+  const adminEnrichAllTracks = async (config?: UseRequestConfig<any>) => {
+    return useRequest<any>(
+      TrackApiRoutes.ADMIN_ENRICH_ALL,
+      { method: 'POST' },
+      {
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
   return {
     getTracks,
     getTrack,
+    getRandomTracks,
     adminGetTracks,
     adminCreateTrack,
     adminUploadTrackAudio,
     adminUploadTrackCover,
     adminUpdateTrack,
     adminDeleteTrack,
+    adminEnrichTrack,
+    adminEnrichAllTracks,
   }
 }

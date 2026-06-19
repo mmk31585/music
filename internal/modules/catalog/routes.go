@@ -15,6 +15,7 @@ type Handlers struct {
 	Album  *album.Handler
 	Track  *track.Handler
 	Genre  *genre.Handler
+	Enrich *EnrichHandler
 }
 
 func RegisterPublicRoutes(rg *gin.RouterGroup, h Handlers, mw ...gin.HandlerFunc) {
@@ -39,6 +40,7 @@ func RegisterPublicRoutes(rg *gin.RouterGroup, h Handlers, mw ...gin.HandlerFunc
 		cg.GET("/albums/:albumID/artists", h.Album.Artists)
 
 		cg.GET("/tracks", h.Track.ListPublic)
+		cg.GET("/tracks/random", h.Track.Random)
 		cg.GET("/tracks/:trackID", h.Track.Get)
 		cg.GET("/tracks/:trackID/credits", h.Track.Credits)
 		cg.GET("/tracks/:trackID/artists", h.Track.Artists)
@@ -61,6 +63,7 @@ func RegisterAdminRoutes(rg *gin.RouterGroup, h Handlers, authMW gin.HandlerFunc
 		artists.DELETE("/:artistID", h.Artist.Delete)
 		artists.PUT("/:artistID/related", h.Artist.ReplaceRelated)
 		artists.PUT("/:artistID/top-tracks", h.Artist.ReplaceTopTracks)
+		artists.POST("/:artistID/enrich", h.Enrich.EnrichArtist)
 
 	}
 
@@ -71,6 +74,7 @@ func RegisterAdminRoutes(rg *gin.RouterGroup, h Handlers, authMW gin.HandlerFunc
 		albums.PATCH("/:albumID", h.Album.Update)
 		albums.DELETE("/:albumID", h.Album.Delete)
 		albums.PUT("/:albumID/artists", h.Album.ReplaceArtists)
+		albums.POST("/:albumID/enrich", h.Enrich.EnrichAlbum)
 	}
 
 	tracks := adminCatalog.Group("/tracks")
@@ -81,6 +85,8 @@ func RegisterAdminRoutes(rg *gin.RouterGroup, h Handlers, authMW gin.HandlerFunc
 		tracks.DELETE("/:trackID", h.Track.Delete)
 		tracks.PUT("/:trackID/credits", h.Track.ReplaceCredits)
 		tracks.PUT("/:trackID/artists", h.Track.ReplaceArtists)
+		tracks.POST("/:trackID/enrich", h.Enrich.EnrichTrack)
+		tracks.POST("/enrich-all", h.Enrich.EnrichAllTracks)
 	}
 
 	genres := adminCatalog.Group("/genres")

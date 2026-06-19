@@ -36,6 +36,7 @@
           <button
             class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1db954]/10 text-[#1db954] transition hover:bg-[#1db954]/20"
             title="تأیید"
+            aria-label="تأیید"
             @click="$emit('approve', raise.user_id)"
           >
             <i aria-hidden="true" class="pi pi-check text-sm" />
@@ -43,6 +44,7 @@
           <button
             class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-white/30 transition hover:bg-white/10 hover:text-white/60"
             title="رد"
+            aria-label="رد"
             @click="$emit('deny', raise.user_id)"
           >
             <i aria-hidden="true" class="pi pi-times text-sm" />

@@ -57,7 +57,7 @@ const shortcuts = [
   { label: 'Volume up', keys: ['↑'] },
   { label: 'Volume down', keys: ['↓'] },
   { label: 'Toggle mute', keys: ['M'] },
-  { label: 'Toggle shuffle', keys: ['S'] },
+  { label: 'Cycle shuffle modes', keys: ['S'] },
   { label: 'Toggle repeat', keys: ['R'] },
   { label: 'Toggle sidebar', keys: ['Ctrl', 'B'] },
   { label: 'Search', keys: ['Ctrl', 'K'] },

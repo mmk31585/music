@@ -24,7 +24,7 @@
       </div>
 
       <div :style="progressSectionStyle">
-        <div :style="progressBarStyle" ref="progressRef" @click="seekFromEvent">
+        <div :style="progressBarStyle" ref="progressRef" role="button" tabindex="0" @click="seekFromEvent" @keydown.enter="seekFromEvent" @keydown.space.prevent="seekFromEvent">
           <div :style="{ ...progressFillStyle, width: `${progressPercent}%` }" />
         </div>
         <div :style="progressLabelsStyle">
@@ -34,16 +34,17 @@
       </div>
 
       <div :style="controlsStyle">
-        <button :style="ctrlBtnStyle" @click="playPrevious" :disabled="!hasPrevious">⏮</button>
+        <button :style="ctrlBtnStyle" aria-label="Previous track" @click="playPrevious" :disabled="!hasPrevious">⏮</button>
         <button
           :style="{ ...playBtnBase, background: accentColor, boxShadow: `0 0 12px ${accentColor}44` }"
+          :aria-label="isPlaying ? 'Pause' : 'Play'"
           @click="togglePlayPause"
         >
           {{ isPlaying ? '⏸' : '▶' }}
         </button>
-        <button :style="ctrlBtnStyle" @click="playNext" :disabled="!hasNext">⏭</button>
+        <button :style="ctrlBtnStyle" aria-label="Next track" @click="playNext" :disabled="!hasNext">⏭</button>
         <div :style="{ flex: 1 }" />
-        <button :style="closeBtnStyle" @click="close" title="Close">✕</button>
+        <button :style="closeBtnStyle" aria-label="Close player" @click="close">✕</button>
       </div>
     </div>
 

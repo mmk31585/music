@@ -21,7 +21,7 @@ func TestSearch_WithMockOS_HappyPath(t *testing.T) {
 	defer ts.Close()
 
 	client := newOSClientForTest(t, ts.URL)
-	svc := NewService(client.Client())
+	svc := NewService(client.Client(), nil)
 
 	resp, err := svc.Search(context.Background(), "test query", 10)
 	require.NoError(t, err)
@@ -29,11 +29,10 @@ func TestSearch_WithMockOS_HappyPath(t *testing.T) {
 
 	assert.Equal(t, "test query", resp.Query)
 
+	// without a repo, results are built directly from OpenSearch docs
 	require.Len(t, resp.Tracks, 1)
 	assert.Equal(t, "track-1", resp.Tracks[0].ID)
 	assert.Equal(t, "Test Track", resp.Tracks[0].Title)
-	assert.Equal(t, strPtr("artist-1"), resp.Tracks[0].ArtistID)
-	assert.Equal(t, strPtr("Test Artist"), resp.Tracks[0].ArtistName)
 
 	require.Len(t, resp.Albums, 1)
 	assert.Equal(t, "album-1", resp.Albums[0].ID)
@@ -60,7 +59,7 @@ func TestSearch_WithMockOS_EmptyResults(t *testing.T) {
 	defer ts.Close()
 
 	client := newOSClientForTest(t, ts.URL)
-	svc := NewService(client.Client())
+	svc := NewService(client.Client(), nil)
 
 	resp, err := svc.Search(context.Background(), "nonexistent", 10)
 	require.NoError(t, err)
@@ -85,7 +84,7 @@ func TestSearch_WithMockOS_RankedQueryBuilt(t *testing.T) {
 	defer ts.Close()
 
 	client := newOSClientForTest(t, ts.URL)
-	svc := NewService(client.Client())
+	svc := NewService(client.Client(), nil)
 
 	_, err := svc.Search(context.Background(), "hello world", 10)
 	require.NoError(t, err)
@@ -117,7 +116,7 @@ func TestSearch_WithMockOS_ServerError(t *testing.T) {
 	defer ts.Close()
 
 	client := newOSClientForTest(t, ts.URL)
-	svc := NewService(client.Client())
+	svc := NewService(client.Client(), nil)
 
 	resp, err := svc.Search(context.Background(), "test", 10)
 	require.NoError(t, err)
@@ -199,8 +198,4 @@ func buildSearchResponse(index string) string {
 	default:
 		return `{"took":0,"timed_out":false,"hits":{"total":{"value":0},"hits":[]}}`
 	}
-}
-
-func strPtr(s string) *string {
-	return &s
 }

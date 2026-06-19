@@ -103,6 +103,20 @@ export const useAlbumsApi = () => {
     )
   }
 
+  const adminEnrichAlbum = async (
+    id: string | number,
+    config?: UseRequestConfig<{ data: Album }>,
+  ) => {
+    return useRequest<{ data: Album }>(
+      AlbumApiRoutes.ADMIN_ENRICH.replace(':albumId', String(id)),
+      { method: 'POST' },
+      {
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
   return {
     // Public
     getAlbums,
@@ -112,5 +126,6 @@ export const useAlbumsApi = () => {
     adminCreateAlbum,
     adminUpdateAlbum,
     adminDeleteAlbum,
+    adminEnrichAlbum,
   }
 }

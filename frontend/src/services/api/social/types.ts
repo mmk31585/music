@@ -21,14 +21,14 @@ export const ActivityFeedItemSchema = z.object({
 })
 
 export const FollowersResponseSchema = z.object({
-  items: z.array(UserFollowSchema),
+  items: z.array(UserFollowSchema).catch([]),
   total_count: z.number(),
   limit: z.number(),
   offset: z.number(),
 })
 
 export const ActivityFeedResponseSchema = z.object({
-  items: z.array(ActivityFeedItemSchema),
+  items: z.array(ActivityFeedItemSchema).catch([]),
   pagination: z.object({
     limit: z.number(),
     offset: z.number(),

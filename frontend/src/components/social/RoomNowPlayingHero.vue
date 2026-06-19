@@ -57,8 +57,12 @@
               {{ sourceLabel }}
             </span>
             <button
-              class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 hover:scale-105 active:scale-95"
+              class="flex h-10 w-10 items-center justify-center rounded-full transition hover:scale-105 active:scale-95"
+              :class="isPlaying
+                ? 'bg-white/10 text-white hover:bg-white/20'
+                : 'bg-[#1db954]/20 text-[#1db954] hover:bg-[#1db954]/30 play-pulse'"
               @click="$emit('toggle-play')"
+              aria-label="Toggle play"
             >
               <i aria-hidden="true" v-if="isPlaying" class="pi pi-pause text-lg" />
               <i aria-hidden="true" v-else class="pi pi-play ml-0.5 text-lg" />
@@ -168,5 +172,19 @@ const sourceBadgeClass = computed(() => {
 @keyframes spinDisc {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* Pulse animation for the play button when track is loaded but not playing */
+@keyframes playPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(29, 185, 84, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(29, 185, 84, 0);
+  }
+}
+
+.play-pulse {
+  animation: playPulse 2s ease-in-out infinite;
 }
 </style>

@@ -8,7 +8,7 @@
       <p class="mt-4 max-w-2xl text-white/80">Jump back into tracks you played recently.</p>
     </section>
 
-    <section class="mt-10">
+    <section class="mt-10" aria-live="polite">
       <div v-if="loading" class="space-y-3">
         <div v-for="i in 8" :key="i" class="h-[68px] animate-pulse rounded-2xl bg-white/[0.06]" />
       </div>
@@ -56,7 +56,7 @@ import { TrackRow } from '@/components/music'
 import { useLibraryApi } from '@/services/api/library'
 
 const libraryApi = useLibraryApi()
-const items = ref<any[]>([])
+const items = ref<Record<string, unknown>[]>([])
 const loading = ref(false)
 
 const trackRows = computed(() =>
@@ -75,7 +75,8 @@ onMounted(async () => {
   try {
     const data = await libraryApi.getRecentlyPlayed()
     items.value = Array.isArray(data) ? data : []
-  } catch {
+  } catch (err) {
+    console.error('Failed to fetch recently played:', err)
     items.value = []
   } finally {
     loading.value = false

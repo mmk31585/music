@@ -650,7 +650,8 @@ async function fetchQueue() {
   try {
     const data = await moderationApi.getPendingReports({ limit: 50 })
     queueItems.value = data?.items ?? []
-  } catch {
+  } catch (err) {
+    console.error('Failed to load queue:', err)
     toast.add({ severity: 'error', summary: 'Failed to load queue', life: 3000 })
   } finally {
     queueLoading.value = false

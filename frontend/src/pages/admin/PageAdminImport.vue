@@ -63,9 +63,9 @@
           v-if="r.thumbnail"
           :src="r.thumbnail"
           alt=""
-          class="h-16 w-16 flex-shrink-0 rounded-lg object-cover"
+          class="h-16 w-16 shrink-0 rounded-lg object-cover"
         />
-        <div v-else class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg bg-white/[0.06]">
+        <div v-else class="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-white/[0.06]">
           <i aria-hidden="true" class="pi pi-music text-xl text-slate-500"></i>
         </div>
 
@@ -166,7 +166,7 @@ async function doSearch() {
   try {
     results.value = await importApi.search(q)
     searched.value = true
-  } catch (err: any) {
+  } catch (err: unknown) {
     searchError.value = err instanceof Error ? err.message : 'Search failed.'
   } finally {
     searching.value = false
@@ -174,9 +174,9 @@ async function doSearch() {
 }
 
 async function doImport(r: SearchResult) {
-  importingUrl.value = r.url
+  importingUrl.value = r.url || r.title
   try {
-    const res = await importApi.importTrack(r.url, r.source)
+    const res = await importApi.importTrack(r)
     if (res.jobId) {
       importJobId.value = res.jobId
       importProgress.value = 0
@@ -197,7 +197,7 @@ async function doImport(r: SearchResult) {
       })
       router.push({ name: 'admin.ingestion.review', params: { id: res.draftId } })
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     toast.add({
       severity: 'error',
       summary: 'Import failed',

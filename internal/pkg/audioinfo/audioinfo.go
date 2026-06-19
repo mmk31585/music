@@ -345,7 +345,11 @@ func findMoovDuration(data []byte) (sampleRate int, duration int) {
 
 		switch boxType {
 		case "moov":
-			return findMoovDuration(data[i:])
+			// Recurse into the moov box body (skip 8-byte header) to find mvhd
+			if i+8 >= len(data) {
+				return 0, 0
+			}
+			return findMoovDuration(data[i+8:])
 		case "mvhd":
 			if i+20 <= len(data) {
 				version := data[i+8]

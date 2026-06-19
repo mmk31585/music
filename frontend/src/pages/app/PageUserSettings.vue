@@ -34,11 +34,12 @@
           <div
             class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-white/10 text-3xl font-black text-white"
           >
-            <img v-if="previewAvatar" :src="previewAvatar" class="h-full w-full object-cover" />
+            <img v-if="previewAvatar" :src="previewAvatar" alt="Avatar preview" class="h-full w-full object-cover" />
             <span v-else>{{ initials }}</span>
           </div>
           <button
             type="button"
+            aria-label="Edit avatar"
             class="absolute -right-1 -bottom-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-black bg-[#1db954] text-[10px] text-black transition hover:bg-[#1ed760]"
             @click="triggerAvatarUpload"
           >
@@ -66,6 +67,7 @@
           <input
             v-model="form.displayName"
             type="text"
+            aria-label="Display name"
             class="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white transition outline-none placeholder:text-slate-600 focus:border-[#1db954]/50 focus:bg-white/[0.06]"
             placeholder="Your display name"
           />
@@ -77,6 +79,7 @@
           <input
             v-model="form.username"
             type="text"
+            aria-label="Username"
             class="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white transition outline-none placeholder:text-slate-600 focus:border-[#1db954]/50 focus:bg-white/[0.06]"
             placeholder="username"
           />
@@ -88,6 +91,7 @@
           <textarea
             v-model="form.bio"
             rows="3"
+            aria-label="Bio"
             class="w-full resize-none rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white transition outline-none placeholder:text-slate-600 focus:border-[#1db954]/50 focus:bg-white/[0.06]"
             placeholder="Tell us about yourself"
           />
@@ -99,6 +103,7 @@
           <input
             v-model="form.location"
             type="text"
+            aria-label="Location"
             class="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white transition outline-none placeholder:text-slate-600 focus:border-[#1db954]/50 focus:bg-white/[0.06]"
             placeholder="Tehran, Iran"
           />
@@ -110,6 +115,7 @@
           <input
             v-model="form.website"
             type="url"
+            aria-label="Website"
             class="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white transition outline-none placeholder:text-slate-600 focus:border-[#1db954]/50 focus:bg-white/[0.06]"
             placeholder="https://example.com"
           />
@@ -129,6 +135,8 @@
           v-if="saveMessage"
           class="text-sm"
           :class="saveError ? 'text-red-400' : 'text-[#1db954]'"
+          :role="saveError ? 'alert' : undefined"
+          aria-live="polite"
         >
           {{ saveMessage }}
         </p>
@@ -154,6 +162,7 @@
             <input
               v-model="passwordForm.currentPassword"
               type="password"
+              aria-label="Current Password"
               class="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white transition outline-none placeholder:text-slate-600 focus:border-[#1db954]/50 focus:bg-white/[0.06]"
             />
           </div>
@@ -165,6 +174,7 @@
             <input
               v-model="passwordForm.newPassword"
               type="password"
+              aria-label="New Password"
               class="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white transition outline-none placeholder:text-slate-600 focus:border-[#1db954]/50 focus:bg-white/[0.06]"
             />
           </div>
@@ -180,6 +190,8 @@
             v-if="passwordMessage"
             class="text-sm"
             :class="passwordError ? 'text-red-400' : 'text-[#1db954]'"
+            :role="passwordError ? 'alert' : undefined"
+            aria-live="polite"
           >
             {{ passwordMessage }}
           </p>
@@ -214,6 +226,7 @@
             <input
               v-model="preferences.rtl"
               type="checkbox"
+              aria-label="Persian (RTL) Layout"
               class="h-5 w-5 rounded border-white/20 bg-white/10 accent-[#1db954]"
             />
           </div>
@@ -225,6 +238,7 @@
             <input
               v-model="preferences.lyricsAutoscroll"
               type="checkbox"
+              aria-label="Lyrics Autoscroll"
               class="h-5 w-5 rounded border-white/20 bg-white/10 accent-[#1db954]"
             />
           </div>
@@ -236,6 +250,7 @@
             <input
               v-model="preferences.explicitContent"
               type="checkbox"
+              aria-label="Explicit Content"
               class="h-5 w-5 rounded border-white/20 bg-white/10 accent-[#1db954]"
             />
           </div>
@@ -255,6 +270,7 @@
             <input
               v-model="preferences.notifyReleases"
               type="checkbox"
+              aria-label="New Releases"
               class="h-5 w-5 rounded border-white/20 bg-white/10 accent-[#1db954]"
             />
           </div>
@@ -266,6 +282,7 @@
             <input
               v-model="preferences.notifySocial"
               type="checkbox"
+              aria-label="Social Activity"
               class="h-5 w-5 rounded border-white/20 bg-white/10 accent-[#1db954]"
             />
           </div>
@@ -280,7 +297,7 @@
       >
         {{ prefSaving ? 'Saving...' : 'Save Preferences' }}
       </button>
-      <p v-if="prefMessage" class="text-sm text-[#1db954]">{{ prefMessage }}</p>
+      <p v-if="prefMessage" class="text-sm text-[#1db954]" aria-live="polite">{{ prefMessage }}</p>
     </div>
   </template>
   </div>
@@ -439,7 +456,8 @@ async function savePreferences() {
     setTimeout(() => {
       prefMessage.value = ''
     }, 3000)
-  } catch {
+  } catch (err) {
+    console.error('Failed to save preferences:', err)
     prefMessage.value = 'Failed to save preferences'
   } finally {
     prefSaving.value = false

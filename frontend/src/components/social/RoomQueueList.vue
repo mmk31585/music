@@ -17,6 +17,7 @@
     <div
       v-if="!candidates.length"
       class="flex flex-col items-center gap-4 py-12 text-sm text-white/30"
+      role="status"
     >
       <i aria-hidden="true" class="pi pi-music text-4xl text-white/20" />
       <p>هنوز کسی آهنگی پیشنهاد نداده. اولین نفر باش!</p>
@@ -43,9 +44,9 @@
       >
         <div class="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white/10">
           <img
-            v-if="candidate.track.cover_url"
+            v-if="candidate.track?.cover_url"
             :src="candidate.track.cover_url"
-            :alt="candidate.track.title"
+            :alt="candidate.track?.title ?? 'Track cover'"
             loading="lazy"
             class="h-full w-full object-cover"
           />
@@ -55,9 +56,10 @@
         </div>
 
         <div class="min-w-0 flex-1">
-          <p class="truncate text-sm font-medium text-white">{{ candidate.track.title }}</p>
+          <p v-if="candidate.track" class="truncate text-sm font-medium text-white">{{ candidate.track.title }}</p>
+          <p v-else class="truncate text-sm font-medium text-white/50">Unknown track</p>
           <p class="truncate text-xs text-white/40">
-            پیشنهاد {{ candidate.suggested_by.username || candidate.suggested_by.id.slice(0, 8) }}
+            پیشنهاد {{ candidate.suggested_by?.username || (candidate.suggested_by?.id ? String(candidate.suggested_by.id).slice(0, 8) : 'Unknown') }}
           </p>
         </div>
 
@@ -65,6 +67,7 @@
           class="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition hover:bg-white/10"
           :class="candidate.has_voted ? 'text-[#1db954]' : 'text-white/40'"
           @click="toggleVote(candidate)"
+          aria-label="Vote"
         >
           <i
             class="text-lg transition-transform duration-150"

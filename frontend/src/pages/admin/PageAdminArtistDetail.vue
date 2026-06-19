@@ -67,6 +67,15 @@
 
           <div class="mt-6 flex flex-wrap gap-2">
             <Button
+              label="Enrich"
+              icon="pi pi-refresh"
+              size="small"
+              severity="info"
+              :loading="enriching"
+              class="!rounded-xl !bg-amber-500/10 !text-amber-400 hover:!bg-amber-500/20"
+              @click="handleEnrich"
+            />
+            <Button
               label="Edit Artist"
               icon="pi pi-pencil"
               size="small"
@@ -207,6 +216,7 @@ const editingArtist = ref<Artist | null>(null)
 const saving = ref(false)
 const showDelete = ref(false)
 const deleting = ref(false)
+const enriching = ref(false)
 
 onMounted(loadArtist)
 
@@ -221,9 +231,9 @@ async function loadArtist() {
       tracksApi.getTracks(),
     ])
     artist.value = artistData
-    albums.value = allAlbums.filter((a: any) => String((a as Record<string, any>).artist_id) === id)
-    tracks.value = allTracks.filter((t: any) => String((t as Record<string, any>).artist_id) === id)
-  } catch (err: any) {
+    albums.value = allAlbums.filter((a: Record<string, unknown>) => String(a.artist_id) === id)
+    tracks.value = allTracks.filter((t: Record<string, unknown>) => String(t.artist_id) === id)
+  } catch (err: unknown) {
     error.value = err?.message || 'Failed to load artist.'
   } finally {
     loading.value = false
@@ -239,7 +249,21 @@ function openDeleteConfirm() {
   showDelete.value = true
 }
 
-async function handleEditSubmit(payload: any) {
+async function handleEnrich() {
+  if (!artist.value) return
+  enriching.value = true
+  try {
+    await artistsApi.adminEnrichArtist(artist.value.id)
+    toast.add({ severity: 'success', summary: 'Artist enriched', detail: 'Bio and image fetched from external sources', life: 3000 })
+    await loadArtist()
+  } catch {
+    toast.add({ severity: 'error', summary: 'Enrich failed', detail: 'Could not enrich artist', life: 4000 })
+  } finally {
+    enriching.value = false
+  }
+}
+
+async function handleEditSubmit(payload: Record<string, unknown>) {
   if (!artist.value) return
   saving.value = true
   try {

@@ -124,6 +124,7 @@ const navSections: NavSection[] = [
       { label: 'Users', icon: 'pi pi-user', to: '/admin/users' },
       { label: 'Media', icon: 'pi pi-upload', to: '/admin/media' },
       { label: 'Import from Internet', icon: 'pi pi-globe', to: '/admin/import' },
+      { label: 'Import by Artist', icon: 'pi pi-user-plus', to: '/admin/import/artist' },
       { label: 'Music Ingestion', icon: 'pi pi-cloud-upload', to: '/admin/ingestion' },
       { label: 'Moderation', icon: 'pi pi-shield', to: '/admin/moderation' },
     ],

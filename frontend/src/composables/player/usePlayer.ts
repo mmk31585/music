@@ -35,6 +35,7 @@ export function usePlayer() {
     crossfadeDuration: player.crossfadeDuration,
     audioQuality: player.audioQuality,
 
+    setShuffleMode: player.setShuffleMode,
     toggleShuffle: player.toggleShuffle,
     toggleRepeat: player.toggleRepeat,
     setPlaybackRate: player.setPlaybackRate,

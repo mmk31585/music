@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"music/internal/common/middleware"
 	ai "music/internal/modules/ai"
 	"music/internal/modules/analytics"
@@ -29,6 +30,7 @@ import (
 	"music/internal/modules/social"
 	"music/internal/modules/subscription"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -59,6 +61,7 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 		Album:  c.AlbumHandler,
 		Genre:  c.GenreHandler,
 		Track:  c.TrackHandler,
+		Enrich: c.EnrichHandler,
 	}
 
 	catalog.RegisterPublicRoutes(api, catalogHandlers, c.OptionalAuthMW, middleware.RateLimitOptional(c.RDB, 60))
@@ -127,4 +130,27 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	creator.RegisterRoutes(api, c.CreatorHandler, c.AuthMW)
 	social.RegisterRoutes(api, c.SocialHandler, c.AuthMW)
 	ai.RegisterRoutes(api, c.AIHandler, c.AuthMW)
+
+	// Start periodic enrichment for all tracks (runs every 6 hours)
+	if c.EnrichHandler != nil {
+		go c.startPeriodicEnrichment()
+	}
+}
+
+func (c *Container) startPeriodicEnrichment() {
+	ctx := context.Background()
+	ticker := time.NewTicker(6 * time.Hour)
+	defer ticker.Stop()
+
+	// Run once at startup
+	go c.EnrichHandler.EnrichAllBackground(ctx)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			go c.EnrichHandler.EnrichAllBackground(ctx)
+		}
+	}
 }

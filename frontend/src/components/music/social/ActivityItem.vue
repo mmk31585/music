@@ -23,6 +23,7 @@
       type="button"
       class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/50 opacity-0 transition group-hover:opacity-100 hover:bg-[#1db954] hover:text-black"
       @click="handlePlay"
+      aria-label="Play"
     >
       <i aria-hidden="true" class="pi pi-play-fill text-xs" />
     </button>

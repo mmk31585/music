@@ -123,6 +123,16 @@
               @click="router.push({ name: 'admin.artist.detail', params: { id: artist.id } })"
             />
             <Button
+              icon="pi pi-refresh"
+              text
+              rounded
+              size="small"
+              :loading="enrichingId === artist.id"
+              class="!h-8 !w-8 !text-slate-400 hover:!text-amber-400"
+              v-tooltip.top="'Enrich'"
+              @click="handleEnrich(artist)"
+            />
+            <Button
               icon="pi pi-pencil"
               text
               rounded
@@ -174,10 +184,12 @@ import AdminEmptyState from './AdminEmptyState.vue'
 import ArtistFormDialog from './ArtistFormDialog.vue'
 import AdminDeleteConfirm from './AdminDeleteConfirm.vue'
 import { useAdminArtists, type ArtistFormPayload } from '@/composables/admin/useAdminArtists'
+import { useArtistsApi } from '@/services/api/catalog/artists'
 import type { Artist } from '@/services/api/catalog/artists'
 
 const router = useRouter()
 const toast = useToast()
+const artistsApi = useArtistsApi()
 const {
   artists,
   loading,
@@ -194,6 +206,7 @@ const showForm = ref(false)
 const showDelete = ref(false)
 const selectedArtist = ref<Artist | null>(null)
 const deleteTarget = ref<Artist | null>(null)
+const enrichingId = ref<string | number | null>(null)
 
 const filteredArtists = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
@@ -220,6 +233,19 @@ function openEdit(artist: Artist) {
 function openDeleteConfirm(artist: Artist) {
   deleteTarget.value = artist
   showDelete.value = true
+}
+
+async function handleEnrich(artist: Artist) {
+  enrichingId.value = artist.id
+  try {
+    await artistsApi.adminEnrichArtist(artist.id)
+    toast.add({ severity: 'success', summary: 'Artist enriched', detail: 'Data fetched and updated from external sources', life: 3000 })
+    await fetchArtists()
+  } catch {
+    toast.add({ severity: 'error', summary: 'Enrich failed', detail: 'Could not enrich artist. Check external service connectivity.', life: 4000 })
+  } finally {
+    enrichingId.value = null
+  }
 }
 
 async function handleSubmit(payload: ArtistFormPayload) {

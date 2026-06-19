@@ -136,7 +136,7 @@ function formatDate(dateStr: string) {
   })
 }
 
-function formatData(data: any): string {
+function formatData(data: unknown): string {
   if (typeof data === 'string') {
     try {
       return JSON.stringify(JSON.parse(data), null, 2)

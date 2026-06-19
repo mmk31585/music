@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -26,6 +27,14 @@ func NewMusicBrainzProvider() *MusicBrainzProvider {
 }
 
 func (p *MusicBrainzProvider) Name() string { return "musicbrainz" }
+
+// escapeMBQuery escapes a value for safe use in a MusicBrainz Lucene query.
+// Within quoted strings, only " and \ need escaping; Lucene treats other
+// special characters as literals.
+func escapeMBQuery(s string) string {
+	replacer := strings.NewReplacer(`\`, `\\`, `"`, `\"`)
+	return replacer.Replace(s)
+}
 
 type mbRecording struct {
 	ID           string `json:"id"`
@@ -58,14 +67,26 @@ func (p *MusicBrainzProvider) Search(ctx context.Context, q SearchQuery) ([]Resu
 		return nil, ctx.Err()
 	}
 
-	query := q.Raw
-	if query == "" {
-		query = q.Artist + " " + q.Title
+	// Build a proper MusicBrainz Lucene query.
+	// Examples:
+	//   "d4vd - Feel It" → artist:"d4vd" AND recording:"Feel It"
+	//   "feel it"        → feel it (loose search across all fields)
+	var luceneQuery string
+	if q.Artist != "" && q.Title != "" {
+		luceneQuery = fmt.Sprintf(`artist:"%s" AND recording:"%s"`,
+			escapeMBQuery(q.Artist),
+			escapeMBQuery(q.Title),
+		)
+	} else {
+		// No structured info — use the raw query as-is for a loose search.
+		// If the raw query looks like it has separator syntax, also try
+		// a broad recording search as fallback (handled below).
+		luceneQuery = escapeMBQuery(q.Raw)
 	}
 
 	u, _ := url.Parse(p.baseURL + "/recording")
 	u.RawQuery = url.Values{
-		"query": {fmt.Sprintf(`"%s"`, query)},
+		"query": {luceneQuery},
 		"fmt":   {"json"},
 		"limit": {"10"},
 	}.Encode()
@@ -89,6 +110,38 @@ func (p *MusicBrainzProvider) Search(ctx context.Context, q SearchQuery) ([]Resu
 	var mr mbSearchResponse
 	if err := json.NewDecoder(resp.Body).Decode(&mr); err != nil {
 		return nil, fmt.Errorf("musicbrainz decode: %w", err)
+	}
+
+	// If the structured search returned nothing and we had artist+title,
+	// also try a loose recording search as a fallback.
+	if len(mr.Recordings) == 0 && q.Artist != "" && q.Title != "" {
+		// Wait for rate limiter before fallback request
+		select {
+		case <-p.tick:
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+
+		fallbackQuery := fmt.Sprintf(`recording:"%s"`, escapeMBQuery(q.Title))
+		fallbackURL, _ := url.Parse(p.baseURL + "/recording")
+		fallbackURL.RawQuery = url.Values{
+			"query": {fallbackQuery},
+			"fmt":   {"json"},
+			"limit": {"10"},
+		}.Encode()
+
+		req2, err2 := http.NewRequestWithContext(ctx, http.MethodGet, fallbackURL.String(), nil)
+		if err2 == nil {
+			req2.Header.Set("User-Agent", req.UserAgent())
+			resp2, err2 := p.client.Do(req2)
+			if err2 == nil {
+				var mr2 mbSearchResponse
+				if json.NewDecoder(resp2.Body).Decode(&mr2) == nil {
+					mr.Recordings = append(mr.Recordings, mr2.Recordings...)
+				}
+				resp2.Body.Close()
+			}
+		}
 	}
 
 	results := make([]Result, 0, len(mr.Recordings))

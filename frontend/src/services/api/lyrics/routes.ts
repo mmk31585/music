@@ -79,6 +79,18 @@ export const useLyricsApi = () => {
     )
   }
 
+  const fetchLrcLyrics = async (trackId: string | number, config?: UseRequestConfig<Lyrics>) => {
+    return useRequest<Lyrics>(
+      LyricsApiRoutes.ADMIN_FETCH_LRC.replace(':trackId', String(trackId)),
+      { method: 'POST' },
+      {
+        schema: LyricsSchema,
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
   const adminDeleteLyrics = async (id: string | number, config?: UseRequestConfig<void>) => {
     return useRequest<void>(
       LyricsApiRoutes.ADMIN_DELETE.replace(':id', String(id)),
@@ -94,6 +106,7 @@ export const useLyricsApi = () => {
     getTrackLyrics,
     getLyricsByTrackID,
     adminCreateLyrics,
+    fetchLrcLyrics,
     adminUpdateLyrics,
     adminDeleteLyrics,
   }

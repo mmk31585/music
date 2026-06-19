@@ -2,9 +2,14 @@ package lyrics
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"music/internal/modules/lyrics/lrc"
 )
@@ -105,6 +110,151 @@ func (s *Service) GetLyricsByTrackAndLanguage(ctx context.Context, trackID, lang
 	}
 
 	return ToLyricsByTrackResponse(lyrics, lines), nil
+}
+
+// FetchFromLRC queries LRCLIB for synced lyrics and creates/updates a lyrics record.
+func (s *Service) FetchFromLRC(ctx context.Context, trackID string) (Lyrics, error) {
+	// 1. Get track info
+	info, err := s.repo.GetTrackInfo(ctx, trackID)
+	if err != nil {
+		return Lyrics{}, err
+	}
+	if info.Title == "" {
+		return Lyrics{}, errors.New("track has no title")
+	}
+
+	// 2. Call LRCLIB
+	result, err := fetchLRCLib(ctx, info.Title, info.ArtistName, info.DurationSeconds)
+	if err != nil {
+		return Lyrics{}, fmt.Errorf("lrclib fetch failed: %w", err)
+	}
+	if result == nil {
+		return Lyrics{}, errors.New("no lyrics found on LRCLIB")
+	}
+
+	// Prefer synced lyrics
+	content := result.SyncedLyrics
+	lrcType := "lrc"
+	if content == "" {
+		content = result.PlainLyrics
+		lrcType = "plain"
+	}
+	if content == "" {
+		return Lyrics{}, errors.New("lrclib returned empty lyrics")
+	}
+
+	// 3. Remove existing lyrics for this track + "en" if they exist
+	existing, lookupErr := s.repo.GetLyricsByTrackAndLanguage(ctx, trackID, "en")
+	if lookupErr == nil {
+		_ = s.repo.DeleteLyrics(ctx, existing.ID)
+	}
+
+	// 4. Create new lyrics record
+	req := CreateLyricsRequest{
+		TrackID:  trackID,
+		Language: "en",
+		Type:     lrcType,
+		Content:  content,
+	}
+	return s.CreateLyrics(ctx, req)
+}
+
+// fetchLRCLib calls LRCLIB API: first exact /get, then fallback /search.
+func fetchLRCLib(ctx context.Context, trackName, artistName string, duration int) (*lrclibResult, error) {
+	httpClient := &http.Client{Timeout: 10 * time.Second}
+	baseURL := "https://lrclib.net/api"
+
+	// Step 1: Try exact /get
+	params := url.Values{}
+	if artistName != "" {
+		params.Set("artist_name", artistName)
+	}
+	if trackName != "" {
+		params.Set("track_name", trackName)
+	}
+	if duration > 0 {
+		params.Set("duration", fmt.Sprintf("%d", duration))
+	}
+
+	if len(params) > 0 {
+		getURL := fmt.Sprintf("%s/get?%s", baseURL, params.Encode())
+		req, err := http.NewRequestWithContext(ctx, "GET", getURL, nil)
+		if err == nil {
+			req.Header.Set("User-Agent", "MojaMusic/1.0 (music-admin)")
+			req.Header.Set("Accept", "application/json")
+
+			resp, err := httpClient.Do(req)
+			if err == nil {
+				if resp.StatusCode == http.StatusOK {
+					var result lrclibResult
+					if json.NewDecoder(resp.Body).Decode(&result) == nil {
+						resp.Body.Close()
+						return &result, nil
+					}
+					resp.Body.Close()
+				} else {
+					resp.Body.Close()
+				}
+			}
+		}
+	}
+
+	// Step 2: Fallback to /search
+	if trackName == "" && artistName == "" {
+		return nil, nil
+	}
+	searchQ := trackName
+	if artistName != "" {
+		searchQ = artistName + " " + searchQ
+	}
+
+	searchURL := fmt.Sprintf("%s/search?q=%s", baseURL, url.QueryEscape(searchQ))
+	req, err := http.NewRequestWithContext(ctx, "GET", searchURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "MojaMusic/1.0 (music-admin)")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, nil // silent fallback
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, nil
+	}
+
+	var results []lrclibResult
+	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
+		return nil, nil
+	}
+
+	// Prefer synced lyrics
+	var best *lrclibResult
+	for i := range results {
+		r := &results[i]
+		if r.SyncedLyrics != "" {
+			return r, nil
+		}
+		if best == nil && r.PlainLyrics != "" {
+			best = r
+		}
+	}
+	return best, nil
+}
+
+// lrclibResult mirrors the LRCLIB API response.
+type lrclibResult struct {
+	ID           int    `json:"id"`
+	TrackName    string `json:"trackName"`
+	ArtistName   string `json:"artistName"`
+	AlbumName    string `json:"albumName"`
+	Duration     int    `json:"duration"`
+	Synced       bool   `json:"synced"`
+	PlainLyrics  string `json:"plainLyrics"`
+	SyncedLyrics string `json:"syncedLyrics"`
 }
 
 func (s *Service) GetTrackLyrics(ctx context.Context, trackID, language string) (LyricsByTrackResponse, error) {

@@ -168,14 +168,18 @@
         </div>
 
         <!-- Tracklist -->
-        <section>
+        <section aria-live="polite">
           <div class="space-y-1">
             <div
               v-for="(track, index) in tracks"
               :key="String(track.id)"
+              role="button"
+              tabindex="0"
               class="group flex cursor-pointer items-center gap-4 rounded-2xl px-4 py-3 transition-all duration-200 hover:bg-white/[0.04]"
               :class="isCurrentTrack(track) ? 'bg-white/[0.06] ring-1 ring-inset ring-[#1db954]/15' : ''"
               @click="playTrack(track, Number(index))"
+              @keydown.enter="playTrack(track, Number(index))"
+              @keydown.space.prevent="playTrack(track, Number(index))"
             >
               <!-- Track number / Play icon -->
               <span
@@ -405,7 +409,7 @@ onMounted(() => {
   fetchAlbum()
 })
 
-function isCurrentTrack(track: any): boolean {
+function isCurrentTrack(track: Record<string, unknown>): boolean {
   return player.currentTrack.value?.id === String(track.id)
 }
 
@@ -416,7 +420,7 @@ function formatDuration(seconds: number | null | undefined): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-function playTrack(track: any, index: number) {
+function playTrack(track: Record<string, unknown>, index: number) {
   if (!tracks.value.length) return
   const queue = buildQueue()
   player.setQueueAndPlay(queue, index)
@@ -437,13 +441,13 @@ function shuffleAll() {
 
 function buildQueue() {
   if (!tracks.value.length) return []
-  return tracks.value.map((t: any) => ({
+  return tracks.value.map((t: Record<string, unknown>) => ({
     id: String(t.id),
-    title: t.title,
-    artistName: t.artist_name || t.artistName || artist?.value?.name || 'Unknown',
-    albumTitle: t.album_title || album.value?.title || null,
-    coverUrl: t.cover_url || album.value?.cover_url || null,
-    durationSeconds: t.duration_seconds ?? t.durationSeconds ?? null,
+    title: t.title as string,
+    artistName: (t.artist_name as string) || (t.artistName as string) || artist?.value?.name || 'Unknown',
+    albumTitle: (t.album_title as string) || album.value?.title || null,
+    coverUrl: (t.cover_url as string) || album.value?.cover_url || null,
+    durationSeconds: (t.duration_seconds as number) ?? (t.durationSeconds as number) ?? null,
     streamUrl: playerApi.getTrackStreamUrl(String(t.id)),
   }))
 }

@@ -155,6 +155,10 @@ func (s *Service) RemoveCollaborator(ctx context.Context, playlistID, userID str
 	return s.repo.RemoveCollaborator(ctx, playlistID, userID)
 }
 
+func (s *Service) ListCollaborators(ctx context.Context, playlistID string) ([]CollaboratorResponse, error) {
+	return s.repo.ListCollaborators(ctx, playlistID)
+}
+
 func (s *Service) ListPlaylistTracks(ctx context.Context, playlistID string) ([]PlaylistTrackItem, error) {
 	pid, err := uuid.Parse(playlistID)
 	if err != nil {

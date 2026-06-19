@@ -103,6 +103,20 @@ export const useArtistsApi = () => {
     )
   }
 
+  const adminEnrichArtist = async (
+    id: string | number,
+    config?: UseRequestConfig<{ data: Artist }>,
+  ) => {
+    return useRequest<{ data: Artist }>(
+      ArtistApiRoutes.ADMIN_ENRICH.replace(':artistId', String(id)),
+      { method: 'POST' },
+      {
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
   return {
     // Public
     getArtists,
@@ -112,5 +126,6 @@ export const useArtistsApi = () => {
     adminCreateArtist,
     adminUpdateArtist,
     adminDeleteArtist,
+    adminEnrichArtist,
   }
 }

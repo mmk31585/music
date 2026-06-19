@@ -31,7 +31,7 @@
 
     <SkeletonLoader v-if="loading" variant="card" class="h-48" />
 
-    <div v-else-if="!clubs.length" class="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-white/[0.06] py-20 text-center">
+    <div v-else-if="!clubs.length" class="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-white/[0.06] py-20 text-center" role="status">
       <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.04]">
         <i aria-hidden="true" class="pi pi-building text-2xl text-slate-500" />
       </div>
@@ -94,7 +94,8 @@ async function loadClubs() {
     if (selectedGenre.value) params.genre = selectedGenre.value
     const res = await api.listClubsWithGenre(params)
     clubs.value = Array.isArray(res) ? res : []
-  } catch {
+  } catch (err) {
+    console.error('Failed to load clubs:', err)
     clubs.value = []
   } finally {
     loading.value = false

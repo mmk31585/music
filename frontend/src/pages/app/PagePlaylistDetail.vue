@@ -127,6 +127,15 @@
             <button
               v-if="isOwner || isCollaborator"
               type="button"
+              class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-xs font-medium text-white transition hover:bg-white/15"
+              @click="showAddTrack = true"
+            >
+              <i aria-hidden="true" class="pi pi-plus text-[10px]" />
+              Add Track
+            </button>
+            <button
+              v-if="isOwner || isCollaborator"
+              type="button"
               class="rounded-full border border-red-500/30 px-4 py-1.5 text-xs font-medium text-red-400 transition hover:bg-red-500/10"
               @click="deletePlaylist"
             >
@@ -138,6 +147,7 @@
         <div
           v-if="tracks.length"
           class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]"
+          aria-live="polite"
         >
           <div
             v-for="(item, index) in tracks"
@@ -178,6 +188,7 @@
               </div>
               <button
                 type="button"
+                aria-label="Play track"
                 class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
                 @click="playTrack(index)"
               >
@@ -192,15 +203,15 @@
 
             <span class="text-xs text-slate-500">{{ formatTime(item.duration_seconds) }}</span>
 
-            <button
-              v-if="isOwner || isCollaborator"
-              type="button"
-              class="shrink-0 rounded-full p-1.5 text-slate-500 opacity-0 transition group-hover:opacity-100 hover:bg-white/10 hover:text-red-400"
-              title="Remove from playlist"
-              @click="removeTrack(item.track_id)"
-            >
-              <i aria-hidden="true" class="pi pi-times text-xs" />
-            </button>
+    <button
+      v-if="isOwner || isCollaborator"
+      type="button"
+      aria-label="Remove from playlist"
+      class="shrink-0 rounded-full p-1.5 text-slate-500 opacity-0 transition group-hover:opacity-100 hover:bg-white/10 hover:text-red-400"
+      @click="removeTrack(item.track_id)"
+    >
+      <i aria-hidden="true" class="pi pi-times text-xs" />
+    </button>
           </div>
         </div>
 
@@ -211,31 +222,132 @@
           <i aria-hidden="true" class="pi pi-list text-3xl text-slate-500" />
           <h3 class="text-lg font-bold text-white">Empty playlist</h3>
           <p class="text-sm text-slate-400">Add tracks from the search or your library</p>
-          <RouterLink
-            to="/search"
+          <button
+            v-if="isOwner || isCollaborator"
+            type="button"
             class="rounded-full bg-[#1db954] px-6 py-2 text-sm font-bold text-black transition hover:bg-[#1ed760]"
+            @click="showAddTrack = true"
           >
-            Search tracks
-          </RouterLink>
+            <i aria-hidden="true" class="pi pi-plus mr-1 text-xs" />
+            Add Track
+          </button>
         </div>
       </section>
     </template>
   </div>
+
+  <Dialog
+    :visible="showAddTrack"
+    modal
+    :draggable="false"
+    :style="{ maxWidth: '500px', width: '90vw' }"
+    :pt="{
+      root: 'border-none',
+      mask: 'backdrop-blur-sm',
+      header: 'border-b border-white/5',
+      title: 'text-white text-sm font-bold',
+      content: 'p-0',
+    }"
+    @update:visible="showAddTrack = $event"
+  >
+    <template #header>
+      <div class="flex items-center gap-2 px-1">
+        <i aria-hidden="true" class="pi pi-search text-sm text-[#1db954]" />
+        <span>Add Track</span>
+      </div>
+    </template>
+
+    <div class="flex flex-col max-h-[70vh]">
+      <div class="shrink-0 p-3">
+        <div class="relative">
+          <i
+            aria-hidden="true"
+            class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/30"
+          />
+          <input
+            v-model="addTrackQuery"
+            type="text"
+            placeholder="Search tracks..."
+            aria-label="Search tracks to add"
+            class="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#1db954]/50"
+            @input="onAddTrackSearch"
+          />
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto px-1">
+        <div v-if="addTrackLoading" class="flex items-center justify-center py-12">
+          <i aria-hidden="true" class="pi pi-spin pi-spinner text-lg text-white/30" />
+        </div>
+
+        <div
+          v-else-if="addTrackResults.length === 0 && addTrackQuery"
+          class="flex flex-col items-center gap-2 py-12 text-center"
+        >
+          <i aria-hidden="true" class="pi pi-search text-2xl text-white/20" />
+          <p class="text-sm text-white/40">No tracks found</p>
+        </div>
+
+        <div v-else-if="!addTrackQuery" class="flex flex-col items-center gap-2 py-12 text-center">
+          <i aria-hidden="true" class="pi pi-music text-2xl text-white/20" />
+          <p class="text-sm text-white/40">Type to search tracks</p>
+        </div>
+
+        <button
+          v-for="t in addTrackResults"
+          :key="t.id"
+          type="button"
+          :disabled="addingTrackId === t.id"
+          class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-white/5 disabled:opacity-50"
+          @click="addSelectedTrack(t.id)"
+        >
+          <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
+            <img
+              v-if="t.cover_url"
+              :src="t.cover_url"
+              :alt="t.title"
+              class="h-full w-full object-cover"
+            />
+            <div v-else class="flex h-full items-center justify-center">
+              <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
+            </div>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-medium text-white">{{ t.title }}</p>
+            <p class="truncate text-xs text-white/40">{{ t.artist_name }}</p>
+          </div>
+          <span class="text-xs text-white/30">{{ formatDuration(t.duration_seconds) }}</span>
+          <i
+            v-if="addingTrackId === t.id"
+            aria-hidden="true"
+            class="pi pi-spin pi-spinner text-xs text-[#1db954]"
+          />
+          <i
+            v-else
+            aria-hidden="true"
+            class="pi pi-plus text-xs text-white/30"
+          />
+        </button>
+      </div>
+    </div>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import Dialog from 'primevue/dialog'
+import { useToast } from 'primevue/usetoast'
 import { SkeletonLoader } from '@/components/common'
 import { useUserAuthStore } from '@/stores'
 import { usePlaylistDetail } from '@/composables/catalog/usePlaylistDetail'
 import { usePlaylistsApi } from '@/services/api/playlist'
 import { usePlayer } from '@/composables/player'
 import { usePlayerApi } from '@/services/api/player'
+import { useSearchApi } from '@/services/api/catalog/search'
 import { onImgError } from '@/utils/helpers'
 import { useCollaborativePlaylist } from '@/composables/useCollaborativePlaylist'
 import { wsClient } from '@/services/socket'
-import { useToast } from 'primevue/usetoast'
 
 const route = useRoute()
 const router = useRouter()
@@ -256,7 +368,7 @@ const playerApi = usePlayerApi()
 const auth = useUserAuthStore()
 const playlistsApi = usePlaylistsApi()
 
-const collaborators = ref<any[]>([])
+const collaborators = ref<Record<string, unknown>[]>([])
 const isCollaborator = ref(false)
 const dragIndex = ref(-1)
 const dropTargetIndex = ref(-1)
@@ -374,7 +486,7 @@ onMounted(async () => {
   if (collabData) {
     collaborators.value = collabData
     isCollaborator.value = collabData.some(
-      (c: any) => (c as { user_id: string; is_creator: boolean }).user_id === String(auth.user?.id) && !(c as { user_id: string; is_creator: boolean }).is_creator,
+      (c: Record<string, unknown>) => (c as { user_id: string; is_creator: boolean }).user_id === String(auth.user?.id) && !(c as { user_id: string; is_creator: boolean }).is_creator,
     )
   }
 })
@@ -382,6 +494,58 @@ onMounted(async () => {
 onUnmounted(() => {
   collabHelper.teardown()
 })
+
+const showAddTrack = ref(false)
+const addTrackQuery = ref('')
+const addTrackLoading = ref(false)
+const addTrackResults = ref<Record<string, unknown>[]>([])
+const addingTrackId = ref<string | null>(null)
+let addTrackDebounce: ReturnType<typeof setTimeout> | null = null
+const searchApi = useSearchApi()
+
+function onAddTrackSearch() {
+  if (addTrackDebounce) clearTimeout(addTrackDebounce)
+  const q = addTrackQuery.value.trim()
+  if (!q) {
+    addTrackResults.value = []
+    return
+  }
+  addTrackDebounce = setTimeout(async () => {
+    addTrackLoading.value = true
+    try {
+      const res = await searchApi.searchCatalog({ query: q, type: 'tracks', limit: 10 })
+      addTrackResults.value = res?.tracks || []
+  } catch (err) {
+    console.error('Failed to search tracks:', err)
+    addTrackResults.value = []
+  } finally {
+      addTrackLoading.value = false
+    }
+  }, 300)
+}
+
+async function addSelectedTrack(trackId: string) {
+  addingTrackId.value = trackId
+  try {
+    await playlistsApi.addTrack(playlistId, { track_id: trackId })
+    toast.add({ severity: 'success', summary: 'Track added to playlist', life: 2500 })
+    showAddTrack.value = false
+    addTrackQuery.value = ''
+    addTrackResults.value = []
+    await fetchPlaylist()
+  } catch {
+    toast.add({ severity: 'error', summary: 'Failed to add track', life: 3000 })
+  } finally {
+    addingTrackId.value = null
+  }
+}
+
+function formatDuration(seconds?: number | null) {
+  if (!seconds) return '0:00'
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return `${m}:${String(s).padStart(2, '0')}`
+}
 
 function playAll() {
   if (tracks.value.length) playTrack(0)

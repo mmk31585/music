@@ -10,6 +10,7 @@
     <button
       v-if="showScroll && !isAtStart"
       type="button"
+      aria-label="Scroll left"
       class="absolute top-1/2 -left-3 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/80 text-white shadow-lg backdrop-blur transition hover:bg-black/90"
       @click="scroll(-300)"
     >
@@ -18,6 +19,7 @@
     <button
       v-if="showScroll && !isAtEnd"
       type="button"
+      aria-label="Scroll right"
       class="absolute top-1/2 -right-3 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/80 text-white shadow-lg backdrop-blur transition hover:bg-black/90"
       @click="scroll(300)"
     >

@@ -96,6 +96,15 @@
                 @click="router.push({ name: 'admin.album.detail', params: { id: album.id } })"
               />
               <Button
+                icon="pi pi-refresh"
+                rounded
+                size="small"
+                :loading="enrichingId === album.id"
+                class="!h-8 !w-8 !bg-white/20 !text-white !backdrop-blur-sm hover:!bg-amber-500/60"
+                v-tooltip.top="'Fetch cover'"
+                @click="handleEnrich(album)"
+              />
+              <Button
                 icon="pi pi-pencil"
                 rounded
                 size="small"
@@ -152,10 +161,12 @@ import AdminEmptyState from './AdminEmptyState.vue'
 import AlbumFormDialog from './AlbumFormDialog.vue'
 import AdminDeleteConfirm from './AdminDeleteConfirm.vue'
 import { useAdminAlbums, type AlbumFormPayload } from '@/composables/admin/useAdminAlbums'
+import { useAlbumsApi } from '@/services/api/catalog/albums'
 import type { Album } from '@/services/api/catalog/albums'
 
 const router = useRouter()
 const toast = useToast()
+const albumsApi = useAlbumsApi()
 const {
   albums,
   loading,
@@ -172,6 +183,7 @@ const showForm = ref(false)
 const showDelete = ref(false)
 const selectedAlbum = ref<Album | null>(null)
 const deleteTarget = ref<Album | null>(null)
+const enrichingId = ref<string | number | null>(null)
 
 const filteredAlbums = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
@@ -198,6 +210,19 @@ function openEdit(album: Album) {
 function openDeleteConfirm(album: Album) {
   deleteTarget.value = album
   showDelete.value = true
+}
+
+async function handleEnrich(album: Album) {
+  enrichingId.value = album.id
+  try {
+    await albumsApi.adminEnrichAlbum(album.id)
+    toast.add({ severity: 'success', summary: 'Album enriched', detail: 'Cover art fetched from external sources', life: 3000 })
+    await fetchAlbums()
+  } catch {
+    toast.add({ severity: 'error', summary: 'Enrich failed', detail: 'Could not fetch album cover. Check external service connectivity.', life: 4000 })
+  } finally {
+    enrichingId.value = null
+  }
 }
 
 async function handleSubmit(payload: AlbumFormPayload) {

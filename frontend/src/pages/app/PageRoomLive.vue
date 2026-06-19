@@ -3,6 +3,7 @@
     <button
       class="inline-flex items-center gap-1.5 text-sm text-white/40 transition hover:text-white/70"
       @click="goBack"
+      aria-label="Back to Social"
     >
       &larr; Back to Social
     </button>
@@ -51,10 +52,42 @@
           <!-- Now Playing Hero (from Phase 3) -->
           <RoomNowPlayingHero
             :now-playing="queueSocket.queueState.value?.now_playing || null"
-            :is-loading="loading"
+            :is-loading="(!queueSocket.queueState.value?.now_playing && !loading) || isTrackTransitioning"
             :is-playing="isPlayingTrack"
             @toggle-play="togglePlay"
           />
+
+          <!-- Playback error banner -->
+          <div
+            v-if="playerStore.error"
+            class="rounded-xl bg-red-500/10 px-4 py-3 ring-1 ring-red-500/20"
+          >
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2 text-sm text-red-400">
+                <i aria-hidden="true" class="pi pi-exclamation-circle text-xs" />
+                <span>{{ playerStore.error }}</span>
+              </div>
+              <button
+                class="inline-flex items-center gap-1 rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/30 active:scale-95"
+                @click="retryPlayback"
+              >
+                <i aria-hidden="true" class="pi pi-refresh text-xs" />
+                Retry
+              </button>
+            </div>
+          </div>
+
+          <!-- Skip + Host controls -->
+          <div v-if="isHost" class="flex flex-wrap gap-3">
+            <button
+              class="inline-flex items-center gap-1.5 rounded-xl bg-white/5 px-4 py-2 text-sm font-semibold text-white/60 transition hover:bg-white/10 hover:text-white disabled:opacity-40"
+              :disabled="!currentTrack || isTrackTransitioning"
+              @click="skipTrack"
+            >
+              <i aria-hidden="true" class="pi pi-forward text-xs" />
+              Skip
+            </button>
+          </div>
 
           <!-- Player controls (seek + volume, below hero) -->
           <div class="rounded-2xl bg-white/[0.04] p-4 ring-1 ring-white/[0.07]">
@@ -62,6 +95,7 @@
               <button
                 class="flex h-8 w-8 items-center justify-center rounded-full text-white/40 transition hover:text-white/70"
                 @click="playerStore.toggleMute()"
+                aria-label="Toggle mute"
               >
                 {{ playerStore.muted || playerStore.volume === 0 ? '🔇' : playerStore.volume < 0.5 ? '🔉' : '🔊' }}
               </button>
@@ -71,6 +105,7 @@
                 max="1"
                 step="0.01"
                 :value="playerStore.volume"
+                aria-label="Volume"
                 @input="playerStore.setVolume(Number(($event.target as HTMLInputElement).value))"
                 class="h-1 w-20 cursor-pointer appearance-none rounded-full bg-white/10 accent-[#1db954] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
               />
@@ -83,6 +118,7 @@
                 :max="playerStore.duration || 0"
                 step="1"
                 :value="playerStore.currentTime"
+                aria-label="Seek"
                 @input="playerStore.seek(Number(($event.target as HTMLInputElement).value))"
                 class="h-1 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-[#1db954] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
               />
@@ -96,7 +132,7 @@
           <!-- Chat -->
           <div class="rounded-2xl bg-white/[0.04] p-6 ring-1 ring-white/[0.07]">
             <h2 class="mb-4 text-sm font-bold uppercase tracking-wider text-white/30">Chat</h2>
-            <div ref="chatContainer" class="mb-4 max-h-64 space-y-2 overflow-y-auto">
+            <div ref="chatContainer" class="mb-4 max-h-64 space-y-2 overflow-y-auto" aria-live="polite" role="log">
               <div
                 v-for="(msg, i) in messages"
                 :key="i"
@@ -112,6 +148,7 @@
                 v-model="chatInput"
                 type="text"
                 placeholder="Type a message..."
+                aria-label="Chat message"
                 class="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none transition focus:border-white/20"
               />
               <button
@@ -157,10 +194,33 @@
           <!-- Leave button -->
           <button
             class="w-full rounded-xl border border-red-500/20 py-3 text-sm font-bold text-red-400 transition hover:bg-red-500/10"
-            @click="handleLeave"
+            @click="showLeaveConfirm = true"
           >
             Leave Room
           </button>
+
+          <!-- Leave confirmation dialog -->
+          <Teleport to="body">
+            <div
+              v-if="showLeaveConfirm"
+              class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+              @click.self="showLeaveConfirm = false"
+            >
+              <div class="glass-strong mx-4 w-full max-w-sm rounded-2xl p-8 text-center">
+                <p class="mb-6 text-sm text-white/60">Are you sure you want to leave this room?</p>
+                <div class="flex gap-3">
+                  <button
+                    class="flex-1 rounded-xl bg-white/5 py-3 text-sm font-medium text-white/50 transition hover:bg-white/10"
+                    @click="showLeaveConfirm = false"
+                  >Cancel</button>
+                  <button
+                    class="flex-1 rounded-xl bg-red-500 py-3 text-sm font-bold text-white transition hover:bg-red-600"
+                    @click="handleLeave"
+                  >Leave</button>
+                </div>
+              </div>
+            </div>
+          </Teleport>
         </div>
       </div>
 
@@ -184,13 +244,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { SkeletonLoader } from '@/components/common'
 import { useSocialApi } from '@/services/api/social'
 import { usePlayerStore } from '@/stores/player'
 import { useUserAuthStore } from '@/stores'
 import { wsClient } from '@/services/socket'
+import { useAppToast } from '@/composables/useAppToast'
 import { TrackPickerDialog, RoomNowPlayingHero, RoomQueueList, LiveRoomStage, RaiseHandButton, HandRaiseQueue } from '@/components/social'
 import { useRoomQueueSocket } from '@/composables/social/useRoomQueueSocket'
 import { useStageSocket } from '@/composables/social/useStageSocket'
@@ -201,6 +262,7 @@ const route = useRoute()
 const api = useSocialApi()
 const playerStore = usePlayerStore()
 const auth = useUserAuthStore()
+const toast = useAppToast()
 
 const roomId = String(route.params.id)
 const currentUserId = computed(() => String(auth.user?.id ?? ''))
@@ -209,6 +271,8 @@ const loading = ref(true)
 const error = ref('')
 const room = ref<LiveRoom | null>(null)
 const showTrackPicker = ref(false)
+const showLeaveConfirm = ref(false)
+const isTrackTransitioning = ref(false)
 const messages = ref<{ user_id: string; userName: string; content: string }[]>([])
 const chatInput = ref('')
 const chatContainer = ref<HTMLElement | null>(null)
@@ -231,16 +295,17 @@ const isPlayingTrack = computed(() => {
 })
 
 // Speaking user IDs (stub — wire to real audio levels later)
-const speakingUserIds = computed(() => new Set<string>())
+const speakingUserIds = ref(new Set<string>())
 
 async function fetchUserName(userId: string) {
   if (userNames.value[userId]) return
   const { useUserApi } = await import('@/services/api/users')
   try {
     const profile = await useUserApi().getPublicUserProfile(userId)
-    const p = profile as any
-    userNames.value[userId] = p.full_name || p.username || userId.slice(0, 8)
-  } catch {
+    const p = profile as Record<string, unknown>
+    userNames.value[userId] = String(p.full_name || p.username || userId.slice(0, 8))
+  } catch (err) {
+    console.error('Failed to fetch user name:', err)
     userNames.value[userId] = userId.slice(0, 8)
   }
 }
@@ -256,27 +321,88 @@ async function loadRoom() {
     if (roomData.host_id) {
       await fetchUserName(roomData.host_id)
     }
-  } catch (e: any) {
-    error.value = e?.message || 'Failed to load room'
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to load room'
   } finally {
     loading.value = false
   }
 }
 
-function togglePlay() {
+async function togglePlay() {
   const np = queueState.value?.now_playing
   if (!np?.track?.id) return
   const trackId = np.track.id
+
+  // If there was a previous playback error, clear it before retry
+  if (playerStore.error) {
+    playerStore.error = null
+  }
+
   if (isPlayingTrack.value) {
     playerStore.pause()
+  } else if (playerStore.currentTrack?.id === trackId) {
+    playerStore.resume()
   } else {
-    if (playerStore.currentTrack?.id === trackId) {
-      playerStore.resume()
-    } else {
-      playerStore.playTrackById(trackId)
+    isTrackTransitioning.value = true
+    try {
+      await playerStore.playTrackById(trackId)
+    } finally {
+      isTrackTransitioning.value = false
     }
   }
 }
+
+/** Retry playback after an error */
+async function retryPlayback() {
+  const trackId = currentTrack.value?.id
+  if (!trackId) return
+  playerStore.error = null
+  isTrackTransitioning.value = true
+  try {
+    await playerStore.playTrackById(trackId)
+  } finally {
+    isTrackTransitioning.value = false
+  }
+}
+
+/** Skip the current track (host only) */
+async function skipTrack() {
+  const np = queueState.value?.now_playing
+  if (!np?.track?.id || !isHost.value) return
+  try {
+    await queueSocket.reportEnded(np.track.id)
+  } catch {
+    console.warn('Room: failed to skip track')
+  }
+}
+
+/* ---- Auto-play when queue advances to a new track ---- */
+watch(
+  () => queueState.value?.now_playing?.track?.id,
+  (newTrackId, oldTrackId) => {
+    if (newTrackId && newTrackId !== oldTrackId) {
+      isTrackTransitioning.value = true
+      // Auto-play: this may fail due to browser autoplay policy on first attempt.
+      // The play button will still be visible so the user can click to start.
+      playerStore.playTrackById(newTrackId).finally(() => {
+        isTrackTransitioning.value = false
+      })
+    }
+  },
+)
+
+/* ---- Clear transitioning state when player settles after any load attempt ---- */
+watch(
+  () => playerStore.isLoadingTrack,
+  (loading) => {
+    if (!loading) {
+      // Give a tick for the player to emit its final state
+      setTimeout(() => {
+        isTrackTransitioning.value = false
+      }, 0)
+    }
+  },
+)
 
 function setupWebSocket() {
   wsClient.connect()
@@ -320,9 +446,13 @@ function sendMessage() {
 }
 
 async function handleLeave() {
+  showLeaveConfirm.value = false
   try {
     await api.leaveRoom(roomId)
-  } catch { /* ignore */ }
+    toast.info('Left room')
+  } catch (err: any) {
+    toast.apiError(err, 'Failed to leave room')
+  }
   router.push({ name: 'social' })
 }
 
@@ -330,19 +460,24 @@ function goBack() {
   router.push({ name: 'social' })
 }
 
-async function onTrackSelected(track: any) {
+async function onTrackSelected(track: { id: string }) {
   showTrackPicker.value = false
   try {
     await queueSocket.suggest(String(track.id))
-  } catch { /* ignore */ }
+    toast.success('Track suggested!')
+  } catch (err: any) {
+    toast.apiError(err, 'Failed to suggest track')
+  }
 }
 
 function handleVote(candidateId: string) {
   queueSocket.vote(candidateId)
+  toast.success('Voted!')
 }
 
 function handleUnvote(candidateId: string) {
   queueSocket.unvote(candidateId)
+  toast.info('Vote removed')
 }
 
 function handleRaiseHand() {

@@ -25,7 +25,8 @@ func TestQueueEngine_SuggestTrack_NewCandidate(t *testing.T) {
 	m.On("SuggestTrack", mock.Anything, mock.MatchedBy(func(c *QueueCandidate) bool {
 		return c.RoomID.String() == roomID && c.TrackID.String() == trackID && c.SuggestedBy.String() == userID
 	})).Return(nil)
-	m.On("GetCandidates", mock.Anything, mock.Anything).Return([]QueueCandidate{}, nil)
+	// Return a non-nil now_playing to skip the auto-advance branch
+	m.On("GetNowPlaying", mock.Anything, mock.Anything).Return(&RoomNowPlaying{RoomID: uuid.Nil, TrackID: uuid.Nil, Source: "test"}, nil)
 
 	err := engine.SuggestTrack(context.Background(), roomID, trackID, userID)
 	assert.NoError(t, err)
@@ -39,19 +40,9 @@ func TestQueueEngine_SuggestTrack_DuplicateIsIdempotent(t *testing.T) {
 	trackID := uuid.New()
 	userID := uuid.New()
 
-	// First suggest creates the candidate
-	existingCandidate := QueueCandidate{
-		ID:          uuid.New(),
-		RoomID:      roomID,
-		TrackID:     trackID,
-		SuggestedBy: userID,
-		VoteCount:   1,
-		CreatedAt:   time.Now().UTC(),
-	}
-
 	m.On("SuggestTrack", mock.Anything, mock.Anything).Return(nil)
-	m.On("GetCandidates", mock.Anything, roomID).Return([]QueueCandidate{existingCandidate}, nil)
-	m.On("CastVoteTx", mock.Anything, existingCandidate.ID, userID).Return(nil)
+	// Return a non-nil now_playing to skip the auto-advance branch
+	m.On("GetNowPlaying", mock.Anything, mock.Anything).Return(&RoomNowPlaying{RoomID: uuid.Nil, TrackID: uuid.Nil, Source: "test"}, nil)
 
 	err := engine.SuggestTrack(context.Background(), roomID.String(), trackID.String(), userID.String())
 	assert.NoError(t, err)
@@ -236,20 +227,42 @@ func TestQueueEngine_GetQueueState_ReturnsCandidatesWithVoteState(t *testing.T) 
 	userID := uuid.New()
 	candidateID := uuid.New()
 	now := time.Now().UTC()
+	trackID := uuid.New()
+	duration := 240
 
-	np := &RoomNowPlaying{
-		RoomID:    roomID,
-		TrackID:   uuid.New(),
+	np := &NowPlayingResponse{
+		Track: TrackSummaryResponse{
+			ID:              trackID.String(),
+			Title:           "Test Track",
+			ArtistName:      "Test Artist",
+			DurationSeconds: &duration,
+		},
 		StartedAt: now,
 		Source:    "vote",
 	}
 
-	candidates := []CandidateWithVoteState{
-		{QueueCandidate: QueueCandidate{ID: candidateID, RoomID: roomID, TrackID: uuid.New(), VoteCount: 5}, HasVoted: true},
+	candidates := []CandidateResponse{
+		{
+			ID:     candidateID,
+			RoomID: roomID,
+			Track: TrackSummaryResponse{
+				ID:              uuid.New().String(),
+				Title:           "Candidate Track",
+				ArtistName:      "Candidate Artist",
+				DurationSeconds: &duration,
+			},
+			SuggestedBy: UserSummaryResponse{
+				ID:       userID.String(),
+				Username: "testuser",
+			},
+			VoteCount: 5,
+			HasVoted:  true,
+			CreatedAt: now,
+		},
 	}
 
-	m.On("GetNowPlaying", mock.Anything, roomID).Return(np, nil)
-	m.On("GetCandidatesWithVoteState", mock.Anything, roomID, userID).Return(candidates, nil)
+	m.On("GetNowPlayingWithTrack", mock.Anything, roomID).Return(np, nil)
+	m.On("GetCandidatesWithTrackAndUser", mock.Anything, roomID, userID).Return(candidates, nil)
 
 	state, err := engine.GetQueueState(context.Background(), roomID.String(), userID.String())
 	assert.NoError(t, err)
@@ -257,6 +270,8 @@ func TestQueueEngine_GetQueueState_ReturnsCandidatesWithVoteState(t *testing.T) 
 	assert.Equal(t, np, state.NowPlaying)
 	assert.Equal(t, 1, len(state.Candidates))
 	assert.True(t, state.Candidates[0].HasVoted)
+	assert.Equal(t, "Candidate Track", state.Candidates[0].Track.Title)
+	assert.Equal(t, "testuser", state.Candidates[0].SuggestedBy.Username)
 	m.AssertExpectations(t)
 }
 

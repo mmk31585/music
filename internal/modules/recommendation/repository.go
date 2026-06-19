@@ -14,10 +14,10 @@ import (
 var ErrTrackNotFound = errors.New("track not found")
 
 type TrackMeta struct {
-	ID       string   `db:"id"`
-	ArtistID *string  `db:"artist_id"`
-	AlbumID  *string  `db:"album_id"`
-	Genre    *string  `db:"genre"`
+	ID       string  `db:"id"`
+	ArtistID *string `db:"artist_id"`
+	AlbumID  *string `db:"album_id"`
+	Genre    *string `db:"genre"`
 }
 
 type Repository interface {
@@ -71,6 +71,7 @@ LEFT JOIN albums al ON al.id = t.album_id
 }
 
 func (r *repository) GetPopularTracks(ctx context.Context, limit int) ([]TrackItem, error) {
+	// First try: tracks with play history in the last 30 days
 	query := `
 SELECT
 	t.id,
@@ -94,6 +95,18 @@ LIMIT $1
 `
 	items := make([]TrackItem, 0)
 	if err := r.db.SelectContext(ctx, &items, query, limit); err != nil {
+		return nil, err
+	}
+	if len(items) > 0 {
+		return items, nil
+	}
+
+	// Fallback: return recently added tracks
+	fallback := baseTrackSelect() + `
+ORDER BY t.created_at DESC
+LIMIT $1
+`
+	if err := r.db.SelectContext(ctx, &items, fallback, limit); err != nil {
 		return nil, err
 	}
 	return items, nil

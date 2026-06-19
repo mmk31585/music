@@ -1,5 +1,7 @@
 export { default as MusicSidebar } from './layout/MusicSidebar.vue'
 export { default as MusicTopbar } from './layout/MusicTopbar.vue'
+export { default as MusicRightPane } from './layout/MusicRightPane.vue'
+export { default as MusicCategoryPanel } from './layout/MusicCategoryPanel.vue'
 export { default as NotificationItem } from './social/NotificationItem.vue'
 export { default as ActivityItem } from './social/ActivityItem.vue'
 export { default as ReactionButton } from './social/ReactionButton.vue'

@@ -62,6 +62,7 @@
           min="0"
           max="12"
           step="1"
+          aria-label="Crossfade duration"
           class="w-16 h-1 cursor-pointer appearance-none rounded-full bg-white/10 accent-[#1db954]"
           :value="crossfadeDuration"
           @input="onCrossfadeChange"

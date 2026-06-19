@@ -22,7 +22,7 @@
     </div>
 
     <div class="mx-auto w-full max-w-7xl px-4 md:px-6 lg:px-8">
-      <div v-if="loading" class="mt-6 space-y-8">
+      <div v-if="loading" class="mt-6 space-y-8" aria-live="polite">
         <div v-for="s in 4" :key="s">
           <SkeletonLoader variant="lines" :lines="1" class="w-40" />
           <div class="mt-4 flex gap-4">
@@ -50,8 +50,12 @@
             <div
               v-for="track in popular"
               :key="track.id"
+              role="button"
+              tabindex="0"
               class="group w-44 shrink-0 cursor-pointer"
               @click="playTrack(track)"
+              @keydown.enter="playTrack(track)"
+              @keydown.space.prevent="playTrack(track)"
             >
               <div
                 class="spring relative aspect-square overflow-hidden rounded-2xl bg-white/[0.04] ring-1 ring-white/10 transition-all group-hover:shadow-[0_8px_32px_rgba(0,0,0,0.4)] group-hover:ring-[#1db954]/50"
@@ -118,8 +122,12 @@
             <div
               v-for="item in recentlyPlayed"
               :key="item.track_id"
+              role="button"
+              tabindex="0"
               class="group w-44 shrink-0 cursor-pointer"
               @click="playHistoryItem(item)"
+              @keydown.enter="playHistoryItem(item)"
+              @keydown.space.prevent="playHistoryItem(item)"
             >
               <div
                 class="spring relative aspect-square overflow-hidden rounded-2xl bg-white/[0.04] ring-1 ring-white/10 transition-all group-hover:ring-[#1db954]/50"
@@ -211,8 +219,12 @@
             <div
               v-for="track in forYou"
               :key="track.id"
+              role="button"
+              tabindex="0"
               class="group cursor-pointer"
               @click="playTrack(track)"
+              @keydown.enter="playTrack(track)"
+              @keydown.space.prevent="playTrack(track)"
             >
               <div
                 class="spring relative aspect-square overflow-hidden rounded-2xl bg-white/[0.04] ring-1 ring-white/10 transition-all group-hover:shadow-[0_8px_32px_rgba(0,0,0,0.4)] group-hover:ring-[#1db954]/50"
@@ -269,8 +281,12 @@
             <div
               v-for="track in recent"
               :key="track.id"
+              role="button"
+              tabindex="0"
               class="group w-44 shrink-0 cursor-pointer"
               @click="playTrack(track)"
+              @keydown.enter="playTrack(track)"
+              @keydown.space.prevent="playTrack(track)"
             >
               <div
                 class="spring relative aspect-square overflow-hidden rounded-2xl bg-white/[0.04] ring-1 ring-white/10 transition-all group-hover:ring-[#1db954]/50"
@@ -330,8 +346,12 @@
             <div
               v-for="(track, idx) in popular.slice(0, 4)"
               :key="track.id"
+              role="button"
+              tabindex="0"
               class="group spring flex cursor-pointer items-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 transition-all hover:border-white/[0.12] hover:bg-white/[0.06]"
               @click="playTrack(track)"
+              @keydown.enter="playTrack(track)"
+              @keydown.space.prevent="playTrack(track)"
             >
               <div class="flex w-8 items-center justify-center">
                 <span class="text-lg font-black text-white/30">{{ idx + 1 }}</span>
@@ -441,14 +461,14 @@ const historyApi = useHistoryApi()
 const player = usePlayer()
 const playerApi = usePlayerApi()
 
-const popular = ref<any[]>([])
-const forYou = ref<any[]>([])
-const recent = ref<any[]>([])
-const feed = ref<any[]>([])
-const recentlyPlayed = ref<any[]>([])
+const popular = ref<Record<string, unknown>[]>([])
+const forYou = ref<Record<string, unknown>[]>([])
+const recent = ref<Record<string, unknown>[]>([])
+const feed = ref<Record<string, unknown>[]>([])
+const recentlyPlayed = ref<Record<string, unknown>[]>([])
 const loading = ref(true)
 
-const moods: any[] = (MOOD_OPTIONS as any as any[]).slice(0, 8).map((m: any) => {
+const moods: Record<string, unknown>[] = (MOOD_OPTIONS as unknown as Record<string, unknown>[]).slice(0, 8).map((m: Record<string, unknown>) => {
   const colors: Record<string, { bg: string; fg: string }> = {
     energetic: { bg: 'rgba(34,197,94,0.12)', fg: '#22c55e' },
     happy: { bg: 'rgba(250,204,21,0.12)', fg: '#facc15' },
@@ -478,23 +498,23 @@ async function fetchDiscover() {
     if (recentData?.items) recent.value = recentData.items
     if (feedData?.items) feed.value = feedData.items
     if (historyData?.items) recentlyPlayed.value = historyData.items
-  } catch {
-    /* silent */
+  } catch (err) {
+    console.error('Failed to fetch discover data:', err)
   } finally {
     loading.value = false
   }
 }
 
-function playTrack(track: any) {
+function playTrack(track: Record<string, unknown>) {
   player.setQueueAndPlay(
     [
       {
         id: String(track.id),
-        title: track.title,
-        artistName: track.artist_name || 'Unknown',
-        albumTitle: track.album_title || null,
-        coverUrl: track.cover_url || null,
-        durationSeconds: track.duration_seconds ?? null,
+        title: track.title as string,
+        artistName: (track.artist_name as string) || 'Unknown',
+        albumTitle: (track.album_title as string) || null,
+        coverUrl: (track.cover_url as string) || null,
+        durationSeconds: (track.duration_seconds as number) ?? null,
         streamUrl: playerApi.getTrackStreamUrl(String(track.id)),
       },
     ],
@@ -502,16 +522,16 @@ function playTrack(track: any) {
   )
 }
 
-function playHistoryItem(item: any) {
+function playHistoryItem(item: Record<string, unknown>) {
   player.setQueueAndPlay(
     [
       {
         id: String(item.track_id),
-        title: item.track_title || 'Unknown',
-        artistName: item.artist_name || 'Unknown',
-        albumTitle: item.album_title || null,
-        coverUrl: item.track_cover_url || null,
-        durationSeconds: item.track_duration ?? null,
+        title: (item.track_title as string) || 'Unknown',
+        artistName: (item.artist_name as string) || 'Unknown',
+        albumTitle: (item.album_title as string) || null,
+        coverUrl: (item.track_cover_url as string) || null,
+        durationSeconds: (item.track_duration as number) ?? null,
         streamUrl: playerApi.getTrackStreamUrl(String(item.track_id)),
       },
     ],

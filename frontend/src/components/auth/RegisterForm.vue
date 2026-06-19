@@ -14,8 +14,9 @@
           placeholder="Your name"
           class="w-full"
           :invalid="!!errors.displayName"
+          aria-label="Display name"
         />
-        <small v-if="errors.displayName" class="mt-1 block text-red-400">
+        <small v-if="errors.displayName" class="mt-1 block text-red-400" role="alert">
           {{ errors.displayName }}
         </small>
       </div>
@@ -28,8 +29,9 @@
           placeholder="your_username"
           class="w-full"
           :invalid="!!errors.username"
+          aria-label="Username"
         />
-        <small v-if="errors.username" class="mt-1 block text-red-400">
+        <small v-if="errors.username" class="mt-1 block text-red-400" role="alert">
           {{ errors.username }}
         </small>
       </div>
@@ -43,8 +45,9 @@
           placeholder="you@example.com"
           class="w-full"
           :invalid="!!errors.email"
+          aria-label="Email"
         />
-        <small v-if="errors.email" class="mt-1 block text-red-400">
+        <small v-if="errors.email" class="mt-1 block text-red-400" role="alert">
           {{ errors.email }}
         </small>
       </div>
@@ -60,8 +63,9 @@
           :feedback="true"
           toggle-mask
           :invalid="!!errors.password"
+          aria-label="Password"
         />
-        <small v-if="errors.password" class="mt-1 block text-red-400">
+        <small v-if="errors.password" class="mt-1 block text-red-400" role="alert">
           {{ errors.password }}
         </small>
       </div>
@@ -69,6 +73,7 @@
       <div
         v-if="apiError"
         class="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+        role="alert"
       >
         {{ apiError }}
       </div>

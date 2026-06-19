@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"music/internal/modules/playlist"
 )
 
@@ -125,7 +126,24 @@ func (s *Service) CreateParty(ctx context.Context, req CreatePartyRequest, hostI
 	if err := s.repo.CreateParty(ctx, party); err != nil {
 		return nil, err
 	}
-	// Host auto-joins
+	// Auto-create a room with the same ID as the party so that
+	// room queue operations (suggest, vote, queue state) work.
+	room := &LiveRoom{
+		ID:          party.ID,
+		HostID:      hostUUID,
+		Title:       req.Title,
+		IsPublic:    req.IsPublic,
+		Status:      "live",
+		CreatedAt:   now,
+		Description: party.Description,
+	}
+	if err := s.repo.CreateRoom(ctx, room); err != nil {
+		// Room creation failure should not block party creation
+		zap.L().Error("failed to create room for party", zap.String("party_id", party.ID.String()), zap.Error(err))
+	}
+	// Host auto-joins the room
+	_ = s.repo.JoinRoom(ctx, party.ID, hostUUID, "host")
+	// Host auto-joins the party
 	_ = s.repo.JoinParty(ctx, party.ID, hostUUID)
 	if s.partyBroadcaster != nil {
 		s.partyBroadcaster.UserJoined(party.ID, hostUUID)
@@ -143,11 +161,18 @@ func (s *Service) ListActiveParties(ctx context.Context, limit, offset int) ([]L
 }
 
 func (s *Service) UpdatePartyStatus(ctx context.Context, id, status string, trackID *string) error {
-	uid, _ := uuid.Parse(id)
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return fmt.Errorf("invalid party id: %w", err)
+	}
 	var tid *uuid.UUID
 	if trackID != nil && *trackID != "" {
-		t, _ := uuid.Parse(*trackID)
-		tid = &t
+		t, err := uuid.Parse(*trackID)
+		if err == nil {
+			tid = &t
+		}
+		// Non-UUID track IDs (numeric IDs, etc.) are silently ignored —
+		// the status update still proceeds without changing current_track_id.
 	}
 	if err := s.repo.UpdatePartyStatus(ctx, uid, status, tid); err != nil {
 		return err

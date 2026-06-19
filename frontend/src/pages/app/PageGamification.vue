@@ -28,23 +28,25 @@
       </button>
     </div>
 
+    <KeepAlive>
     <!-- Badges -->
     <GamificationBadges
-      v-show="activeTab === 'badges'"
+      v-if="activeTab === 'badges'"
       :all-badges="badgesData.all"
       :user-badges="badgesData.mine"
     />
 
     <!-- Challenges -->
     <GamificationChallenges
-      v-show="activeTab === 'challenges'"
+      v-if="activeTab === 'challenges'"
       :challenges="challengesData.challenges"
       :progress="challengesData.progress"
       :earnedXP="challengesData.earned_xp"
     />
 
     <!-- Leaderboard -->
-    <GamificationLeaderboard v-show="activeTab === 'leaderboard'" :entries="leaderboardData" />
+    <GamificationLeaderboard v-if="activeTab === 'leaderboard'" :entries="leaderboardData" />
+    </KeepAlive>
 
     <!-- Loading state -->
     <div v-if="loading" class="space-y-4">
@@ -98,8 +100,8 @@ onMounted(async () => {
     if (badgesRes) badgesData.value = badgesRes
     if (challengesRes) challengesData.value = challengesRes
     if (leaderboardRes) leaderboardData.value = leaderboardRes.entries
-  } catch {
-    // Silently handle
+  } catch (err) {
+    console.error('Failed to load gamification data:', err)
   } finally {
     loading.value = false
   }

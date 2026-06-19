@@ -23,7 +23,7 @@ const router = useRouter()
             <div class="flex gap-3 justify-center items-center">
               <router-link
                 to="/"
-                class="inline-block text-purple-500 rounded-lg border border-white px-8 py-3 text-center text-base font-semibold transition bg-white hover:text-black hover:bg-opacity-80 hover:shadow-xl"
+                class="inline-block text-purple-500 rounded-lg border border-white px-8 py-3 text-center text-base font-semibold transition bg-white hover:text-black hover:bg-white/80 hover:shadow-xl"
               >
                 Go Home
               </router-link>

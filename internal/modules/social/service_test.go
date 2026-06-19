@@ -342,6 +342,19 @@ func (m *mockRepo) DeleteClubDiscussionReply(ctx context.Context, id uuid.UUID) 
 	return m.Called(ctx, id).Error(0)
 }
 
+func (m *mockRepo) GetNowPlayingWithTrack(ctx context.Context, roomID uuid.UUID) (*NowPlayingResponse, error) {
+	args := m.Called(ctx, roomID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*NowPlayingResponse), args.Error(1)
+}
+
+func (m *mockRepo) GetCandidatesWithTrackAndUser(ctx context.Context, roomID, userID uuid.UUID) ([]CandidateResponse, error) {
+	args := m.Called(ctx, roomID, userID)
+	return args.Get(0).([]CandidateResponse), args.Error(1)
+}
+
 func newSvc(m *mockRepo) *Service {
 	return NewService(m, nil, nil)
 }

@@ -3,6 +3,7 @@
     <button
       class="inline-flex items-center gap-1.5 text-sm text-white/40 transition hover:text-white/70"
       @click="goBack"
+      aria-label="Back to Social"
     >
       &larr; Back to Social
     </button>
@@ -44,32 +45,66 @@
         </div>
       </div>
 
-      <!-- Host Controls -->
-      <div v-if="party.host_id === auth.user?.id" class="glass-strong rounded-2xl p-6">
-        <h2 class="mb-4 text-sm font-bold uppercase tracking-wider text-white/30">Host Controls</h2>
-        <div class="flex flex-wrap gap-3">
-          <button
-            class="rounded-xl bg-green-500/10 px-4 py-2 text-sm font-semibold text-green-400 transition hover:bg-green-500/20"
-            @click="updateStatus('active')"
-          >Play</button>
-          <button
-            class="rounded-xl bg-yellow-500/10 px-4 py-2 text-sm font-semibold text-yellow-400 transition hover:bg-yellow-500/20"
-            @click="updateStatus('paused')"
-          >Pause</button>
-          <button
-            class="rounded-xl bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/20"
-            @click="updateStatus('ended')"
-          >End</button>
-        </div>
-      </div>
-
       <!-- Now Playing Hero -->
       <RoomNowPlayingHero
         :now-playing="queueState?.now_playing ?? null"
-        :is-loading="!queueState"
+        :is-loading="(!queueState && !party?.current_track_id) || isTrackTransitioning"
         :is-playing="isPlayingTrack"
         @toggle-play="handleTogglePlay"
       />
+
+      <!-- Playback error banner -->
+      <div
+        v-if="playerStore.error"
+        class="rounded-xl bg-red-500/10 px-4 py-3 ring-1 ring-red-500/20"
+      >
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2 text-sm text-red-400">
+            <i aria-hidden="true" class="pi pi-exclamation-circle text-xs" />
+            <span>{{ playerStore.error }}</span>
+          </div>
+          <button
+            class="inline-flex items-center gap-1 rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/30 active:scale-95"
+            @click="retryPlayback"
+          >
+            <i aria-hidden="true" class="pi pi-refresh text-xs" />
+            Retry
+          </button>
+        </div>
+      </div>
+
+      <!-- Host: Skip + Manual controls -->
+      <div v-if="isHost" class="flex flex-wrap gap-3">
+        <button
+          class="inline-flex items-center gap-1.5 rounded-xl bg-white/5 px-4 py-2 text-sm font-semibold text-white/60 transition hover:bg-white/10 hover:text-white"
+          :disabled="!nowPlayingTrackId || isTrackTransitioning"
+          @click="skipTrack"
+        >
+          <i aria-hidden="true" class="pi pi-forward text-xs" />
+          Skip
+        </button>
+        <button
+          class="rounded-xl bg-green-500/10 px-4 py-2 text-sm font-semibold text-green-400 transition hover:bg-green-500/20"
+          @click="updateStatus('active')"
+        >
+          <i aria-hidden="true" class="pi pi-play text-xs" />
+          Resume Playback
+        </button>
+        <button
+          class="rounded-xl bg-yellow-500/10 px-4 py-2 text-sm font-semibold text-yellow-400 transition hover:bg-yellow-500/20"
+          @click="updateStatus('paused')"
+        >
+          <i aria-hidden="true" class="pi pi-pause text-xs" />
+          Pause Playback
+        </button>
+        <button
+          class="rounded-xl bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/20"
+          @click="updateStatus('ended')"
+        >
+          <i aria-hidden="true" class="pi pi-stop text-xs" />
+          End Party
+        </button>
+      </div>
 
       <!-- Candidate Queue -->
       <RoomQueueList
@@ -128,97 +163,159 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { SkeletonLoader } from '@/components/common'
 import { useSocialApi } from '@/services/api/social'
-import { usePlayerApi } from '@/services/api/player'
 import { usePlayerStore } from '@/stores/player'
 import { useUserApi } from '@/services/api/users'
 import { useUserAuthStore } from '@/stores'
 import { TrackPickerDialog, RoomNowPlayingHero, RoomQueueList } from '@/components/social'
 import { useRoomQueueSocket } from '@/composables/social/useRoomQueueSocket'
+import { useAppToast } from '@/composables/useAppToast'
 import type { ListeningParty } from '@/services/api/social'
 import type { Track } from '@/services/api/catalog/tracks'
 
 const router = useRouter()
 const route = useRoute()
 const api = useSocialApi()
-const playerApi = usePlayerApi()
 const playerStore = usePlayerStore()
 const auth = useUserAuthStore()
+const toast = useAppToast()
 
 const partyId = route.params.id as string
 
 const loading = ref(true)
 const error = ref('')
 const party = ref<ListeningParty | null>(null)
-const currentTrack = ref<PlaybackTrack | null>(null)
 const userNames = ref<Record<string, string>>({})
 
 const isParticipant = ref(false)
 const showTrackPicker = ref(false)
+const isTrackTransitioning = ref(false)
 
 // Room queue socket composable
 const roomQueue = useRoomQueueSocket(partyId)
 const { queueState, playbackContext } = roomQueue
 
-/* ---- Track from player store for play/pause ---- */
+/* ---- Now Playing track driven by queue state ---- */
+const nowPlayingTrackId = computed(() => queueState.value?.now_playing?.track?.id ?? null)
+
 const isPlayingTrack = computed(() => {
-  return playerStore.isPlaying && playerStore.currentTrack?.id === currentTrack.value?.id
+  return playerStore.isPlaying && playerStore.currentTrack?.id === nowPlayingTrackId.value
 })
 
-/* ---- Re-import PlaybackTrack type inline ---- */
-interface PlaybackTrack {
-  id: string
-  title: string
-  artistName: string
-  albumTitle?: string | null
-  coverUrl?: string | null
-  durationSeconds?: number | null
-  streamUrl: string
-}
-/* ---- end PlaybackTrack type ---- */
+const isHost = computed(() => party.value?.host_id === auth.user?.id)
 
-function handleTogglePlay() {
+/* ---- Play / Pause ---- */
+async function handleTogglePlay() {
+  const trackId = nowPlayingTrackId.value
+  if (!trackId) return
+
+  // Clear any previous error before retry
+  playerStore.error = null
+
   if (isPlayingTrack.value) {
     playerStore.pause()
-  } else if (currentTrack.value && party.value?.current_track_id) {
-    if (playerStore.currentTrack?.id === party.value.current_track_id) {
-      playerStore.resume()
-    } else {
-      playerStore.playTrackById(party.value.current_track_id)
+  } else if (playerStore.currentTrack?.id === trackId) {
+    playerStore.resume()
+  } else {
+    isTrackTransitioning.value = true
+    try {
+      await playerStore.playTrackById(trackId)
+    } finally {
+      isTrackTransitioning.value = false
     }
   }
 }
+
+/** Retry playback after an error */
+async function retryPlayback() {
+  const trackId = nowPlayingTrackId.value
+  if (!trackId) return
+  playerStore.error = null
+  isTrackTransitioning.value = true
+  try {
+    await playerStore.playTrackById(trackId)
+  } finally {
+    isTrackTransitioning.value = false
+  }
+}
+
+/** Force-play a specific track ID (called when now_playing changes) */
+async function playNowPlayingTrack(trackId: string) {
+  if (playerStore.currentTrack?.id === trackId && playerStore.isPlaying) return
+  isTrackTransitioning.value = true
+  try {
+    await playerStore.playTrackById(trackId)
+  } finally {
+    isTrackTransitioning.value = false
+  }
+}
+
+/** Skip the current track (host only) */
+async function skipTrack() {
+  const trackId = nowPlayingTrackId.value
+  if (!trackId || !isHost.value) return
+  try {
+    await roomQueue.reportEnded(trackId)
+  } catch {
+    toast.error('Failed to skip track')
+  }
+}
+
+/* ---- Auto-play when queue advances or initial state loads ---- */
+watch(
+  () => queueState.value?.now_playing?.track?.id,
+  (newTrackId, oldTrackId) => {
+    if (newTrackId && newTrackId !== oldTrackId) {
+      playNowPlayingTrack(newTrackId)
+    }
+  },
+)
+
+/* ---- Clear transitioning state when player settles after any load attempt ---- */
+watch(
+  () => playerStore.isLoadingTrack,
+  (loading) => {
+    if (!loading) {
+      setTimeout(() => {
+        isTrackTransitioning.value = false
+      }, 0)
+    }
+  },
+)
+
+/* ---- Restore playback when party loads and has a current_track_id ---- */
+watch(
+  [() => queueState.value, () => party.value],
+  ([qs, p]) => {
+    if (qs && p?.current_track_id && !qs.now_playing) {
+      // Party has a track but queue system hasn't picked it up yet.
+      // Suggest it to the queue so it becomes now_playing on next advance.
+      roomQueue.suggest(p.current_track_id)
+    }
+  },
+  { once: true },
+)
 
 /* ---- Track suggestion & voting ---- */
 function handleSuggest(track: Track) {
   showTrackPicker.value = false
   const trackId = String(track.id)
   roomQueue.suggest(trackId)
-  // Also reflect the track as now playing if host selected it
-  if (party.value && party.value.host_id === auth.user?.id) {
-    updateStatus('active', trackId)
-    party.value.current_track_id = trackId
-    currentTrack.value = {
-      id: trackId,
-      title: track.title,
-      artistName: track.artist_name || 'Unknown',
-      albumTitle: track.album_title || null,
-      coverUrl: track.cover_url || null,
-      durationSeconds: track.duration_seconds ?? null,
-      streamUrl: playerApi.getTrackStreamUrl(trackId),
-    }
-  }
 }
 
 async function handleVote(candidateId: string) {
   try {
     await roomQueue.vote(candidateId)
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.error('Failed to vote:', err)
+  }
 }
 
 async function handleUnvote(candidateId: string) {
   try {
     await roomQueue.unvote(candidateId)
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.error('Failed to unvote:', err)
+  }
 }
 
 /* ---- Existing party logic ---- */
@@ -226,10 +323,11 @@ async function handleUnvote(candidateId: string) {
 async function fetchUserName(userId: string) {
   if (userNames.value[userId]) return
   try {
-    const profile = await useUserApi().getPublicUserProfile(userId) as Record<string, any>
+    const profile = await useUserApi().getPublicUserProfile(userId) as Record<string, unknown>
     const p = profile
     userNames.value[userId] = String(p.full_name || p.username || userId.slice(0, 8))
-  } catch {
+  } catch (err) {
+    console.error('Failed to fetch user name:', err)
     userNames.value[userId] = userId.slice(0, 8)
   }
 }
@@ -254,39 +352,57 @@ async function loadParty() {
     party.value = partyData
     await fetchUserName(partyData.host_id)
 
-    if (partyData.current_track_id) {
-      try {
-        currentTrack.value = await playerApi.getPlaybackTrack(partyData.current_track_id)
-      } catch { /* ignore */ }
-    }
-
     isParticipant.value = false
-  } catch (e: any) {
+  } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to load party'
   } finally {
     loading.value = false
   }
 }
 
+/* ---- When both party + queue are loaded, try to restore playback ---- */
+watch(
+  [() => party.value, () => queueState.value],
+  ([p, qs]) => {
+    if (!p || !qs) return
+
+    // If the party has an active track and nothing is playing yet, play it.
+    if (p.current_track_id && !playerStore.currentTrack && !qs.now_playing) {
+      playerStore.playTrackById(p.current_track_id)
+        .catch(() => {
+          // If that fails, suggest it to the queue system
+          roomQueue.suggest(p.current_track_id)
+        })
+    }
+  },
+  { once: true },
+)
+
 async function updateStatus(status: string, trackId?: string) {
   try {
     await api.updatePartyStatus(partyId, status, trackId)
     if (party.value) party.value.status = status as ListeningParty['status']
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.error('Failed to update status:', err)
+  }
 }
 
 async function handleJoin() {
   try {
     await api.joinParty(partyId)
     isParticipant.value = true
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.error('Failed to join party:', err)
+  }
 }
 
 async function handleLeave() {
   try {
     await api.leaveParty(partyId)
     isParticipant.value = false
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.error('Failed to leave party:', err)
+  }
 }
 
 function goBack() {
@@ -309,10 +425,9 @@ onMounted(() => {
   const stopWatch = watch(
     () => [playerStore.currentTime, playerStore.duration, playerStore.isPlaying] as const,
     ([time, dur, playing]) => {
-      if (!playing && dur > 0 && time >= dur - 1 && currentTrack.value) {
-        // Track ended naturally
-        const trackedId = currentTrack.value.id
-        roomQueue.reportEnded(trackedId)
+      if (!playing && dur > 0 && time >= dur - 1 && nowPlayingTrackId.value) {
+        // Track ended naturally — report it so the queue advances
+        roomQueue.reportEnded(nowPlayingTrackId.value)
       }
     },
   )

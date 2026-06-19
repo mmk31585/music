@@ -16,6 +16,38 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// FetchFromLRC godoc
+// @Summary Fetch LRC lyrics from LRCLIB
+// @Description Fetches synced lyrics from LRCLIB for a track and saves them.
+// @Tags lyrics
+// @Produce json
+// @Security Bearer
+// @Param trackId path string true "Track ID"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /api/v1/admin/lyrics/fetch/{trackId} [post]
+func (h *Handler) FetchFromLRC(c *gin.Context) {
+	trackID := c.Param("trackId")
+	if trackID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "track id is required"})
+		return
+	}
+
+	lyrics, err := h.service.FetchFromLRC(c.Request.Context(), trackID)
+	if err != nil {
+		h.handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"success": true,
+		"data":    ToLyricsResponse(lyrics),
+	})
+}
+
 // CreateLyrics godoc
 // @Summary Create lyrics
 // @Description Creates new lyrics for a track.

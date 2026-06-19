@@ -425,6 +425,7 @@
               <label class="mb-1 block text-xs text-white/40">Title</label>
               <input
                 v-model="editForm.title"
+                aria-label="Track title"
                 class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-white/20"
               />
             </div>
@@ -432,6 +433,7 @@
               <label class="mb-1 block text-xs text-white/40">Persian Title</label>
               <input
                 v-model="editForm.persian_title"
+                aria-label="Persian title"
                 class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-white/20"
               />
             </div>
@@ -440,6 +442,7 @@
               <textarea
                 v-model="editForm.lyrics"
                 rows="4"
+                aria-label="Lyrics"
                 class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-white/20"
               />
             </div>
@@ -506,8 +509,8 @@ const tabs = [
   { key: 'content', label: 'Content' },
 ]
 
-const stats = ref<any>(null)
-const dailyStats = ref<any[]>([])
+const stats = ref<Record<string, unknown> | null>(null)
+const dailyStats = ref<Array<Record<string, unknown>>>([])
 const trackStats = ref<TrackStats[]>([])
 const totalPlays = ref(0)
 const uniqueListeners = ref(0)
@@ -573,12 +576,12 @@ async function fetchDashboard() {
     }
     if (daily.success && daily.data) {
       dailyStats.value = daily.data
-      maxPlays = Math.max(1, ...daily.data.map((d: any) => (d as { plays: number }).plays))
+      maxPlays = Math.max(1, ...daily.data.map((d: Record<string, unknown>) => (d as { plays: number }).plays))
     }
     if (tracks.success && tracks.data) trackStats.value = tracks.data
     isCreator.value = creatorCheck.is_creator
-  } catch {
-    /* silent */
+  } catch (err) {
+    console.error('Failed to load dashboard:', err)
   } finally {
     loading.value = false
   }
@@ -596,8 +599,8 @@ async function fetchSecondaryData() {
     if (p?.data) payouts.value = p.data
     if (a?.data) Object.assign(audience, a.data)
     if (c?.data) Object.assign(contentData, c.data)
-  } catch {
-    /* silent */
+  } catch (err) {
+    console.error('Failed to load secondary data:', err)
   }
 }
 
@@ -607,14 +610,14 @@ async function refreshStats() {
     await creatorApi.refreshStats()
     await fetchDashboard()
     await fetchSecondaryData()
-  } catch {
-    /* silent */
+  } catch (err) {
+    console.error('Failed to refresh:', err)
   } finally {
     refreshing.value = false
   }
 }
 
-function playTrack(track: any) {
+function playTrack(track: Record<string, unknown>) {
   const pb = {
     id: String(track.track_id),
     title: track.title,
@@ -638,8 +641,8 @@ async function saveTrack() {
     })
     showTrackModal.value = false
     await fetchSecondaryData()
-  } catch {
-    /* silent */
+  } catch (err) {
+    console.error('Failed to save track:', err)
   }
 }
 

@@ -109,8 +109,12 @@
               <div class="w-full max-w-md">
                 <div
                   ref="progressRef"
+                  role="button"
+                  tabindex="0"
                   class="group/seeks relative flex h-5 cursor-pointer items-center"
                   @click="seekFromEvent"
+                  @keydown.enter="seekFromEvent"
+                  @keydown.space.prevent="seekFromEvent"
                   @mousemove="onProgressHover"
                   @mouseleave="hoverPos = null"
                 >
@@ -141,12 +145,17 @@
               <div class="flex items-center gap-5">
                 <button
                   type="button"
-                  :aria-label="shuffleMode ? 'Shuffle on' : 'Shuffle off'"
-                  class="flex h-8 w-8 items-center justify-center rounded-full transition-all hover:bg-white/10 hover:text-white active:scale-90"
-                  :class="shuffleMode ? 'text-[#1db954]' : 'text-[rgba(255,255,255,0.35)]'"
+                  :aria-label="shuffleMode !== 'off' ? 'Shuffle on' : 'Shuffle off'"
+                  class="relative flex h-8 w-8 items-center justify-center rounded-full transition-all hover:bg-white/10 hover:text-white active:scale-90"
+                  :class="shuffleMode !== 'off' ? 'text-[#1db954]' : 'text-[rgba(255,255,255,0.35)]'"
+                  :title="shuffleMode === 'off' ? 'Shuffle off' : shuffleMode === 'queue' ? 'Shuffle queue' : shuffleMode === 'catalog' ? 'Random catalog tracks' : 'Similar tracks'"
                   @click="toggleShuffle"
                 >
                   <i aria-hidden="true" class="pi pi-sort-alt text-sm" />
+                  <span
+                    v-if="shuffleMode !== 'off'"
+                    class="absolute -top-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-[#a855f7] text-[7px] font-bold text-white"
+                  >{{ shuffleMode === 'queue' ? 'Q' : shuffleMode === 'catalog' ? 'R' : 'S' }}</span>
                 </button>
 
                 <button
@@ -274,8 +283,12 @@
                 <div
                   v-for="(track, idx) in upNextTracks"
                   :key="track.id"
+                  role="button"
+                  tabindex="0"
                   class="group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition-all hover:bg-white/[0.06]"
                   @click="playQueueItem(queueIndex + 1 + idx)"
+                  @keydown.enter="playQueueItem(queueIndex + 1 + idx)"
+                  @keydown.space.prevent="playQueueItem(queueIndex + 1 + idx)"
                 >
                   <div class="h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-white/10">
                     <img
@@ -350,11 +363,15 @@
                     v-for="(track, idx) in queueTracks"
                     :key="track.id"
                     :draggable="queueTracks.length > 1"
+                    role="button"
+                    tabindex="0"
                     class="group flex cursor-grab items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-white/[0.06]"
                     @dragstart="onDragStart(idx)"
                     @dragover.prevent="onDragOver(idx)"
                     @dragend="onDragEnd"
                     @click="playQueueItem(idx)"
+                    @keydown.enter="playQueueItem(idx)"
+                    @keydown.space.prevent="playQueueItem(idx)"
                   >
                     <span class="cursor-grab text-[rgba(255,255,255,0.2)] hover:text-white/50" @click.stop>
                       <i aria-hidden="true" class="pi pi-bars text-xs" />

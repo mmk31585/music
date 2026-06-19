@@ -4,7 +4,7 @@
   >
     <div class="flex items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <button class="rounded-full bg-white/10 p-2 text-white lg:hidden">
+        <button type="button" aria-label="Menu" class="rounded-full bg-white/10 p-2 text-white lg:hidden">
           <i aria-hidden="true" class="pi pi-bars" />
         </button>
         <div>
@@ -13,13 +13,7 @@
         </div>
       </div>
 
-      <RouterLink
-        to="/search"
-        class="hidden rounded-full bg-white/10 px-4 py-2 text-sm text-slate-300 transition hover:bg-white/15 md:block"
-      >
-        <i aria-hidden="true" class="pi pi-search mr-2" />
-        Search tracks, artists, albums...
-      </RouterLink>
+      <InputText v-model="query" placeholder="Search tracks, artists, albums..." aria-label="Search" class="hidden rounded-full bg-white/10 px-4 py-2 text-sm text-slate-300 transition hover:bg-white/15 md:block !border-0 !outline-none" />
     </div>
   </header>
 </template>

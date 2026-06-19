@@ -8,11 +8,12 @@ import (
 )
 
 type Handler struct {
-	importSvc *ImportService
+	importSvc      *ImportService
+	artistSearcher *ArtistSearcher
 }
 
-func NewHandler(importSvc *ImportService) *Handler {
-	return &Handler{importSvc: importSvc}
+func NewHandler(importSvc *ImportService, artistSearcher *ArtistSearcher) *Handler {
+	return &Handler{importSvc: importSvc, artistSearcher: artistSearcher}
 }
 
 func (h *Handler) Search(c *gin.Context) {
@@ -65,13 +66,19 @@ func (h *Handler) Import(c *gin.Context) {
 		return
 	}
 
+	// Validate: need either a URL or at least title+artist
+	if req.URL == "" && (req.Title == "" || req.Artist == "") {
+		response.Error(c, appErr.BadRequest("either 'url' or 'title'+'artist' is required", nil))
+		return
+	}
+
 	userID := getUserID(c)
 	if userID == "" {
 		response.Error(c, appErr.Unauthorized("user not authenticated", nil))
 		return
 	}
 
-	resp, err := h.importSvc.Import(c.Request.Context(), req.URL, req.Source, userID)
+	resp, err := h.importSvc.Import(c.Request.Context(), req.URL, req.Source, req.Title, req.Artist, req.ExternalIDs, userID)
 	if err != nil {
 		response.Error(c, appErr.Internal("import failed: "+err.Error(), err))
 		return
@@ -107,6 +114,93 @@ func (h *Handler) GetProgress(c *gin.Context) {
 	}
 
 	response.OK(c, "import progress", resp)
+}
+
+func (h *Handler) SearchArtist(c *gin.Context) {
+	name := c.Query("name")
+	if name == "" {
+		response.Error(c, appErr.BadRequest("artist name 'name' is required", nil))
+		return
+	}
+
+	result, err := h.artistSearcher.SearchArtist(c.Request.Context(), name)
+	if err != nil {
+		response.Error(c, appErr.Internal("artist search failed: "+err.Error(), err))
+		return
+	}
+
+	// Convert to DTO
+	dto := ArtistDiscographyResult{
+		ArtistInfo: ArtistInfoDTO{
+			Name:  result.ArtistInfo.Name,
+			Image: result.ArtistInfo.Image,
+		},
+		Albums: make([]AlbumGroupDTO, 0, len(result.Albums)),
+	}
+
+	for _, album := range result.Albums {
+		tracks := make([]TrackResultDTO, 0, len(album.Tracks))
+		for _, t := range album.Tracks {
+			tracks = append(tracks, TrackResultDTO{
+				Title:       t.Title,
+				Duration:    t.Duration,
+				Source:      t.Source,
+				Album:       t.Album,
+				ExternalIDs: t.ExternalIDs,
+			})
+		}
+
+		dto.Albums = append(dto.Albums, AlbumGroupDTO{
+			Title:  album.Title,
+			Cover:  album.Cover,
+			Source: album.Source,
+			Tracks: tracks,
+		})
+	}
+
+	response.OK(c, "artist discography retrieved", dto)
+}
+
+func (h *Handler) BatchImport(c *gin.Context) {
+	var req BatchImportRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, appErr.BadRequest("invalid request body", err))
+		return
+	}
+
+	userID := getUserID(c)
+	if userID == "" {
+		response.Error(c, appErr.Unauthorized("user not authenticated", nil))
+		return
+	}
+
+	resp, err := h.importSvc.BatchImport(c.Request.Context(), req.Tracks, userID)
+	if err != nil {
+		response.Error(c, appErr.Internal("batch import failed: "+err.Error(), err))
+		return
+	}
+
+	response.Created(c, "batch import initiated", resp)
+}
+
+func (h *Handler) GetBatchProgress(c *gin.Context) {
+	batchID := c.Param("batchId")
+	if batchID == "" {
+		response.Error(c, appErr.BadRequest("batchId is required", nil))
+		return
+	}
+
+	bp, err := h.importSvc.GetBatchProgress(c.Request.Context(), batchID)
+	if err != nil {
+		response.Error(c, appErr.Internal("failed to get batch progress: "+err.Error(), err))
+		return
+	}
+	if bp == nil {
+		response.Error(c, appErr.NotFound("batch not found", nil))
+		return
+	}
+
+	response.OK(c, "batch progress", bp)
 }
 
 func getUserID(c *gin.Context) string {

@@ -177,12 +177,15 @@ export function useAdminTracks() {
         return
       }
 
+      const language = payload.lyrics_language || 'en'
+      const type = payload.lyrics_type || 'plain'
+
       if (existing?.id) {
         await adminUpdateLyrics(existing.id, {
           track_id: trackId,
           content,
-          language: payload.lyrics_language ?? null,
-          type: payload.lyrics_type ?? 'plain',
+          language,
+          type,
         })
         return
       }
@@ -195,8 +198,8 @@ export function useAdminTracks() {
     await adminCreateLyrics({
       track_id: trackId,
       content,
-      language: payload.lyrics_language ?? null,
-      type: payload.lyrics_type ?? 'plain',
+      language: payload.lyrics_language || 'en',
+      type: payload.lyrics_type || 'plain',
     })
   }
 

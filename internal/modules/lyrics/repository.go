@@ -222,6 +222,39 @@ func (r *Repository) LyricsExists(ctx context.Context, trackID, language string)
 	return exists, nil
 }
 
+// TrackInfo holds the minimal info needed to query LRCLIB.
+type TrackInfo struct {
+	Title           string
+	ArtistName      string
+	DurationSeconds int
+}
+
+// GetTrackInfo fetches track title and primary artist name from the DB.
+func (r *Repository) GetTrackInfo(ctx context.Context, trackID string) (*TrackInfo, error) {
+	query := `
+		SELECT t.title, COALESCE(a.name, '') AS artist_name, t.duration_seconds
+		FROM tracks t
+		LEFT JOIN track_artists ta ON ta.track_id = t.id AND ta.role = 'primary'
+		LEFT JOIN artists a ON a.id = ta.artist_id
+		WHERE t.id = $1
+		ORDER BY ta.position ASC
+		LIMIT 1
+	`
+	var info TrackInfo
+	err := r.db.QueryRowContext(ctx, query, trackID).Scan(
+		&info.Title,
+		&info.ArtistName,
+		&info.DurationSeconds,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrTrackNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get track info: %w", err)
+	}
+	return &info, nil
+}
+
 func (r *Repository) DebugError(err error) error {
 	return fmt.Errorf("lyrics repository error: %w", err)
 }

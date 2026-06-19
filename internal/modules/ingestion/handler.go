@@ -257,7 +257,7 @@ func (h *Handler) FinalizeDraft(c *gin.Context) {
 		finalMeta = *draft.FinalMetadata
 	}
 
-	result, err := h.finalizer.Finalize(c.Request.Context(), draft.ID, string(draft.Status), draft.FilePath, draft.Format, finalMeta)
+	result, err := h.finalizer.Finalize(c.Request.Context(), draft.ID, string(draft.Status), draft.FilePath, draft.Format, finalMeta, draft.ExtractedMetadata)
 	if err != nil {
 		response.Error(c, appErr.Internal("failed to finalize draft: "+err.Error(), err))
 		return

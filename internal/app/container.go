@@ -9,6 +9,7 @@ import (
 	"music/internal/modules/ai"
 	"music/internal/modules/analytics"
 	"music/internal/modules/auth"
+	"music/internal/modules/catalog"
 	"music/internal/modules/catalog/album"
 	artist "music/internal/modules/catalog/artist"
 	"music/internal/modules/catalog/genre"
@@ -144,14 +145,18 @@ type Container struct {
 
 	ContributionHandler *contribution.Handler
 
-	ImportService     *importcmd.Service
-	ImportHandler     *importcmd.Handler
-	ImportSvc         *importcmd.ImportService
-	ImportSearch      *importsearch.Service
-	ImportAcquisition *acquisition.Service
-	ImportWorker      *importworker.ImportWorker
+	ImportService      *importcmd.Service
+	ImportHandler      *importcmd.Handler
+	ImportSvc          *importcmd.ImportService
+	ImportSearch       *importsearch.Service
+	ImportAcquisition  *acquisition.Service
+	ImportWorker       *importworker.ImportWorker
+	ImportArtistSearch *importcmd.ArtistSearcher
 
 	AIHandler *ai.Handler
+
+	Enricher      *enrichment.Enricher
+	EnrichHandler *catalog.EnrichHandler
 }
 
 func NewContainer(a *App) *Container {
@@ -184,6 +189,7 @@ func NewContainer(a *App) *Container {
 	c.buildSubscription()
 	c.buildPlayer()
 	c.buildIngestion(a)
+	c.buildEnrich()
 	c.buildSearch(a)
 	c.buildSocial(a)
 	c.buildModeration()
@@ -290,6 +296,17 @@ func (c *Container) buildCatalog() {
 	c.TrackHandler = track.NewHandler(c.TrackService)
 }
 
+func (c *Container) buildEnrich() {
+	c.EnrichHandler = catalog.NewEnrichHandler(
+		c.Enricher,
+		c.TrackService,
+		c.ArtistService,
+		c.AlbumService,
+		c.LyricsService,
+		zap.L(),
+	)
+}
+
 func (c *Container) buildLyrics() {
 	lyricsRepo := lyrics.NewRepository(c.SQLX)
 	c.LyricsService = lyrics.NewService(lyricsRepo)
@@ -369,6 +386,7 @@ func (c *Container) buildIngestion(a *App) {
 	lrcClient := enrichment.NewLRCLibClient()
 
 	enricher := enrichment.NewEnricher(mbClient, lfmClient, spotClient, lrcClient, zap.L())
+	c.Enricher = enricher
 
 	c.IngestionFinalization = finalization.NewService(c.SQLX, c.Storage, zap.L())
 	c.IngestionService = ingestion.NewService(c.Storage, ingestionRepo, enricher)
@@ -514,7 +532,10 @@ func (c *Container) buildImport() {
 		downloadDir,
 	)
 
-	c.ImportHandler = importcmd.NewHandler(c.ImportSvc)
+	// Build artist searcher (Deezer + MusicBrainz, no keys needed)
+	c.ImportArtistSearch = importcmd.NewArtistSearcher(zap.L())
+
+	c.ImportHandler = importcmd.NewHandler(c.ImportSvc, c.ImportArtistSearch)
 }
 
 func (c *Container) subscribeEvents() {

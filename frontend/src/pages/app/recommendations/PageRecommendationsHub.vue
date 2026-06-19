@@ -57,12 +57,17 @@
       <div
         v-else
         class="overflow-hidden rounded-3xl border border-white/10 bg-black/20 p-2 backdrop-blur"
+        aria-live="polite"
       >
         <div
           v-for="(track, index) in popularItems"
           :key="track.id"
+          role="button"
+          tabindex="0"
           class="group flex cursor-pointer items-center gap-4 rounded-2xl px-3 py-2.5 transition hover:bg-white/[0.04]"
           @click="playFromPopular(track, index)"
+          @keydown.enter="playFromPopular(track, index)"
+          @keydown.space.prevent="playFromPopular(track, index)"
         >
           <span class="flex w-6 items-center justify-center">
             <span class="text-sm text-slate-500 group-hover:hidden">{{ index + 1 }}</span>
@@ -115,12 +120,16 @@
         </RouterLink>
       </div>
       <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        <div
-          v-for="(track, idx) in personalizedItems"
-          :key="track.id"
-          class="group cursor-pointer"
-          @click="playFromPopular(track, idx)"
-        >
+          <div
+            v-for="(track, idx) in personalizedItems"
+            :key="track.id"
+            role="button"
+            tabindex="0"
+            class="group cursor-pointer"
+            @click="playFromPopular(track, idx)"
+            @keydown.enter="playFromPopular(track, idx)"
+            @keydown.space.prevent="playFromPopular(track, idx)"
+          >
           <div
             class="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-white/10 shadow-lg ring-1 ring-white/10 transition group-hover:ring-[#1db954]/50"
           >
@@ -205,8 +214,8 @@ async function fetchPopular() {
   try {
     const response = await api.getPopular({ limit: 5 })
     popularItems.value = response.items
-  } catch {
-    // silent
+    } catch (err) {
+    console.error('Failed to fetch popular tracks:', err)
   } finally {
     popularLoading.value = false
   }
@@ -216,8 +225,8 @@ async function fetchPersonalized() {
   try {
     const response = await api.getForYou({ limit: 5 })
     personalizedItems.value = response.items
-  } catch {
-    // silent
+  } catch (err) {
+    console.error('Failed to fetch personalized recommendations:', err)
   }
 }
 

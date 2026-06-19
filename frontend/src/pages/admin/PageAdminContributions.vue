@@ -496,7 +496,7 @@ function formatDate(dateStr: string): string {
   }
 }
 
-function formatJSON(data: any): string {
+function formatJSON(data: unknown): string {
   try {
     const obj = typeof data === 'string' ? JSON.parse(data) : data
     return JSON.stringify(obj, null, 2)

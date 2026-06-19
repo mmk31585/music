@@ -256,32 +256,32 @@ const heroItems = computed<HeroItem[]>(() => {
   }))
 })
 
-function getScoreBadge(item: any): string | undefined {
+function getScoreBadge(item: Record<string, unknown>): string | undefined {
   if (item.score >= 90) return '🔥 Hot'
   if (item.score >= 75) return 'Trending'
   return undefined
 }
 
-function isCurrentlyPlaying(item: any): boolean {
+function isCurrentlyPlaying(item: Record<string, unknown>): boolean {
   const currentId = player.currentTrack.value?.id
   if (!currentId) return false
   return currentId === String(item.id) || currentId === String(item.track_id)
 }
 
-function buildPlaybackTrack(item: any): PlaybackTrack {
+function buildPlaybackTrack(item: Record<string, unknown>): PlaybackTrack {
   const id = String(item.id || item.track_id)
   return {
     id,
-    title: item.title || 'Untitled',
-    artistName: item.artist_name || item.artistName || 'Unknown artist',
-    albumTitle: item.album_title || item.albumTitle || null,
-    coverUrl: item.cover_url || item.coverUrl || null,
-    durationSeconds: item.duration_seconds ?? item.durationSeconds ?? null,
+    title: (item.title as string) || 'Untitled',
+    artistName: (item.artist_name as string) || (item.artistName as string) || 'Unknown artist',
+    albumTitle: (item.album_title as string) || (item.albumTitle as string) || null,
+    coverUrl: (item.cover_url as string) || (item.coverUrl as string) || null,
+    durationSeconds: (item.duration_seconds as number) ?? (item.durationSeconds as number) ?? null,
     streamUrl: playerApi.getTrackStreamUrl(id),
   }
 }
 
-async function handlePlay(item: any) {
+async function handlePlay(item: Record<string, unknown>) {
   await player.toggleTrack(buildPlaybackTrack(item))
 }
 

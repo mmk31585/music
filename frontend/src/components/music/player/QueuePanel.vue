@@ -16,7 +16,7 @@
         </button>
       </div>
 
-      <div class="flex-1 overflow-y-auto p-4">
+      <div class="flex-1 overflow-y-auto p-4" aria-live="polite">
         <div v-if="currentTrack" class="mb-6">
           <p class="mb-3 text-xs font-semibold tracking-wider text-slate-500 uppercase">
             Now Playing
@@ -128,8 +128,8 @@ const queue = player.queue
 
 const localQueue = ref<PlaybackTrack[]>([])
 
-watch(() => player.queue.value, (newQueue) => {
-  localQueue.value = [...newQueue]
+watch(() => player.queue.value?.length, () => {
+  localQueue.value = [...(player.queue.value || [])]
 }, { immediate: true })
 
 function onReorder(event: { oldIndex: number; newIndex: number }) {

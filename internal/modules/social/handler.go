@@ -178,7 +178,8 @@ func (h *Handler) JoinParty(c *gin.Context) {
 	id := c.Param("id")
 	userID := c.GetString("auth_user_id")
 	if err := h.service.JoinParty(c.Request.Context(), id, userID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to join party"})
+		h.logger.Error("join party failed", zap.String("party_id", id), zap.String("user_id", userID), zap.Error(err))
+		response.Error(c, appErr.Internal("failed to join party", err))
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true})

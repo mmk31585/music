@@ -21,6 +21,7 @@ func RegisterRoutes(api *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
 			protected.PUT("/:id", h.UpdatePlaylist)
 			protected.DELETE("/:id", h.DeletePlaylist)
 
+			protected.GET("/:id/collaborators", h.ListCollaborators)
 			protected.POST("/:id/tracks", h.AddTrack)
 			protected.DELETE("/:id/tracks/:trackId", h.RemoveTrack)
 			protected.PUT("/:id/tracks/reorder", h.ReorderTrack)

@@ -190,6 +190,7 @@
                   </div>
                   <button
                     type="button"
+                    aria-label="Play track"
                     class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
                     @click="playTrack(index)"
                   >

@@ -2,6 +2,9 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { PlaybackTrack } from '@/services/api/player'
 import { usePlayerApi } from '@/services/api/player'
+import { useLibraryApi } from '@/services/api/library'
+import { useTracksApi } from '@/services/api/catalog/tracks'
+import { useRecommendationsApi } from '@/services/api/recommendation'
 import {
   audioEngine,
   preloadManager,
@@ -27,7 +30,8 @@ export const usePlayerStore = defineStore('player', () => {
   const volume = ref(Number(localStorage.getItem('player-volume') || 0.85))
   const muted = ref(localStorage.getItem('player-muted') === 'true')
 
-  const shuffleMode = ref(false)
+  type ShuffleMode = 'off' | 'queue' | 'catalog' | 'similar'
+  const shuffleMode = ref<ShuffleMode>('off')
   type RepeatMode = 'off' | 'one' | 'all'
   const repeatMode = ref<RepeatMode>('off')
   const playbackRate = ref(1)
@@ -44,8 +48,14 @@ export const usePlayerStore = defineStore('player', () => {
     return Math.min(100, Math.max(0, (currentTime.value / duration.value) * 100))
   })
 
-  const hasNext = computed(() => Boolean(queueManager.getNext()))
-  const hasPrevious = computed(() => Boolean(queueManager.getPrevious()))
+  const hasNext = computed(() => {
+    if (shuffleMode.value !== 'off') return true
+    return Boolean(queueManager.getNext())
+  })
+  const hasPrevious = computed(() => {
+    if (shuffleMode.value !== 'off') return true
+    return Boolean(queueManager.getPrevious())
+  })
 
   let initialized = false
 
@@ -98,6 +108,12 @@ export const usePlayerStore = defineStore('player', () => {
     })
 
     audioEngine.on('ended', async () => {
+      if (repeatMode.value === 'one') {
+        currentTime.value = 0
+        audioEngine.seek(0)
+        await audioEngine.play()
+        return
+      }
       await playNext()
     })
 
@@ -142,6 +158,9 @@ export const usePlayerStore = defineStore('player', () => {
 
       await audioEngine.play(track.streamUrl)
 
+      const libraryApi = useLibraryApi()
+      libraryApi.addPlayHistory({ track_id: track.id, duration: track.durationSeconds })
+
       const nextTrack = queueManager.getNext()
       if (nextTrack) {
         preloadManager.preload(nextTrack.streamUrl)
@@ -179,6 +198,10 @@ export const usePlayerStore = defineStore('player', () => {
 
     queueManager.setQueue(tracks, startIndex)
     queue.value = queueManager.all()
+
+    if (shuffleMode.value === 'queue') {
+      buildShuffleOrder()
+    }
 
     const track = tracks[startIndex]
     if (track) {
@@ -248,9 +271,92 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   async function playNext() {
+    if (shuffleMode.value === 'queue') {
+      const q = queueManager.all()
+      // advance position; if at -1 (first click after build) this becomes 0
+      shufflePosition.value++
+
+      // skip the track that's already playing if it happens to be next in order
+      const currentId = currentTrack.value?.id
+      while (shufflePosition.value < shuffleOrder.value.length) {
+        const nextRealIdx = shuffleOrder.value[shufflePosition.value]
+        const candidate = q[nextRealIdx]
+        if (candidate && candidate.id !== currentId) break
+        shufflePosition.value++
+      }
+
+      if (shufflePosition.value < shuffleOrder.value.length) {
+        const nextRealIdx = shuffleOrder.value[shufflePosition.value]
+        const nextTrack = q[nextRealIdx]
+        if (nextTrack) {
+          queueManager.setCurrent(nextTrack)
+          await playTrack(nextTrack)
+          return
+        }
+      }
+
+      // exhausted shuffled order
+      if (repeatMode.value === 'all') {
+        buildShuffleOrder()
+        if (shuffleOrder.value.length > 0) {
+          shufflePosition.value = 0
+          const nextRealIdx = shuffleOrder.value[0]
+          const nextTrack = q[nextRealIdx]
+          if (nextTrack) {
+            queueManager.setCurrent(nextTrack)
+            await playTrack(nextTrack)
+            return
+          }
+        }
+      }
+
+      pause()
+      currentTime.value = 0
+      return
+    }
+
+    if (shuffleMode.value === 'catalog') {
+      const tracksApi = useTracksApi()
+      try {
+        const randomTracks = await tracksApi.getRandomTracks({ limit: 20 })
+        if (randomTracks && randomTracks.length > 0) {
+          const pick = randomTracks[Math.floor(Math.random() * randomTracks.length)]
+          await playTrackById(pick.id)
+          return
+        }
+      } catch {
+        // fall through to sequential
+      }
+    }
+
+    if (shuffleMode.value === 'similar' && currentTrack.value) {
+      const recsApi = useRecommendationsApi()
+      try {
+        const similar = await recsApi.getSimilar(currentTrack.value.id, { limit: 10 })
+        const tracks: any[] = (similar as any)?.items ?? []
+        if (tracks.length > 0) {
+          const pick = tracks[Math.floor(Math.random() * tracks.length)]
+          await playTrackById(pick.id)
+          return
+        }
+      } catch {
+        // fall through to sequential
+      }
+    }
+
+    // Default sequential
     const nextTrack = queueManager.next()
 
     if (!nextTrack) {
+      if (repeatMode.value === 'all') {
+        // loop back to beginning of queue
+        queueManager.setQueue(queueManager.all(), 0)
+        const firstTrack = queueManager.next()
+        if (firstTrack) {
+          await playTrack(firstTrack)
+          return
+        }
+      }
       pause()
       currentTime.value = 0
       return
@@ -265,6 +371,57 @@ export const usePlayerStore = defineStore('player', () => {
       return
     }
 
+    if (shuffleMode.value === 'queue') {
+      shufflePosition.value--
+
+      // if we ended up at -1 and repeat is all, wrap to end
+      if (shufflePosition.value < 0 && repeatMode.value === 'all') {
+        shufflePosition.value = shuffleOrder.value.length - 1
+      }
+
+      if (shufflePosition.value >= 0) {
+        const q = queueManager.all()
+        const prevRealIdx = shuffleOrder.value[shufflePosition.value]
+        const prevTrack = q[prevRealIdx]
+        if (prevTrack) {
+          queueManager.setCurrent(prevTrack)
+          await playTrack(prevTrack)
+          return
+        }
+      }
+      seek(0)
+      return
+    }
+
+    if (shuffleMode.value === 'catalog') {
+      const tracksApi = useTracksApi()
+      try {
+        const randomTracks = await tracksApi.getRandomTracks({ limit: 20 })
+        if (randomTracks && randomTracks.length > 0) {
+          const pick = randomTracks[Math.floor(Math.random() * randomTracks.length)]
+          await playTrackById(pick.id)
+          return
+        }
+      } catch { /* fall through */ }
+      seek(0)
+      return
+    }
+
+    if (shuffleMode.value === 'similar' && currentTrack.value) {
+      const recsApi = useRecommendationsApi()
+      try {
+        const similar = await recsApi.getSimilar(currentTrack.value.id, { limit: 10 })
+        const tracks: any[] = (similar as any)?.items ?? []
+        if (tracks.length > 0) {
+          const pick = tracks[Math.floor(Math.random() * tracks.length)]
+          await playTrackById(pick.id)
+          return
+        }
+      } catch { /* fall through */ }
+      seek(0)
+      return
+    }
+
     const previousTrack = queueManager.previous()
 
     if (!previousTrack) {
@@ -275,8 +432,33 @@ export const usePlayerStore = defineStore('player', () => {
     await playTrack(previousTrack)
   }
 
+  const shuffleOrder = ref<number[]>([])
+  const shufflePosition = ref(-1)
+
+  function buildShuffleOrder() {
+    const q = queueManager.all()
+    const indices = q.map((_, i) => i)
+    // Fisher-Yates
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[indices[i], indices[j]] = [indices[j], indices[i]]
+    }
+    shuffleOrder.value = indices
+    // Start before the first track — next click advances to shuffleOrder[0]
+    shufflePosition.value = -1
+  }
+
+  function setShuffleMode(mode: ShuffleMode) {
+    shuffleMode.value = mode
+    if (mode === 'queue') {
+      buildShuffleOrder()
+    }
+  }
+
   function toggleShuffle() {
-    shuffleMode.value = !shuffleMode.value
+    const modes: ShuffleMode[] = ['off', 'queue', 'catalog', 'similar']
+    const idx = modes.indexOf(shuffleMode.value)
+    setShuffleMode(modes[(idx + 1) % modes.length])
   }
 
   function toggleRepeat() {
@@ -293,6 +475,9 @@ export const usePlayerStore = defineStore('player', () => {
   function updateQueue(newQueue: PlaybackTrack[]) {
     queue.value = newQueue
     queueManager.replaceAll(newQueue)
+    if (shuffleMode.value === 'queue') {
+      buildShuffleOrder()
+    }
   }
 
   function setSleepTimer(minutes: number) {
@@ -353,6 +538,7 @@ export const usePlayerStore = defineStore('player', () => {
     toggleMute,
     playNext,
     playPrevious,
+    setShuffleMode,
     toggleShuffle,
     toggleRepeat,
     setPlaybackRate,

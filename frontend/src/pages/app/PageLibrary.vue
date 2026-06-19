@@ -21,7 +21,7 @@
     </div>
 
     <template v-else>
-      <section v-if="likedTracks.length" class="mt-10">
+      <section v-if="likedTracks.length" class="mt-10" aria-live="polite">
         <div class="mb-5 flex items-end justify-between gap-4">
           <div>
             <p class="text-[10px] font-bold tracking-[0.3em] text-white/30 uppercase">Songs</p>
@@ -181,8 +181,8 @@ onMounted(async () => {
     likedTracks.value = Array.isArray(tracks) ? tracks : []
     likedAlbums.value = Array.isArray(albums) ? albums : []
     followedArtists.value = Array.isArray(artists) ? artists : []
-  } catch {
-    // silent
+  } catch (err) {
+    console.error('Failed to fetch library:', err)
   } finally {
     loading.value = false
   }

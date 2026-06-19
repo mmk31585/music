@@ -18,13 +18,13 @@
       </div>
     </div>
 
-    <div v-if="!filteredEntries.length" class="py-8 text-center text-sm text-white/30">
+    <div v-if="!props.entries.length" class="py-8 text-center text-sm text-white/30">
       No rankings available yet.
     </div>
 
     <div v-else class="space-y-2">
       <div
-        v-for="entry in filteredEntries"
+        v-for="entry in props.entries"
         :key="entry.user_id"
         class="group flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200"
         :class="entry.rank <= 3 ? 'bg-white/5' : 'hover:bg-white/[0.03]'"
@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { onImgError } from '@/utils/helpers'
 import type { LeaderboardEntry } from '@/services/api/gamification'
 
@@ -87,10 +87,6 @@ const tabs = [
 ]
 
 const activeTab = ref('all')
-
-const filteredEntries = computed(() => {
-  return props.entries
-})
 
 function rankClass(rank: number): string {
   if (rank === 1) return 'text-amber-400'

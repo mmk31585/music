@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <div v-if="!discussions.length" class="py-12 text-center text-sm text-white/30">
+    <div v-if="!discussions.length" class="py-12 text-center text-sm text-white/30" role="status">
       No comments yet. Be the first to share your thoughts!
     </div>
 
@@ -36,6 +36,7 @@
                 v-model="replyTexts[discussion.id]"
                 type="text"
                 placeholder="Write a reply..."
+                aria-label="Write a reply"
                 class="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white placeholder-white/20 outline-none focus:border-white/20"
                 @keydown.enter="submitReply(discussion.id)"
               />
@@ -57,15 +58,17 @@
         v-model="newComment"
         type="text"
         placeholder="Write a comment..."
+        aria-label="Write a comment"
         class="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 outline-none transition focus:border-white/20"
         @keydown.enter="submitComment"
       />
       <button
-        class="rounded-xl bg-[#1db954]/10 px-5 py-3 text-sm font-semibold text-[#1db954] transition hover:bg-[#1db954]/20 disabled:opacity-30"
-        :disabled="!newComment.trim()"
+        class="rounded-xl bg-[#1db954]/10 px-5 py-3 text-sm font-semibold text-[#1db954] transition hover:bg-[#1db954]/20 disabled:opacity-30 inline-flex items-center gap-1.5"
+        :disabled="!newComment.trim() || isPosting"
         @click="submitComment"
       >
-        Post
+        <span v-if="isPosting" class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#1db954] border-t-transparent" />
+        {{ isPosting ? 'Posting...' : 'Post' }}
       </button>
     </div>
   </div>
@@ -78,6 +81,7 @@ import type { Discussion } from '@/services/api/social'
 const props = defineProps<{
   discussions: Discussion[]
   userNames?: Record<string, string>
+  isPosting?: boolean
 }>()
 
 const emit = defineEmits<{

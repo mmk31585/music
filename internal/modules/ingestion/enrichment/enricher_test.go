@@ -15,7 +15,7 @@ func TestEnricher_AllAPIsReturnData(t *testing.T) {
 	lrc := &mockLRCLib{result: fullLRCLibResult()}
 
 	enricher := NewEnricher(mb, lfm, spot, lrc, zap.NewNop())
-	result, err := enricher.Enrich(context.Background(), "Test Song", "Test Artist", "Test Album")
+	result, err := enricher.Enrich(context.Background(), "Test Song", "Test Artist", "Test Album", 240)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestEnricher_PartialAPIFailure(t *testing.T) {
 	lrc := &mockLRCLib{result: fullLRCLibResult()}
 
 	enricher := NewEnricher(mb, lfm, spot, lrc, zap.NewNop())
-	result, err := enricher.Enrich(context.Background(), "Test Song", "Test Artist", "")
+	result, err := enricher.Enrich(context.Background(), "Test Song", "Test Artist", "", 0)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestEnricher_AllAPIsFail(t *testing.T) {
 	lrc := &mockLRCLib{result: nil}
 
 	enricher := NewEnricher(mb, lfm, spot, lrc, zap.NewNop())
-	result, err := enricher.Enrich(context.Background(), "Test Song", "Test Artist", "")
+	result, err := enricher.Enrich(context.Background(), "Test Song", "Test Artist", "", 0)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
 	}
@@ -110,7 +110,7 @@ func TestEnricher_NoMatch(t *testing.T) {
 	lrc := &mockLRCLib{result: nil}
 
 	enricher := NewEnricher(mb, lfm, spot, lrc, zap.NewNop())
-	result, err := enricher.Enrich(context.Background(), "Unknown Song", "Unknown Artist", "")
+	result, err := enricher.Enrich(context.Background(), "Unknown Song", "Unknown Artist", "", 0)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
 	}
@@ -136,7 +136,7 @@ func TestEnricher_EmptyQuery(t *testing.T) {
 	lrc := &mockLRCLib{result: nil}
 
 	enricher := NewEnricher(mb, lfm, spot, lrc, zap.NewNop())
-	result, err := enricher.Enrich(context.Background(), "", "", "")
+	result, err := enricher.Enrich(context.Background(), "", "", "", 0)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
 	}

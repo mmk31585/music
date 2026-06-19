@@ -20,9 +20,10 @@ const (
 )
 
 type TrackQuery struct {
-	Title  string
-	Artist string
-	Album  string
+	Title    string
+	Artist   string
+	Album    string
+	Duration int // seconds, used by LRCLIB for matching
 }
 
 type MusicBrainzResult struct {

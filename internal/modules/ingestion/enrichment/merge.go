@@ -218,15 +218,21 @@ func mergeLyrics(lrc *LRCLibResult) []EnrichedSuggestion {
 	if lrc == nil {
 		return nil
 	}
-	content := lrc.SyncedLyrics
+	content := strings.ReplaceAll(lrc.SyncedLyrics, "\r\n", "\n")
+	content = strings.ReplaceAll(content, "\r", "\n")
 	if content == "" {
-		content = lrc.PlainLyrics
+		content = strings.ReplaceAll(lrc.PlainLyrics, "\r\n", "\n")
+		content = strings.ReplaceAll(content, "\r", "\n")
 	}
 	if content == "" {
 		return nil
 	}
+	// Detect LRC format from content itself, since LRCLIB doesn't always
+	// include the "synced" boolean in its response.
 	lyricsType := "plain"
-	if lrc.Synced {
+	if looksLikeLRC(content) {
+		lyricsType = "lrc"
+	} else if lrc.Synced {
 		lyricsType = "lrc"
 	}
 	return []EnrichedSuggestion{{
@@ -264,6 +270,19 @@ func mergeArtistImage(lfm *LastFMResult) []EnrichedSuggestion {
 		Source:     SourceLastFM,
 		Confidence: ConfidenceFuzzy,
 	}}
+}
+
+// looksLikeLRC returns true if the content starts with a timestamp bracket,
+// indicating LRC (synced) lyrics format rather than plain text.
+func looksLikeLRC(content string) bool {
+	for _, line := range strings.Split(content, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		return strings.HasPrefix(line, "[")
+	}
+	return false
 }
 
 func mergeAlbumCover(lfm *LastFMResult) []EnrichedSuggestion {

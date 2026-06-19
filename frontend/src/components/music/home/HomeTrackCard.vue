@@ -1,8 +1,12 @@
 <template>
   <div
+    role="button"
+    tabindex="0"
     class="group w-44 shrink-0 cursor-pointer space-y-2"
     :style="{ transitionDelay: `${delay}ms` }"
     @click="$emit('play', item)"
+    @keydown.enter="$emit('play', item)"
+    @keydown.space.prevent="$emit('play', item)"
   >
     <div
       class="relative aspect-square overflow-hidden rounded-xl bg-white/[0.06] ring-1 ring-white/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:ring-[#1db954]/40"

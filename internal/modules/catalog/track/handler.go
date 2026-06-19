@@ -210,6 +210,29 @@ func (h *Handler) Delete(c *gin.Context) {
 	}
 	c.Status(http.StatusNoContent)
 }
+
+// Random godoc
+// @Summary Get random tracks
+// @Description Returns a list of randomly selected public tracks. Useful for shuffle mode.
+// @Tags tracks
+// @Produce json
+// @Param limit query int false "Number of random tracks to return (max 100)"
+// @Success 200 {array} Track
+// @Failure 500 {object} map[string]interface{}
+// @Router /tracks/random [get]
+func (h *Handler) Random(c *gin.Context) {
+	limit := common.ParsePagination(c).Limit
+	items, err := h.service.Random(c.Request.Context(), limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch random tracks"})
+		return
+	}
+	if items == nil {
+		items = []Track{}
+	}
+	c.JSON(http.StatusOK, items)
+}
+
 func (h *Handler) Credits(c *gin.Context) {
 	items, err := h.service.ListCredits(c.Request.Context(), c.Param("trackID"))
 	if errors.Is(err, common.ErrInvalidInput) {

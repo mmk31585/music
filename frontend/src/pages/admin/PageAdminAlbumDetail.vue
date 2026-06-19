@@ -73,6 +73,15 @@
 
           <div class="mt-6 flex flex-wrap gap-2">
             <Button
+              label="Fetch Cover"
+              icon="pi pi-refresh"
+              size="small"
+              severity="info"
+              :loading="enriching"
+              class="!rounded-xl !bg-amber-500/10 !text-amber-400 hover:!bg-amber-500/20"
+              @click="handleEnrich"
+            />
+            <Button
               label="Edit Album"
               icon="pi pi-pencil"
               size="small"
@@ -174,6 +183,7 @@ const editingAlbum = ref<Album | null>(null)
 const saving = ref(false)
 const showDelete = ref(false)
 const deleting = ref(false)
+const enriching = ref(false)
 
 const albumTracks = computed(() =>
   allTracks.value.filter(t => String(t.album_id) === route.params.id)
@@ -193,7 +203,7 @@ async function loadAlbum() {
     ])
     artist.value = artistData
     allTracks.value = tracksData
-  } catch (err: any) {
+  } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Failed to load album.'
   } finally {
     loading.value = false
@@ -209,7 +219,21 @@ function openDeleteConfirm() {
   showDelete.value = true
 }
 
-async function handleEditSubmit(payload: any) {
+async function handleEnrich() {
+  if (!album.value) return
+  enriching.value = true
+  try {
+    await albumsApi.adminEnrichAlbum(album.value.id)
+    toast.add({ severity: 'success', summary: 'Album enriched', detail: 'Cover art fetched from external sources', life: 3000 })
+    await loadAlbum()
+  } catch {
+    toast.add({ severity: 'error', summary: 'Enrich failed', detail: 'Could not fetch album cover', life: 4000 })
+  } finally {
+    enriching.value = false
+  }
+}
+
+async function handleEditSubmit(payload: Record<string, unknown>) {
   if (!album.value) return
   saving.value = true
   try {

@@ -5,7 +5,8 @@ export enum AlbumApiRoutes {
 
   // Admin routes
   ADMIN_LIST = '/admin/catalog/albums',
-  ADMIN_CREATE = '/admin/catalog/albums/create',
+  ADMIN_CREATE = '/admin/catalog/albums',
   ADMIN_UPDATE = '/admin/catalog/albums/:albumId',
-  ADMIN_DELETE = '/admin/catalog/albums/:albumId/delete',
+  ADMIN_DELETE = '/admin/catalog/albums/:albumId',
+  ADMIN_ENRICH = '/admin/catalog/albums/:albumId/enrich',
 }

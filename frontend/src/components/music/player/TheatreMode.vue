@@ -18,6 +18,7 @@
             <button
               type="button"
               class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white"
+              aria-label="Close"
               @click="close"
             >
               <i aria-hidden="true" class="pi pi-chevron-down text-lg" />
@@ -29,14 +30,14 @@
               />
               <span class="font-semibold tracking-wider uppercase">Theatre Mode</span>
             </div>
-            <button
-              type="button"
-              class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white"
-              :class="{ '!bg-[#1db954]/15 !text-[#1db954]': karaokeMode }"
-              @click="karaokeMode = !karaokeMode"
-              title="Karaoke"
-            >
-              <i aria-hidden="true" class="pi pi-file text-sm" />
+              <button
+                type="button"
+                class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white"
+                :class="{ '!bg-[#1db954]/15 !text-[#1db954]': karaokeMode }"
+                aria-label="Toggle karaoke"
+                @click="karaokeMode = !karaokeMode"
+              >
+                <i aria-hidden="true" class="pi pi-file text-sm" />
             </button>
           </div>
 
@@ -81,18 +82,24 @@
               <div class="mt-5 flex items-center justify-center gap-4">
                 <button
                   type="button"
-                  class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/40 transition-all hover:bg-white/10 hover:text-white"
-                  :class="{ '!text-[#1db954]': shuffleMode }"
+                  class="spring relative flex h-10 w-10 items-center justify-center rounded-full text-white/40 transition-all hover:bg-white/10 hover:text-white"
+                  :class="{ '!text-[#1db954]': shuffleMode !== 'off' }"
                   :disabled="!currentTrack"
+                  aria-label="Shuffle"
                   @click="toggleShuffle"
                 >
                   <i aria-hidden="true" class="pi pi-sort-alt text-sm" />
+                  <span
+                    v-if="shuffleMode !== 'off'"
+                    class="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#a855f7] text-[8px] font-bold text-white"
+                  >{{ shuffleMode === 'queue' ? 'Q' : shuffleMode === 'catalog' ? 'R' : 'S' }}</span>
                 </button>
 
                 <button
                   type="button"
                   class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 transition-all hover:bg-white/10 hover:text-white disabled:opacity-20"
                   :disabled="!hasPrevious"
+                  aria-label="Previous track"
                   @click="playPrevious"
                 >
                   <i aria-hidden="true" class="pi pi-step-backward text-lg" />
@@ -103,6 +110,7 @@
                   class="glow-green spring relative flex h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-2xl transition-all hover:scale-105 hover:bg-[#1db954] hover:text-white disabled:opacity-40"
                   :class="{ '!bg-[#1db954] !text-white': isPlaying }"
                   :disabled="!currentTrack || isLoadingTrack"
+                  :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'"
                   @click="togglePlayPause"
                 >
                   <i aria-hidden="true" v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-lg" />
@@ -121,6 +129,7 @@
                   type="button"
                   class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 transition-all hover:bg-white/10 hover:text-white disabled:opacity-20"
                   :disabled="!hasNext"
+                  aria-label="Next track"
                   @click="playNext"
                 >
                   <i aria-hidden="true" class="pi pi-step-forward text-lg" />
@@ -131,6 +140,7 @@
                   class="spring relative flex h-10 w-10 items-center justify-center rounded-full text-white/40 transition-all hover:bg-white/10 hover:text-white"
                   :class="{ '!text-[#1db954]': repeatMode !== 'off' }"
                   :disabled="!currentTrack"
+                  aria-label="Repeat"
                   @click="toggleRepeat"
                 >
                   <i aria-hidden="true" class="pi pi-refresh text-sm" />

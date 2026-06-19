@@ -114,8 +114,8 @@
         <div class="mt-8 flex items-center gap-6">
           <button
             type="button"
+            aria-label="Previous track"
             class="flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white"
-            title="Previous"
             @click="player.playPrevious"
           >
             <i aria-hidden="true" class="pi pi-step-backward text-lg" />
@@ -123,6 +123,7 @@
 
           <button
             type="button"
+            aria-label="Toggle play"
             class="relative flex h-16 w-16 items-center justify-center rounded-full bg-white text-black shadow-2xl transition hover:scale-105 hover:bg-[#1db954] hover:text-white"
             @click="togglePlay"
           >
@@ -134,8 +135,8 @@
 
           <button
             type="button"
+            aria-label="Next track"
             class="flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white"
-            title="Next"
             @click="player.playNext"
           >
             <i aria-hidden="true" class="pi pi-step-forward text-lg" />
@@ -152,6 +153,7 @@
             min="0"
             max="100"
             step="0.1"
+            aria-label="Seek"
             class="player-range flex-1"
             :style="{ '--range-progress': `${Number(player.progressPercent.value || 0)}%` }"
             :value="player.progressPercent.value"
@@ -361,7 +363,7 @@
       </div>
 
       <!-- Similar Tracks -->
-      <section v-if="similarTracks.length" class="mt-14">
+      <section v-if="similarTracks.length" class="mt-14" aria-live="polite">
         <div class="relative mb-8">
           <div class="absolute inset-0 flex items-center">
             <div class="w-full border-t border-white/[0.06]" />
@@ -373,12 +375,16 @@
           </div>
         </div>
         <div class="space-y-1">
-          <div
-            v-for="(st, index) in similarTracks"
-            :key="st.id"
-            class="group flex cursor-pointer items-center gap-4 rounded-2xl px-4 py-3 transition-all duration-200 hover:bg-white/[0.04]"
-            @click="playSimilar(st, index)"
-          >
+            <div
+              v-for="(st, index) in similarTracks"
+              :key="st.id"
+              role="button"
+              tabindex="0"
+              class="group flex cursor-pointer items-center gap-4 rounded-2xl px-4 py-3 transition-all duration-200 hover:bg-white/[0.04]"
+              @click="playSimilar(st, index)"
+              @keydown.enter="playSimilar(st, index)"
+              @keydown.space.prevent="playSimilar(st, index)"
+            >
             <span
               class="flex w-8 items-center justify-center text-center text-sm tabular-nums text-white/20 group-hover:hidden"
             >
@@ -443,8 +449,8 @@ const {
   toggleLike,
 } = useTrack(trackId)
 
-const trackArtists = _trackArtists as any
-const trackCredits = _trackCredits as any
+const trackArtists = _trackArtists as Record<string, unknown>[]
+const trackCredits = _trackCredits as Record<string, unknown>[]
 const player = usePlayer()
 const playerApi = usePlayerApi()
 const showQueue = ref(false)

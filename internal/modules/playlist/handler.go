@@ -370,6 +370,41 @@ func (h *Handler) ReorderTrack(c *gin.Context) {
 	})
 }
 
+// ListCollaborators godoc
+// @Summary List playlist collaborators
+// @Description Returns all collaborators for a playlist.
+// @Tags playlists
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path string true "Playlist ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /playlists/{id}/collaborators [get]
+func (h *Handler) ListCollaborators(c *gin.Context) {
+	if _, ok := web.GetRequiredUserUUID(c); !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "unauthorized"})
+		return
+	}
+
+	playlistID := c.Param("id")
+
+	collaborators, err := h.service.ListCollaborators(c.Request.Context(), playlistID)
+	if err != nil {
+		h.handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    CollaboratorsListResponse{Collaborators: collaborators},
+	})
+}
+
 func (h *Handler) handleError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, ErrInvalidPlaylistName):

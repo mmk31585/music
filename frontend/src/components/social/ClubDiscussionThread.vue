@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <div v-if="!discussions.length" class="py-8 text-center text-sm text-white/30">
+    <div v-if="!discussions.length" class="py-8 text-center text-sm text-white/30" role="status">
       هنوز بحثی ثبت نشده. اولین نفر باش!
     </div>
 
@@ -27,6 +27,7 @@
               <button
                 class="inline-flex items-center gap-1 text-white/40 transition hover:text-red-400"
                 @click="toggleLike(d.id)"
+                aria-label="Like"
               >
                 <i aria-hidden="true" class="pi pi-heart text-sm" :class="likedDiscussions[d.id] ? 'text-red-400' : ''" />
                 {{ likeCounts[d.id] || 0 }}
@@ -42,6 +43,7 @@
                 v-if="canDelete(d)"
                 class="mr-auto text-white/20 transition hover:text-red-400"
                 @click="emit('delete', d.id)"
+                aria-label="Delete"
               >
                 <i aria-hidden="true" class="pi pi-trash text-xs" />
               </button>
@@ -49,8 +51,12 @@
 
             <!-- Replies -->
             <div v-if="openReplies[d.id]" class="mt-4 space-y-3 border-t border-white/5 pt-4">
+              <div v-if="repliesLoading[d.id]" class="flex items-center justify-center py-3">
+                <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-[#1db954]" />
+              </div>
               <div
                 v-for="reply in loadedReplies[d.id] || []"
+                v-else
                 :key="reply.id"
                 class="flex items-start gap-2 pr-6"
               >
@@ -68,19 +74,26 @@
                 </div>
               </div>
 
+              <div v-if="replyError[d.id]" class="rounded-lg bg-red-500/10 px-3 py-2 text-[11px] text-red-400">
+                {{ replyError[d.id] }}
+              </div>
+
               <div class="flex gap-2 pr-6">
                 <input
                   v-model="replyInputs[d.id]"
                   type="text"
                   placeholder="پاسخ خودت رو بنویس..."
+                  aria-label="پاسخ"
                   class="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white placeholder-white/20 outline-none focus:border-white/20"
                   dir="rtl"
                   @keydown.enter="submitReply(d.id)"
                 />
                 <button
-                  class="rounded-lg bg-[#1db954]/10 px-3 py-2 text-xs font-medium text-[#1db954] transition hover:bg-[#1db954]/20"
+                  class="inline-flex items-center gap-1 rounded-lg bg-[#1db954]/10 px-3 py-2 text-xs font-medium text-[#1db954] transition hover:bg-[#1db954]/20 disabled:opacity-40"
+                  :disabled="!replyInputs[d.id]?.trim() || repliesLoading[d.id]"
                   @click="submitReply(d.id)"
                 >
+                  <span v-if="repliesLoading[d.id]" class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#1db954] border-t-transparent" />
                   ارسال
                 </button>
               </div>
@@ -113,6 +126,8 @@ const socialApi = useSocialApi()
 const reactionsApi = useReactionsApi()
 
 const loadedReplies = reactive<Record<string, ClubDiscussionReply[]>>({})
+const repliesLoading = reactive<Record<string, boolean>>({})
+const replyError = reactive<Record<string, string>>({})
 const openReplies = reactive<Record<string, boolean>>({})
 const replyInputs = reactive<Record<string, string>>({})
 const likedDiscussions = reactive<Record<string, boolean>>({})
@@ -141,22 +156,35 @@ async function toggleReplies(discussionId: string) {
 }
 
 async function loadReplies(discussionId: string) {
+  repliesLoading[discussionId] = true
+  replyError[discussionId] = ''
   try {
     const data = await socialApi.getClubDiscussionReplies(discussionId)
     loadedReplies[discussionId] = Array.isArray(data) ? data : []
-  } catch {
+  } catch (err: any) {
+    const msg = err?.response?.data?.message || err.message || 'Failed to load replies'
+    replyError[discussionId] = msg
     loadedReplies[discussionId] = []
+  } finally {
+    repliesLoading[discussionId] = false
   }
 }
 
 async function submitReply(discussionId: string) {
   const text = replyInputs[discussionId]?.trim()
-  if (!text) return
+  if (!text || repliesLoading[discussionId]) return
+  repliesLoading[discussionId] = true
+  replyError[discussionId] = ''
   try {
     await socialApi.createClubDiscussionReply(discussionId, { body: text })
     replyInputs[discussionId] = ''
     await loadReplies(discussionId)
-  } catch { /* ignore */ }
+  } catch (err: any) {
+    const msg = err?.response?.data?.message || err.message || 'Failed to submit reply'
+    replyError[discussionId] = msg
+  } finally {
+    repliesLoading[discussionId] = false
+  }
 }
 
 async function toggleLike(discussionId: string) {
@@ -165,7 +193,9 @@ async function toggleLike(discussionId: string) {
       await reactionsApi.removeReaction('club_discussion', discussionId)
       likedDiscussions[discussionId] = false
       likeCounts[discussionId] = Math.max(0, (likeCounts[discussionId] || 0) - 1)
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('Failed to remove reaction:', err)
+    }
   } else {
     try {
       await reactionsApi.react({
@@ -175,7 +205,9 @@ async function toggleLike(discussionId: string) {
       })
       likedDiscussions[discussionId] = true
       likeCounts[discussionId] = (likeCounts[discussionId] || 0) + 1
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('Failed to add reaction:', err)
+    }
   }
 }
 
@@ -191,7 +223,9 @@ async function loadLikeState(discussionId: string) {
     if (userReaction.status === 'fulfilled' && userReaction.value?.reaction) {
       likedDiscussions[discussionId] = true
     }
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.error('Failed to load like state:', err)
+  }
 }
 
 watch(() => props.discussions, (list) => {

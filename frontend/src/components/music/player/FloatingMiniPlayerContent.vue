@@ -13,21 +13,21 @@
     </div>
 
     <div v-if="mode === 'expanded' || isPiP" class="popout-header">
-      <button type="button" class="popout-btn" title="Minimize" @click="mode = 'mini'">
-        <i aria-hidden="true" class="pi pi-window-minimize" />
-      </button>
-      <button type="button" class="popout-btn" title="Full player" @click="openFullscreen">
-        <i aria-hidden="true" class="pi pi-expand" />
-      </button>
-      <button
-        type="button"
-        class="popout-btn"
-        :title="isPiP ? 'Return to app' : 'Pop out'"
-        @click="onTogglePiP"
-      >
-        <i aria-hidden="true" :class="isPiP ? 'pi pi-window-maximize' : 'pi pi-external-link'" />
-      </button>
-      <button v-if="!isPiP" type="button" class="popout-btn" title="Close" @click="close">
+        <button type="button" class="popout-btn" aria-label="Minimize" @click="mode = 'mini'">
+          <i aria-hidden="true" class="pi pi-window-minimize" />
+        </button>
+        <button type="button" class="popout-btn" aria-label="Full player" @click="openFullscreen">
+          <i aria-hidden="true" class="pi pi-expand" />
+        </button>
+        <button
+          type="button"
+          class="popout-btn"
+          :aria-label="isPiP ? 'Return to app' : 'Pop out'"
+          @click="onTogglePiP"
+        >
+          <i aria-hidden="true" :class="isPiP ? 'pi pi-window-maximize' : 'pi pi-external-link'" />
+        </button>
+        <button v-if="!isPiP" type="button" class="popout-btn" aria-label="Close" @click="close">
         <i aria-hidden="true" class="pi pi-times" />
       </button>
     </div>
@@ -40,7 +40,7 @@
       <div v-if="isPlaying" class="popout-equalizer">
         <span /><span /><span />
       </div>
-      <div class="popout-mini-overlay" @click="togglePlayPause">
+      <div role="button" tabindex="0" class="popout-mini-overlay" @click="togglePlayPause" @keydown.enter="togglePlayPause" @keydown.space.prevent="togglePlayPause">
         <i aria-hidden="true" :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" class="popout-play-icon" />
       </div>
     </div>
@@ -58,7 +58,7 @@
       </div>
 
       <div class="popout-progress">
-        <div class="popout-progress-bar" ref="progressRef" @click="seekFromEvent">
+        <div role="button" tabindex="0" class="popout-progress-bar" ref="progressRef" @click="seekFromEvent" @keydown.enter="seekFromEvent" @keydown.space.prevent="seekFromEvent">
           <div class="popout-progress-fill" :style="{ transform: `scaleX(${progressPercent / 100})` }" />
         </div>
         <div class="popout-progress-labels">
@@ -68,19 +68,19 @@
       </div>
 
       <div class="popout-controls">
-        <button type="button" class="popout-ctrl-btn" @click="playPrevious" :disabled="!hasPrevious">
+        <button type="button" class="popout-ctrl-btn" aria-label="Previous track" @click="playPrevious" :disabled="!hasPrevious">
           <i aria-hidden="true" class="pi pi-step-backward" />
         </button>
-        <button type="button" class="popout-play-btn" :style="{ background: accentColor }" @click="togglePlayPause">
+        <button type="button" class="popout-play-btn" :style="{ background: accentColor }" :aria-label="isPlaying ? 'Pause' : 'Play'" @click="togglePlayPause">
           <i aria-hidden="true" :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" />
         </button>
-        <button type="button" class="popout-ctrl-btn" @click="playNext" :disabled="!hasNext">
+        <button type="button" class="popout-ctrl-btn" aria-label="Next track" @click="playNext" :disabled="!hasNext">
           <i aria-hidden="true" class="pi pi-step-forward" />
         </button>
       </div>
 
       <div class="popout-volume">
-        <button type="button" class="popout-ctrl-btn" @click="toggleMute">
+        <button type="button" class="popout-ctrl-btn" :aria-label="muted ? 'Unmute' : 'Mute'" @click="toggleMute">
           <i aria-hidden="true" :class="volumeIcon" />
         </button>
         <input

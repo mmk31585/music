@@ -97,6 +97,24 @@
               @click="openEdit"
             />
             <Button
+              label="Fetch LRC"
+              icon="pi pi-cloud-download"
+              size="small"
+              severity="secondary"
+              :loading="fetchingLrc"
+              class="!text-teal-400"
+              @click="handleFetchLRC"
+            />
+            <Button
+              label="Fetch All"
+              icon="pi pi-sync"
+              size="small"
+              severity="secondary"
+              :loading="enriching"
+              class="!text-purple-400"
+              @click="handleEnrichTrack"
+            />
+            <Button
               label="Delete"
               icon="pi pi-trash"
               size="small"
@@ -169,6 +187,7 @@ import AdminDeleteConfirm from '@/components/admin/AdminDeleteConfirm.vue'
 import { useTracksApi } from '@/services/api/catalog/tracks'
 import { useArtistsApi } from '@/services/api/catalog/artists'
 import { useAlbumsApi } from '@/services/api/catalog/albums'
+import { useLyricsApi } from '@/services/api/lyrics'
 import { useAdminArtists } from '@/composables/admin/useAdminArtists'
 import { useAdminAlbums } from '@/composables/admin/useAdminAlbums'
 import { useAdminGenres } from '@/composables/admin/useAdminGenres'
@@ -193,6 +212,7 @@ const toast = useToast()
 const tracksApi = useTracksApi()
 const artistsApi = useArtistsApi()
 const albumsApi = useAlbumsApi()
+const lyricsApi = useLyricsApi()
 
 const { artists, fetchArtists } = useAdminArtists()
 const { albums, fetchAlbums } = useAdminAlbums()
@@ -209,6 +229,8 @@ const editingTrack = ref<Track | null>(null)
 const saving = ref(false)
 const showDelete = ref(false)
 const deleting = ref(false)
+const fetchingLrc = ref(false)
+const enriching = ref(false)
 
 const parentAlbum = computed(() =>
   track.value?.album_id
@@ -249,15 +271,30 @@ async function loadTrack() {
     ])
     artist.value = artistData
     allAlbums.value = albumsData
-  } catch (err: any) {
+  } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Failed to load track.'
   } finally {
     loading.value = false
   }
 }
 
-function openEdit() {
-  editingTrack.value = track.value
+async function openEdit() {
+  // Start with the track data from the detail page
+  const augmented: Record<string, unknown> = { ...track.value }
+
+  // Fetch lyrics — they aren't included in getTrack response
+  try {
+    const lyrics = await lyricsApi.getTrackLyrics(augmented.id, undefined, { silent: true })
+    if (lyrics?.content) {
+      augmented.lyrics = lyrics.content
+      augmented.lyrics_language = lyrics.language || 'en'
+      augmented.lyrics_type = lyrics.type === 'synced' ? 'synced' : 'plain'
+    }
+  } catch {
+    // No lyrics stored yet — that's fine
+  }
+
+  editingTrack.value = augmented
   showForm.value = true
 }
 
@@ -285,6 +322,45 @@ async function handleEditSubmit(payload: TrackFormPayload) {
   }
 }
 
+async function handleFetchLRC() {
+  if (!track.value) return
+  fetchingLrc.value = true
+  try {
+    const result = await lyricsApi.fetchLrcLyrics(String(track.value.id))
+    toast.add({ severity: 'success', summary: 'LRC lyrics fetched and saved', life: 3000 })
+    // Refresh track to show updated lyrics
+    await loadTrack()
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'Failed to fetch LRC',
+      detail: err instanceof Error ? err.message : 'Unknown error',
+      life: 3000,
+    })
+  } finally {
+    fetchingLrc.value = false
+  }
+}
+
+async function handleEnrichTrack() {
+  if (!track.value) return
+  enriching.value = true
+  try {
+    await tracksApi.adminEnrichTrack(track.value.id)
+    toast.add({ severity: 'success', summary: 'Track enrichment complete', life: 3000 })
+    await loadTrack()
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'Enrichment failed',
+      detail: err instanceof Error ? err.message : 'Unknown error',
+      life: 3000,
+    })
+  } finally {
+    enriching.value = false
+  }
+}
+
 async function handleDelete() {
   if (!track.value) return
   deleting.value = true
@@ -299,7 +375,7 @@ async function handleDelete() {
   }
 }
 
-function normalizeCatalogOptions(items: any[] | undefined | null) {
+function normalizeCatalogOptions(items: Array<Record<string, unknown>> | undefined | null) {
   if (!Array.isArray(items)) return []
   return items.map(item => {
     const id = item.id ?? item.artist_id ?? item.album_id ?? item.genre_id

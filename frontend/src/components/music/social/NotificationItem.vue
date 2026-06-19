@@ -10,7 +10,7 @@
       <i aria-hidden="true" :class="iconClass" class="text-sm" />
     </div>
 
-    <div class="min-w-0 flex-1 cursor-pointer" @click="handleClick">
+    <div class="min-w-0 flex-1 cursor-pointer" role="button" tabindex="0" @click="handleClick" @keydown.enter="handleClick" @keydown.space.prevent="handleClick">
       <p class="text-sm leading-relaxed text-white">
         <span class="font-semibold">{{ notification.title }}</span>
         <span class="ml-1 text-slate-300">{{ notification.body }}</span>
@@ -87,7 +87,8 @@ async function handleMarkRead() {
   try {
     await notifApi.markRead(props.notification.id)
     emit('read', props.notification.id)
-  } catch {
+  } catch (err) {
+    console.error('Failed to mark as read:', err)
     toast.add({ severity: 'error', summary: 'Failed to mark as read', life: 2000 })
   }
 }

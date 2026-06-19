@@ -5,7 +5,7 @@
     </div>
     <div>
       <h3 class="text-lg font-bold text-white">Something went wrong</h3>
-      <p class="mt-1 text-sm text-slate-400">{{ errorMessage }}</p>
+      <p class="mt-1 text-sm text-slate-400" role="alert">{{ errorMessage }}</p>
     </div>
     <button
       type="button"

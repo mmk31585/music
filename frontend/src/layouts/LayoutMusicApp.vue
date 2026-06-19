@@ -1,18 +1,25 @@
 <template>
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
-  <div class="min-h-screen bg-transparent text-white">
-    <div class="flex min-h-screen">
-      <MusicSidebar />
+  <div class="flex h-screen overflow-hidden bg-transparent text-white">
+    <!-- ── Left Sidebar ── -->
+    <MusicSidebar />
 
-      <main id="main-content" class="min-w-0 flex-1" :class="mainPadding">
-        <MusicAppHeader
-          :page-title="pageTitle"
-          :unread-count="unreadCount"
-          @toggle-mobile="mobileOpen = true"
-          @toggle-search="searchOpen = true"
-        />
+    <!-- ── Main Content Area (scrolls independently) ── -->
+    <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <MusicAppHeader
+        :page-title="pageTitle"
+        :unread-count="unreadCount"
+        @toggle-mobile="mobileOpen = true"
+        @toggle-search="searchOpen = true"
+      />
 
+      <main
+        id="main-content"
+        class="flex-1 overflow-y-auto scroll-smooth"
+        :class="mainPadding"
+        style="scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.06) transparent;"
+      >
         <RouterView v-slot="{ Component }">
           <Transition name="page" mode="out-in">
             <KeepAlive :max="3">
@@ -23,12 +30,22 @@
       </main>
     </div>
 
+    <!-- ── Right Sticky Pane (persistent, categorized) ── -->
+    <MusicRightPane
+      @toggle-fullscreen="fullscreenOpen = !fullscreenOpen"
+      @toggle-queue-overlay="showQueue = !showQueue"
+    />
+
     <Transition name="fade">
       <div
         v-if="mobileOpen"
         class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm lg:hidden"
         :aria-hidden="!mobileOpen"
+        role="button"
+        tabindex="0"
         @click="mobileOpen = false"
+        @keydown.enter="mobileOpen = false"
+        @keydown.space.prevent="mobileOpen = false"
       >
         <div class="flex h-full w-80 max-w-[85vw] flex-col bg-black p-4" @click.stop>
           <div class="mb-4 flex items-center justify-between">
@@ -189,6 +206,7 @@ import {
   MobileBottomSheet,
   KeyboardShortcuts,
 } from '@/components/music'
+import MusicRightPane from '@/components/music/layout/MusicRightPane.vue'
 import MusicAppHeader from '@/components/layouts/MusicAppHeader.vue'
 import { MobileBottomNav } from '@/components/layouts'
 import { useUserAuthStore, useFeatureFlagsStore, usePlayerStore } from '@/stores'
@@ -257,9 +275,18 @@ const fullscreenOpen = ref(false)
 const showQueue = ref(false)
 const mobileSheetOpen = ref(false)
 
+const barCollapsed = ref(localStorage.getItem('player-bar-collapsed') === 'true')
+
+onMounted(() => {
+  const handler = (e: Event) => {
+    barCollapsed.value = (e as CustomEvent).detail
+  }
+  window.addEventListener('playerbar-collapse', handler)
+})
+
 const mainPadding = computed(() => {
   if (playerStore.currentTrack) {
-    return 'pb-32 lg:pb-28'
+    return barCollapsed.value ? 'pb-20 lg:pb-16' : 'pb-32 lg:pb-28'
   }
   return 'pb-16 lg:pb-0'
 })
@@ -321,8 +348,8 @@ async function fetchUnreadCount() {
   try {
     const res = await client.get('/notifications', { params: { limit: 1 } })
     unreadCount.value = res.data?.data?.unreadCount ?? 0
-  } catch {
-    /* ignore */
+  } catch (err) {
+    console.error('Failed to fetch unread count:', err)
   }
 }
 

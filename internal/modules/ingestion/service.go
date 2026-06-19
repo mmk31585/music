@@ -63,15 +63,15 @@ func (s *Service) EnrichDraft(ctx context.Context, draftID string) error {
 
 	tags := parseExtractedTags(draft.ExtractedMetadata)
 
-	go s.enrichAsync(draftID, tags.Title, tags.Artist, tags.Album)
+	go s.enrichAsync(draftID, tags.Title, tags.Artist, tags.Album, int(tags.Duration))
 
 	return nil
 }
 
-func (s *Service) enrichAsync(draftID, title, artist, album string) {
+func (s *Service) enrichAsync(draftID, title, artist, album string, durationSeconds int) {
 	ctx := context.Background()
 
-	result, err := s.enricher.Enrich(ctx, title, artist, album)
+	result, err := s.enricher.Enrich(ctx, title, artist, album, durationSeconds)
 	if err != nil {
 		zap.L().Error("enrichment failed", zap.String("draft_id", draftID), zap.Error(err))
 		_ = s.repo.UpdateDraftStatus(ctx, draftID, DraftStatusEnrichmentFailed)
@@ -378,7 +378,7 @@ func (s *Service) Upload(ctx context.Context, file multipart.File, header *multi
 		}
 	}
 
-	go s.enrichAsync(draftID, result.Tags.Title, result.Tags.Artist, result.Tags.Album)
+	go s.enrichAsync(draftID, result.Tags.Title, result.Tags.Artist, result.Tags.Album, int(result.Tags.Duration))
 
 	return &UploadResponse{
 		DraftID:           draft.ID,

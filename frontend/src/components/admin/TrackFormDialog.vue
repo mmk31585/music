@@ -8,6 +8,7 @@ import Textarea from 'primevue/textarea'
 import AutoComplete from 'primevue/autocomplete'
 import Checkbox from 'primevue/checkbox'
 import Select from 'primevue/select'
+import { useToast } from 'primevue/usetoast'
 import { parseBlob } from 'music-metadata-browser'
 
 type CatalogId = string | number
@@ -202,6 +203,8 @@ const coverPreviewUrl = ref<string | null>(null)
 const metadataLoading = ref(false)
 const metadataError = ref('')
 
+const toast = useToast()
+
 const detectedArtistNames = ref<string[]>([])
 const detectedAlbumName = ref('')
 const detectedGenreNames = ref<string[]>([])
@@ -253,6 +256,17 @@ watch(
   },
   { immediate: true },
 )
+
+watch(selectedAlbum, (album) => {
+  // Auto-populate cover from the selected album if no cover is set yet
+  if (album && !coverPreviewUrl.value && !form.coverFile) {
+    const albumCover = album.cover_url || album.image_url || null
+    if (albumCover) {
+      form.cover_url = albumCover
+      coverPreviewUrl.value = albumCover
+    }
+  }
+})
 
 watch(
   () => props.artistsOptions,
@@ -818,6 +832,126 @@ function submitForm() {
   emit('submit', payload)
 }
 
+async function fetchLRCLyrics() {
+  const trackName = form.title?.trim()
+  const artistName = primaryArtistModels.value[0]?.name || detectedArtistNames.value[0] || ''
+  if (!trackName) {
+    toast.add({ severity: 'warn', summary: 'Enter a track title first', life: 2500 })
+    return
+  }
+
+  metadataLoading.value = true
+  try {
+    const params = new URLSearchParams({ track_name: trackName })
+    if (artistName) params.set('artist_name', artistName)
+    if (form.duration_seconds) params.set('duration', String(Math.round(form.duration_seconds)))
+
+    // Try exact /get first
+    let resp = await fetch(`https://lrclib.net/api/get?${params}`, {
+      headers: { Accept: 'application/json' },
+    })
+    let data: any = null
+    if (resp.ok) {
+      data = await resp.json()
+    }
+
+    // Fallback to /search if exact fails
+    if (!data || (!data.syncedLyrics && !data.plainLyrics)) {
+      const q = artistName ? `${artistName} ${trackName}` : trackName
+      resp = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`, {
+        headers: { Accept: 'application/json' },
+      })
+      if (resp.ok) {
+        const results: any[] = await resp.json()
+        // Prefer synced, then any with lyrics
+        data = results.find((r: any) => r.syncedLyrics) || results.find((r: any) => r.plainLyrics) || null
+      }
+    }
+
+    if (!data || (!data.syncedLyrics && !data.plainLyrics)) {
+      toast.add({ severity: 'error', summary: 'No lyrics found on LRCLIB', life: 3000 })
+      return
+    }
+
+    const synced = data.syncedLyrics as string | undefined
+    if (synced) {
+      form.lyrics = synced
+      form.lyrics_type = 'synced'
+      toast.add({ severity: 'success', summary: `Synced LRC fetched for "${trackName}"`, life: 3000 })
+    } else if (data.plainLyrics) {
+      form.lyrics = data.plainLyrics
+      form.lyrics_type = 'plain'
+      toast.add({ severity: 'info', summary: `Plain lyrics fetched (no synced LRC available)`, life: 3000 })
+    }
+
+    // Auto-select album from LRCLIB response
+    if (data.albumName) {
+      const matchedAlbum = findOptionByName(props.albumsOptions, data.albumName)
+      if (matchedAlbum) {
+        albumModel.value = matchedAlbum
+
+        // Auto-populate cover from the matched album if none set
+        if (!coverPreviewUrl.value && !form.coverFile) {
+          const albumCover = matchedAlbum.cover_url || matchedAlbum.image_url || null
+          if (albumCover) {
+            form.cover_url = albumCover
+            coverPreviewUrl.value = albumCover
+          }
+        }
+      } else {
+        detectedAlbumName.value = data.albumName
+      }
+    }
+
+    // Auto-select primary artist from LRCLIB response (only if none selected)
+    if (data.artistName && !primaryArtistModels.value.length) {
+      const matchedArtist = findOptionByName(props.artistsOptions, data.artistName)
+      if (matchedArtist) {
+        primaryArtistModels.value = [matchedArtist]
+      } else if (!detectedArtistNames.value.length) {
+        detectedArtistNames.value = [data.artistName]
+      }
+    }
+
+    // Try to fetch cover from iTunes API if we still don't have one
+    if (!coverPreviewUrl.value && !form.coverFile) {
+      fetchCoverFromiTunes().catch(() => {})
+    }
+  } catch (err) {
+    toast.add({ severity: 'error', summary: 'Failed to fetch lyrics', detail: String(err), life: 3000 })
+  } finally {
+    metadataLoading.value = false
+  }
+}
+
+async function fetchCoverFromiTunes() {
+  const trackName = form.title?.trim()
+  const artistName = primaryArtistModels.value[0]?.name || detectedArtistNames.value[0] || ''
+  const albumName = getModelText(albumModel.value) || detectedAlbumName.value || ''
+  if (!trackName && !artistName && !albumName) return
+
+  try {
+    const terms = [artistName, albumName || trackName].filter(Boolean).join(' ')
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(terms)}&entity=song&limit=5`
+    const resp = await fetch(url, { headers: { Accept: 'application/json' } })
+    if (!resp.ok) return
+
+    const data: any = await resp.json()
+    const result = data.results?.[0]
+    if (!result?.artworkUrl100) return
+
+    // Get larger artwork by replacing 100x100 with larger size
+    const coverUrl = result.artworkUrl100.replace('/100x100bb.', '/600x600bb.')
+    form.cover_url = coverUrl
+    if (coverPreviewUrl.value?.startsWith('blob:')) {
+      URL.revokeObjectURL(coverPreviewUrl.value)
+    }
+    coverPreviewUrl.value = coverUrl
+  } catch {
+    // Silent fail — cover fetch is best-effort
+  }
+}
+
 function closeDialog() {
   emit('cancel')
   internalVisible.value = false
@@ -1312,9 +1446,22 @@ function closeDialog() {
         </div>
 
         <div>
-          <label class="mb-1.5 block text-xs font-medium text-slate-400">
-            Lyrics
-          </label>
+          <div class="mb-1.5 flex items-center justify-between">
+            <label class="block text-xs font-medium text-slate-400">
+              Lyrics
+            </label>
+
+            <Button
+              type="button"
+              icon="pi pi-cloud-download"
+              label="Fetch LRC"
+              size="small"
+              text
+              :loading="metadataLoading"
+              class="!text-teal-400 hover:!text-teal-300"
+              @click="fetchLRCLyrics"
+            />
+          </div>
 
           <Textarea
             v-model="form.lyrics"

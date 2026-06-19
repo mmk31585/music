@@ -296,7 +296,7 @@ const { getTracks } = useTracksApi()
 const ingestionApi = useIngestionApi()
 
 const loading = ref(false)
-const error = ref<any>(null)
+const error = ref<unknown>(null)
 
 const tracks = ref<Track[]>([])
 const ingestionStats = ref<IngestionStats | null>(null)
@@ -336,7 +336,7 @@ const tips = computed(() => [
   },
 ])
 
-function toArray<T>(value: any): T[] {
+function toArray<T>(value: unknown): T[] {
   if (Array.isArray(value)) {
     return value as T[]
   }
@@ -345,18 +345,18 @@ function toArray<T>(value: any): T[] {
     value &&
     typeof value === 'object' &&
     'data' in value &&
-    Array.isArray((value as { data?: any }).data)
+    Array.isArray((value as Record<string, unknown>).data)
   ) {
-    return (value as { data: T[] }).data
+    return ((value as Record<string, unknown>).data as T[])
   }
 
   if (
     value &&
     typeof value === 'object' &&
     'items' in value &&
-    Array.isArray((value as { items?: any }).items)
+    Array.isArray((value as Record<string, unknown>).items)
   ) {
-    return (value as { items: T[] }).items
+    return ((value as Record<string, unknown>).items as T[])
   }
 
   return []

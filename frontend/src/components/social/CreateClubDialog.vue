@@ -13,6 +13,8 @@
             v-model="name"
             type="text"
             placeholder="اسم کلاب"
+            aria-label="اسم کلاب"
+            autofocus
             class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 outline-none transition focus:border-white/20"
             dir="rtl"
           />
@@ -21,6 +23,7 @@
             v-model="description"
             placeholder="توضیحات (اختیاری)"
             rows="3"
+            aria-label="توضیحات"
             class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 outline-none transition focus:border-white/20"
             dir="rtl"
           />
@@ -28,6 +31,7 @@
           <select
             v-model="genre"
             class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:border-white/20"
+            aria-label="دسته‌بندی"
             dir="rtl"
           >
             <option value="" disabled selected>دسته‌بندی</option>
@@ -40,6 +44,7 @@
             v-model="coverUrl"
             type="text"
             placeholder="لینک تصویر (اختیاری)"
+            aria-label="لینک تصویر"
             class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 outline-none transition focus:border-white/20"
             dir="rtl"
           />
@@ -121,8 +126,8 @@ async function handleCreate() {
     if (club?.id) {
       emit('created', club.id)
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    console.error('Failed to create club:', err)
   } finally {
     creating.value = false
   }
