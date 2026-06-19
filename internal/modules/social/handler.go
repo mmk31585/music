@@ -1,18 +1,38 @@
 package social
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
+	appErr "music/internal/common/errors"
+	"music/internal/common/response"
+
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type Handler struct {
-	service *Service
+	service      *Service
+	queueEngine  *QueueEngine
+	stageManager *StageManager
+	logger       *zap.Logger
 }
 
 func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+	return &Handler{service: service, logger: zap.L()}
+}
+
+func NewHandlerWithEngine(service *Service, queueEngine *QueueEngine) *Handler {
+	return &Handler{service: service, queueEngine: queueEngine, logger: zap.L()}
+}
+
+func NewHandlerFull(service *Service, queueEngine *QueueEngine, stageManager *StageManager) *Handler {
+	return &Handler{service: service, queueEngine: queueEngine, stageManager: stageManager, logger: zap.L()}
+}
+
+func NewHandlerWithLogger(service *Service, queueEngine *QueueEngine, stageManager *StageManager, logger *zap.Logger) *Handler {
+	return &Handler{service: service, queueEngine: queueEngine, stageManager: stageManager, logger: logger}
 }
 
 func (h *Handler) Follow(c *gin.Context) {
@@ -147,7 +167,8 @@ func (h *Handler) UpdatePartyStatus(c *gin.Context) {
 		return
 	}
 	if err := h.service.UpdatePartyStatus(c.Request.Context(), id, req.Status, req.TrackID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update party"})
+		h.logger.Error("update party status failed", zap.String("party_id", id), zap.String("status", req.Status), zap.Error(err))
+		response.Error(c, appErr.Internal("failed to update party", err))
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true})
@@ -260,6 +281,93 @@ func (h *Handler) GetRoomQueue(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": queue})
 }
 
+// --- Democratic Voting Queue ---
+
+func (h *Handler) SuggestTrack(c *gin.Context) {
+	if h.queueEngine == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "queue engine not available"})
+		return
+	}
+	id := c.Param("id")
+	userID := c.GetString("auth_user_id")
+	var req struct {
+		TrackID string `json:"track_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.queueEngine.SuggestTrack(c.Request.Context(), id, req.TrackID, userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) CastVote(c *gin.Context) {
+	if h.queueEngine == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "queue engine not available"})
+		return
+	}
+	id := c.Param("id")
+	candidateID := c.Param("candidateId")
+	userID := c.GetString("auth_user_id")
+	if err := h.queueEngine.CastVote(c.Request.Context(), candidateID, userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": id})
+}
+
+func (h *Handler) RemoveVote(c *gin.Context) {
+	if h.queueEngine == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "queue engine not available"})
+		return
+	}
+	candidateID := c.Param("candidateId")
+	userID := c.GetString("auth_user_id")
+	if err := h.queueEngine.RemoveVote(c.Request.Context(), candidateID, userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) GetQueueState(c *gin.Context) {
+	if h.queueEngine == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "queue engine not available"})
+		return
+	}
+	id := c.Param("id")
+	userID := c.GetString("auth_user_id")
+	state, err := h.queueEngine.GetQueueState(c.Request.Context(), id, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": state})
+}
+
+func (h *Handler) TrackEnded(c *gin.Context) {
+	if h.queueEngine == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "queue engine not available"})
+		return
+	}
+	id := c.Param("id")
+	var req struct {
+		TrackID string `json:"track_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.queueEngine.TrackEnded(c.Request.Context(), id, req.TrackID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
 // --- Music Clubs ---
 
 func (h *Handler) CreateClub(c *gin.Context) {
@@ -271,7 +379,7 @@ func (h *Handler) CreateClub(c *gin.Context) {
 	}
 	club, err := h.service.CreateClub(c.Request.Context(), req, userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create club"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"success": true, "data": club})
@@ -353,6 +461,55 @@ func (h *Handler) GetClubPosts(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": posts})
 }
 
+// --- Club Enhancements (Phase 5) ---
+
+func (h *Handler) ListClubsWithGenre(c *gin.Context) {
+	genre := c.Query("genre")
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	clubs, err := h.service.ListClubsWithGenre(c.Request.Context(), genre, limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list clubs"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": clubs})
+}
+
+func (h *Handler) GetClubDetail(c *gin.Context) {
+	id := c.Param("id")
+	userID := c.GetString("auth_user_id")
+	detail, err := h.service.GetClubDetail(c.Request.Context(), id, userID)
+	if err != nil {
+		code := http.StatusInternalServerError
+		if err == ErrClubNotFound {
+			code = http.StatusNotFound
+		}
+		c.JSON(code, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": detail})
+}
+
+func (h *Handler) LaunchPartyFromClub(c *gin.Context) {
+	id := c.Param("id")
+	userID := c.GetString("auth_user_id")
+	var req LaunchPartyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	party, err := h.service.LaunchListeningParty(c.Request.Context(), id, userID, req)
+	if err != nil {
+		code := http.StatusInternalServerError
+		if err == ErrLaunchNotMember || err == ErrClubNotFound {
+			code = http.StatusForbidden
+		}
+		c.JSON(code, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"success": true, "data": party})
+}
+
 // --- Discussions ---
 
 func (h *Handler) CreateDiscussion(c *gin.Context) {
@@ -397,7 +554,264 @@ func (h *Handler) GetDiscussionReplies(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": replies})
 }
 
+// --- Club Discussions (Phase 6) ---
+
+func (h *Handler) CreateClubDiscussion(c *gin.Context) {
+	clubID := c.Param("id")
+	userID := c.GetString("auth_user_id")
+	var req CreateClubDiscussionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	d, err := h.service.CreateClubDiscussion(c.Request.Context(), clubID, userID, req.Title, req.Body)
+	if err != nil {
+		code := http.StatusInternalServerError
+		if errors.Is(err, ErrNotClubMember) {
+			code = http.StatusForbidden
+		}
+		c.JSON(code, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"success": true, "data": d})
+}
+
+func (h *Handler) ListClubDiscussions(c *gin.Context) {
+	clubID := c.Param("id")
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	items, err := h.service.ListClubDiscussions(c.Request.Context(), clubID, limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": items})
+}
+
+func (h *Handler) GetClubDiscussion(c *gin.Context) {
+	id := c.Param("id")
+	d, err := h.service.GetClubDiscussion(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, ErrDiscussionNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "discussion not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": d})
+}
+
+func (h *Handler) GetClubDiscussionReplies(c *gin.Context) {
+	id := c.Param("id")
+	items, err := h.service.GetClubDiscussionReplies(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": items})
+}
+
+func (h *Handler) CreateClubDiscussionReply(c *gin.Context) {
+	id := c.Param("id")
+	userID := c.GetString("auth_user_id")
+	var req CreateDiscussionReplyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	reply, err := h.service.CreateClubDiscussionReply(c.Request.Context(), id, userID, req.Body)
+	if err != nil {
+		code := http.StatusInternalServerError
+		if errors.Is(err, ErrNotClubMember) {
+			code = http.StatusForbidden
+		}
+		if errors.Is(err, ErrDiscussionNotFound) {
+			code = http.StatusNotFound
+		}
+		c.JSON(code, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"success": true, "data": reply})
+}
+
+func (h *Handler) DeleteClubDiscussion(c *gin.Context) {
+	id := c.Param("id")
+	userID := c.GetString("auth_user_id")
+	if err := h.service.DeleteClubDiscussion(c.Request.Context(), id, userID); err != nil {
+		code := http.StatusInternalServerError
+		if errors.Is(err, ErrDiscussionNotFound) {
+			code = http.StatusNotFound
+		}
+		if errors.Is(err, ErrNotAuthorOrOwner) {
+			code = http.StatusForbidden
+		}
+		c.JSON(code, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) DeleteClubDiscussionReply(c *gin.Context) {
+	replyID := c.Param("replyId")
+	userID := c.GetString("auth_user_id")
+	if err := h.service.DeleteClubDiscussionReply(c.Request.Context(), replyID, userID); err != nil {
+		code := http.StatusInternalServerError
+		if errors.Is(err, ErrReplyNotFound) {
+			code = http.StatusNotFound
+		}
+		if errors.Is(err, ErrNotAuthorOrOwner) {
+			code = http.StatusForbidden
+		}
+		c.JSON(code, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
 // --- Track Ratings ---
+
+// --- Stage & Raise-Hand ---
+
+func (h *Handler) RaiseHand(c *gin.Context) {
+	if h.stageManager == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "stage manager not available"})
+		return
+	}
+	id := c.Param("id")
+	userID := c.GetString("auth_user_id")
+	if err := h.stageManager.RaiseHand(c.Request.Context(), id, userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) LowerHand(c *gin.Context) {
+	if h.stageManager == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "stage manager not available"})
+		return
+	}
+	id := c.Param("id")
+	userID := c.GetString("auth_user_id")
+	if err := h.stageManager.LowerHand(c.Request.Context(), id, userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) ApproveHand(c *gin.Context) {
+	if h.stageManager == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "stage manager not available"})
+		return
+	}
+	roomID := c.Param("id")
+	targetUserID := c.Param("userId")
+	hostID := c.GetString("auth_user_id")
+	if err := h.stageManager.ApproveHand(c.Request.Context(), roomID, hostID, targetUserID); err != nil {
+		if err == ErrNotHost {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) DenyHand(c *gin.Context) {
+	if h.stageManager == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "stage manager not available"})
+		return
+	}
+	roomID := c.Param("id")
+	targetUserID := c.Param("userId")
+	hostID := c.GetString("auth_user_id")
+	if err := h.stageManager.DenyHand(c.Request.Context(), roomID, hostID, targetUserID); err != nil {
+		if err == ErrNotHost {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) RemoveFromStage(c *gin.Context) {
+	if h.stageManager == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "stage manager not available"})
+		return
+	}
+	roomID := c.Param("id")
+	targetUserID := c.Param("userId")
+	hostID := c.GetString("auth_user_id")
+	if err := h.stageManager.RemoveFromStage(c.Request.Context(), roomID, hostID, targetUserID); err != nil {
+		if err == ErrNotHost {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) LeaveStage(c *gin.Context) {
+	if h.stageManager == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "stage manager not available"})
+		return
+	}
+	roomID := c.Param("id")
+	userID := c.GetString("auth_user_id")
+	if err := h.stageManager.LeaveStage(c.Request.Context(), roomID, userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) ToggleMute(c *gin.Context) {
+	if h.stageManager == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "stage manager not available"})
+		return
+	}
+	roomID := c.Param("id")
+	targetUserID := c.Param("userId")
+	actorID := c.GetString("auth_user_id")
+	var req struct {
+		Muted bool `json:"muted"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.stageManager.ToggleMute(c.Request.Context(), roomID, actorID, targetUserID, req.Muted); err != nil {
+		if err == ErrNotHost {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) GetStageState(c *gin.Context) {
+	if h.stageManager == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "stage manager not available"})
+		return
+	}
+	roomID := c.Param("id")
+	userID := c.GetString("auth_user_id")
+	state, err := h.stageManager.GetStageState(c.Request.Context(), roomID, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": state})
+}
 
 func (h *Handler) CreateRating(c *gin.Context) {
 	userID := c.GetString("auth_user_id")

@@ -27,7 +27,7 @@
       class="mt-10 flex flex-col items-center gap-4 rounded-3xl border border-white/10 px-6 py-20 text-center"
     >
       <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
-        <i class="pi pi-heart text-2xl text-slate-400" />
+        <i aria-hidden="true" class="pi pi-heart text-2xl text-slate-400" />
       </div>
       <h3 class="text-xl font-bold text-white">No recommendations yet</h3>
       <p class="max-w-sm text-sm text-slate-400">
@@ -63,7 +63,7 @@
             @error="onImgError"
           />
           <div v-else class="flex h-full items-center justify-center">
-            <i class="pi pi-music text-2xl text-slate-500" />
+            <i aria-hidden="true" class="pi pi-music text-2xl text-slate-500" />
           </div>
           <div
             class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100"
@@ -71,7 +71,7 @@
             <div
               class="flex h-12 w-12 items-center justify-center rounded-full bg-pink-500/90 text-white shadow-xl"
             >
-              <i class="pi pi-play-fill text-lg" />
+              <i aria-hidden="true" class="pi pi-play-fill text-lg" />
             </div>
           </div>
           <div

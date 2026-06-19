@@ -107,6 +107,29 @@ func (b *RoomBroadcaster) QueueUpdated(roomID uuid.UUID) {
 	}, uuid.Nil)
 }
 
+func (b *RoomBroadcaster) QueueUpdatedDetailed(roomID uuid.UUID, candidates interface{}, nowPlaying interface{}) {
+	b.hub.BroadcastToChannel("room:"+roomID.String(), ws.Message{
+		Type: "room.queue_updated",
+		Payload: map[string]interface{}{
+			"candidates":  candidates,
+			"now_playing": nowPlaying,
+		},
+		Timestamp: time.Now().UTC(),
+	}, uuid.Nil)
+}
+
+func (b *RoomBroadcaster) TrackChangedDetailed(roomID uuid.UUID, trackID uuid.UUID, source string, suggestedBy *uuid.UUID) {
+	b.hub.BroadcastToChannel("room:"+roomID.String(), ws.Message{
+		Type: "room.track_changed",
+		Payload: map[string]interface{}{
+			"track_id":     trackID.String(),
+			"source":       source,
+			"suggested_by": suggestedBy,
+		},
+		Timestamp: time.Now().UTC(),
+	}, uuid.Nil)
+}
+
 func (b *RoomBroadcaster) TrackChanged(roomID uuid.UUID, trackID uuid.UUID) {
 	b.hub.BroadcastToChannel("room:"+roomID.String(), ws.Message{
 		Type: "room.track_changed",
@@ -131,6 +154,59 @@ func (b *RoomBroadcaster) MessageSent(roomID uuid.UUID, userID uuid.UUID, conten
 		Payload: map[string]interface{}{
 			"user_id": userID.String(),
 			"content": content,
+		},
+		Timestamp: time.Now().UTC(),
+	}, uuid.Nil)
+}
+
+// Stage / Raise-Hand events
+
+func (b *RoomBroadcaster) HandRaised(roomID uuid.UUID, userID uuid.UUID) {
+	b.hub.BroadcastToChannel("room:"+roomID.String(), ws.Message{
+		Type: "room.hand_raised",
+		Payload: map[string]interface{}{
+			"user_id": userID.String(),
+		},
+		Timestamp: time.Now().UTC(),
+	}, uuid.Nil)
+}
+
+func (b *RoomBroadcaster) HandLowered(roomID uuid.UUID, userID uuid.UUID) {
+	b.hub.BroadcastToChannel("room:"+roomID.String(), ws.Message{
+		Type: "room.hand_lowered",
+		Payload: map[string]interface{}{
+			"user_id": userID.String(),
+		},
+		Timestamp: time.Now().UTC(),
+	}, uuid.Nil)
+}
+
+func (b *RoomBroadcaster) HandApproved(roomID uuid.UUID, userID uuid.UUID) {
+	b.hub.BroadcastToChannel("room:"+roomID.String(), ws.Message{
+		Type: "room.hand_approved",
+		Payload: map[string]interface{}{
+			"user_id": userID.String(),
+		},
+		Timestamp: time.Now().UTC(),
+	}, uuid.Nil)
+}
+
+func (b *RoomBroadcaster) HandDenied(roomID uuid.UUID, userID uuid.UUID) {
+	b.hub.BroadcastToChannel("room:"+roomID.String(), ws.Message{
+		Type: "room.hand_denied",
+		Payload: map[string]interface{}{
+			"user_id": userID.String(),
+		},
+		Timestamp: time.Now().UTC(),
+	}, uuid.Nil)
+}
+
+func (b *RoomBroadcaster) StageUpdated(roomID uuid.UUID, speakers []StageMember, host *StageMember) {
+	b.hub.BroadcastToChannel("room:"+roomID.String(), ws.Message{
+		Type: "room.stage_updated",
+		Payload: map[string]interface{}{
+			"speakers": speakers,
+			"host":     host,
 		},
 		Timestamp: time.Now().UTC(),
 	}, uuid.Nil)

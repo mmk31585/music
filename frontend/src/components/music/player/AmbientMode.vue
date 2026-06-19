@@ -41,7 +41,7 @@
               class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white"
               @click="close"
             >
-              <i class="pi pi-chevron-down text-lg" />
+              <i aria-hidden="true" class="pi pi-chevron-down text-lg" />
             </button>
             <div class="glass flex items-center gap-2 rounded-full px-4 py-2 text-xs text-white/50">
               <span
@@ -70,7 +70,7 @@
                   v-else
                   class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1db954]/30 to-[#121212]"
                 >
-                  <i class="pi pi-music text-5xl text-white/20" />
+                  <i aria-hidden="true" class="pi pi-music text-5xl text-white/20" />
                 </div>
               </div>
             </div>
@@ -104,7 +104,7 @@
                 :disabled="!currentTrack"
                 @click="toggleShuffle"
               >
-                <i class="pi pi-sort-alt text-sm" />
+                <i aria-hidden="true" class="pi pi-sort-alt text-sm" />
               </button>
 
               <button
@@ -113,7 +113,7 @@
                 :disabled="!hasPrevious"
                 @click="playPrevious"
               >
-                <i class="pi pi-step-backward text-xl" />
+                <i aria-hidden="true" class="pi pi-step-backward text-xl" />
               </button>
 
               <button
@@ -123,7 +123,7 @@
                 :disabled="!currentTrack || isLoadingTrack"
                 @click="togglePlayPause"
               >
-                <i v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-xl" />
+                <i aria-hidden="true" v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-xl" />
                 <i
                   v-else
                   :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'"
@@ -141,7 +141,7 @@
                 :disabled="!hasNext"
                 @click="playNext"
               >
-                <i class="pi pi-step-forward text-xl" />
+                <i aria-hidden="true" class="pi pi-step-forward text-xl" />
               </button>
 
               <button
@@ -151,7 +151,7 @@
                 :disabled="!currentTrack"
                 @click="toggleRepeat"
               >
-                <i class="pi pi-refresh text-sm" />
+                <i aria-hidden="true" class="pi pi-refresh text-sm" />
                 <span
                   v-if="repeatMode === 'one'"
                   class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#1db954] text-[9px] font-bold text-black"
@@ -189,8 +189,6 @@ const currentTrack = pc.currentTrack
 const isPlaying = pc.isPlaying
 const isBuffering = pc.isBuffering
 const isLoadingTrack = pc.isLoadingTrack
-const currentTime = pc.currentTime
-const duration = pc.duration
 const progressPercent = pc.progressPercent
 const hasNext = pc.hasNext
 const hasPrevious = pc.hasPrevious
@@ -220,17 +218,6 @@ const bgStyle = computed(() => {
   }
 })
 
-function fmtTime(s: number) {
-  const total = Math.max(0, Math.floor(Number(s) || 0))
-  const m = Math.floor(total / 60)
-  const sec = total % 60
-  return `${m}:${String(sec).padStart(2, '0')}`
-}
-
-const currentTimeLabel = computed(() => fmtTime(currentTime.value))
-const durationLabel = computed(() =>
-  fmtTime(duration.value || currentTrack.value?.durationSeconds || 0),
-)
 const progressStyle = computed(() => ({ '--range-progress': `${progressPercent.value}%` }))
 
 function onSeek(e: Event) {

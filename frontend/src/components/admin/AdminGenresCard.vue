@@ -99,7 +99,7 @@
       <template #header>
         <div class="flex items-center gap-3">
           <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10">
-            <i class="pi pi-tag text-purple-400" />
+            <i aria-hidden="true" class="pi pi-tag text-purple-400" />
           </div>
           <h3 class="text-base font-semibold text-white">
             {{ selectedGenre ? 'Edit genre' : 'New genre' }}

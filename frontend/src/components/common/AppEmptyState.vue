@@ -8,7 +8,7 @@
       class="flex h-16 w-16 items-center justify-center"
       :class="bordered ? 'rounded-full bg-white/10' : 'rounded-2xl bg-white/[0.04] ring-1 ring-white/[0.06]'"
     >
-      <i :class="[icon, iconClass]" />
+      <i aria-hidden="true" :class="[icon, iconClass]" />
     </div>
     <h3 v-if="title" class="text-white" :class="bordered ? 'mt-5 text-xl font-black' : 'text-base font-semibold'">{{ title }}</h3>
     <p v-if="description" class="max-w-sm text-sm" :class="bordered ? 'mt-2 text-slate-400' : 'text-slate-500'">{{ description }}</p>

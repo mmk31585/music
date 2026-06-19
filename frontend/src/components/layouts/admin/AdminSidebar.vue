@@ -19,7 +19,7 @@
       class="mx-2 flex items-center justify-center rounded-lg py-2 text-slate-500 hover:bg-white/5 hover:text-white transition-colors hidden lg:flex"
       @click="$emit('toggle')"
     >
-      <i class="pi text-xs" :class="collapsed ? 'pi-chevron-right' : 'pi-chevron-left'" />
+      <i aria-hidden="true" class="pi text-xs" :class="collapsed ? 'pi-chevron-right' : 'pi-chevron-left'" />
     </button>
 
     <!-- Nav items -->
@@ -41,7 +41,7 @@
             :class="navItemClass(item)"
             @click="$emit('close')"
           >
-            <i :class="item.icon" class="text-base" />
+            <i aria-hidden="true" :class="item.icon" class="text-base" />
             <span v-if="!collapsed" class="truncate text-sm">{{ item.label }}</span>
           </RouterLink>
         </div>
@@ -56,7 +56,7 @@
         :class="collapsed ? 'justify-center' : ''"
         @click="$emit('close')"
       >
-        <i class="pi pi-home" />
+        <i aria-hidden="true" class="pi pi-home" />
         <span v-if="!collapsed" class="text-sm">Back to app</span>
       </RouterLink>
 
@@ -66,7 +66,7 @@
         :class="collapsed ? 'justify-center' : ''"
         @click="handleLogout"
       >
-        <i class="pi pi-sign-out" />
+        <i aria-hidden="true" class="pi pi-sign-out" />
         <span v-if="!collapsed" class="text-sm">Logout</span>
       </button>
     </div>

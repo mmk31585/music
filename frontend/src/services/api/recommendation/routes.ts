@@ -3,8 +3,6 @@ import type { UseRequestConfig } from '@/plugins/client/types'
 import { RecommendationApiRoutes } from './enums'
 import {
   RecommendationResponseSchema,
-  RecommendationTrackSchema,
-  type RecommendationTrack,
   type RecommendationResponse,
 } from './types'
 

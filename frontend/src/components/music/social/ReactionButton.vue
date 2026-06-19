@@ -12,7 +12,7 @@
       ]"
       @click="$emit('react', reactionType)"
     >
-      <i :class="iconClass(reactionType)" />
+      <i aria-hidden="true" :class="iconClass(reactionType)" />
       {{ reactionType === 'like' ? 'Like' : reactionType === 'love' ? 'Love' : 'Dislike' }}
     </button>
   </div>

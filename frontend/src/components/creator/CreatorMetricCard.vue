@@ -10,7 +10,7 @@
       <div
         class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white/40 transition group-hover:bg-[#1db954]/10 group-hover:text-[#1db954]"
       >
-        <i :class="icon" />
+        <i aria-hidden="true" :class="icon" />
       </div>
     </div>
     <div
@@ -18,7 +18,7 @@
       class="mt-3 flex items-center gap-1 text-xs"
       :class="change >= 0 ? 'text-green-400' : 'text-red-400'"
     >
-      <i :class="change >= 0 ? 'pi pi-arrow-up' : 'pi pi-arrow-down'" class="text-[10px]" />
+      <i aria-hidden="true" :class="change >= 0 ? 'pi pi-arrow-up' : 'pi pi-arrow-down'" class="text-[10px]" />
       <span>{{ Math.abs(change) }}% vs last period</span>
     </div>
   </div>

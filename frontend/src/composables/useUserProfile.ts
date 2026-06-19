@@ -23,7 +23,7 @@ export function useUserProfile(userId?: string) {
   const likedAlbums = ref<any[]>([])
   const feedHasMore = ref(false)
   const loading = ref(false)
-  const error = ref<unknown>(null)
+  const error = ref<any>(null)
 
   const displayName = computed(() => {
     return auth.user?.displayName || auth.user?.username || auth.user?.name || 'User'

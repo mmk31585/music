@@ -56,7 +56,7 @@ export const useCatalogApi = () => {
     getTrack: tracks.getTrack,
     adminGetTracks: tracks.adminGetTracks,
     adminCreateTrack: tracks.adminCreateTrack,
-    adminUploadTrackWithAudio: tracks.adminUploadTrackWithAudio,
+    adminUploadTrackAudio: tracks.adminUploadTrackAudio,
     adminUpdateTrack: tracks.adminUpdateTrack,
     adminDeleteTrack: tracks.adminDeleteTrack,
 

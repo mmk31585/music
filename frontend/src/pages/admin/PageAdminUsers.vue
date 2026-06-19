@@ -25,7 +25,7 @@
     <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div class="flex flex-wrap items-center gap-3">
         <div class="relative">
-          <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500" />
+          <i aria-hidden="true" class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500" />
           <InputText
             v-model="searchQuery"
             placeholder="Search email, username, display name..."
@@ -110,7 +110,7 @@
                 >
                   <span class="inline-flex items-center gap-1">
                     User
-                    <i v-if="sortBy === 'display_name'" :class="sortIcon" class="text-[10px]" />
+                    <i aria-hidden="true" v-if="sortBy === 'display_name'" :class="sortIcon" class="text-[10px]" />
                   </span>
                 </th>
                 <th
@@ -119,7 +119,7 @@
                 >
                   <span class="inline-flex items-center gap-1">
                     Email
-                    <i v-if="sortBy === 'email'" :class="sortIcon" class="text-[10px]" />
+                    <i aria-hidden="true" v-if="sortBy === 'email'" :class="sortIcon" class="text-[10px]" />
                   </span>
                 </th>
                 <th
@@ -128,7 +128,7 @@
                 >
                   <span class="inline-flex items-center gap-1">
                     Username
-                    <i v-if="sortBy === 'username'" :class="sortIcon" class="text-[10px]" />
+                    <i aria-hidden="true" v-if="sortBy === 'username'" :class="sortIcon" class="text-[10px]" />
                   </span>
                 </th>
                 <th
@@ -137,7 +137,7 @@
                 >
                   <span class="inline-flex items-center gap-1">
                     Role
-                    <i v-if="sortBy === 'role'" :class="sortIcon" class="text-[10px]" />
+                    <i aria-hidden="true" v-if="sortBy === 'role'" :class="sortIcon" class="text-[10px]" />
                   </span>
                 </th>
                 <th
@@ -146,7 +146,7 @@
                 >
                   <span class="inline-flex items-center gap-1">
                     Status
-                    <i v-if="sortBy === 'is_active'" :class="sortIcon" class="text-[10px]" />
+                    <i aria-hidden="true" v-if="sortBy === 'is_active'" :class="sortIcon" class="text-[10px]" />
                   </span>
                 </th>
                 <th
@@ -155,7 +155,7 @@
                 >
                   <span class="inline-flex items-center gap-1">
                     Created
-                    <i v-if="sortBy === 'created_at'" :class="sortIcon" class="text-[10px]" />
+                    <i aria-hidden="true" v-if="sortBy === 'created_at'" :class="sortIcon" class="text-[10px]" />
                   </span>
                 </th>
                 <th class="text-right">Actions</th>
@@ -184,7 +184,7 @@
                           class="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500/20 text-[8px] text-blue-400"
                           title="Verified"
                         >
-                          <i class="pi pi-check" />
+                          <i aria-hidden="true" class="pi pi-check" />
                         </span>
                         <span v-else class="text-[10px] text-slate-600" title="Not verified"
                           >unverified</span
@@ -307,7 +307,7 @@
       <template #header>
         <div class="flex items-center gap-3">
           <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
-            <i class="pi pi-user text-blue-400" />
+            <i aria-hidden="true" class="pi pi-user text-blue-400" />
           </div>
           <div>
             <h3 class="text-base font-semibold text-white">
@@ -403,7 +403,7 @@
       <template #header>
         <div class="flex items-center gap-3">
           <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10">
-            <i class="pi pi-eye text-sky-400" />
+            <i aria-hidden="true" class="pi pi-eye text-sky-400" />
           </div>
           <div>
             <h3 class="text-base font-semibold text-white">{{ userDetail?.display_name || userDetail?.username || 'User Detail' }}</h3>
@@ -411,7 +411,7 @@
         </div>
       </template>
       <div v-if="detailLoading" class="flex items-center justify-center p-12">
-        <i class="pi pi-spin pi-spinner text-2xl text-slate-500" />
+        <i aria-hidden="true" class="pi pi-spin pi-spinner text-2xl text-slate-500" />
       </div>
       <div v-else-if="userDetail" class="divide-y divide-white/[0.06]">
         <div class="flex items-center gap-4 p-6">
@@ -458,7 +458,7 @@
               v-if="userDetail.email_verified"
               class="flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-400"
             >
-              <i class="pi pi-check-circle" /> Verified
+              <i aria-hidden="true" class="pi pi-check-circle" /> Verified
             </span>
             <span v-else class="text-xs text-slate-600">Not verified</span>
           </div>
@@ -626,7 +626,7 @@ function onSearchInput() {
 async function fetchUsers() {
   loading.value = true
   try {
-    const params: any = {
+    const params: Record<string, any> = {
       page: page.value,
       page_size: pageSize.value,
       sort_by: sortBy.value,

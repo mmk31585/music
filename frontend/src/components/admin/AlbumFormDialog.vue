@@ -16,7 +16,7 @@
     <template #header>
       <div class="flex items-center gap-3">
         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
-          <i class="pi pi-book text-blue-400" />
+          <i aria-hidden="true" class="pi pi-book text-blue-400" />
         </div>
         <div>
           <h3 class="text-base font-semibold text-white">
@@ -85,12 +85,12 @@
       <!-- Cover Preview -->
       <div
         v-if="form.cover_url"
-        class="overflow-hidden rounded-xl border border-white/[0.06]"
+        class="h-40 overflow-hidden rounded-xl border border-white/[0.06]"
       >
         <img
           :src="form.cover_url"
           :alt="form.title"
-          class="h-40 w-full object-cover"
+          class="h-full w-full object-cover"
           @error="($event.target as HTMLImageElement).style.display = 'none'"
         />
       </div>

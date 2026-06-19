@@ -29,16 +29,34 @@ export const adminRoutes: RouteRecordRaw[] = [
         meta: { title: 'Tracks' },
       },
       {
+        path: 'tracks/:id',
+        name: 'admin.track.detail',
+        component: () => import('@/pages/admin/PageAdminTrackDetail.vue'),
+        meta: { title: 'Track Detail' },
+      },
+      {
         path: 'artists',
         name: 'admin.artists',
         component: () => import('@/pages/admin/AdminArtistsPage.vue'),
         meta: { title: 'Artists' },
       },
       {
+        path: 'artists/:id',
+        name: 'admin.artist.detail',
+        component: () => import('@/pages/admin/PageAdminArtistDetail.vue'),
+        meta: { title: 'Artist Detail' },
+      },
+      {
         path: 'albums',
         name: 'admin.albums',
         component: () => import('@/pages/admin/AdminAlbumsPage.vue'),
         meta: { title: 'Albums' },
+      },
+      {
+        path: 'albums/:id',
+        name: 'admin.album.detail',
+        component: () => import('@/pages/admin/PageAdminAlbumDetail.vue'),
+        meta: { title: 'Album Detail' },
       },
       {
         path: 'genres',

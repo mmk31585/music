@@ -13,7 +13,6 @@ export function useImageLoader(options: ImageLoaderOptions) {
   const currentSrc = ref(options.placeholder || '')
   const isLoading = ref(false)
   let observer: IntersectionObserver | null = null
-  let imgElement: HTMLImageElement | null = null
   let shouldLoad = !lazy
 
   function loadImage(src: string) {
@@ -25,20 +24,17 @@ export function useImageLoader(options: ImageLoaderOptions) {
 
     isLoading.value = true
     const img = new Image()
-    imgElement = img
 
     img.onload = () => {
       isLoaded.value = true
       hasError.value = false
       currentSrc.value = src
       isLoading.value = false
-      imgElement = null
     }
 
     img.onerror = () => {
       hasError.value = true
       isLoading.value = false
-      imgElement = null
     }
 
     img.src = src

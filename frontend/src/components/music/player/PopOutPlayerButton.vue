@@ -5,7 +5,7 @@
     :disabled="disabled"
     @click="onClick"
   >
-    <i class="pi pi-external-link text-xs" />
+    <i aria-hidden="true" class="pi pi-external-link text-xs" />
     <span>{{ label }}</span>
   </button>
 </template>

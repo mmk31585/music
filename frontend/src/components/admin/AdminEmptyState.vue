@@ -3,7 +3,7 @@
     <div
       class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.04] ring-1 ring-white/[0.06]"
     >
-      <i :class="[icon, 'text-2xl text-slate-500']" />
+      <i aria-hidden="true" :class="[icon, 'text-2xl text-slate-500']" />
     </div>
 
     <h3 class="text-base font-semibold text-white">{{ title }}</h3>

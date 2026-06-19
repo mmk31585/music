@@ -12,7 +12,7 @@
         @error="onImgError"
       />
       <div v-else class="flex h-full items-center justify-center">
-        <i class="pi pi-compact-disc text-3xl text-slate-500" />
+        <i aria-hidden="true" class="pi pi-compact-disc text-3xl text-slate-500" />
       </div>
       <div
         class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100"
@@ -20,7 +20,7 @@
         <div
           class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954] text-black shadow-xl"
         >
-          <i class="pi pi-play-fill text-lg" />
+          <i aria-hidden="true" class="pi pi-play-fill text-lg" />
         </div>
       </div>
     </div>

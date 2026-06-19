@@ -5,7 +5,7 @@
     </div>
 
     <div v-else-if="error" class="flex flex-col items-center gap-4 py-24 text-center">
-      <i class="pi pi-exclamation-circle text-4xl text-slate-500" />
+      <i aria-hidden="true" class="pi pi-exclamation-circle text-4xl text-slate-500" />
       <h2 class="text-xl font-bold text-white">Track not found</h2>
       <RouterLink to="/" class="text-sm font-medium text-[#1db954] underline underline-offset-2">
         Go home
@@ -29,7 +29,7 @@
               @error="onImgError"
             />
             <div v-else class="flex h-full items-center justify-center">
-              <i class="pi pi-compact-disc text-6xl text-slate-500" />
+              <i aria-hidden="true" class="pi pi-compact-disc text-6xl text-slate-500" />
             </div>
 
             <!-- Center pin -->
@@ -118,7 +118,7 @@
             title="Previous"
             @click="player.playPrevious"
           >
-            <i class="pi pi-step-backward text-lg" />
+            <i aria-hidden="true" class="pi pi-step-backward text-lg" />
           </button>
 
           <button
@@ -138,7 +138,7 @@
             title="Next"
             @click="player.playNext"
           >
-            <i class="pi pi-step-forward text-lg" />
+            <i aria-hidden="true" class="pi pi-step-forward text-lg" />
           </button>
         </div>
 
@@ -170,7 +170,7 @@
             :class="isLiked ? 'text-[#1db954]' : 'text-slate-400 hover:text-white'"
             @click="toggleLike"
           >
-            <i :class="isLiked ? 'pi pi-heart-fill' : 'pi pi-heart'" class="text-lg" />
+            <i aria-hidden="true" :class="isLiked ? 'pi pi-heart-fill' : 'pi pi-heart'" class="text-lg" />
             {{ isLiked ? 'Liked' : 'Like' }}
           </button>
 
@@ -196,7 +196,7 @@
             "
             @click="player.toggleRepeat"
           >
-            <i class="pi pi-refresh text-lg" />
+            <i aria-hidden="true" class="pi pi-refresh text-lg" />
             <span
               v-if="player.repeatMode === 'one'"
               class="absolute -top-1 -right-3 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#1db954] text-[8px] font-bold text-black"
@@ -210,7 +210,7 @@
             class="flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-white"
             @click="showQueue = true"
           >
-            <i class="pi pi-list text-lg" />
+            <i aria-hidden="true" class="pi pi-list text-lg" />
             Queue
           </button>
         </div>
@@ -241,7 +241,7 @@
             <div
               class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954]/90 text-black shadow-xl backdrop-blur-sm"
             >
-              <i class="pi pi-play-fill text-lg" />
+              <i aria-hidden="true" class="pi pi-play-fill text-lg" />
             </div>
           </div>
         </div>
@@ -258,7 +258,7 @@
             :class="karaokeActive ? 'bg-[#1db954]/15 text-[#1db954]' : 'text-white/60'"
             @click="karaokeActive = !karaokeActive"
           >
-            <i class="pi pi-mic text-[10px]" />
+            <i aria-hidden="true" class="pi pi-mic text-[10px]" />
             Karaoke
           </button>
         </div>
@@ -285,32 +285,42 @@
       </section>
 
       <!-- Credits -->
-      <section v-if="trackArtists.length > 0 || trackCredits.length > 0" class="mt-12">
+      <section v-if="trackArtists.length > 0 || trackCredits.length > 0" class="mt-14">
+        <div class="relative mb-8">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-white/[0.06]" />
+          </div>
+          <div class="relative flex justify-center">
+            <span class="bg-[#0A0A0F] px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
+              Credits
+            </span>
+          </div>
+        </div>
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <!-- Artists -->
           <div v-if="trackArtists.length > 0">
-            <h3 class="mb-3 text-sm font-bold tracking-wider text-white/60 uppercase">Artists</h3>
+            <h3 class="mb-4 text-xs font-bold tracking-[0.2em] text-white/30 uppercase">Artists</h3>
             <div class="space-y-2">
               <div
                 v-for="a in trackArtists"
                 :key="a.artistId"
-                class="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 transition hover:bg-white/[0.06]"
+                class="group flex items-center gap-3 rounded-2xl border border-white/[0.04] bg-white/[0.02] px-4 py-3 transition hover:border-white/[0.08] hover:bg-white/[0.04]"
               >
                 <div
-                  class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1db954]/20 to-purple-500/20 text-sm font-bold text-white"
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white/[0.08] to-white/[0.02] text-sm font-bold text-white/70 ring-1 ring-white/[0.04]"
                 >
                   {{ a.name.charAt(0).toUpperCase() }}
                 </div>
                 <div>
                   <RouterLink
                     :to="`/artist/${a.artistId}`"
-                    class="text-sm font-semibold text-white transition hover:text-[#1db954] hover:underline"
+                    class="text-sm font-semibold text-white transition group-hover:text-[#1db954]"
                   >
                     {{ a.name }}
                   </RouterLink>
                   <p
                     v-if="a.role && !['main', 'primary'].includes(a.role)"
-                    class="text-xs text-slate-500 capitalize"
+                    class="mt-0.5 text-xs text-white/40 capitalize"
                   >
                     {{ a.role }}
                   </p>
@@ -321,21 +331,21 @@
 
           <!-- Credits -->
           <div v-if="trackCredits.length > 0">
-            <h3 class="mb-3 text-sm font-bold tracking-wider text-white/60 uppercase">Credits</h3>
+            <h3 class="mb-4 text-xs font-bold tracking-[0.2em] text-white/30 uppercase">Production</h3>
             <div class="space-y-2">
               <div
                 v-for="c in trackCredits"
                 :key="c.id"
-                class="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 transition hover:bg-white/[0.06]"
+                class="group flex items-center gap-3 rounded-2xl border border-white/[0.04] bg-white/[0.02] px-4 py-3 transition hover:border-white/[0.08] hover:bg-white/[0.04]"
               >
                 <div
-                  class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-500/20 to-pink-500/20 text-sm font-bold text-white"
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white/[0.08] to-white/[0.02] text-sm font-bold text-white/70 ring-1 ring-white/[0.04]"
                 >
                   {{ c.artistName.charAt(0).toUpperCase() }}
                 </div>
                 <div>
                   <p class="text-sm font-semibold text-white">{{ c.artistName }}</p>
-                  <p class="text-xs text-slate-500 capitalize">{{ c.creditType }}</p>
+                  <p class="mt-0.5 text-xs text-white/40 capitalize">{{ c.creditType }}</p>
                 </div>
               </div>
             </div>
@@ -343,22 +353,41 @@
         </div>
       </section>
 
+      <!-- Section divider -->
+      <div v-if="trackArtists.length > 0 || trackCredits.length > 0 || similarTracks.length" class="relative mt-14">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-white/[0.06]" />
+        </div>
+      </div>
+
       <!-- Similar Tracks -->
-      <section v-if="similarTracks.length" class="mt-12">
-        <h2 class="mb-4 text-lg font-bold text-white">Similar Tracks</h2>
-        <div class="space-y-1 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-2">
+      <section v-if="similarTracks.length" class="mt-14">
+        <div class="relative mb-8">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-white/[0.06]" />
+          </div>
+          <div class="relative flex justify-center">
+            <span class="bg-[#0A0A0F] px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
+              You might like
+            </span>
+          </div>
+        </div>
+        <div class="space-y-1">
           <div
             v-for="(st, index) in similarTracks"
             :key="st.id"
-            class="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-white/[0.06]"
+            class="group flex cursor-pointer items-center gap-4 rounded-2xl px-4 py-3 transition-all duration-200 hover:bg-white/[0.04]"
             @click="playSimilar(st, index)"
           >
-            <span class="flex w-8 items-center justify-center">
-              <span class="text-xs font-medium text-slate-500">{{ index + 1 }}</span>
-            </span>
-            <div
-              class="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-white/10 ring-1 ring-white/10"
+            <span
+              class="flex w-8 items-center justify-center text-center text-sm tabular-nums text-white/20 group-hover:hidden"
             >
+              {{ String(index + 1).padStart(2, '0') }}
+            </span>
+            <span class="hidden w-8 items-center justify-center group-hover:flex">
+              <i aria-hidden="true" class="pi pi-play-fill text-xs text-white" />
+            </span>
+            <div class="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white/10 ring-1 ring-white/[0.04]">
               <img
                 v-if="st.cover_url"
                 :src="st.cover_url"
@@ -368,14 +397,14 @@
                 @error="onImgError"
               />
               <div v-else class="flex h-full items-center justify-center">
-                <i class="pi pi-music text-xs text-slate-500" />
+                <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
               </div>
             </div>
             <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-white">{{ st.title }}</p>
-              <p class="truncate text-xs text-slate-400">{{ st.artist_name }}</p>
+              <p class="truncate text-sm font-semibold text-white">{{ st.title }}</p>
+              <p class="mt-0.5 truncate text-xs text-white/40">{{ st.artist_name }}</p>
             </div>
-            <span class="text-xs font-medium text-slate-500">{{
+            <span class="text-xs tabular-nums text-white/25 group-hover:text-white/50">{{
               formatTime(st.duration_seconds)
             }}</span>
           </div>
@@ -406,8 +435,6 @@ const {
   lyrics,
   trackArtists: _trackArtists,
   trackCredits: _trackCredits,
-  mainArtist,
-  featuredArtists,
   genreList,
   isLiked,
   loading,

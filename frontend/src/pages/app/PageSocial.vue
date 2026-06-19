@@ -1,10 +1,12 @@
 <template>
   <div class="mx-auto max-w-5xl space-y-8 px-4 pt-20 pb-24 md:px-8">
     <!-- Hero -->
-    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1db954]/20 via-transparent to-purple-500/10 p-8 text-center">
+    <div class="relative overflow-hidden rounded-[2rem] border border-white/[0.06] bg-[#0C0C14] p-10 text-center">
+      <div class="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-[#1db954]/10 blur-3xl" />
       <div class="relative">
-        <h1 class="text-4xl font-black text-white md:text-5xl">Social</h1>
-        <p class="mt-2 text-sm text-white/40 max-w-md mx-auto">
+        <p class="text-[10px] font-bold tracking-[0.35em] text-white/30 uppercase">Community</p>
+        <h1 class="mt-2 text-4xl font-black text-white md:text-5xl">Social</h1>
+        <p class="mt-3 mx-auto max-w-md text-sm text-white/50">
           Listening parties, live rooms, music clubs, and discussions.
         </p>
       </div>
@@ -28,7 +30,7 @@
     <!-- Create + Refresh row -->
     <div v-if="activeTab !== 'discussions'" class="flex items-center justify-end gap-3">
       <button
-        class="flex items-center gap-1.5 rounded-lg bg-white/5 px-3 py-2 text-xs text-white/40 transition hover:bg-white/10 hover:text-white/60"
+        class="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-medium text-white/40 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-white/60"
         @click="loadData"
         :disabled="loading"
       >
@@ -36,10 +38,11 @@
         Refresh
       </button>
       <button
-        class="rounded-xl bg-[#1db954]/10 px-5 py-2.5 text-sm font-semibold text-[#1db954] transition hover:bg-[#1db954]/20"
+        class="inline-flex items-center gap-1.5 rounded-xl bg-[#1db954] px-5 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760]"
         @click="showCreateModal = true"
       >
-        + Create {{ activeTab === 'parties' ? 'Party' : activeTab === 'rooms' ? 'Room' : 'Club' }}
+        <i aria-hidden="true" class="pi pi-plus text-xs" />
+        {{ activeTab === 'parties' ? 'Party' : activeTab === 'rooms' ? 'Room' : 'Club' }}
       </button>
     </div>
 
@@ -61,10 +64,12 @@
         />
         <div
           v-if="!parties.length"
-          class="col-span-full rounded-2xl border border-dashed border-white/5 py-16 text-center"
+          class="col-span-full flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/[0.06] py-16 text-center"
         >
-          <p class="text-3xl mb-2">🎉</p>
-          <p class="text-sm text-white/30">No active listening parties. Create one!</p>
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+            <i aria-hidden="true" class="pi pi-users text-xl text-slate-500" />
+          </div>
+          <p class="text-sm font-medium text-white/60">No active listening parties. Create one!</p>
         </div>
       </div>
 
@@ -79,28 +84,42 @@
         />
         <div
           v-if="!rooms.length"
-          class="col-span-full rounded-2xl border border-dashed border-white/5 py-16 text-center"
+          class="col-span-full flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/[0.06] py-16 text-center"
         >
-          <p class="text-3xl mb-2">🎤</p>
-          <p class="text-sm text-white/30">No live rooms right now. Start one!</p>
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+            <i aria-hidden="true" class="pi pi-megaphone text-xl text-slate-500" />
+          </div>
+          <p class="text-sm font-medium text-white/60">No live rooms right now. Start one!</p>
         </div>
       </div>
 
       <!-- Tab: Music Clubs -->
-      <div v-show="activeTab === 'clubs'" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <MusicClubCard
-          v-for="club in clubs"
-          :key="club.id"
-          :club="club"
-          :creator-name="userNames[club.created_by]"
-          @join="handleJoinClub"
-        />
-        <div
-          v-if="!clubs.length"
-          class="col-span-full rounded-2xl border border-dashed border-white/5 py-16 text-center"
-        >
-          <p class="text-3xl mb-2">🏛</p>
-          <p class="text-sm text-white/30">No music clubs yet. Create one!</p>
+      <div v-show="activeTab === 'clubs'" class="space-y-6">
+        <div class="flex items-center justify-end">
+          <button
+            class="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-medium text-white/40 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-white/60"
+            @click="router.push({ name: 'social.clubs.browse' })"
+          >
+            مرور همه کلاب‌ها
+          </button>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <MusicClubCard
+            v-for="club in clubs"
+            :key="club.id"
+            :club="club"
+            :creator-name="userNames[club.created_by]"
+            @join="handleJoinClub"
+          />
+          <div
+            v-if="!clubs.length"
+            class="col-span-full flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/[0.06] py-16 text-center"
+          >
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+              <i aria-hidden="true" class="pi pi-building text-xl text-slate-500" />
+            </div>
+            <p class="text-sm font-medium text-white/60">No music clubs yet. Create one!</p>
+          </div>
         </div>
       </div>
 

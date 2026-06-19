@@ -22,7 +22,7 @@
         "
         @click="activeTab = tab.key; loadTab(tab.key)"
       >
-        <i :class="tab.icon" class="mr-1.5" />
+        <i aria-hidden="true" :class="tab.icon" class="mr-1.5" />
         {{ tab.label }}
       </button>
     </div>
@@ -42,7 +42,7 @@
         class="glass-strong flex flex-col items-center gap-3 rounded-2xl py-12 text-center"
       >
         <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
-          <i class="pi pi-inbox text-2xl text-white/15" />
+          <i aria-hidden="true" class="pi pi-inbox text-2xl text-white/15" />
         </div>
         <p class="text-sm text-white/25">No contributions yet</p>
         <button
@@ -98,7 +98,7 @@
                 @click="viewHistory(c)"
                 title="View history"
               >
-                <i class="pi pi-history text-xs" />
+                <i aria-hidden="true" class="pi pi-history text-xs" />
               </button>
             </div>
           </div>
@@ -151,7 +151,7 @@
         class="glass-strong flex flex-col items-center gap-3 rounded-2xl py-12 text-center"
       >
         <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
-          <i class="pi pi-check-circle text-2xl text-white/15" />
+          <i aria-hidden="true" class="pi pi-check-circle text-2xl text-white/15" />
         </div>
         <p class="text-sm text-white/25">All caught up! No pending contributions to review</p>
       </div>
@@ -201,7 +201,7 @@
               class="spring rounded-lg bg-[#1db954]/10 px-4 py-2 text-xs font-medium text-[#1db954] transition-all hover:bg-[#1db954]/20 disabled:opacity-40"
               @click="reviewContribution(c.id, 'approve')"
             >
-              <i v-if="reviewingId === c.id" class="pi pi-spin pi-spinner mr-1" />
+              <i aria-hidden="true" v-if="reviewingId === c.id" class="pi pi-spin pi-spinner mr-1" />
               Approve
             </button>
             <button
@@ -210,7 +210,7 @@
               class="spring rounded-lg bg-red-500/10 px-4 py-2 text-xs font-medium text-red-400 transition-all hover:bg-red-500/20 disabled:opacity-40"
               @click="reviewContribution(c.id, 'reject')"
             >
-              <i v-if="reviewingId === c.id" class="pi pi-spin pi-spinner mr-1" />
+              <i aria-hidden="true" v-if="reviewingId === c.id" class="pi pi-spin pi-spinner mr-1" />
               Reject
             </button>
             <span class="text-[10px] text-white/20">{{ formatDate(c.created_at) }}</span>

@@ -5,16 +5,30 @@ export interface SearchResult {
   duration: number
   thumbnail: string
   source: string
+  score?: number
+  isrc?: string
+  external_ids?: Record<string, string>
 }
 
 export interface ImportRequest {
   url: string
+  source?: string
 }
 
 export interface ImportResponse {
-  draftId: string
-  title: string
-  artist: string
-  duration: number
+  jobId?: string
+  draftId?: string
+  title?: string
+  artist?: string
+  duration?: number
   message: string
+}
+
+export interface ProgressResponse {
+  jobId: string
+  status: string
+  progress: number
+  stage: string
+  error?: string
+  draftId?: string
 }

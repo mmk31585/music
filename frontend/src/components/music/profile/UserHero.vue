@@ -23,7 +23,7 @@
           v-else
           class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1db954]/30 to-[#121212] text-4xl text-white/40"
         >
-          <i class="pi pi-user" />
+          <i aria-hidden="true" class="pi pi-user" />
         </div>
       </div>
 
@@ -65,7 +65,7 @@
             ]"
             @click="$emit('toggleFollow')"
           >
-            <i :class="isFollowing ? 'pi pi-check' : 'pi pi-plus'" class="text-xs" />
+            <i aria-hidden="true" :class="isFollowing ? 'pi pi-check' : 'pi pi-plus'" class="text-xs" />
             {{ isFollowing ? 'Following' : 'Follow' }}
           </button>
         </div>

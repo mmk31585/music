@@ -1,1 +1,0 @@
-pre_cmd = ["swag init -g main.go -d cmd/api,internal/modules,internal/common"]

@@ -13,13 +13,18 @@ import {
   type MusicClub,
   type MusicClubMember,
   type MusicClubPost,
+  type ClubDetailResponse,
   type Discussion,
+  type ClubDiscussion,
+  type ClubDiscussionReply,
   type TrackRating,
   type CreatePartyRequest,
   type CreateRoomRequest,
   type CreateClubRequest,
   type CreateDiscussionRequest,
+  type CreateClubDiscussionRequest,
   type CreateRatingRequest,
+  type LaunchPartyPayload,
 } from './types'
 
 export const useSocialApi = () => {
@@ -205,14 +210,25 @@ export const useSocialApi = () => {
     )
   }
 
-  // --- Music Clubs ---
+  // --- Music Clubs (Phase 5) ---
 
   const listClubs = async (
-    params?: { limit?: number; offset?: number },
+    params?: { limit?: number; offset?: number; genre?: string },
     config?: UseRequestConfig<MusicClub[]>,
   ) => {
     return useRequest<MusicClub[]>(
       SocialApiRoutes.CLUBS,
+      { method: 'GET', params },
+      { silent: true, ...config },
+    )
+  }
+
+  const listClubsWithGenre = async (
+    params?: { genre?: string; limit?: number; offset?: number },
+    config?: UseRequestConfig<MusicClub[]>,
+  ) => {
+    return useRequest<MusicClub[]>(
+      SocialApiRoutes.CLUB_BROWSE,
       { method: 'GET', params },
       { silent: true, ...config },
     )
@@ -230,6 +246,14 @@ export const useSocialApi = () => {
     )
   }
 
+  const getClubDetail = async (id: string, config?: UseRequestConfig<ClubDetailResponse>) => {
+    return useRequest<ClubDetailResponse>(
+      SocialApiRoutes.CLUB_DETAIL.replace(':id', id),
+      { method: 'GET' },
+      { silent: true, ...config },
+    )
+  }
+
   const joinClub = async (id: string, config?: UseRequestConfig<void>) => {
     return useRequest<void>(
       SocialApiRoutes.CLUB_JOIN.replace(':id', id),
@@ -241,7 +265,19 @@ export const useSocialApi = () => {
   const leaveClub = async (id: string, config?: UseRequestConfig<void>) => {
     return useRequest<void>(
       SocialApiRoutes.CLUB_LEAVE.replace(':id', id),
-      { method: 'POST' },
+      { method: 'DELETE' },
+      config,
+    )
+  }
+
+  const launchParty = async (
+    id: string,
+    data?: LaunchPartyPayload,
+    config?: UseRequestConfig<ListeningParty>,
+  ) => {
+    return useRequest<ListeningParty>(
+      SocialApiRoutes.CLUB_LAUNCH_PARTY.replace(':id', id),
+      { method: 'POST', data },
       config,
     )
   }
@@ -306,6 +342,83 @@ export const useSocialApi = () => {
     )
   }
 
+  // --- Club Discussions (Phase 6) ---
+
+  const listClubDiscussions = async (
+    clubId: string,
+    params?: { limit?: number; offset?: number },
+    config?: UseRequestConfig<ClubDiscussion[]>,
+  ) => {
+    return useRequest<ClubDiscussion[]>(
+      SocialApiRoutes.CLUB_DISCUSSIONS.replace(':clubId', clubId),
+      { method: 'GET', params },
+      { silent: true, ...config },
+    )
+  }
+
+  const createClubDiscussion = async (
+    clubId: string,
+    data: CreateClubDiscussionRequest,
+    config?: UseRequestConfig<ClubDiscussion>,
+  ) => {
+    return useRequest<ClubDiscussion>(
+      SocialApiRoutes.CLUB_DISCUSSIONS.replace(':clubId', clubId),
+      { method: 'POST', data },
+      config,
+    )
+  }
+
+  const getClubDiscussion = async (id: string, config?: UseRequestConfig<ClubDiscussion>) => {
+    return useRequest<ClubDiscussion>(
+      SocialApiRoutes.CLUB_DISCUSSION.replace(':id', id),
+      { method: 'GET' },
+      { silent: true, ...config },
+    )
+  }
+
+  const getClubDiscussionReplies = async (
+    id: string,
+    config?: UseRequestConfig<ClubDiscussionReply[]>,
+  ) => {
+    return useRequest<ClubDiscussionReply[]>(
+      SocialApiRoutes.CLUB_DISCUSSION_REPLIES.replace(':id', id),
+      { method: 'GET' },
+      { silent: true, ...config },
+    )
+  }
+
+  const createClubDiscussionReply = async (
+    discussionId: string,
+    data: { body: string },
+    config?: UseRequestConfig<ClubDiscussionReply>,
+  ) => {
+    return useRequest<ClubDiscussionReply>(
+      SocialApiRoutes.CLUB_DISCUSSION_REPLIES.replace(':id', discussionId),
+      { method: 'POST', data },
+      config,
+    )
+  }
+
+  const deleteClubDiscussion = async (id: string, config?: UseRequestConfig<void>) => {
+    return useRequest<void>(
+      SocialApiRoutes.CLUB_DISCUSSION.replace(':id', id),
+      { method: 'DELETE' },
+      config,
+    )
+  }
+
+  const deleteClubDiscussionReply = async (
+    discussionId: string,
+    replyId: string,
+    config?: UseRequestConfig<void>,
+  ) => {
+    return useRequest<void>(
+      SocialApiRoutes.CLUB_DISCUSSION_REPLY_DELETE.replace(':id', discussionId).replace(':replyId', replyId),
+      { method: 'DELETE' },
+      config,
+    )
+  }
+
   // --- Track Ratings ---
 
   const createRating = async (
@@ -345,16 +458,26 @@ export const useSocialApi = () => {
     addToRoomQueue,
     getRoomQueue,
     listClubs,
+    listClubsWithGenre,
     createClub,
     getClub,
+    getClubDetail,
     joinClub,
     leaveClub,
+    launchParty,
     getClubMembers,
     getClubPosts,
     createClubPost,
     getDiscussions,
     createDiscussion,
     getDiscussionReplies,
+    listClubDiscussions,
+    createClubDiscussion,
+    getClubDiscussion,
+    getClubDiscussionReplies,
+    createClubDiscussionReply,
+    deleteClubDiscussion,
+    deleteClubDiscussionReply,
     createRating,
     getTrackRatings,
   }

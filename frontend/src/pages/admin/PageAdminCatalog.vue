@@ -57,7 +57,7 @@
         <div class="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
           <div class="flex items-center gap-3">
             <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
-              <i class="pi pi-play-circle text-xs text-emerald-400" />
+              <i aria-hidden="true" class="pi pi-play-circle text-xs text-emerald-400" />
             </div>
             <h2 class="text-base font-semibold text-white">Tracks</h2>
           </div>
@@ -83,7 +83,7 @@
         </div>
 
         <div v-else-if="tracks.length === 0" class="py-12 text-center">
-          <i class="pi pi-play-circle text-2xl text-slate-700" />
+          <i aria-hidden="true" class="pi pi-play-circle text-2xl text-slate-700" />
           <p class="mt-2 text-sm text-slate-500">No tracks found</p>
         </div>
 
@@ -104,7 +104,7 @@
                 @error="($event.target as HTMLImageElement).style.display = 'none'"
               />
               <div v-else class="flex h-full w-full items-center justify-center">
-                <i class="pi pi-music text-xs text-slate-700" />
+                <i aria-hidden="true" class="pi pi-music text-xs text-slate-700" />
               </div>
             </div>
 
@@ -132,7 +132,7 @@
           <div class="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
             <div class="flex items-center gap-3">
               <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
-                <i class="pi pi-users text-xs text-blue-400" />
+                <i aria-hidden="true" class="pi pi-users text-xs text-blue-400" />
               </div>
               <h2 class="text-base font-semibold text-white">Artists</h2>
             </div>
@@ -189,7 +189,7 @@
           <div class="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
             <div class="flex items-center gap-3">
               <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
-                <i class="pi pi-book text-xs text-purple-400" />
+                <i aria-hidden="true" class="pi pi-book text-xs text-purple-400" />
               </div>
               <h2 class="text-base font-semibold text-white">Albums</h2>
             </div>
@@ -225,7 +225,7 @@
                   @error="($event.target as HTMLImageElement).style.display = 'none'"
                 />
                 <div v-else class="flex h-full w-full items-center justify-center">
-                  <i class="pi pi-image text-lg text-slate-700" />
+                  <i aria-hidden="true" class="pi pi-image text-lg text-slate-700" />
                 </div>
               </div>
               <p class="mt-1.5 truncate text-xs font-medium text-white">{{ album.title }}</p>
@@ -239,7 +239,7 @@
           <div class="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
             <div class="flex items-center gap-3">
               <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
-                <i class="pi pi-tags text-xs text-amber-400" />
+                <i aria-hidden="true" class="pi pi-tags text-xs text-amber-400" />
               </div>
               <h2 class="text-base font-semibold text-white">Genres</h2>
             </div>

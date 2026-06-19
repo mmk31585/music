@@ -23,7 +23,7 @@
           v-else
           class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1db954]/30 to-[#121212] text-5xl text-white/40"
         >
-          <i class="pi pi-user" />
+          <i aria-hidden="true" class="pi pi-user" />
         </div>
       </div>
 
@@ -32,7 +32,7 @@
           v-if="artist?.is_verified"
           class="mb-2 flex items-center justify-center gap-1.5 md:justify-start"
         >
-          <i class="pi pi-verified text-sm text-[#1db954]" />
+          <i aria-hidden="true" class="pi pi-verified text-sm text-[#1db954]" />
           <span class="text-xs font-medium text-[#1db954]">Verified Artist</span>
         </div>
 
@@ -55,7 +55,7 @@
             class="inline-flex items-center gap-2 rounded-full bg-[#1db954] px-8 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-[#1ed760]"
             @click="$emit('playAll')"
           >
-            <i class="pi pi-play-fill" />
+            <i aria-hidden="true" class="pi pi-play-fill" />
             Play
           </button>
 
@@ -64,7 +64,7 @@
             class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-8 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15"
             @click="$emit('shuffle')"
           >
-            <i class="pi pi-shuffle" />
+            <i aria-hidden="true" class="pi pi-shuffle" />
             Shuffle
           </button>
 
@@ -78,7 +78,7 @@
             ]"
             @click="$emit('toggleFollow')"
           >
-            <i :class="isFollowing ? 'pi pi-check' : 'pi pi-plus'" class="text-xs" />
+            <i aria-hidden="true" :class="isFollowing ? 'pi pi-check' : 'pi pi-plus'" class="text-xs" />
             {{ isFollowing ? 'Following' : 'Follow' }}
           </button>
         </div>

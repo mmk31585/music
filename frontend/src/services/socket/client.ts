@@ -8,7 +8,7 @@ type MessageHandler = (data: any) => void
 let socket: WebSocket | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 let pingTimer: ReturnType<typeof setInterval> | null = null
-let messageQueue: { type: string; payload?: unknown }[] = []
+let messageQueue: { type: string; payload?: any }[] = []
 let intentionalClose = false
 let reconnectAttempts = 0
 const maxReconnectAttempts = 20
@@ -95,7 +95,7 @@ function flushQueue() {
   batch.forEach((m) => rawSend(m.type, m.payload))
 }
 
-function rawSend(type: string, payload?: unknown) {
+function rawSend(type: string, payload?: any) {
   if (socket?.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify({ type, payload }))
   }
@@ -153,7 +153,7 @@ export const wsClient = {
     isConnected.value = false
   },
 
-  send(type: string, payload?: unknown) {
+  send(type: string, payload?: any) {
     if (socket?.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify({ type, payload }))
     } else {

@@ -2,7 +2,6 @@ import { useRequest } from '@/composables/useRequest'
 import type { UseRequestConfig } from '@/plugins/client/types'
 import { ModerationApiRoutes } from './enums'
 import {
-  ContentReportSchema,
   type ContentReport,
   type ContentFlag,
   type ModerationAction,

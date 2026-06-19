@@ -5,7 +5,7 @@ export enum GenreApiRoutes {
 
   // Admin routes
   ADMIN_LIST = '/admin/catalog/genres',
-  ADMIN_CREATE = '/admin/catalog/genres',
+  ADMIN_CREATE = '/admin/catalog/genres/create',
   ADMIN_UPDATE = '/admin/catalog/genres/:genreId',
-  ADMIN_DELETE = '/admin/catalog/genres/:genreId',
+  ADMIN_DELETE = '/admin/catalog/genres/:genreId/delete',
 }

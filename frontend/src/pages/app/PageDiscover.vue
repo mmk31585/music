@@ -9,7 +9,7 @@
         class="absolute right-0 bottom-0 left-0 h-32 bg-gradient-to-t from-[#050505] to-transparent"
       />
       <div class="relative mx-auto w-full max-w-7xl px-4 pt-20 pb-16 md:px-6 lg:px-8">
-        <p class="text-xs font-bold tracking-[0.25em] text-[#1db954] uppercase">Discover</p>
+        <p class="text-[10px] font-bold tracking-[0.35em] text-white/30 uppercase">Discover</p>
         <h1 class="mt-2 text-4xl font-black text-white md:text-6xl">
           Find Your Next<br class="sm:hidden" />
           <span class="text-gradient">Favorite Track</span>
@@ -35,15 +35,15 @@
         <!-- Trending -->
         <section class="mt-8">
           <template v-if="popular.length">
-          <div class="mb-4 flex items-end justify-between">
+          <div class="mb-5 flex items-end justify-between gap-4">
             <div>
-              <p class="text-xs font-bold tracking-[0.2em] text-[#1db954] uppercase">Popular</p>
+              <p class="text-[10px] font-bold tracking-[0.3em] text-white/30 uppercase">Popular</p>
               <h2 class="mt-1 text-2xl font-black text-white md:text-3xl">Trending Now</h2>
             </div>
             <RouterLink
               to="/recommendations/popular"
-              class="spring text-xs font-bold text-slate-400 transition hover:text-white"
-              >See all</RouterLink
+              class="shrink-0 text-xs font-medium text-white/30 transition hover:text-white"
+              >See all <i aria-hidden="true" class="pi pi-chevron-left ml-0.5 text-[10px]" /></RouterLink
             >
           </div>
           <HomeCarousel>
@@ -65,7 +65,7 @@
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full w-full items-center justify-center text-white/20">
-                  <i class="pi pi-music text-3xl" />
+                  <i aria-hidden="true" class="pi pi-music text-3xl" />
                 </div>
                 <div class="absolute top-2 left-2">
                   <span
@@ -79,7 +79,7 @@
                   <div
                     class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954] text-black shadow-xl transition-transform group-hover:scale-110"
                   >
-                    <i class="pi pi-play-fill text-lg" />
+                    <i aria-hidden="true" class="pi pi-play-fill text-lg" />
                   </div>
                 </div>
               </div>
@@ -90,26 +90,28 @@
         </template>
         <template v-else>
           <div class="flex flex-col items-center gap-3 py-16 text-center">
-            <i class="pi pi-inbox text-4xl text-slate-500" />
-            <p class="text-sm text-slate-400">No trending tracks</p>
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+              <i aria-hidden="true" class="pi pi-music text-xl text-slate-500" />
+            </div>
+            <p class="text-sm font-medium text-white/60">No trending tracks right now</p>
           </div>
         </template>
       </section>
 
         <!-- Recently Played -->
-        <section class="mt-10">
+        <section class="mt-12">
           <template v-if="recentlyPlayed.length">
-          <div class="mb-4 flex items-end justify-between">
+          <div class="mb-5 flex items-end justify-between gap-4">
             <div>
-              <p class="text-xs font-bold tracking-[0.2em] text-[#1db954] uppercase">
+              <p class="text-[10px] font-bold tracking-[0.3em] text-white/30 uppercase">
                 Recently played
               </p>
               <h2 class="mt-1 text-2xl font-black text-white md:text-3xl">Listen Again</h2>
             </div>
             <RouterLink
               to="/recently-played"
-              class="spring text-xs font-bold text-slate-400 transition hover:text-white"
-              >See all</RouterLink
+              class="shrink-0 text-xs font-medium text-white/30 transition hover:text-white"
+              >See all <i aria-hidden="true" class="pi pi-chevron-left ml-0.5 text-[10px]" /></RouterLink
             >
           </div>
           <HomeCarousel>
@@ -131,7 +133,7 @@
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full w-full items-center justify-center text-white/20">
-                  <i class="pi pi-music text-3xl" />
+                  <i aria-hidden="true" class="pi pi-music text-3xl" />
                 </div>
                 <div
                   class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
@@ -139,7 +141,7 @@
                   <div
                     class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954] text-black shadow-xl transition-transform group-hover:scale-110"
                   >
-                    <i class="pi pi-play-fill text-lg" />
+                    <i aria-hidden="true" class="pi pi-play-fill text-lg" />
                   </div>
                 </div>
               </div>
@@ -150,25 +152,27 @@
         </template>
         <template v-else>
           <div class="flex flex-col items-center gap-3 py-16 text-center">
-            <i class="pi pi-inbox text-4xl text-slate-500" />
-            <p class="text-sm text-slate-400">No recently played tracks</p>
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+              <i aria-hidden="true" class="pi pi-history text-xl text-slate-500" />
+            </div>
+            <p class="text-sm font-medium text-white/60">No recently played tracks</p>
           </div>
         </template>
       </section>
 
         <!-- Mood Grid -->
-        <section class="mt-10">
-          <div class="mb-4 flex items-end justify-between">
+        <section class="mt-12">
+          <div class="mb-5 flex items-end justify-between gap-4">
             <div>
-              <p class="text-xs font-bold tracking-[0.2em] text-[#1db954] uppercase">
+              <p class="text-[10px] font-bold tracking-[0.3em] text-white/30 uppercase">
                 Feel something
               </p>
               <h2 class="mt-1 text-2xl font-black text-white md:text-3xl">Browse by Mood</h2>
             </div>
             <RouterLink
               to="/ai/mood-explorer"
-              class="spring text-xs font-bold text-slate-400 transition hover:text-white"
-              >Explore moods</RouterLink
+              class="shrink-0 text-xs font-medium text-white/30 transition hover:text-white"
+              >Explore moods <i aria-hidden="true" class="pi pi-chevron-left ml-0.5 text-[10px]" /></RouterLink
             >
           </div>
           <div class="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8">
@@ -182,7 +186,7 @@
                 class="flex h-10 w-10 items-center justify-center rounded-xl text-lg transition duration-300 group-hover:scale-110"
                 :style="{ backgroundColor: mood.bg }"
               >
-                <i :class="mood.icon" :style="{ color: mood.fg }" />
+                <i aria-hidden="true" :class="mood.icon" :style="{ color: mood.fg }" />
               </div>
               <span
                 class="max-w-full truncate text-[11px] font-bold text-white/60 group-hover:text-white/90"
@@ -193,11 +197,11 @@
         </section>
 
         <!-- For You -->
-        <section class="mt-10">
+        <section class="mt-12">
           <template v-if="forYou.length">
-          <div class="mb-4 flex items-end justify-between">
+          <div class="mb-5 flex items-end justify-between gap-4">
             <div>
-              <p class="text-xs font-bold tracking-[0.2em] text-[#1db954] uppercase">
+              <p class="text-[10px] font-bold tracking-[0.3em] text-white/30 uppercase">
                 Personalized
               </p>
               <h2 class="mt-1 text-2xl font-black text-white md:text-3xl">Made For You</h2>
@@ -222,7 +226,7 @@
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full w-full items-center justify-center text-white/20">
-                  <i class="pi pi-music text-3xl" />
+                  <i aria-hidden="true" class="pi pi-music text-3xl" />
                 </div>
                 <div
                   class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
@@ -230,7 +234,7 @@
                   <div
                     class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954] text-black shadow-xl transition-transform group-hover:scale-110"
                   >
-                    <i class="pi pi-play-fill text-lg" />
+                    <i aria-hidden="true" class="pi pi-play-fill text-lg" />
                   </div>
                 </div>
               </div>
@@ -240,23 +244,25 @@
           </div>
         </template>
         <div v-else class="flex flex-col items-center gap-3 py-16 text-center">
-          <i class="pi pi-inbox text-4xl text-slate-500" />
-          <p class="text-sm text-slate-400">No personalized recommendations yet</p>
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+            <i aria-hidden="true" class="pi pi-star text-xl text-slate-500" />
+          </div>
+          <p class="text-sm font-medium text-white/60">No personalized recommendations yet</p>
         </div>
       </section>
 
         <!-- New Releases -->
-        <section class="mt-10">
+        <section class="mt-12">
           <template v-if="recent.length">
-          <div class="mb-4 flex items-end justify-between">
+          <div class="mb-5 flex items-end justify-between gap-4">
             <div>
-              <p class="text-xs font-bold tracking-[0.2em] text-[#1db954] uppercase">Latest</p>
+              <p class="text-[10px] font-bold tracking-[0.3em] text-white/30 uppercase">Latest</p>
               <h2 class="mt-1 text-2xl font-black text-white md:text-3xl">New Releases</h2>
             </div>
             <RouterLink
               to="/recommendations/recent"
-              class="spring text-xs font-bold text-slate-400 transition hover:text-white"
-              >See all</RouterLink
+              class="shrink-0 text-xs font-medium text-white/30 transition hover:text-white"
+              >See all <i aria-hidden="true" class="pi pi-chevron-left ml-0.5 text-[10px]" /></RouterLink
             >
           </div>
           <HomeCarousel>
@@ -278,7 +284,7 @@
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full w-full items-center justify-center text-white/20">
-                  <i class="pi pi-music text-3xl" />
+                  <i aria-hidden="true" class="pi pi-music text-3xl" />
                 </div>
                 <div class="absolute top-2 left-2">
                   <span
@@ -292,7 +298,7 @@
                   <div
                     class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954] text-black shadow-xl transition-transform group-hover:scale-110"
                   >
-                    <i class="pi pi-play-fill text-lg" />
+                    <i aria-hidden="true" class="pi pi-play-fill text-lg" />
                   </div>
                 </div>
               </div>
@@ -302,17 +308,19 @@
           </HomeCarousel>
         </template>
         <div v-else class="flex flex-col items-center gap-3 py-16 text-center">
-          <i class="pi pi-inbox text-4xl text-slate-500" />
-          <p class="text-sm text-slate-400">No new releases right now</p>
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+            <i aria-hidden="true" class="pi pi-clock text-xl text-slate-500" />
+          </div>
+          <p class="text-sm font-medium text-white/60">No new releases right now</p>
         </div>
       </section>
 
         <!-- Viral Hits -->
-        <section class="mt-10">
+        <section class="mt-12">
           <template v-if="popular.length">
-          <div class="mb-4 flex items-end justify-between">
+          <div class="mb-5 flex items-end justify-between gap-4">
             <div>
-              <p class="text-xs font-bold tracking-[0.2em] text-[#1db954] uppercase">
+              <p class="text-[10px] font-bold tracking-[0.3em] text-white/30 uppercase">
                 Trending fast
               </p>
               <h2 class="mt-1 text-2xl font-black text-white md:text-3xl">Viral Hits</h2>
@@ -340,7 +348,7 @@
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full items-center justify-center">
-                  <i class="pi pi-music text-white/30" />
+                  <i aria-hidden="true" class="pi pi-music text-white/30" />
                 </div>
               </div>
               <div class="min-w-0 flex-1">
@@ -355,16 +363,18 @@
           </div>
         </template>
         <div v-else class="flex flex-col items-center gap-3 py-16 text-center">
-          <i class="pi pi-inbox text-4xl text-slate-500" />
-          <p class="text-sm text-slate-400">No viral hits right now</p>
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+            <i aria-hidden="true" class="pi pi-chart-bar text-xl text-slate-500" />
+          </div>
+          <p class="text-sm font-medium text-white/60">No viral hits right now</p>
         </div>
       </section>
 
         <!-- Genre Worlds -->
-        <section class="mt-10">
-          <div class="mb-4 flex items-end justify-between">
+        <section class="mt-12">
+          <div class="mb-5 flex items-end justify-between gap-4">
             <div>
-              <p class="text-xs font-bold tracking-[0.2em] text-[#1db954] uppercase">Explore</p>
+              <p class="text-[10px] font-bold tracking-[0.3em] text-white/30 uppercase">Explore</p>
               <h2 class="mt-1 text-2xl font-black text-white md:text-3xl">Genre Worlds</h2>
             </div>
           </div>
@@ -389,11 +399,11 @@
         </section>
 
         <!-- Community Feed -->
-        <section class="mt-10">
+        <section class="mt-12">
           <template v-if="feed.length">
-          <div class="mb-4 flex items-end justify-between">
+          <div class="mb-5 flex items-end justify-between gap-4">
             <div>
-              <p class="text-xs font-bold tracking-[0.2em] text-[#1db954] uppercase">Activity</p>
+              <p class="text-[10px] font-bold tracking-[0.3em] text-white/30 uppercase">Activity</p>
               <h2 class="mt-1 text-2xl font-black text-white md:text-3xl">From the Community</h2>
             </div>
           </div>
@@ -402,8 +412,10 @@
           </div>
         </template>
         <div v-else class="flex flex-col items-center gap-3 py-16 text-center">
-          <i class="pi pi-inbox text-4xl text-slate-500" />
-          <p class="text-sm text-slate-400">No community activity yet</p>
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+            <i aria-hidden="true" class="pi pi-users text-xl text-slate-500" />
+          </div>
+          <p class="text-sm font-medium text-white/60">No community activity yet</p>
         </div>
       </section>
       </template>
@@ -421,7 +433,7 @@ import { usePlayer } from '@/composables/player'
 import { usePlayerApi } from '@/services/api/player'
 import { MOOD_OPTIONS } from '@/services/api/ai/types'
 import { onImgError } from '@/utils/helpers'
-import { HomeSection, HomeCarousel, ActivityItem } from '@/components/music'
+import { HomeCarousel, ActivityItem } from '@/components/music'
 
 const socialApi = useSocialApi()
 const recsApi = useRecommendationsApi()
@@ -436,7 +448,7 @@ const feed = ref<any[]>([])
 const recentlyPlayed = ref<any[]>([])
 const loading = ref(true)
 
-const moods: any[] = (MOOD_OPTIONS as unknown as any[]).slice(0, 8).map((m: any) => {
+const moods: any[] = (MOOD_OPTIONS as any as any[]).slice(0, 8).map((m: any) => {
   const colors: Record<string, { bg: string; fg: string }> = {
     energetic: { bg: 'rgba(34,197,94,0.12)', fg: '#22c55e' },
     happy: { bg: 'rgba(250,204,21,0.12)', fg: '#facc15' },

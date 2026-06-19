@@ -1,7 +1,5 @@
 import { useToast } from 'primevue/usetoast'
 
-type ToastSeverity = 'success' | 'error' | 'info' | 'warn'
-
 const DEFAULT_LIFETIME = 4000
 const ERROR_LIFETIME = 6000
 
@@ -24,11 +22,14 @@ export function useAppToast() {
     toast.add({ severity: 'warn', summary: summary || 'Warning', detail, life: DEFAULT_LIFETIME })
   }
 
-  function apiError(err: unknown, fallback?: string) {
+  function apiError(err: any, fallback?: string) {
+    const e = err as Record<string, any>
+    const response = e.response as Record<string, any> | undefined
+    const data = response?.data as Record<string, any> | undefined
     const message =
-      (err as any)?.response?.data?.error ||
-      (err as any)?.response?.data?.message ||
-      (err as any)?.message ||
+      data?.error ||
+      data?.message ||
+      e?.message ||
       fallback ||
       'Something went wrong'
     error(message, 'Request failed')

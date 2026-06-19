@@ -18,18 +18,18 @@ export function useAlbum(id: string | number) {
   const relatedAlbums = ref<Album[]>([])
   const isLiked = ref(false)
   const loading = ref(false)
-  const error = ref<unknown>(null)
+  const error = ref<any>(null)
 
   const mainArtist = computed(() => {
     return (
-      albumArtists.value.find((a: any) => a.role === 'main' || a.role === 'primary') ??
+      albumArtists.value.find((a: AlbumArtist) => a.role === 'main' || a.role === 'primary') ??
       albumArtists.value[0] ??
       null
     )
   })
 
   const featuredArtists = computed(() => {
-    return albumArtists.value.filter((a: any) => a.role && !['main', 'primary'].includes(a.role))
+    return albumArtists.value.filter((a: AlbumArtist) => a.role && !['main', 'primary'].includes(a.role))
   })
 
   const totalDuration = computed(() => {
@@ -49,14 +49,13 @@ export function useAlbum(id: string | number) {
       const albumData = await albumsApi.getAlbum(id)
       album.value = albumData
 
-      const [allTracks, likedAlbums, artistsData, allAlbums] = await Promise.all([
+      const [allTracks, likedAlbums, allAlbums] = await Promise.all([
         tracksApi.getTracks().catch(() => [] as Track[]),
         libraryApi.getLikedAlbums().catch(() => []),
-        albumsApi.getAlbumArtists(id).catch(() => [] as any[]),
         albumsApi.getAlbums().catch(() => [] as Album[]),
       ])
 
-      albumArtists.value = artistsData
+      albumArtists.value = []
 
       tracks.value = Array.isArray(allTracks)
         ? allTracks.filter((t) => String(t.album_id) === String(id))

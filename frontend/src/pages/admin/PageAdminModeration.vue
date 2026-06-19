@@ -13,7 +13,7 @@
             :disabled="refreshing"
             @click="refreshAll"
           >
-            <i :class="refreshing ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'" class="text-xs" />
+            <i aria-hidden="true" :class="refreshing ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'" class="text-xs" />
             {{ refreshing ? 'Loading...' : 'Refresh' }}
           </button>
         </div>
@@ -33,7 +33,7 @@
         "
         @click="activeTab = tab.key"
       >
-        <i :class="tab.icon" class="text-xs" />
+        <i aria-hidden="true" :class="tab.icon" class="text-xs" />
         {{ tab.label }}
         <span
           v-if="tab.badge"
@@ -177,14 +177,14 @@
                 class="rounded-lg bg-white/5 p-2 text-xs text-white/30 transition hover:bg-green-500/10 hover:text-green-400"
                 @click="resolvingId = report.id; resolveNote = ''"
               >
-                <i class="pi pi-check" />
+                <i aria-hidden="true" class="pi pi-check" />
               </button>
               <button
                 title="Flag content"
                 class="rounded-lg bg-white/5 p-2 text-xs text-white/30 transition hover:bg-red-500/10 hover:text-red-400"
                 @click="openFlagDialog(report)"
               >
-                <i class="pi pi-flag" />
+                <i aria-hidden="true" class="pi pi-flag" />
               </button>
             </div>
           </div>
@@ -225,7 +225,7 @@
           :class="{ 'opacity-40': isExpired(flag) }"
         >
           <div class="flex min-w-0 items-center gap-3">
-            <i class="pi pi-flag text-sm text-red-400/60" />
+            <i aria-hidden="true" class="pi pi-flag text-sm text-red-400/60" />
             <div class="min-w-0">
               <div class="flex items-center gap-2">
                 <span
@@ -456,7 +456,7 @@
       <template #header>
         <div class="flex items-center gap-3">
           <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10">
-            <i class="pi pi-flag text-red-400" />
+            <i aria-hidden="true" class="pi pi-flag text-red-400" />
           </div>
           <div>
             <h3 class="text-base font-semibold text-white">Flag Content</h3>

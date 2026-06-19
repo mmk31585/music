@@ -20,7 +20,7 @@
       />
 
       <span class="relative z-10 flex items-center justify-center">
-        <i v-if="loadingThisTrack" class="pi pi-spin pi-spinner text-sm" />
+        <i aria-hidden="true" v-if="loadingThisTrack" class="pi pi-spin pi-spinner text-sm" />
 
         <span
           v-else-if="isCurrent && player.isPlaying.value"
@@ -32,7 +32,7 @@
           <span class="eq-bar animation-delay-300 h-3" />
         </span>
 
-        <i v-else :class="buttonIcon" class="text-sm" />
+        <i aria-hidden="true" v-else :class="buttonIcon" class="text-sm" />
       </span>
     </button>
 
@@ -60,7 +60,7 @@
         title="More"
         @click.stop="openContextMenu"
       >
-        <i class="pi pi-ellipsis-h" />
+        <i aria-hidden="true" class="pi pi-ellipsis-h" />
       </button>
     </div>
   </div>
@@ -173,12 +173,11 @@ const menuItems = [
   }},
   { label: 'Add to queue', icon: 'pi pi-list', action: () => player.updateQueue([...player.queue.value, buildPlaybackTrack()]) },
   { label: 'Go to artist', icon: 'pi pi-user', action: () => {
-    const artistId = props.track.artist_id ?? props.track.artistId
+    const artistId = props.track.artist_id
     if (artistId) router.push(`/artist/${artistId}`)
   }},
   { label: 'Go to album', icon: 'pi pi-book', action: () => {
-    const album = props.track.album
-    if (album && (album as any).id) router.push(`/album/${(album as any).id}`)
+    if (props.track.album?.id) router.push(`/album/${props.track.album.id}`)
   }},
 ]
 

@@ -6,7 +6,7 @@ import Cookie from 'js-cookie'
 import { safeLocalStorage } from '@/services/storage'
 import { useAuthApi } from '@/services/api'
 import type { UseRequestConfig } from '@/plugins/client/types'
-import type { User, LoginPayload } from '@/services/api'
+import type { User, LoginPayload, AuthResponse } from '@/services/api'
 
 interface TokenState {
   access_token: string
@@ -118,8 +118,8 @@ export const useUserAuthStore = defineStore('auth', () => {
 
     try {
       const config = testing
-        ? { headers: { 'X-Testing': 'true' } } as any
-        : {} as any
+        ? { headers: { 'X-Testing': 'true' } } as UseRequestConfig<AuthResponse>
+        : {} as UseRequestConfig<AuthResponse>
 
       const response = await useAuthApi().login(payload, config)
 
@@ -143,7 +143,7 @@ export const useUserAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function me(config: UseRequestConfig<unknown> = {}) {
+  async function me(config: UseRequestConfig<any> = {}) {
     const userData = await useAuthApi().me(config)
 
     user.value = userData

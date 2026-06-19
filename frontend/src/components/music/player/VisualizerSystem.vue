@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { audioEngine } from '@/services/player/audio-engine'
-import { detectPerformanceTier, type PerformanceTier } from '@/utils/performance'
+import { detectPerformanceTier } from '@/utils/performance'
 
 export type VisualizerMode = 'spectrum' | 'waveform' | 'circular' | 'radialBars' | 'particle' | 'fluid'
 
@@ -201,7 +201,7 @@ let cachedAvgAmplitude = 0
 
 function getFreqData(): Uint8Array | null {
   if (!analyserNode || !frequencyData) return null
-  analyserNode.getByteFrequencyData(frequencyData as any)
+  analyserNode.getByteFrequencyData(frequencyData as any as Uint8Array)
   let sum = 0
   for (let i = 0; i < frequencyData.length; i++) {
     sum += frequencyData[i]!
@@ -212,7 +212,7 @@ function getFreqData(): Uint8Array | null {
 
 function getWaveData(): Uint8Array | null {
   if (!analyserNode || !waveformData) return null
-  analyserNode.getByteTimeDomainData(waveformData as any)
+  analyserNode.getByteTimeDomainData(waveformData as any as Uint8Array)
   return waveformData
 }
 
@@ -237,7 +237,7 @@ function hexToRgba(hex: string, alpha = 1): string {
 
 let smoothFreqs: Float32Array | null = null
 
-function drawSpectrum(_time: number, _dt: number) {
+function drawSpectrum() {
   if (!ctx || !canvas.value) return
   const dpr = window.devicePixelRatio
   const w = canvas.value.width / dpr
@@ -327,7 +327,7 @@ function drawSpectrum(_time: number, _dt: number) {
 
 let smoothWaveform: Float32Array | null = null
 
-function drawWaveform(_time: number, _dt: number) {
+function drawWaveform() {
   if (!ctx || !canvas.value) return
   const dpr = window.devicePixelRatio
   const w = canvas.value.width / dpr
@@ -400,7 +400,7 @@ function drawWaveform(_time: number, _dt: number) {
   ctx.stroke()
 }
 
-function drawCircular(_time: number, _dt: number) {
+function drawCircular() {
   if (!ctx || !canvas.value) return
   const dpr = window.devicePixelRatio
   const w = canvas.value.width / dpr
@@ -485,7 +485,7 @@ function drawCircular(_time: number, _dt: number) {
 
 let radialSmooth: Float32Array | null = null
 
-function drawRadialBars(_time: number, _dt: number) {
+function drawRadialBars() {
   if (!ctx || !canvas.value) return
   const dpr = window.devicePixelRatio
   const w = canvas.value.width / dpr

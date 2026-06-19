@@ -6,14 +6,13 @@ import App from './App.vue'
 import router from './router'
 
 import LayoutEmpty from './components/layouts/LayoutEmpty.vue'
-import { useUserAuthStore } from '@/stores'
 
 import PrimeVue from 'primevue/config'
-import { IndigoPreset, primeLocale } from '@/utils'
+import { AppPreset, primeLocale } from '@/utils'
 import ToastService from 'primevue/toastservice'
 import ConfirmationService from 'primevue/confirmationservice'
 import { Buffer } from 'buffer'
-  ;(globalThis as any).Buffer = Buffer
+  ;(globalThis as Record<string, any>).Buffer = Buffer
 
 
 const app = createApp(App)
@@ -30,7 +29,7 @@ void (async () => {
       ripple: true,
       theme: {
         rtl: true,
-        preset: IndigoPreset,
+        preset: AppPreset,
         options: {
           darkModeSelector: '.app-dark',
           cssLayer: {

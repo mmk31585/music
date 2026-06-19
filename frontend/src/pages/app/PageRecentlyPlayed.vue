@@ -20,7 +20,7 @@
         <div
           class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/10 text-2xl text-white"
         >
-          <i class="pi pi-history" />
+          <i aria-hidden="true" class="pi pi-history" />
         </div>
         <h2 class="mt-5 text-xl font-black text-white">No recent plays yet</h2>
         <p class="mt-2 text-sm text-slate-400">

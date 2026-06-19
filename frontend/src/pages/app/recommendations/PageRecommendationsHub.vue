@@ -23,7 +23,7 @@
           class="flex h-14 w-14 items-center justify-center rounded-2xl text-2xl"
           :class="card.iconClass"
         >
-          <i :class="card.icon" />
+          <i aria-hidden="true" :class="card.icon" />
         </div>
         <h2 class="mt-5 text-xl font-black text-white">{{ card.title }}</h2>
         <p class="mt-2 text-sm leading-6 text-slate-400">{{ card.description }}</p>
@@ -66,7 +66,7 @@
         >
           <span class="flex w-6 items-center justify-center">
             <span class="text-sm text-slate-500 group-hover:hidden">{{ index + 1 }}</span>
-            <i class="pi pi-play-fill hidden text-sm text-white group-hover:block" />
+            <i aria-hidden="true" class="pi pi-play-fill hidden text-sm text-white group-hover:block" />
           </span>
 
           <div
@@ -81,7 +81,7 @@
               @error="onImgError"
             />
             <div v-else class="flex h-full items-center justify-center">
-              <i class="pi pi-music text-xs text-slate-500" />
+              <i aria-hidden="true" class="pi pi-music text-xs text-slate-500" />
             </div>
           </div>
 
@@ -133,7 +133,7 @@
               @error="onImgError"
             />
             <div v-else class="flex h-full items-center justify-center">
-              <i class="pi pi-music text-2xl text-slate-500" />
+              <i aria-hidden="true" class="pi pi-music text-2xl text-slate-500" />
             </div>
             <div
               class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100"
@@ -141,7 +141,7 @@
               <div
                 class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954]/90 text-black shadow-xl"
               >
-                <i class="pi pi-play-fill text-lg" />
+                <i aria-hidden="true" class="pi pi-play-fill text-lg" />
               </div>
             </div>
           </div>
@@ -221,7 +221,7 @@ async function fetchPersonalized() {
   }
 }
 
-function playFromPopular(track: RecommendationTrack, index: number) {
+function playFromPopular(track: RecommendationTrack) {
   const source = [...popularItems.value, ...personalizedItems.value]
   const allTracks = source.map((t) => ({
     id: String(t.id),

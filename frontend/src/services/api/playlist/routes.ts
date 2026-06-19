@@ -6,6 +6,7 @@ import {
   PlaylistDetailSchema,
   type PlaylistListItem,
   type PlaylistDetail,
+  type CollaboratorResponse,
   type CreatePlaylistPayload,
   type AddTrackPayload,
 } from './types'
@@ -136,8 +137,8 @@ export const usePlaylistsApi = () => {
     )
   }
 
-  const listCollaborators = async (playlistId: string, config?: UseRequestConfig<any>) => {
-    return useRequest<any>(
+  const listCollaborators = async (playlistId: string, config?: UseRequestConfig<CollaboratorResponse[]>) => {
+    return useRequest<CollaboratorResponse[]>(
       PlaylistApiRoutes.LIST_COLLABORATORS.replace(':playlistId', playlistId),
       { method: 'GET' },
       { silent: true, ...config },

@@ -81,13 +81,20 @@
               v-else
               class="flex h-full w-full items-center justify-center"
             >
-              <i class="pi pi-image text-3xl text-slate-700" />
+              <i aria-hidden="true" class="pi pi-image text-3xl text-slate-700" />
             </div>
 
             <!-- Overlay actions -->
             <div
               class="absolute inset-0 flex items-end justify-end gap-1 bg-gradient-to-t from-black/60 via-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100"
             >
+              <Button
+                icon="pi pi-eye"
+                rounded
+                size="small"
+                class="!h-8 !w-8 !bg-white/20 !text-white !backdrop-blur-sm hover:!bg-white/30"
+                @click="router.push({ name: 'admin.album.detail', params: { id: album.id } })"
+              />
               <Button
                 icon="pi pi-pencil"
                 rounded
@@ -137,6 +144,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import { useToast } from 'primevue/usetoast'
@@ -146,6 +154,7 @@ import AdminDeleteConfirm from './AdminDeleteConfirm.vue'
 import { useAdminAlbums, type AlbumFormPayload } from '@/composables/admin/useAdminAlbums'
 import type { Album } from '@/services/api/catalog/albums'
 
+const router = useRouter()
 const toast = useToast()
 const {
   albums,

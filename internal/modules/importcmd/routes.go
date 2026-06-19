@@ -12,5 +12,6 @@ func RegisterAdminRoutes(rg *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc
 	{
 		admin.GET("/search", h.Search)
 		admin.POST("/import", h.Import)
+		admin.GET("/:jobId/progress", h.GetProgress)
 	}
 }

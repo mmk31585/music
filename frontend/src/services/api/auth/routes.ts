@@ -60,7 +60,7 @@ export const useAuthApi = () => {
     )
   }
 
-  const logout = async (payload: LogoutPayload, config?: UseRequestConfig<unknown>) => {
+  const logout = async (payload: LogoutPayload, config?: UseRequestConfig<any>) => {
     return useRequest(
       AuthApiRoutes.LOGOUT,
       {
@@ -90,7 +90,7 @@ export const useAuthApi = () => {
   // ==================== ADMIN USERS ====================
 
   const adminListUsers = async (
-    params?: Record<string, unknown>,
+    params?: Record<string, any>,
     config?: UseRequestConfig<AdminUserListResponse>,
   ) => {
     return useRequest<AdminUserListResponse>(

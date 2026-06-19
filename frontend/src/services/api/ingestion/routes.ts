@@ -7,9 +7,7 @@ import {
   UploadResponseSchema,
   DraftDetailResponseSchema,
   ListDraftsResponseSchema,
-  DraftListItemSchema,
   EnrichmentResultSchema,
-  SaveFinalMetadataRequestSchema,
   ArtistSearchResultSchema,
   AlbumSearchResultSchema,
   FinalizeResultSchema,
@@ -18,7 +16,6 @@ import {
   type UploadResponse,
   type DraftDetailResponse,
   type ListDraftsResponse,
-  type DraftListItem,
   type EnrichmentResult,
   type SaveFinalMetadataRequest,
   type ArtistSearchResult,
@@ -239,5 +236,6 @@ export const useIngestionApi = () => {
     getIngestionStats,
     getIngestionConfig,
     triggerCleanup,
+    uploadDraftImage,
   }
 }

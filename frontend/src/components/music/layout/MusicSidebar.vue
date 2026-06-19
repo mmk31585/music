@@ -1,12 +1,13 @@
 <template>
   <aside
-    class="hidden h-screen w-72 shrink-0 border-r border-white/10 bg-black/40 p-4 backdrop-blur-xl lg:block"
+    class="hidden h-screen w-60 shrink-0 border-l border-white/10 bg-black/40 p-4 backdrop-blur-2xl lg:block"
+    style="backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);"
   >
     <RouterLink to="/" class="flex items-center gap-3 rounded-2xl px-3 py-4">
       <div
         class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1db954] text-xl text-black"
       >
-        <i class="pi pi-volume-up" />
+        <i aria-hidden="true" class="pi pi-volume-up" />
       </div>
 
       <div>
@@ -27,7 +28,7 @@
         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
         :class="isActive(item.to) ? 'bg-white/[0.10] text-white' : ''"
       >
-        <i :class="item.icon" class="text-lg" />
+        <i aria-hidden="true" :class="item.icon" class="text-lg" />
         <span>{{ item.label }}</span>
       </RouterLink>
     </nav>
@@ -44,7 +45,7 @@
         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
         :class="isActive(item.to) ? 'bg-white/[0.10] text-white' : ''"
       >
-        <i :class="item.icon" class="text-lg" />
+        <i aria-hidden="true" :class="item.icon" class="text-lg" />
         <span>{{ item.label }}</span>
       </RouterLink>
     </nav>
@@ -61,7 +62,7 @@
         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
         :class="isActive(item.to) ? 'bg-white/[0.10] text-white' : ''"
       >
-        <i :class="item.icon" class="text-lg" />
+        <i aria-hidden="true" :class="item.icon" class="text-lg" />
         <span>{{ item.label }}</span>
       </RouterLink>
     </nav>
@@ -78,38 +79,21 @@
         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
         :class="isActive(item.to) ? 'bg-white/[0.10] text-white' : ''"
       >
-        <i :class="item.icon" class="text-lg" />
+        <i aria-hidden="true" :class="item.icon" class="text-lg" />
         <span>{{ item.label }}</span>
       </RouterLink>
     </nav>
 
-    <div class="mt-8 rounded-3xl border border-white/10 bg-white/[0.05] p-5">
-      <div
-        class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1db954]/20 text-[#1db954]"
-      >
-        <i class="pi pi-sparkles" />
-      </div>
-
-      <h3 class="mt-4 text-sm font-black text-white">Discover weekly</h3>
-
-      <p class="mt-2 text-xs leading-5 text-slate-400">
-        Fresh tracks and personalized recommendations are waiting for you.
-      </p>
-
-      <RouterLink
-        to="/recommendations"
-        class="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-xs font-black text-black transition hover:scale-105"
-      >
-        Explore
-      </RouterLink>
-    </div>
   </aside>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { usePlayerStore } from '@/stores/player'
 
 const route = useRoute()
+const playerStore = usePlayerStore()
 
 const mainNav = [
   { label: 'Home', icon: 'pi pi-home', to: '/' },
@@ -139,6 +123,16 @@ const moreNav = [
   { label: 'Contributions', icon: 'pi pi-cloud-upload', to: '/contributions' },
   { label: 'Creator Dashboard', icon: 'pi pi-chart-bar', to: '/creator-dashboard' },
 ]
+
+const latestAlbum = computed(() => {
+  const track = playerStore.currentTrack
+  if (!track) return null
+  return {
+    cover_url: track.coverUrl,
+    title: track.albumTitle || track.title,
+    artist_name: track.artistName,
+  }
+})
 
 function isActive(to: string) {
   if (to === '/') return route.path === '/'

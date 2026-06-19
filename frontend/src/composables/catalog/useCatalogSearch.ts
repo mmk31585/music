@@ -1,7 +1,8 @@
 import { computed, ref } from 'vue'
 import { useSearchApi, type SearchResult } from '@/services/api/catalog/search'
+import type { PlaylistListItem } from '@/services/api/playlist'
 
-type SearchResultWithPlaylists = SearchResult & { playlists: any[] }
+type SearchResultWithPlaylists = SearchResult & { playlists: PlaylistListItem[] }
 
 export function useCatalogSearch() {
   const { searchCatalog } = useSearchApi()
@@ -17,7 +18,7 @@ export function useCatalogSearch() {
   })
 
   const loading = ref(false)
-  const error = ref<unknown>(null)
+  const error = ref<any>(null)
 
   const hasQuery = computed(() => query.value.trim().length > 0)
   const totalResults = computed(

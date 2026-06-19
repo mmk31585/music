@@ -1,6 +1,7 @@
 <template>
   <Transition name="menu-scale">
     <div
+      v-show="true"
       ref="menuRef"
       role="menu"
       aria-label="Player options"
@@ -15,7 +16,7 @@
         class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
         @click="cycleQuality"
       >
-        <i class="pi pi-waveform text-base text-white/40" />
+        <i aria-hidden="true" class="pi pi-waveform text-base text-white/40" />
         <span class="flex-1 text-left">Audio Quality</span>
         <span class="text-xs font-medium text-white/40 tabular-nums">{{ qualityLabel }}</span>
       </button>
@@ -27,7 +28,7 @@
         class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
         @click="showSleepPicker = !showSleepPicker"
       >
-        <i class="pi pi-clock text-base text-white/40" />
+        <i aria-hidden="true" class="pi pi-clock text-base text-white/40" />
         <span class="flex-1 text-left">Sleep Timer</span>
         <span class="text-xs font-medium" :class="sleepTimerMinutes > 0 ? 'text-[#1db954]' : 'text-white/40'">
           {{ sleepTimerMinutes > 0 ? `${sleepTimerMinutes}m` : 'Off' }}
@@ -53,7 +54,7 @@
 
       <!-- Crossfade -->
       <div class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70">
-        <i class="pi pi-arrows-alt text-base text-white/40" />
+        <i aria-hidden="true" class="pi pi-arrows-alt text-base text-white/40" />
         <span class="flex-1 text-left">Crossfade</span>
         <span class="text-xs font-medium text-white/40 tabular-nums">{{ crossfadeDuration }}s</span>
         <input
@@ -74,7 +75,7 @@
         class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
         @click="onTogglePiP"
       >
-        <i class="pi pi-window-maximize text-base text-white/40" />
+        <i aria-hidden="true" class="pi pi-window-maximize text-base text-white/40" />
         <span>Open in Mini Player</span>
       </button>
 
@@ -87,7 +88,7 @@
         class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
         @click="toggleLike"
       >
-        <i :class="liked ? 'pi pi-heart-fill text-[#1db954]' : 'pi pi-heart text-white/40'" class="text-base" />
+        <i aria-hidden="true" :class="liked ? 'pi pi-heart-fill text-[#1db954]' : 'pi pi-heart text-white/40'" class="text-base" />
         <span>{{ liked ? 'Saved to Library' : 'Save to Library' }}</span>
       </button>
 
@@ -98,7 +99,7 @@
         class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
         @click="onAddToPlaylist"
       >
-        <i class="pi pi-plus-circle text-base text-white/40" />
+        <i aria-hidden="true" class="pi pi-plus-circle text-base text-white/40" />
         <span>Add to Playlist</span>
       </button>
 
@@ -109,7 +110,7 @@
         class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
         @click="onShare"
       >
-        <i class="pi pi-share-alt text-base text-white/40" />
+        <i aria-hidden="true" class="pi pi-share-alt text-base text-white/40" />
         <span>Share Track</span>
       </button>
 
@@ -122,7 +123,7 @@
         class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
         @click="onTrackInfo"
       >
-        <i class="pi pi-info-circle text-base text-white/40" />
+        <i aria-hidden="true" class="pi pi-info-circle text-base text-white/40" />
         <span>Track Info</span>
       </button>
     </div>

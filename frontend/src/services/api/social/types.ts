@@ -93,8 +93,11 @@ export interface LiveRoomQueueItem {
 export interface MusicClub {
   id: string
   name: string
+  slug: string
   description?: string
   cover_url?: string
+  genre?: string
+  playlist_id?: string
   created_by: string
   is_public: boolean
   max_members: number
@@ -120,6 +123,30 @@ export interface MusicClubPost {
   updated_at: string
 }
 
+export interface ClubDetailResponse {
+  club: MusicClub
+  is_member: boolean
+  member_role: string
+  members: MusicClubMember[]
+  posts: MusicClubPost[]
+  post_count: number
+  track_count: number
+}
+
+export interface ClubMember {
+  id: string
+  club_id: string
+  user_id: string
+  role: 'admin' | 'moderator' | 'member'
+  joined_at: string
+}
+
+export interface LaunchPartyPayload {
+  title?: string
+  description?: string
+  is_public?: boolean
+}
+
 export interface Discussion {
   id: string
   user_id: string
@@ -129,6 +156,35 @@ export interface Discussion {
   parent_id?: string
   created_at: string
   updated_at: string
+}
+
+// Club Discussions (Phase 6)
+export interface ClubDiscussion {
+  id: string
+  club_id: string
+  author_id: string
+  title: string
+  body: string
+  reply_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface ClubDiscussionReply {
+  id: string
+  discussion_id: string
+  author_id: string
+  body: string
+  created_at: string
+}
+
+export interface CreateClubDiscussionRequest {
+  title: string
+  body: string
+}
+
+export interface CreateDiscussionReplyRequest {
+  body: string
 }
 
 export interface TrackRating {
@@ -157,7 +213,10 @@ export interface CreateRoomRequest {
 
 export interface CreateClubRequest {
   name: string
+  slug?: string
   description?: string
+  genre?: string
+  cover_url?: string
   is_public?: boolean
   max_members?: number
 }

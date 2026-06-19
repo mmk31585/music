@@ -13,7 +13,7 @@
     </div>
 
     <div v-else-if="error" class="flex flex-col items-center gap-4 py-24 text-center">
-      <i class="pi pi-exclamation-circle text-4xl text-slate-500" />
+      <i aria-hidden="true" class="pi pi-exclamation-circle text-4xl text-slate-500" />
       <h2 class="text-xl font-bold text-white">Playlist not found</h2>
       <RouterLink
         to="/playlists"
@@ -40,7 +40,7 @@
             v-else
             class="flex h-full items-center justify-center bg-gradient-to-br from-[#1db954]/20 to-[#121212]"
           >
-            <i class="pi pi-list text-4xl text-slate-500" />
+            <i aria-hidden="true" class="pi pi-list text-4xl text-slate-500" />
           </div>
         </div>
 
@@ -51,7 +51,7 @@
               v-if="playlist.is_collaborative"
               class="rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-400"
             >
-              <i class="pi pi-users mr-1 text-[10px]" />Collaborative
+              <i aria-hidden="true" class="pi pi-users mr-1 text-[10px]" />Collaborative
             </span>
           </div>
           <h1 class="mt-2 text-3xl font-black text-white md:text-5xl">{{ playlist.name }}</h1>
@@ -79,7 +79,7 @@
               class="inline-flex items-center gap-2 rounded-full bg-[#1db954] px-8 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-[#1ed760] disabled:opacity-40 disabled:hover:scale-100"
               @click="playAll"
             >
-              <i class="pi pi-play-fill" /> Play
+              <i aria-hidden="true" class="pi pi-play-fill" /> Play
             </button>
 
             <button
@@ -93,7 +93,7 @@
               "
               @click="toggleCollaborative"
             >
-              <i class="pi pi-users text-xs" />
+              <i aria-hidden="true" class="pi pi-users text-xs" />
               {{ playlist.is_collaborative ? 'Collaborative' : 'Make Collaborative' }}
             </button>
           </div>
@@ -105,7 +105,7 @@
               :key="c.user_id"
               class="flex items-center gap-2 rounded-full bg-white/5 px-3 py-1.5 text-xs text-slate-300"
             >
-              <i class="pi pi-user text-[10px]" />
+              <i aria-hidden="true" class="pi pi-user text-[10px]" />
               <span>{{ c.is_creator ? 'You' : `User #${c.user_id}` }}</span>
               <button
                 v-if="!c.is_creator"
@@ -113,7 +113,7 @@
                 class="text-slate-500 transition hover:text-red-400"
                 @click="removeCollab(c.user_id)"
               >
-                <i class="pi pi-times text-[10px]" />
+                <i aria-hidden="true" class="pi pi-times text-[10px]" />
               </button>
             </div>
           </div>
@@ -160,7 +160,7 @@
               v-if="isOwner || isCollaborator"
               class="flex w-6 cursor-grab items-center justify-center text-slate-500 active:cursor-grabbing"
             >
-              <i class="pi pi-bars text-xs opacity-0 transition group-hover:opacity-100" />
+              <i aria-hidden="true" class="pi pi-bars text-xs opacity-0 transition group-hover:opacity-100" />
             </span>
             <span class="w-6 text-right text-xs text-slate-500">{{ index + 1 }}</span>
 
@@ -174,14 +174,14 @@
                 @error="onImgError"
               />
               <div v-else class="flex h-full items-center justify-center">
-                <i class="pi pi-music text-xs text-slate-500" />
+                <i aria-hidden="true" class="pi pi-music text-xs text-slate-500" />
               </div>
               <button
                 type="button"
                 class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
                 @click="playTrack(index)"
               >
-                <i class="pi pi-play-fill text-xs text-white" />
+                <i aria-hidden="true" class="pi pi-play-fill text-xs text-white" />
               </button>
             </div>
 
@@ -199,7 +199,7 @@
               title="Remove from playlist"
               @click="removeTrack(item.track_id)"
             >
-              <i class="pi pi-times text-xs" />
+              <i aria-hidden="true" class="pi pi-times text-xs" />
             </button>
           </div>
         </div>
@@ -208,7 +208,7 @@
           v-else
           class="flex flex-col items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-6 py-16 text-center"
         >
-          <i class="pi pi-list text-3xl text-slate-500" />
+          <i aria-hidden="true" class="pi pi-list text-3xl text-slate-500" />
           <h3 class="text-lg font-bold text-white">Empty playlist</h3>
           <p class="text-sm text-slate-400">Add tracks from the search or your library</p>
           <RouterLink
@@ -326,13 +326,13 @@ const timeAgo = computed(() => {
 
 const collabHelper = useCollaborativePlaylist(
   playlistId,
-  (trackId) => {
+  () => {
     fetchPlaylist()
   },
-  (trackId) => {
+  () => {
     fetchPlaylist()
   },
-  (trackId, position) => {
+  () => {
     fetchPlaylist()
   },
   () => {
@@ -374,7 +374,7 @@ onMounted(async () => {
   if (collabData) {
     collaborators.value = collabData
     isCollaborator.value = collabData.some(
-      (c: any) => c.user_id === String(auth.user?.id) && !c.is_creator,
+      (c: any) => (c as { user_id: string; is_creator: boolean }).user_id === String(auth.user?.id) && !(c as { user_id: string; is_creator: boolean }).is_creator,
     )
   }
 })

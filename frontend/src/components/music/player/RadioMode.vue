@@ -26,7 +26,7 @@
             class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white"
             @click="close"
           >
-            <i class="pi pi-chevron-down text-lg" />
+            <i aria-hidden="true" class="pi pi-chevron-down text-lg" />
           </button>
           <div class="glass flex items-center gap-2 rounded-full px-4 py-2 text-xs text-white/50">
             <span class="flex h-2 w-2 animate-pulse rounded-full bg-[#1db954]" />
@@ -39,7 +39,7 @@
             :disabled="!canSkip"
             @click="skipTrack"
           >
-            <i class="pi pi-forward text-lg" />
+            <i aria-hidden="true" class="pi pi-forward text-lg" />
           </button>
         </div>
 
@@ -62,7 +62,7 @@
                     v-else
                     class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1db954]/30 to-[#121212]"
                   >
-                    <i class="pi pi-music text-5xl text-white/20" />
+                    <i aria-hidden="true" class="pi pi-music text-5xl text-white/20" />
                   </div>
                 </div>
               </div>
@@ -83,7 +83,7 @@
                   :disabled="!hasPrevious"
                   @click="playPrevious"
                 >
-                  <i class="pi pi-step-backward text-xl" />
+                  <i aria-hidden="true" class="pi pi-step-backward text-xl" />
                 </button>
 
                 <button
@@ -93,7 +93,7 @@
                   :disabled="!currentTrack || isLoadingTrack"
                   @click="togglePlayPause"
                 >
-                  <i v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-xl" />
+                  <i aria-hidden="true" v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-xl" />
                   <i
                     v-else
                     :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'"
@@ -110,7 +110,7 @@
                   class="spring flex h-12 w-12 items-center justify-center rounded-full text-white/60 transition-all hover:bg-white/10 hover:text-white"
                   @click="skipTrack"
                 >
-                  <i class="pi pi-step-forward text-xl" />
+                  <i aria-hidden="true" class="pi pi-step-forward text-xl" />
                 </button>
               </div>
 
@@ -188,7 +188,7 @@
                         v-else
                         class="flex h-full w-full items-center justify-center bg-white/10"
                       >
-                        <i class="pi pi-music text-xs text-white/30" />
+                        <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
                       </div>
                     </div>
                     <div class="min-w-0 flex-1">
@@ -200,17 +200,17 @@
                       <p class="truncate text-xs text-white/40">{{ track.artistName }}</p>
                     </div>
                     <div class="text-[#1db954] opacity-0 group-hover:opacity-100">
-                      <i class="pi pi-play-fill text-sm" />
+                      <i aria-hidden="true" class="pi pi-play-fill text-sm" />
                     </div>
                   </div>
                   <div v-if="loadingUpcoming" class="flex justify-center py-4">
-                    <i class="pi pi-spin pi-spinner text-white/30" />
+                    <i aria-hidden="true" class="pi pi-spin pi-spinner text-white/30" />
                   </div>
                   <div
                     v-else-if="upcomingTracks.length === 0"
                     class="flex flex-col items-center gap-2 py-8 text-white/20"
                   >
-                    <i class="pi pi-wave-pulse text-2xl" />
+                    <i aria-hidden="true" class="pi pi-wave-pulse text-2xl" />
                     <p class="text-xs">Generating your radio...</p>
                   </div>
                 </div>
@@ -236,7 +236,7 @@
                         v-else
                         class="flex h-full w-full items-center justify-center bg-white/10"
                       >
-                        <i class="pi pi-music text-xs text-white/30" />
+                        <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
                       </div>
                     </div>
                     <div class="min-w-0 flex-1">
@@ -248,7 +248,7 @@
                     v-if="historyTracks.length === 0"
                     class="flex flex-col items-center gap-2 py-8 text-white/20"
                   >
-                    <i class="pi pi-history text-2xl" />
+                    <i aria-hidden="true" class="pi pi-history text-2xl" />
                     <p class="text-xs">No history yet</p>
                   </div>
                 </div>
@@ -272,7 +272,7 @@
                         v-else
                         class="flex h-full w-full items-center justify-center bg-white/10"
                       >
-                        <i class="pi pi-music text-xs text-white/30" />
+                        <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
                       </div>
                     </div>
                     <div class="min-w-0 flex-1">
@@ -284,17 +284,17 @@
                       <p class="truncate text-xs text-white/40">{{ rec.artist_name }}</p>
                     </div>
                     <div class="text-[#1db954] opacity-0 group-hover:opacity-100">
-                      <i class="pi pi-plus text-sm" />
+                      <i aria-hidden="true" class="pi pi-plus text-sm" />
                     </div>
                   </div>
                   <div v-if="loadingSimilar" class="flex justify-center py-4">
-                    <i class="pi pi-spin pi-spinner text-white/30" />
+                    <i aria-hidden="true" class="pi pi-spin pi-spinner text-white/30" />
                   </div>
                   <div
                     v-else-if="similarTracks.length === 0"
                     class="flex flex-col items-center gap-2 py-8 text-white/20"
                   >
-                    <i class="pi pi-search text-2xl" />
+                    <i aria-hidden="true" class="pi pi-search text-2xl" />
                     <p class="text-xs">No similar tracks found</p>
                   </div>
                 </div>

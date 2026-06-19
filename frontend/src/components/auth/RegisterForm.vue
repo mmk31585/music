@@ -7,8 +7,9 @@
 
     <form class="space-y-5" @submit.prevent="onSubmit">
       <div>
-        <label class="mb-2 block text-sm font-medium text-slate-300">Display name</label>
+        <label for="register-display-name" class="mb-2 block text-sm font-medium text-slate-300">Display name</label>
         <InputText
+          id="register-display-name"
           v-model.trim="form.displayName"
           placeholder="Your name"
           class="w-full"
@@ -20,8 +21,9 @@
       </div>
 
       <div>
-        <label class="mb-2 block text-sm font-medium text-slate-300">Username</label>
+        <label for="register-username" class="mb-2 block text-sm font-medium text-slate-300">Username</label>
         <InputText
+          id="register-username"
           v-model.trim="form.username"
           placeholder="your_username"
           class="w-full"
@@ -33,8 +35,9 @@
       </div>
 
       <div>
-        <label class="mb-2 block text-sm font-medium text-slate-300">Email</label>
+        <label for="register-email" class="mb-2 block text-sm font-medium text-slate-300">Email</label>
         <InputText
+          id="register-email"
           v-model.trim="form.email"
           type="email"
           placeholder="you@example.com"
@@ -47,8 +50,9 @@
       </div>
 
       <div>
-        <label class="mb-2 block text-sm font-medium text-slate-300">Password</label>
+        <label for="register-password" class="mb-2 block text-sm font-medium text-slate-300">Password</label>
         <Password
+          id="register-password"
           v-model="form.password"
           placeholder="Create password"
           class="w-full"

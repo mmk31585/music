@@ -18,13 +18,13 @@
           class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
           :class="item.iconBg"
         >
-          <i :class="[item.icon, item.iconColor]" />
+          <i aria-hidden="true" :class="[item.icon, item.iconColor]" />
         </div>
         <div class="min-w-0 flex-1">
           <h3 class="text-sm font-bold text-white">{{ item.title }}</h3>
           <p class="mt-0.5 text-xs text-slate-500">{{ item.subtitle }}</p>
         </div>
-        <i class="pi pi-upload text-xs text-slate-600 opacity-0 transition group-hover:opacity-100" />
+        <i aria-hidden="true" class="pi pi-upload text-xs text-slate-600 opacity-0 transition group-hover:opacity-100" />
       </div>
     </div>
   </div>

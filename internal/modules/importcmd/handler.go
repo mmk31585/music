@@ -1,24 +1,18 @@
 package importcmd
 
 import (
-	"mime/multipart"
-	"os"
-
 	"github.com/gin-gonic/gin"
 
 	appErr "music/internal/common/errors"
 	"music/internal/common/response"
-	ingestion "music/internal/modules/ingestion"
 )
 
 type Handler struct {
-	service     *Service
-	ingestion   *ingestion.Service
-	downloadDir string
+	importSvc *ImportService
 }
 
-func NewHandler(service *Service, ingestionSvc *ingestion.Service, downloadDir string) *Handler {
-	return &Handler{service: service, ingestion: ingestionSvc, downloadDir: downloadDir}
+func NewHandler(importSvc *ImportService) *Handler {
+	return &Handler{importSvc: importSvc}
 }
 
 func (h *Handler) Search(c *gin.Context) {
@@ -28,78 +22,91 @@ func (h *Handler) Search(c *gin.Context) {
 		return
 	}
 
-	results, err := h.service.Search(c.Request.Context(), q)
+	results, err := h.importSvc.Search(c.Request.Context(), q)
 	if err != nil {
 		response.Error(c, appErr.Internal("search failed: "+err.Error(), err))
 		return
 	}
 
-	response.OK(c, "search results retrieved", results)
+	// Convert to DTO
+	dto := make([]SearchResult, 0, len(results))
+	for _, r := range results {
+		extIDs := make(map[string]string)
+		if r.ExternalIDs.SpotifyID != "" {
+			extIDs["spotify_id"] = r.ExternalIDs.SpotifyID
+		}
+		if r.ExternalIDs.DeezerID != "" {
+			extIDs["deezer_id"] = r.ExternalIDs.DeezerID
+		}
+		if r.ExternalIDs.MBID != "" {
+			extIDs["mbid"] = r.ExternalIDs.MBID
+		}
+
+		dto = append(dto, SearchResult{
+			Title:       r.Title,
+			Artist:      r.Artist,
+			URL:         r.URL,
+			Duration:    r.Duration,
+			Thumbnail:   r.Thumbnail,
+			Source:      r.Source,
+			Score:       r.Score,
+			ISRC:        r.ISRC,
+			ExternalIDs: extIDs,
+		})
+	}
+
+	response.OK(c, "search results retrieved", dto)
 }
 
 func (h *Handler) Import(c *gin.Context) {
-	if err := os.MkdirAll(h.downloadDir, 0755); err != nil {
-		response.Error(c, appErr.Internal("failed to create temp directory", err))
-		return
-	}
-
 	var req ImportRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, appErr.BadRequest("invalid request body", err))
 		return
 	}
 
-	entry, localPath, err := h.service.Download(c.Request.Context(), req.URL, h.downloadDir)
-	if err != nil {
-		response.Error(c, appErr.Internal("download failed: "+err.Error(), err))
-		return
-	}
-
-	uploadedBy := getUserID(c)
-	if uploadedBy == "" {
-		os.Remove(localPath)
+	userID := getUserID(c)
+	if userID == "" {
 		response.Error(c, appErr.Unauthorized("user not authenticated", nil))
 		return
 	}
 
-	f, err := os.Open(localPath)
+	resp, err := h.importSvc.Import(c.Request.Context(), req.URL, req.Source, userID)
 	if err != nil {
-		os.Remove(localPath)
-		response.Error(c, appErr.Internal("failed to open downloaded file", err))
+		response.Error(c, appErr.Internal("import failed: "+err.Error(), err))
 		return
 	}
 
-	stat, err := f.Stat()
-	if err != nil {
-		f.Close()
-		os.Remove(localPath)
-		response.Error(c, appErr.Internal("failed to stat file", err))
+	response.Created(c, "track import initiated", resp)
+}
+
+func (h *Handler) GetProgress(c *gin.Context) {
+	jobID := c.Param("jobId")
+	if jobID == "" {
+		response.Error(c, appErr.BadRequest("jobId is required", nil))
 		return
 	}
 
-	header := &multipart.FileHeader{
-		Filename: entry.Title + ".mp3",
-		Size:     stat.Size(),
-	}
-
-	result, err := h.ingestion.Upload(c.Request.Context(), f, header, uploadedBy)
-	f.Close()
-	os.Remove(localPath)
-
+	pu, err := h.importSvc.GetProgress(c.Request.Context(), jobID)
 	if err != nil {
-		response.Error(c, appErr.Internal("failed to create draft: "+err.Error(), err))
+		response.Error(c, appErr.Internal("failed to get progress: "+err.Error(), err))
+		return
+	}
+	if pu == nil {
+		response.Error(c, appErr.NotFound("job not found", nil))
 		return
 	}
 
-	resp := ImportResponse{
-		DraftID:  result.DraftID,
-		Title:    entry.Title,
-		Artist:   entry.Uploader,
-		Duration: int(entry.Duration),
-		Message:  "track added to ingestion. review and publish from the ingestion page.",
+	resp := ProgressResponse{
+		JobID:    pu.JobID,
+		Status:   string(pu.Status),
+		Progress: pu.Progress,
+		Stage:    pu.Stage,
+		Error:    pu.Error,
+		DraftID:  pu.DraftID,
 	}
 
-	response.Created(c, "track imported successfully", resp)
+	response.OK(c, "import progress", resp)
 }
 
 func getUserID(c *gin.Context) string {

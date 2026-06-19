@@ -12,7 +12,7 @@
           aria-label="Close queue"
           @click="visible = false"
         >
-          <i class="pi pi-times" />
+          <i aria-hidden="true" class="pi pi-times" />
         </button>
       </div>
 
@@ -32,14 +32,14 @@
                 @error="onImgError"
               />
               <div v-else class="flex h-full items-center justify-center">
-                <i class="pi pi-music text-slate-500" />
+                <i aria-hidden="true" class="pi pi-music text-slate-500" />
               </div>
             </div>
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-bold text-white">{{ currentTrack.title }}</p>
               <p class="truncate text-xs text-slate-400">{{ currentTrack.artistName }}</p>
             </div>
-            <i class="pi pi-waveform text-lg text-[#1db954]" />
+            <i aria-hidden="true" class="pi pi-waveform text-lg text-[#1db954]" />
           </div>
         </div>
 
@@ -62,7 +62,7 @@
                 @click="$emit('playFromQueue', index)"
               >
                 <span class="drag-handle flex w-5 items-center justify-center cursor-grab active:cursor-grabbing text-white/30 hover:text-white/70 transition-colors me-3">
-                  <i class="pi pi-bars text-xs" />
+                  <i aria-hidden="true" class="pi pi-bars text-xs" />
                 </span>
                 <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
                   <img
@@ -74,7 +74,7 @@
                     @error="onImgError"
                   />
                   <div v-else class="flex h-full items-center justify-center">
-                    <i class="pi pi-music text-xs text-slate-500" />
+                    <i aria-hidden="true" class="pi pi-music text-xs text-slate-500" />
                   </div>
                 </div>
                 <div class="min-w-0 flex-1">
@@ -91,7 +91,7 @@
           v-if="!currentTrack && queue.length === 0"
           class="flex flex-col items-center gap-3 pt-16 text-center"
         >
-          <i class="pi pi-list text-3xl text-slate-500" />
+          <i aria-hidden="true" class="pi pi-list text-3xl text-slate-500" />
           <p class="text-sm text-slate-400">Queue is empty</p>
           <p class="text-xs text-slate-500">Start playing tracks to see them here</p>
         </div>

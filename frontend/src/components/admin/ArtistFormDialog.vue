@@ -16,7 +16,7 @@
     <template #header>
       <div class="flex items-center gap-3">
         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
-          <i class="pi pi-user text-emerald-400" />
+          <i aria-hidden="true" class="pi pi-user text-emerald-400" />
         </div>
         <div>
           <h3 class="text-base font-semibold text-white">
@@ -87,12 +87,12 @@
       <!-- Image Preview -->
       <div
         v-if="form.image_url"
-        class="overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02]"
+        class="h-32 overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02]"
       >
         <img
           :src="form.image_url"
           :alt="form.name"
-          class="h-32 w-full object-cover"
+          class="h-full w-full object-cover"
           @error="onImageError"
         />
       </div>

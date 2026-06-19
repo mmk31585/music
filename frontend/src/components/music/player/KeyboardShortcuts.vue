@@ -15,7 +15,7 @@
               class="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white"
               @click="visible = false"
             >
-              <i class="pi pi-times text-sm" />
+              <i aria-hidden="true" class="pi pi-times text-sm" />
             </button>
           </div>
 

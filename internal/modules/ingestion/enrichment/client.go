@@ -5,17 +5,17 @@ import "context"
 type Source string
 
 const (
-	SourceFile       Source = "file"
+	SourceFile        Source = "file"
 	SourceMusicBrainz Source = "musicbrainz"
-	SourceLastFM     Source = "lastfm"
-	SourceSpotify    Source = "spotify"
+	SourceLastFM      Source = "lastfm"
+	SourceSpotify     Source = "spotify"
 )
 
 type Confidence string
 
 const (
-	ConfidenceExact  Confidence = "exact_match"
-	ConfidenceFuzzy  Confidence = "fuzzy"
+	ConfidenceExact    Confidence = "exact_match"
+	ConfidenceFuzzy    Confidence = "fuzzy"
 	ConfidenceFallback Confidence = "fallback"
 )
 
@@ -42,6 +42,8 @@ type LastFMResult struct {
 	ListenerCount  int      `json:"listenerCount"`
 	Tags           []string `json:"tags"`
 	ArtistBio      string   `json:"artistBio"`
+	ArtistImageURL string   `json:"artistImageUrl"`
+	AlbumCoverURL  string   `json:"albumCoverUrl"`
 	SimilarArtists []string `json:"similarArtists"`
 }
 
@@ -61,12 +63,12 @@ type EnrichedSuggestion struct {
 }
 
 type EnrichmentResult struct {
-	MusicBrainz *MusicBrainzResult `json:"musicbrainz,omitempty"`
-	LastFM      *LastFMResult      `json:"lastfm,omitempty"`
-	Spotify     *SpotifyResult     `json:"spotify,omitempty"`
-	LRCLib      *LRCLibResult      `json:"lrclib,omitempty"`
+	MusicBrainz *MusicBrainzResult   `json:"musicbrainz,omitempty"`
+	LastFM      *LastFMResult        `json:"lastfm,omitempty"`
+	Spotify     *SpotifyResult       `json:"spotify,omitempty"`
+	LRCLib      *LRCLibResult        `json:"lrclib,omitempty"`
 	Suggestions []EnrichedSuggestion `json:"suggestions"`
-	Attempted   bool               `json:"enrichment_attempted"`
+	Attempted   bool                 `json:"enrichment_attempted"`
 }
 
 type MusicBrainzClient interface {

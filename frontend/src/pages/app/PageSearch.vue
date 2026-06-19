@@ -7,7 +7,7 @@
     </section>
 
     <div class="relative mb-8">
-      <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-500" />
+      <i aria-hidden="true" class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-500" />
       <input
         v-model="query"
         type="text"
@@ -22,7 +22,7 @@
         class="absolute right-4 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs text-slate-400 hover:bg-white/20"
         @click="clearSearch"
       >
-        <i class="pi pi-times" />
+        <i aria-hidden="true" class="pi pi-times" />
       </button>
     </div>
 
@@ -39,7 +39,7 @@
     <template v-else-if="hasSearched">
       <div v-if="hasNoResults" class="flex flex-col items-center gap-4 py-16 text-center">
         <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5">
-          <i class="pi pi-search text-3xl text-slate-600" />
+          <i aria-hidden="true" class="pi pi-search text-3xl text-slate-600" />
         </div>
         <p class="text-sm text-slate-400">No results for "<span class="font-medium text-white">{{ lastQuery }}</span>"</p>
         <p class="text-xs text-slate-500">Try a different search term</p>
@@ -49,7 +49,7 @@
         <section v-if="results.tracks.length">
           <div class="mb-4 flex items-center gap-3">
             <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
-              <i class="pi pi-play-circle text-xs text-emerald-400" />
+              <i aria-hidden="true" class="pi pi-play-circle text-xs text-emerald-400" />
             </div>
             <h2 class="text-lg font-bold text-white">Tracks</h2>
             <span class="text-xs text-slate-500">{{ results.tracks.length }}</span>
@@ -71,7 +71,7 @@
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full items-center justify-center">
-                  <i class="pi pi-music text-xs text-slate-600" />
+                  <i aria-hidden="true" class="pi pi-music text-xs text-slate-600" />
                 </div>
               </div>
               <div class="min-w-0 flex-1">
@@ -86,7 +86,7 @@
         <section v-if="results.artists.length">
           <div class="mb-4 flex items-center gap-3">
             <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
-              <i class="pi pi-users text-xs text-blue-400" />
+              <i aria-hidden="true" class="pi pi-users text-xs text-blue-400" />
             </div>
             <h2 class="text-lg font-bold text-white">Artists</h2>
             <span class="text-xs text-slate-500">{{ results.artists.length }}</span>
@@ -107,7 +107,7 @@
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full items-center justify-center">
-                  <i class="pi pi-user text-xl text-slate-500" />
+                  <i aria-hidden="true" class="pi pi-user text-xl text-slate-500" />
                 </div>
               </div>
               <p class="mt-3 truncate text-sm font-medium text-white">{{ artist.name }}</p>
@@ -119,7 +119,7 @@
         <section v-if="results.albums.length">
           <div class="mb-4 flex items-center gap-3">
             <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
-              <i class="pi pi-book text-xs text-purple-400" />
+              <i aria-hidden="true" class="pi pi-book text-xs text-purple-400" />
             </div>
             <h2 class="text-lg font-bold text-white">Albums</h2>
             <span class="text-xs text-slate-500">{{ results.albums.length }}</span>
@@ -140,7 +140,7 @@
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full items-center justify-center">
-                  <i class="pi pi-compact-disc text-3xl text-slate-500" />
+                  <i aria-hidden="true" class="pi pi-compact-disc text-3xl text-slate-500" />
                 </div>
               </div>
               <p class="mt-2 truncate text-sm font-medium text-white">{{ album.title }}</p>
@@ -153,7 +153,7 @@
 
     <div v-else class="flex flex-col items-center gap-4 py-16 text-center">
       <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5">
-        <i class="pi pi-search text-3xl text-slate-600" />
+        <i aria-hidden="true" class="pi pi-search text-3xl text-slate-600" />
       </div>
       <p class="text-sm text-slate-400">Type to search tracks, artists, and albums</p>
     </div>

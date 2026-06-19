@@ -147,7 +147,8 @@ export const usePlayerStore = defineStore('player', () => {
         preloadManager.preload(nextTrack.streamUrl)
       }
     } catch (err: any) {
-      error.value = err?.message || 'Could not play track'
+      const message = err instanceof Error ? err.message : String(err)
+      error.value = message || 'Could not play track'
     } finally {
       isLoadingTrack.value = false
       isBuffering.value = false
@@ -164,7 +165,8 @@ export const usePlayerStore = defineStore('player', () => {
       const track = await playerApi.getPlaybackTrack(id)
       await playTrack(track)
     } catch (err: any) {
-      error.value = err?.message || 'Could not load track'
+      const message = err instanceof Error ? err.message : String(err)
+      error.value = message || 'Could not load track'
     } finally {
       isLoadingTrack.value = false
     }
@@ -210,7 +212,8 @@ export const usePlayerStore = defineStore('player', () => {
     try {
       await audioEngine.play()
     } catch (err: any) {
-      error.value = err?.message || 'Could not resume playback'
+      const message = err instanceof Error ? err.message : String(err)
+      error.value = message || 'Could not resume playback'
     }
   }
 

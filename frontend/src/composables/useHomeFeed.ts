@@ -22,7 +22,7 @@ export function useHomeFeed() {
   const artists = ref<Artist[]>([])
   const recentPlays = ref<any[]>([])
   const loading = ref(false)
-  const error = ref<unknown>(null)
+  const error = ref<any>(null)
 
   const hasData = computed(() =>
     popular.value.length > 0 ||

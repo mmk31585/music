@@ -18,7 +18,7 @@ export const CountsResponseSchema = z.object({
 
 export const ReactRequestSchema = z.object({
   target_id: z.string(),
-  target_type: z.enum(['track', 'album', 'playlist', 'artist', 'comment']),
+  target_type: z.enum(['track', 'album', 'playlist', 'artist', 'comment', 'club_discussion', 'club_discussion_reply']),
   type: z.enum(['like', 'love', 'dislike']),
 })
 

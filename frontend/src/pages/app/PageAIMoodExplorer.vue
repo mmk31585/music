@@ -26,7 +26,7 @@
             class="flex h-12 w-12 items-center justify-center rounded-xl text-lg"
             :class="selectedMood === mood.value ? 'bg-[#1db954]/20' : 'bg-white/[0.06]'"
           >
-            <i :class="mood.icon" />
+            <i aria-hidden="true" :class="mood.icon" />
           </div>
           <span class="text-xs font-bold">{{ mood.label }}</span>
         </button>
@@ -67,14 +67,14 @@
             @error="onImgError"
           />
           <div v-else class="flex h-full items-center justify-center">
-            <i class="pi pi-music text-xs text-slate-500" />
+            <i aria-hidden="true" class="pi pi-music text-xs text-slate-500" />
           </div>
           <button
             type="button"
             class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
             @click="playTrack(index)"
           >
-            <i class="pi pi-play-fill text-xs text-white" />
+            <i aria-hidden="true" class="pi pi-play-fill text-xs text-white" />
           </button>
         </div>
 
@@ -105,7 +105,7 @@
       <div
         class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1db954]/20 to-blue-500/20"
       >
-        <i class="pi pi-heart text-xl text-[#1db954]" />
+        <i aria-hidden="true" class="pi pi-heart text-xl text-[#1db954]" />
       </div>
       <h3 class="text-lg font-bold text-white">Pick a mood</h3>
       <p class="max-w-xs text-sm text-slate-400">
@@ -120,7 +120,7 @@
       <div
         class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1db954]/20 to-amber-500/20"
       >
-        <i class="pi pi-inbox text-xl text-slate-400" />
+        <i aria-hidden="true" class="pi pi-inbox text-xl text-slate-400" />
       </div>
       <h3 class="text-lg font-bold text-white">No tracks found</h3>
       <p class="max-w-xs text-sm text-slate-400">

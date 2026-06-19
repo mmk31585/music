@@ -16,7 +16,7 @@ export function useArtist(id: string | number) {
   const related = ref<Artist[]>([])
   const isFollowing = ref(false)
   const loading = ref(false)
-  const error = ref<unknown>(null)
+  const error = ref<any>(null)
 
   const monthlyListeners = computed(() => artist.value?.monthly_listeners ?? 0)
 

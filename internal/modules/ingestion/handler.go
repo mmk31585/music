@@ -110,6 +110,10 @@ func (h *Handler) ListDrafts(c *gin.Context) {
 		return
 	}
 
+	if res.Items == nil {
+		res.Items = []DraftListItem{}
+	}
+
 	meta := pagination.NewMeta(p, res.Total)
 
 	response.SuccessWithMeta(c, http.StatusOK, "drafts retrieved successfully", res.Items, meta)

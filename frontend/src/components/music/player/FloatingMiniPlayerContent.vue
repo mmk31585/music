@@ -14,10 +14,10 @@
 
     <div v-if="mode === 'expanded' || isPiP" class="popout-header">
       <button type="button" class="popout-btn" title="Minimize" @click="mode = 'mini'">
-        <i class="pi pi-window-minimize" />
+        <i aria-hidden="true" class="pi pi-window-minimize" />
       </button>
       <button type="button" class="popout-btn" title="Full player" @click="openFullscreen">
-        <i class="pi pi-expand" />
+        <i aria-hidden="true" class="pi pi-expand" />
       </button>
       <button
         type="button"
@@ -25,23 +25,23 @@
         :title="isPiP ? 'Return to app' : 'Pop out'"
         @click="onTogglePiP"
       >
-        <i :class="isPiP ? 'pi pi-window-maximize' : 'pi pi-external-link'" />
+        <i aria-hidden="true" :class="isPiP ? 'pi pi-window-maximize' : 'pi pi-external-link'" />
       </button>
       <button v-if="!isPiP" type="button" class="popout-btn" title="Close" @click="close">
-        <i class="pi pi-times" />
+        <i aria-hidden="true" class="pi pi-times" />
       </button>
     </div>
 
     <div v-if="mode === 'mini' && !isPiP" class="popout-mini" @dblclick="mode = 'expanded'">
       <img v-if="coverUrl" :src="coverUrl" :alt="title" loading="lazy" class="popout-cover" @error="onImgError" />
       <div v-else class="popout-cover-placeholder">
-        <i class="pi pi-music" />
+        <i aria-hidden="true" class="pi pi-music" />
       </div>
       <div v-if="isPlaying" class="popout-equalizer">
         <span /><span /><span />
       </div>
       <div class="popout-mini-overlay" @click="togglePlayPause">
-        <i :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" class="popout-play-icon" />
+        <i aria-hidden="true" :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" class="popout-play-icon" />
       </div>
     </div>
 
@@ -49,7 +49,7 @@
       <div class="popout-track-info">
         <img v-if="coverUrl" :src="coverUrl" :alt="title" loading="lazy" class="popout-expanded-cover" @error="onImgError" />
         <div v-else class="popout-expanded-cover-placeholder">
-          <i class="pi pi-music" />
+          <i aria-hidden="true" class="pi pi-music" />
         </div>
         <div class="popout-meta">
           <p class="popout-title">{{ title || 'No track' }}</p>
@@ -69,19 +69,19 @@
 
       <div class="popout-controls">
         <button type="button" class="popout-ctrl-btn" @click="playPrevious" :disabled="!hasPrevious">
-          <i class="pi pi-step-backward" />
+          <i aria-hidden="true" class="pi pi-step-backward" />
         </button>
         <button type="button" class="popout-play-btn" :style="{ background: accentColor }" @click="togglePlayPause">
-          <i :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" />
+          <i aria-hidden="true" :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" />
         </button>
         <button type="button" class="popout-ctrl-btn" @click="playNext" :disabled="!hasNext">
-          <i class="pi pi-step-forward" />
+          <i aria-hidden="true" class="pi pi-step-forward" />
         </button>
       </div>
 
       <div class="popout-volume">
         <button type="button" class="popout-ctrl-btn" @click="toggleMute">
-          <i :class="volumeIcon" />
+          <i aria-hidden="true" :class="volumeIcon" />
         </button>
         <input
           type="range" min="0" max="1" step="0.01"
@@ -157,8 +157,6 @@ let dragStartX = 0
 let dragStartY = 0
 let initialX = 0
 let initialY = 0
-let snapped = false
-
 const posX = ref(typeof window !== 'undefined' ? window.innerWidth - 340 : 1000)
 const posY = ref(typeof window !== 'undefined' ? window.innerHeight - 220 : 500)
 const offsetX = ref(0)
@@ -175,7 +173,6 @@ function onPointerDown(e: MouseEvent | TouchEvent) {
   isDragging.value = true
   const el = floatingEl.value
   if (!el) return
-  const rect = el.getBoundingClientRect()
   const clientX = 'touches' in e ? e.touches[0]!.clientX : e.clientX
   const clientY = 'touches' in e ? e.touches[0]!.clientY : e.clientY
 
@@ -201,7 +198,6 @@ function onPointerMove(e: MouseEvent | TouchEvent) {
     if (floatingEl.value) {
       floatingEl.value.style.transform = `translate(${initialX + dx}px, ${initialY + dy}px)`
     }
-    snapped = false
     if ('touches' in e) e.preventDefault()
   })
 }
@@ -237,10 +233,10 @@ function snapToEdge() {
   ny = Math.max(margin, Math.min(window.innerHeight - h - margin, ny))
 
   posX.value = nx
+  posX.value = nx
   posY.value = ny
   offsetX.value = 0
   offsetY.value = 0
-  snapped = true
 }
 
 const timeCache = new Map<number, string>()

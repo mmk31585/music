@@ -20,7 +20,7 @@ export function useAdminGenres() {
   const loading = ref(false)
   const saving = ref(false)
   const deleting = ref(false)
-  const error = ref<unknown>(null)
+  const error = ref<any>(null)
 
   async function fetchGenres() {
     loading.value = true

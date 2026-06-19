@@ -22,14 +22,14 @@ declare module 'crypto-js/aes' {
       ciphertext: string,
       key: string,
     ): {
-      toString(enc: { parse(str: string): unknown; stringify(wordArray: unknown): string }): string
+      toString(enc: { parse(str: string): any; stringify(wordArray: any): string }): string
     }
   }
   export default AES
 }
 
 declare module 'crypto-js/enc-utf8' {
-  const Utf8: { parse(str: string): unknown; stringify(wordArray: unknown): string }
+  const Utf8: { parse(str: string): any; stringify(wordArray: any): string }
   export default Utf8
 }
 
@@ -40,7 +40,7 @@ declare module 'crypto-js' {
       decrypt(ciphertext: string, key: string): { toString(enc: typeof CryptoJS.enc.Utf8): string }
     }
     enc: {
-      Utf8: { parse(str: string): unknown; stringify(wordArray: unknown): string }
+      Utf8: { parse(str: string): any; stringify(wordArray: any): string }
     }
   }
   export default CryptoJS

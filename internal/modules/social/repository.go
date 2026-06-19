@@ -38,6 +38,8 @@ type Repository interface {
 	CreateClub(ctx context.Context, club *MusicClub) error
 	GetClub(ctx context.Context, id uuid.UUID) (*MusicClub, error)
 	ListClubs(ctx context.Context, limit, offset int) ([]MusicClub, error)
+	ListClubsByGenre(ctx context.Context, genre string, limit, offset int) ([]MusicClub, error)
+	UpdateClubPlaylistID(ctx context.Context, clubID, playlistID uuid.UUID) error
 	JoinClub(ctx context.Context, clubID, userID uuid.UUID) error
 	LeaveClub(ctx context.Context, clubID, userID uuid.UUID) error
 	IsClubMember(ctx context.Context, clubID, userID uuid.UUID) (bool, error)
@@ -51,6 +53,46 @@ type Repository interface {
 	CreateRating(ctx context.Context, rating *TrackRating) error
 	GetTrackRatings(ctx context.Context, trackID uuid.UUID) ([]TrackRating, error)
 	GetTrackRatingAverage(ctx context.Context, trackID uuid.UUID) (float64, int, error)
+
+	// Room queue voting
+	SuggestTrack(ctx context.Context, c *QueueCandidate) error
+	GetCandidates(ctx context.Context, roomID uuid.UUID) ([]QueueCandidate, error)
+	GetCandidateByID(ctx context.Context, candidateID uuid.UUID) (*QueueCandidate, error)
+	CastVoteTx(ctx context.Context, candidateID, userID uuid.UUID) error
+	RemoveVoteTx(ctx context.Context, candidateID, userID uuid.UUID) error
+	HasVoted(ctx context.Context, candidateID, userID uuid.UUID) (bool, error)
+	GetNowPlaying(ctx context.Context, roomID uuid.UUID) (*RoomNowPlaying, error)
+	SetNowPlaying(ctx context.Context, np *RoomNowPlaying) error
+	RemoveCandidate(ctx context.Context, candidateID uuid.UUID) error
+	GetCandidatesWithVoteState(ctx context.Context, roomID, userID uuid.UUID) ([]CandidateWithVoteState, error)
+	LockRoomQueue(ctx context.Context, roomID uuid.UUID) (func(), error)
+	PickRandomTrack(ctx context.Context) (*uuid.UUID, error)
+	GetRoomMembers(ctx context.Context, roomID uuid.UUID) (int, error)
+
+	// Stage & Raise-Hand
+	GetHandRaise(ctx context.Context, roomID, userID uuid.UUID) (*HandRaise, error)
+	RaiseHand(ctx context.Context, roomID, userID uuid.UUID) error
+	LowerHand(ctx context.Context, roomID, userID uuid.UUID) error
+	UpdateHandRaiseStatus(ctx context.Context, id uuid.UUID, status string) error
+	ListPendingHandRaises(ctx context.Context, roomID uuid.UUID) ([]HandRaise, error)
+	GetStageMember(ctx context.Context, roomID, userID uuid.UUID) (*StageMember, error)
+	SetStageMember(ctx context.Context, m *StageMember) error
+	RemoveStageMember(ctx context.Context, roomID, userID uuid.UUID) error
+	ListStageSpeakers(ctx context.Context, roomID uuid.UUID) ([]StageMember, error)
+	GetStageHost(ctx context.Context, roomID uuid.UUID) (*StageMember, error)
+	UpdateStageMemberMuted(ctx context.Context, roomID, userID uuid.UUID, muted bool) error
+
+	// Club Discussions (Phase 6)
+	CreateClubDiscussion(ctx context.Context, d *ClubDiscussion) error
+	ListClubDiscussions(ctx context.Context, clubID uuid.UUID, limit, offset int) ([]ClubDiscussion, error)
+	GetClubDiscussion(ctx context.Context, id uuid.UUID) (*ClubDiscussion, error)
+	DeleteClubDiscussion(ctx context.Context, id uuid.UUID) error
+	IncrementClubDiscussionReplyCount(ctx context.Context, id uuid.UUID) error
+	DecrementClubDiscussionReplyCount(ctx context.Context, id uuid.UUID) error
+	CreateClubDiscussionReply(ctx context.Context, r *ClubDiscussionReply) error
+	GetClubDiscussionReplies(ctx context.Context, discussionID uuid.UUID) ([]ClubDiscussionReply, error)
+	GetClubDiscussionReply(ctx context.Context, id uuid.UUID) (*ClubDiscussionReply, error)
+	DeleteClubDiscussionReply(ctx context.Context, id uuid.UUID) error
 }
 
 type repository struct {
@@ -379,8 +421,8 @@ func (r *repository) CreateClub(ctx context.Context, club *MusicClub) error {
 	defer tx.Rollback()
 
 	if _, err := tx.NamedExecContext(ctx, `
-		INSERT INTO music_clubs (id, name, description, cover_url, created_by, is_public, max_members, member_count, created_at, updated_at)
-		VALUES (:id, :name, :description, :cover_url, :created_by, :is_public, :max_members, :member_count, :created_at, :updated_at)
+		INSERT INTO music_clubs (id, name, slug, description, cover_url, genre, playlist_id, created_by, is_public, max_members, member_count, created_at, updated_at)
+		VALUES (:id, :name, :slug, :description, :cover_url, :genre, :playlist_id, :created_by, :is_public, :max_members, :member_count, :created_at, :updated_at)
 	`, club); err != nil {
 		return err
 	}
@@ -413,6 +455,24 @@ func (r *repository) ListClubs(ctx context.Context, limit, offset int) ([]MusicC
 		LIMIT $1 OFFSET $2
 	`, limit, offset)
 	return items, err
+}
+
+func (r *repository) ListClubsByGenre(ctx context.Context, genre string, limit, offset int) ([]MusicClub, error) {
+	var items []MusicClub
+	err := r.db.SelectContext(ctx, &items, `
+		SELECT * FROM music_clubs
+		WHERE is_public = true AND genre = $1
+		ORDER BY member_count DESC, created_at DESC
+		LIMIT $2 OFFSET $3
+	`, genre, limit, offset)
+	return items, err
+}
+
+func (r *repository) UpdateClubPlaylistID(ctx context.Context, clubID, playlistID uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE music_clubs SET playlist_id = $2, updated_at = NOW() WHERE id = $1
+	`, clubID, playlistID)
+	return err
 }
 
 func (r *repository) JoinClub(ctx context.Context, clubID, userID uuid.UUID) error {
@@ -542,4 +602,400 @@ func (r *repository) GetTrackRatingAverage(ctx context.Context, trackID uuid.UUI
 	}
 	err = r.db.GetContext(ctx, &count, `SELECT COUNT(*) FROM track_ratings WHERE track_id = $1`, trackID)
 	return avg, count, err
+}
+
+// --- Room Queue Voting ---
+
+func (r *repository) SuggestTrack(ctx context.Context, c *QueueCandidate) error {
+	c.ID = uuid.New()
+	_, err := r.db.NamedExecContext(ctx, `
+		INSERT INTO room_queue_candidates (id, room_id, track_id, suggested_by, vote_count, created_at)
+		VALUES (:id, :room_id, :track_id, :suggested_by, :vote_count, :created_at)
+		ON CONFLICT (room_id, track_id) DO NOTHING
+	`, c)
+	return err
+}
+
+func (r *repository) GetCandidates(ctx context.Context, roomID uuid.UUID) ([]QueueCandidate, error) {
+	var items []QueueCandidate
+	err := r.db.SelectContext(ctx, &items, `
+		SELECT id, room_id, track_id, suggested_by, vote_count, created_at
+		FROM room_queue_candidates
+		WHERE room_id = $1
+		ORDER BY vote_count DESC, created_at ASC
+	`, roomID)
+	return items, err
+}
+
+func (r *repository) GetCandidateByID(ctx context.Context, candidateID uuid.UUID) (*QueueCandidate, error) {
+	var c QueueCandidate
+	err := r.db.GetContext(ctx, &c, `
+		SELECT id, room_id, track_id, suggested_by, vote_count, created_at
+		FROM room_queue_candidates
+		WHERE id = $1
+	`, candidateID)
+	if err != nil {
+		return nil, err
+	}
+	return &c, nil
+}
+
+func (r *repository) CastVoteTx(ctx context.Context, candidateID, userID uuid.UUID) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var exists bool
+	err = tx.GetContext(ctx, &exists, `
+		SELECT EXISTS(SELECT 1 FROM room_queue_votes WHERE candidate_id = $1 AND user_id = $2)
+	`, candidateID, userID)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO room_queue_votes (candidate_id, user_id)
+		VALUES ($1, $2)
+	`, candidateID, userID)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		UPDATE room_queue_candidates
+		SET vote_count = vote_count + 1
+		WHERE id = $1
+	`, candidateID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (r *repository) RemoveVoteTx(ctx context.Context, candidateID, userID uuid.UUID) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	res, err := tx.ExecContext(ctx, `
+		DELETE FROM room_queue_votes
+		WHERE candidate_id = $1 AND user_id = $2
+	`, candidateID, userID)
+	if err != nil {
+		return err
+	}
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return nil
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		UPDATE room_queue_candidates
+		SET vote_count = GREATEST(vote_count - 1, 0)
+		WHERE id = $1
+	`, candidateID)
+
+	return tx.Commit()
+}
+
+func (r *repository) HasVoted(ctx context.Context, candidateID, userID uuid.UUID) (bool, error) {
+	var exists bool
+	err := r.db.GetContext(ctx, &exists, `
+		SELECT EXISTS(SELECT 1 FROM room_queue_votes WHERE candidate_id = $1 AND user_id = $2)
+	`, candidateID, userID)
+	return exists, err
+}
+
+func (r *repository) GetNowPlaying(ctx context.Context, roomID uuid.UUID) (*RoomNowPlaying, error) {
+	var np RoomNowPlaying
+	err := r.db.GetContext(ctx, &np, `
+		SELECT room_id, track_id, started_at, suggested_by, source
+		FROM room_now_playing
+		WHERE room_id = $1
+	`, roomID)
+	if err != nil {
+		return nil, err
+	}
+	return &np, nil
+}
+
+func (r *repository) SetNowPlaying(ctx context.Context, np *RoomNowPlaying) error {
+	_, err := r.db.NamedExecContext(ctx, `
+		INSERT INTO room_now_playing (room_id, track_id, started_at, suggested_by, source)
+		VALUES (:room_id, :track_id, :started_at, :suggested_by, :source)
+		ON CONFLICT (room_id) DO UPDATE SET
+			track_id = EXCLUDED.track_id,
+			started_at = EXCLUDED.started_at,
+			suggested_by = EXCLUDED.suggested_by,
+			source = EXCLUDED.source
+	`, np)
+	return err
+}
+
+func (r *repository) RemoveCandidate(ctx context.Context, candidateID uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx, `
+		DELETE FROM room_queue_candidates WHERE id = $1
+	`, candidateID)
+	return err
+}
+
+func (r *repository) GetCandidatesWithVoteState(ctx context.Context, roomID, userID uuid.UUID) ([]CandidateWithVoteState, error) {
+	var items []CandidateWithVoteState
+	err := r.db.SelectContext(ctx, &items, `
+		SELECT
+			c.id, c.room_id, c.track_id, c.suggested_by, c.vote_count, c.created_at,
+			CASE WHEN v.id IS NOT NULL THEN true ELSE false END AS has_voted
+		FROM room_queue_candidates c
+		LEFT JOIN room_queue_votes v ON v.candidate_id = c.id AND v.user_id = $2
+		WHERE c.room_id = $1
+		ORDER BY c.vote_count DESC, c.created_at ASC
+	`, roomID, userID)
+	return items, err
+}
+
+func (r *repository) LockRoomQueue(ctx context.Context, roomID uuid.UUID) (func(), error) {
+	_, err := r.db.ExecContext(ctx, `
+		SELECT pg_advisory_xact_lock(hashtext($1))
+	`, "room_queue:"+roomID.String())
+	if err != nil {
+		return nil, err
+	}
+	return func() {}, nil
+}
+
+func (r *repository) PickRandomTrack(ctx context.Context) (*uuid.UUID, error) {
+	var trackID uuid.UUID
+	err := r.db.GetContext(ctx, &trackID, `
+		SELECT id FROM tracks
+		WHERE is_active = true
+		ORDER BY RANDOM()
+		LIMIT 1
+	`)
+	if err != nil {
+		return nil, err
+	}
+	return &trackID, nil
+}
+
+func (r *repository) GetRoomMembers(ctx context.Context, roomID uuid.UUID) (int, error) {
+	var count int
+	err := r.db.GetContext(ctx, &count, `
+		SELECT COUNT(*) FROM live_room_participants
+		WHERE room_id = $1 AND is_active = true
+	`, roomID)
+	return count, err
+}
+
+// --- Stage & Raise-Hand ---
+
+func (r *repository) GetHandRaise(ctx context.Context, roomID, userID uuid.UUID) (*HandRaise, error) {
+	var hr HandRaise
+	err := r.db.GetContext(ctx, &hr, `
+		SELECT id, room_id, user_id, status, created_at
+		FROM room_hand_raises
+		WHERE room_id = $1 AND user_id = $2
+	`, roomID, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &hr, nil
+}
+
+func (r *repository) RaiseHand(ctx context.Context, roomID, userID uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx, `
+		INSERT INTO room_hand_raises (room_id, user_id, status)
+		VALUES ($1, $2, 'pending')
+		ON CONFLICT (room_id, user_id) DO NOTHING
+	`, roomID, userID)
+	return err
+}
+
+func (r *repository) LowerHand(ctx context.Context, roomID, userID uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx, `
+		DELETE FROM room_hand_raises
+		WHERE room_id = $1 AND user_id = $2 AND status = 'pending'
+	`, roomID, userID)
+	return err
+}
+
+func (r *repository) UpdateHandRaiseStatus(ctx context.Context, id uuid.UUID, status string) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE room_hand_raises SET status = $2 WHERE id = $1
+	`, id, status)
+	return err
+}
+
+func (r *repository) ListPendingHandRaises(ctx context.Context, roomID uuid.UUID) ([]HandRaise, error) {
+	var items []HandRaise
+	err := r.db.SelectContext(ctx, &items, `
+		SELECT id, room_id, user_id, status, created_at
+		FROM room_hand_raises
+		WHERE room_id = $1 AND status = 'pending'
+		ORDER BY created_at ASC
+	`, roomID)
+	return items, err
+}
+
+func (r *repository) GetStageMember(ctx context.Context, roomID, userID uuid.UUID) (*StageMember, error) {
+	var m StageMember
+	err := r.db.GetContext(ctx, &m, `
+		SELECT room_id, user_id, role, joined_at, muted
+		FROM room_stage_members
+		WHERE room_id = $1 AND user_id = $2
+	`, roomID, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &m, nil
+}
+
+func (r *repository) SetStageMember(ctx context.Context, m *StageMember) error {
+	_, err := r.db.NamedExecContext(ctx, `
+		INSERT INTO room_stage_members (room_id, user_id, role, joined_at, muted)
+		VALUES (:room_id, :user_id, :role, :joined_at, :muted)
+		ON CONFLICT (room_id, user_id) DO UPDATE SET
+			role = EXCLUDED.role,
+			muted = EXCLUDED.muted,
+			joined_at = EXCLUDED.joined_at
+	`, m)
+	return err
+}
+
+func (r *repository) RemoveStageMember(ctx context.Context, roomID, userID uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx, `
+		DELETE FROM room_stage_members
+		WHERE room_id = $1 AND user_id = $2
+	`, roomID, userID)
+	return err
+}
+
+func (r *repository) ListStageSpeakers(ctx context.Context, roomID uuid.UUID) ([]StageMember, error) {
+	var items []StageMember
+	err := r.db.SelectContext(ctx, &items, `
+		SELECT room_id, user_id, role, joined_at, muted
+		FROM room_stage_members
+		WHERE room_id = $1 AND role = 'speaker'
+		ORDER BY joined_at ASC
+	`, roomID)
+	return items, err
+}
+
+func (r *repository) GetStageHost(ctx context.Context, roomID uuid.UUID) (*StageMember, error) {
+	var m StageMember
+	err := r.db.GetContext(ctx, &m, `
+		SELECT room_id, user_id, role, joined_at, muted
+		FROM room_stage_members
+		WHERE room_id = $1 AND role = 'host'
+	`, roomID)
+	if err != nil {
+		return nil, err
+	}
+	return &m, nil
+}
+
+func (r *repository) UpdateStageMemberMuted(ctx context.Context, roomID, userID uuid.UUID, muted bool) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE room_stage_members SET muted = $3
+		WHERE room_id = $1 AND user_id = $2
+	`, roomID, userID, muted)
+	return err
+}
+
+// --- Club Discussions (Phase 6) ---
+
+func (r *repository) CreateClubDiscussion(ctx context.Context, d *ClubDiscussion) error {
+	_, err := r.db.ExecContext(ctx, `
+		INSERT INTO club_discussions (id, club_id, author_id, title, body, reply_count, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`, d.ID, d.ClubID, d.AuthorID, d.Title, d.Body, d.ReplyCount, d.CreatedAt, d.UpdatedAt)
+	return err
+}
+
+func (r *repository) ListClubDiscussions(ctx context.Context, clubID uuid.UUID, limit, offset int) ([]ClubDiscussion, error) {
+	var items []ClubDiscussion
+	err := r.db.SelectContext(ctx, &items, `
+		SELECT id, club_id, author_id, title, body, reply_count, created_at, updated_at
+		FROM club_discussions
+		WHERE club_id = $1
+		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3
+	`, clubID, limit, offset)
+	return items, err
+}
+
+func (r *repository) GetClubDiscussion(ctx context.Context, id uuid.UUID) (*ClubDiscussion, error) {
+	var d ClubDiscussion
+	err := r.db.GetContext(ctx, &d, `
+		SELECT id, club_id, author_id, title, body, reply_count, created_at, updated_at
+		FROM club_discussions
+		WHERE id = $1
+	`, id)
+	if err != nil {
+		return nil, err
+	}
+	return &d, nil
+}
+
+func (r *repository) DeleteClubDiscussion(ctx context.Context, id uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx, `DELETE FROM club_discussions WHERE id = $1`, id)
+	return err
+}
+
+func (r *repository) IncrementClubDiscussionReplyCount(ctx context.Context, id uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE club_discussions SET reply_count = reply_count + 1 WHERE id = $1
+	`, id)
+	return err
+}
+
+func (r *repository) DecrementClubDiscussionReplyCount(ctx context.Context, id uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE club_discussions SET reply_count = GREATEST(reply_count - 1, 0) WHERE id = $1
+	`, id)
+	return err
+}
+
+func (r *repository) CreateClubDiscussionReply(ctx context.Context, reply *ClubDiscussionReply) error {
+	_, err := r.db.ExecContext(ctx, `
+		INSERT INTO club_discussion_replies (id, discussion_id, author_id, body, created_at)
+		VALUES ($1, $2, $3, $4, $5)
+	`, reply.ID, reply.DiscussionID, reply.AuthorID, reply.Body, reply.CreatedAt)
+	return err
+}
+
+func (r *repository) GetClubDiscussionReplies(ctx context.Context, discussionID uuid.UUID) ([]ClubDiscussionReply, error) {
+	var items []ClubDiscussionReply
+	err := r.db.SelectContext(ctx, &items, `
+		SELECT id, discussion_id, author_id, body, created_at
+		FROM club_discussion_replies
+		WHERE discussion_id = $1
+		ORDER BY created_at ASC
+	`, discussionID)
+	return items, err
+}
+
+func (r *repository) GetClubDiscussionReply(ctx context.Context, id uuid.UUID) (*ClubDiscussionReply, error) {
+	var reply ClubDiscussionReply
+	err := r.db.GetContext(ctx, &reply, `
+		SELECT id, discussion_id, author_id, body, created_at
+		FROM club_discussion_replies
+		WHERE id = $1
+	`, id)
+	if err != nil {
+		return nil, err
+	}
+	return &reply, nil
+}
+
+func (r *repository) DeleteClubDiscussionReply(ctx context.Context, id uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx, `DELETE FROM club_discussion_replies WHERE id = $1`, id)
+	return err
 }

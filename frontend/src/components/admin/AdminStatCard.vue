@@ -24,7 +24,7 @@
         class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors"
         :class="iconBgClass"
       >
-        <i :class="[icon, 'text-sm', iconColorClass]" />
+        <i aria-hidden="true" :class="[icon, 'text-sm', iconColorClass]" />
       </div>
     </div>
   </div>

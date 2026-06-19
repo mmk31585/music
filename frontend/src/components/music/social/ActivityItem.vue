@@ -6,7 +6,7 @@
       class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/60 transition"
       :class="iconBgClass"
     >
-      <i class="text-sm" :class="typeIcon" />
+      <i aria-hidden="true" class="text-sm" :class="typeIcon" />
     </div>
     <div class="min-w-0 flex-1">
       <p class="text-sm text-white/70">
@@ -24,7 +24,7 @@
       class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/50 opacity-0 transition group-hover:opacity-100 hover:bg-[#1db954] hover:text-black"
       @click="handlePlay"
     >
-      <i class="pi pi-play-fill text-xs" />
+      <i aria-hidden="true" class="pi pi-play-fill text-xs" />
     </button>
   </div>
 </template>

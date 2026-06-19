@@ -16,7 +16,7 @@
             :disabled="loading"
             @click="refreshAll"
           >
-            <i :class="loading ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'" class="text-xs" />
+            <i aria-hidden="true" :class="loading ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'" class="text-xs" />
             {{ loading ? 'Loading...' : 'Refresh' }}
           </button>
         </div>
@@ -36,7 +36,7 @@
         "
         @click="activeTab = tab.key"
       >
-        <i :class="tab.icon" class="text-xs" />
+        <i aria-hidden="true" :class="tab.icon" class="text-xs" />
         {{ tab.label }}
         <span
           v-if="tab.badge"
@@ -49,7 +49,7 @@
     <!-- Search & Filter Bar -->
     <div class="mt-4 flex items-center gap-3">
       <div class="relative flex-1">
-        <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/30" />
+        <i aria-hidden="true" class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/30" />
         <input
           v-model="searchQuery"
           placeholder="Search by summary or contributor name..."
@@ -128,7 +128,7 @@
                 class="rounded-lg bg-white/5 p-2 text-xs text-white/30 transition hover:bg-white/10 hover:text-white"
                 @click="selected = c; showDetail = true"
               >
-                <i class="pi pi-eye" />
+                <i aria-hidden="true" class="pi pi-eye" />
               </button>
               <button
                 v-if="reviewingId !== c.id"
@@ -136,7 +136,7 @@
                 class="rounded-lg bg-white/5 p-2 text-xs text-white/30 transition hover:bg-amber-500/10 hover:text-amber-400"
                 @click="reviewingId = c.id; reviewNote = ''"
               >
-                <i class="pi pi-check-circle" />
+                <i aria-hidden="true" class="pi pi-check-circle" />
               </button>
             </div>
           </div>
@@ -225,7 +225,7 @@
                 v-if="c.applied_at"
                 class="flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-1 text-[10px] font-medium text-blue-400"
               >
-                <i class="pi pi-check" /> Applied
+                <i aria-hidden="true" class="pi pi-check" /> Applied
               </span>
               <button
                 v-else
@@ -233,7 +233,7 @@
                 :disabled="applyingId === c.id"
                 @click="doApply(c.id)"
               >
-                <i v-if="applyingId === c.id" class="pi pi-spin pi-spinner mr-1" />
+                <i aria-hidden="true" v-if="applyingId === c.id" class="pi pi-spin pi-spinner mr-1" />
                 Apply
               </button>
               <button
@@ -241,7 +241,7 @@
                 class="rounded-lg bg-white/5 p-2 text-xs text-white/30 transition hover:bg-white/10 hover:text-white"
                 @click="selected = c; showDetail = true"
               >
-                <i class="pi pi-eye" />
+                <i aria-hidden="true" class="pi pi-eye" />
               </button>
             </div>
           </div>
@@ -296,7 +296,7 @@
               class="rounded-lg bg-white/5 p-2 text-xs text-white/30 transition hover:bg-white/10 hover:text-white"
               @click="selected = c; showDetail = true"
             >
-              <i class="pi pi-eye" />
+              <i aria-hidden="true" class="pi pi-eye" />
             </button>
           </div>
         </div>
@@ -320,7 +320,7 @@
       <template #header>
         <div class="flex items-center gap-3">
           <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10">
-            <i class="pi pi-pen-to-square text-amber-400" />
+            <i aria-hidden="true" class="pi pi-pen-to-square text-amber-400" />
           </div>
           <div>
             <h3 class="text-base font-semibold text-white">Contribution Details</h3>
@@ -328,7 +328,7 @@
         </div>
       </template>
 
-      <div class="mt-2 space-y-3 text-sm">
+      <div v-if="selected" class="mt-2 space-y-3 text-sm">
         <div class="flex gap-2">
           <span class="w-28 shrink-0 text-white/40">Type</span>
           <span
@@ -544,7 +544,7 @@ async function fetchPending() {
       pendingItems.value = [...pendingItems.value, ...(res?.data || [])]
     }
     pendingTotal.value = res?.meta.total || 0
-  } catch (e) {
+  } catch {
     toast.add({ severity: 'error', summary: 'Failed to load pending contributions', life: 3000 })
   }
 }
@@ -556,7 +556,7 @@ async function fetchApproved() {
     if (searchQuery.value) params.q = searchQuery.value
     const res = await api.adminListContributions(params)
     approvedItems.value = res?.data || []
-  } catch (e) {
+  } catch {
     toast.add({ severity: 'error', summary: 'Failed to load approved contributions', life: 3000 })
   }
 }
@@ -568,7 +568,7 @@ async function fetchRejected() {
     if (searchQuery.value) params.q = searchQuery.value
     const res = await api.adminListContributions(params)
     rejectedItems.value = res?.data || []
-  } catch (e) {
+  } catch {
     toast.add({ severity: 'error', summary: 'Failed to load rejected contributions', life: 3000 })
   }
 }
@@ -581,7 +581,7 @@ async function doReview(id: string, action: 'approve' | 'reject') {
     reviewingId.value = null
     reviewNote.value = ''
     toast.add({ severity: 'success', summary: `Contribution ${action}d`, life: 2000 })
-  } catch (e) {
+  } catch {
     toast.add({ severity: 'error', summary: 'Failed to review contribution', life: 3000 })
   }
 }
@@ -593,7 +593,7 @@ async function doApply(id: string) {
     toast.add({ severity: 'success', summary: 'Contribution applied to target', life: 2000 })
     // Refresh both tabs
     await Promise.all([fetchPending(), fetchApproved()])
-  } catch (e) {
+  } catch {
     toast.add({ severity: 'error', summary: 'Failed to apply contribution', life: 3000 })
   } finally {
     applyingId.value = null

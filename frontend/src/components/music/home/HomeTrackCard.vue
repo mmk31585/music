@@ -1,11 +1,11 @@
 <template>
   <div
-    class="group w-28 shrink-0 cursor-pointer space-y-2 sm:w-32 md:w-36"
+    class="group w-44 shrink-0 cursor-pointer space-y-2"
     :style="{ transitionDelay: `${delay}ms` }"
     @click="$emit('play', item)"
   >
     <div
-      class="relative aspect-square overflow-hidden rounded-xl bg-white/[0.06] ring-1 ring-white/10 transition-all duration-300 group-hover:shadow-[0_8px_32px_rgba(0,0,0,0.4)] group-hover:ring-[#1db954]/40"
+      class="relative aspect-square overflow-hidden rounded-xl bg-white/[0.06] ring-1 ring-white/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:ring-[#1db954]/40"
       :style="{ borderRadius: radius + 'px' }"
     >
       <img
@@ -16,7 +16,7 @@
         loading="lazy"
       />
       <div v-else class="flex h-full items-center justify-center">
-        <i class="pi pi-music text-2xl text-white/30" />
+        <i aria-hidden="true" class="pi pi-music text-2xl text-white/30" />
       </div>
       <div
         class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
@@ -24,7 +24,7 @@
         <div
           class="flex h-10 w-10 items-center justify-center rounded-full bg-[#1db954] text-black shadow-xl transition-transform group-hover:scale-110"
         >
-          <i class="pi pi-play-fill text-sm" />
+          <i aria-hidden="true" class="pi pi-play-fill text-sm" />
         </div>
       </div>
       <div
@@ -62,8 +62,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+interface TrackCardItem {
+  cover_url?: string | null
+  coverUrl?: string | null
+  title?: string | null
+  track_title?: string | null
+  artist_name?: string | null
+  artistName?: string | null
+}
+
 const props = withDefaults(defineProps<{
-  item: Record<string, any>
+  item: TrackCardItem
   isPlaying?: boolean
   delay?: number
   radius?: number
@@ -74,7 +83,7 @@ const props = withDefaults(defineProps<{
 })
 
 defineEmits<{
-  play: [item: Record<string, any>]
+  play: [item: TrackCardItem]
 }>()
 
 const artistName = computed(() => {

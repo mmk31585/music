@@ -25,7 +25,7 @@
           loading="lazy"
         />
         <div v-else class="flex h-full items-center justify-center">
-          <i class="pi pi-music text-xl text-white/30" />
+          <i aria-hidden="true" class="pi pi-music text-xl text-white/30" />
         </div>
       </div>
     </div>
@@ -50,12 +50,28 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+interface SocialActivity {
+  username?: string
+  timeAgo?: string
+  cover_url?: string | null
+  track_title?: string | null
+  artist_name?: string | null
+  user?: {
+    username?: string
+  }
+  track?: {
+    cover_url?: string | null
+    title?: string | null
+    artist_name?: string | null
+  }
+}
+
 const props = defineProps<{
-  activity: Record<string, any>
+  activity: SocialActivity
 }>()
 
 defineEmits<{
-  'listen-together': [activity: Record<string, any>]
+  'listen-together': [activity: SocialActivity]
 }>()
 
 const initials = computed(() => {

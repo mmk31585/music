@@ -34,14 +34,14 @@ export const useMediaApi = () => {
   }
 
   const listAdminMedia = async (config?: UseRequestConfig<Media[]>) => {
-    return useRequest<Media[], true>(
+    return useRequest<Media, true>(
       MediaApiRoutes.ADMIN_LIST,
       { method: 'GET' },
       { silent: false, ...config },
     )
   }
 
-  const deleteAdminMedia = async (id: string, config?: UseRequestConfig<unknown>) => {
+  const deleteAdminMedia = async (id: string, config?: UseRequestConfig<any>) => {
     return useRequest(
       apiReplaceParams(MediaApiRoutes.ADMIN_DELETE, { id }),
       { method: 'DELETE' },

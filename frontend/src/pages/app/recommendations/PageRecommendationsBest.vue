@@ -22,7 +22,7 @@
         <div
           class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/10 text-2xl text-white"
         >
-          <i class="pi pi-star" />
+          <i aria-hidden="true" class="pi pi-star" />
         </div>
         <h2 class="mt-5 text-xl font-black text-white">No best tracks yet</h2>
         <p class="mt-2 text-sm text-slate-400">Tracks need likes and plays to qualify.</p>
@@ -42,7 +42,7 @@
           <div
             class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-yellow-400/20 text-lg text-yellow-300"
           >
-            <i class="pi pi-star" />
+            <i aria-hidden="true" class="pi pi-star" />
           </div>
 
           <div class="min-w-0 flex-1">

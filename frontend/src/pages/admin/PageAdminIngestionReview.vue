@@ -8,7 +8,7 @@
     >
       <template #actions>
         <Button
-          v-if="!enriching && !enrichment?.enrichment_attempted && draftDetail?.status === 'review'"
+          v-if="!enriching && (draftDetail?.status === 'pending' || draftDetail?.status === 'enrichment_failed')"
           label="Enrich Now"
           icon="pi pi-magic"
           severity="warn"
@@ -34,7 +34,7 @@
     </AdminSectionHeader>
 
     <div v-if="loading" class="py-20 text-center">
-      <i class="pi pi-spin pi-spinner text-3xl text-surface-400"></i>
+      <i aria-hidden="true" class="pi pi-spin pi-spinner text-3xl text-surface-400"></i>
       <p class="mt-4 text-surface-500">Loading draft...</p>
     </div>
 
@@ -45,7 +45,7 @@
     <template v-else-if="published && publishResult">
       <div class="py-12 text-center">
         <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20">
-          <i class="pi pi-check-circle text-3xl text-green-400"></i>
+          <i aria-hidden="true" class="pi pi-check-circle text-3xl text-green-400"></i>
         </div>
         <h2 class="mb-2 text-2xl font-bold text-white">Published to Catalog</h2>
         <p class="mb-8 text-surface-400">{{ draftDetail?.originalFilename }} has been published successfully.</p>
@@ -62,7 +62,7 @@
               class="h-10 w-10 flex-shrink-0 rounded-full object-cover"
               @error="($event.target as HTMLImageElement).style.display='none'"
             />
-            <i v-else class="pi pi-user text-xl text-primary"></i>
+            <i aria-hidden="true" v-else class="pi pi-user text-xl text-primary"></i>
             <div>
               <p class="text-sm font-medium text-white">View Artist in Catalog</p>
               <p class="text-xs text-surface-500">{{ finalMetadata.artist.name }}</p>
@@ -80,7 +80,7 @@
               class="h-10 w-10 flex-shrink-0 rounded object-cover"
               @error="($event.target as HTMLImageElement).style.display='none'"
             />
-            <i v-else class="pi pi-book text-xl text-primary"></i>
+            <i aria-hidden="true" v-else class="pi pi-book text-xl text-primary"></i>
             <div>
               <p class="text-sm font-medium text-white">View Album in Catalog</p>
               <p class="text-xs text-surface-500">{{ finalMetadata.album.title }}</p>
@@ -98,7 +98,7 @@
               class="h-10 w-10 flex-shrink-0 rounded object-cover"
               @error="($event.target as HTMLImageElement).style.display='none'"
             />
-            <i v-else class="pi pi-music text-xl text-primary"></i>
+            <i aria-hidden="true" v-else class="pi pi-music text-xl text-primary"></i>
             <div>
               <p class="text-sm font-medium text-white">View Track in Catalog</p>
               <p class="text-xs text-surface-500">{{ finalMetadata.track.title }}</p>
@@ -109,7 +109,7 @@
             target="_blank"
             class="flex items-center gap-3 rounded-lg border border-surface-700 bg-surface-800 p-4 text-left transition-colors hover:bg-surface-700"
           >
-            <i class="pi pi-external-link text-xl text-primary"></i>
+            <i aria-hidden="true" class="pi pi-external-link text-xl text-primary"></i>
             <div>
               <p class="text-sm font-medium text-white">Audio File URL</p>
               <p class="truncate text-xs text-surface-500">{{ publishResult.audioUrl }}</p>
@@ -140,25 +140,25 @@
                 class="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold"
                 :class="stepIconClass(i)"
               >
-                <i v-if="i < step" class="pi pi-check"></i>
+                <i aria-hidden="true" v-if="i < step" class="pi pi-check"></i>
                 <span v-else>{{ i + 1 }}</span>
               </span>
               {{ s.label }}
             </div>
-            <i v-if="i < steps.length - 1" class="pi pi-chevron-right mx-2 text-xs text-surface-500"></i>
+            <i aria-hidden="true" v-if="i < steps.length - 1" class="pi pi-chevron-right mx-2 text-xs text-surface-500"></i>
           </div>
         </div>
       </div>
 
       <div v-if="enriching" class="mb-8">
         <Message severity="info" :closable="false">
-          <i class="pi pi-spin pi-spinner mr-2"></i>Enrichment in progress — covers, bio, and suggestions will appear once complete.
+          <i aria-hidden="true" class="pi pi-spin pi-spinner mr-2"></i>Enrichment in progress — covers, bio, and suggestions will appear once complete.
         </Message>
       </div>
 
-      <div v-if="!enrichment?.enrichment_attempted && !enriching && draftDetail?.status === 'review'" class="mb-8">
+      <div v-if="!enriching && (draftDetail?.status === 'pending' || draftDetail?.status === 'enrichment_failed')" class="mb-8">
         <Message severity="warn" :closable="false">
-          <i class="pi pi-exclamation-triangle mr-2"></i>No enrichment data available. Click "Enrich Now" above or fill in the fields manually.
+          <i aria-hidden="true" class="pi pi-exclamation-triangle mr-2"></i>No enrichment data yet. Click "Enrich Now" above or fill in the fields manually.
         </Message>
       </div>
 
@@ -171,50 +171,69 @@
               <p class="mt-1 text-sm text-surface-400">Confirm or edit the artist information.</p>
             </div>
 
-            <div class="mb-6 grid gap-6 md:grid-cols-3">
-              <div
-                v-if="enrichment?.spotify?.artistImageUrl"
-                class="flex-shrink-0"
-              >
-                <p class="mb-2 text-xs font-medium text-surface-500">
-                  Suggested Image
-                  <i class="pi pi-spotify ml-1 text-green-400 text-[10px]"></i>
-                </p>
-                <img
-                  :src="enrichment.spotify.artistImageUrl"
-                  alt="Artist"
-                  class="h-32 w-32 cursor-pointer rounded-lg object-cover shadow-md ring-2 transition-all"
-                  :class="finalMetadata.artist.imageUrl === enrichment.spotify.artistImageUrl ? 'ring-green-500' : 'ring-purple-500 hover:ring-green-400'"
-                  @click="finalMetadata.artist.imageUrl = enrichment.spotify.artistImageUrl"
-                  title="Click to use this image"
-                />
+            <div class="mb-6">
+              <p class="mb-3 text-xs font-medium text-surface-400">Artist Image</p>
+              <div class="flex flex-wrap gap-4">
+                <div v-if="enrichment?.spotify?.artistImageUrl" class="flex flex-col items-center gap-1.5">
+                  <p class="text-[10px] font-medium text-surface-500 flex items-center gap-1">
+                    <i aria-hidden="true" class="pi pi-spotify text-green-400"></i>Spotify
+                  </p>
+                  <img
+                    :src="enrichment.spotify.artistImageUrl"
+                    alt="Spotify"
+                    class="h-28 w-28 cursor-pointer rounded-lg object-cover shadow-md ring-2 transition-all"
+                    :class="finalMetadata.artist.imageUrl === enrichment.spotify.artistImageUrl ? 'ring-green-500' : 'ring-transparent hover:ring-green-400'"
+                    @click="finalMetadata.artist.imageUrl = enrichment.spotify.artistImageUrl"
+                    title="Click to use this image"
+                    @error="($event.target as HTMLImageElement).style.display='none'"
+                  />
+                </div>
+                <div v-if="enrichment?.lastfm?.artistImageUrl" class="flex flex-col items-center gap-1.5">
+                  <p class="text-[10px] font-medium text-surface-500 flex items-center gap-1">
+                    <i aria-hidden="true" class="pi pi-star-fill text-yellow-400"></i>Last.fm
+                  </p>
+                  <img
+                    :src="enrichment.lastfm.artistImageUrl"
+                    alt="Last.fm"
+                    class="h-28 w-28 cursor-pointer rounded-lg object-cover shadow-md ring-2 transition-all"
+                    :class="finalMetadata.artist.imageUrl === enrichment.lastfm.artistImageUrl ? 'ring-green-500' : 'ring-transparent hover:ring-green-400'"
+                    @click="finalMetadata.artist.imageUrl = enrichment.lastfm.artistImageUrl"
+                    title="Click to use this image"
+                    @error="($event.target as HTMLImageElement).style.display='none'"
+                  />
+                </div>
+                <div
+                  v-if="finalMetadata.artist.imageUrl && finalMetadata.artist.imageUrl !== enrichment?.spotify?.artistImageUrl && finalMetadata.artist.imageUrl !== enrichment?.lastfm?.artistImageUrl"
+                  class="flex flex-col items-center gap-1.5"
+                >
+                  <p class="text-[10px] font-medium text-green-400 flex items-center gap-1">
+                    <i aria-hidden="true" class="pi pi-check-circle"></i>Selected
+                  </p>
+                  <img
+                    :src="finalMetadata.artist.imageUrl"
+                    alt="Selected"
+                    class="h-28 w-28 rounded-lg object-cover shadow-md ring-2 ring-green-500"
+                    @error="($event.target as HTMLImageElement).style.display='none'"
+                  />
+                </div>
+                <div class="flex flex-col items-center justify-center gap-1.5">
+                  <p class="text-[10px] font-medium text-surface-500">Upload</p>
+                  <label class="flex h-28 w-28 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-surface-600 bg-surface-800 text-surface-400 transition-colors hover:border-primary hover:text-primary">
+                    <i aria-hidden="true" class="pi pi-upload text-lg"></i>
+                    <span class="mt-0.5 text-[10px]">Upload Image</span>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="uploadArtistImage" />
+                  </label>
+                </div>
               </div>
-              <div v-if="finalMetadata.artist.imageUrl && finalMetadata.artist.imageUrl !== enrichment?.spotify?.artistImageUrl" class="flex-shrink-0">
-                <p class="mb-2 text-xs font-medium text-surface-500">Selected Image</p>
-                <img
-                  :src="finalMetadata.artist.imageUrl"
-                  alt="Selected"
-                  class="h-32 w-32 rounded-lg object-cover shadow-md ring-2 ring-green-500"
-                  @error="($event.target as HTMLImageElement).style.display='none'"
-                />
-              </div>
-              <div v-if="!finalMetadata.artist.imageUrl" class="flex flex-shrink-0 flex-col items-center justify-center gap-2">
-                <p class="mb-1 text-xs font-medium text-surface-500">No Image Yet</p>
-                <label class="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-surface-600 bg-surface-800 text-surface-400 transition-colors hover:border-primary hover:text-primary">
-                  <i class="pi pi-upload text-xl"></i>
-                  <span class="mt-1 text-[10px]">Upload</span>
-                  <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="uploadArtistImage" />
-                </label>
-              </div>
-              <div v-if="enrichment?.lastfm?.artistBio" class="md:col-span-1">
-                <p class="mb-2 text-xs font-medium text-surface-500">
-                  Last.fm Bio
-                  <i class="pi pi-star-fill ml-1 text-yellow-400 text-[10px]"></i>
-                </p>
-                <p class="max-h-24 overflow-y-auto rounded bg-surface-800 p-3 text-xs leading-relaxed text-surface-300">
-                  {{ truncateBio(enrichment.lastfm.artistBio) }}
-                </p>
-              </div>
+            </div>
+
+            <div v-if="enrichment?.lastfm?.artistBio" class="mb-6 rounded-lg border border-surface-700 bg-surface-800/50 p-4">
+              <p class="mb-2 text-xs font-medium text-surface-400 flex items-center gap-1">
+                <i aria-hidden="true" class="pi pi-star-fill text-yellow-400 text-[10px]"></i> Last.fm Bio
+              </p>
+              <p class="max-h-24 overflow-y-auto text-xs leading-relaxed text-surface-300">
+                {{ truncateBio(enrichment.lastfm.artistBio) }}
+              </p>
             </div>
 
             <div class="mb-6">
@@ -226,7 +245,7 @@
                   size="small"
                   @click="finalMetadata.artist.action = 'create'; finalMetadata.artist.existingId = undefined"
                 >
-                  <i class="pi pi-plus mr-1"></i>Create New
+                  <i aria-hidden="true" class="pi pi-plus mr-1"></i>Create New
                 </Button>
                 <Button
                   :severity="finalMetadata.artist.action === 'link' ? 'primary' : 'secondary'"
@@ -234,7 +253,7 @@
                   size="small"
                   @click="finalMetadata.artist.action = 'link'"
                 >
-                  <i class="pi pi-link mr-1"></i>Use Existing
+                  <i aria-hidden="true" class="pi pi-link mr-1"></i>Use Existing
                 </Button>
               </div>
             </div>
@@ -243,7 +262,7 @@
               <label class="mb-2 block text-xs font-medium text-surface-400">Search Existing Artists</label>
               <div class="relative">
                 <IconField>
-                  <InputIcon><i class="pi pi-search"></i></InputIcon>
+                  <InputIcon><i aria-hidden="true" class="pi pi-search"></i></InputIcon>
                   <InputText
                     v-model="artistSearchQuery"
                     placeholder="Type artist name..."
@@ -266,7 +285,7 @@
                     class="h-8 w-8 rounded-full object-cover"
                   />
                   <div v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-600 text-xs">
-                    <i class="pi pi-user"></i>
+                    <i aria-hidden="true" class="pi pi-user"></i>
                   </div>
                   <div>
                     <p class="font-medium text-white">{{ a.name }}</p>
@@ -363,7 +382,9 @@
                 />
               </div>
               <div v-if="suggestedAlbumCover">
-                <p class="mb-2 text-xs font-medium text-surface-500">Spotify</p>
+                <p class="mb-2 text-xs font-medium text-surface-500 flex items-center gap-1">
+                  <i aria-hidden="true" class="pi pi-spotify text-green-400"></i>Spotify
+                </p>
                 <img
                   :src="suggestedAlbumCover"
                   alt="Spotify"
@@ -372,7 +393,19 @@
                   @click="finalMetadata.album.coverUrl = suggestedAlbumCover"
                 />
               </div>
-              <div v-if="finalMetadata.album.coverUrl && finalMetadata.album.coverUrl !== embeddedCover && finalMetadata.album.coverUrl !== suggestedAlbumCover" class="flex-shrink-0">
+              <div v-if="suggestedLastfmAlbumCover" class="flex-shrink-0">
+                <p class="mb-2 text-xs font-medium text-surface-500 flex items-center gap-1">
+                  <i aria-hidden="true" class="pi pi-star-fill text-yellow-400"></i>Last.fm
+                </p>
+                <img
+                  :src="suggestedLastfmAlbumCover"
+                  alt="Last.fm"
+                  class="h-32 w-32 cursor-pointer rounded-lg object-cover shadow-md ring-2 transition-all"
+                  :class="finalMetadata.album.coverUrl === suggestedLastfmAlbumCover ? 'ring-green-500' : 'ring-transparent hover:ring-surface-400'"
+                  @click="finalMetadata.album.coverUrl = suggestedLastfmAlbumCover"
+                />
+              </div>
+              <div v-if="finalMetadata.album.coverUrl && finalMetadata.album.coverUrl !== embeddedCover && finalMetadata.album.coverUrl !== suggestedAlbumCover && finalMetadata.album.coverUrl !== suggestedLastfmAlbumCover" class="flex-shrink-0">
                 <p class="mb-2 text-xs font-medium text-surface-500">Selected</p>
                 <img
                   :src="finalMetadata.album.coverUrl"
@@ -384,7 +417,7 @@
               <div v-if="!finalMetadata.album.coverUrl" class="flex flex-shrink-0 flex-col items-center justify-center gap-2">
                 <p class="mb-1 text-xs font-medium text-surface-500">Upload Cover</p>
                 <label class="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-surface-600 bg-surface-800 text-surface-400 transition-colors hover:border-primary hover:text-primary">
-                  <i class="pi pi-upload text-xl"></i>
+                  <i aria-hidden="true" class="pi pi-upload text-xl"></i>
                   <span class="mt-1 text-[10px]">Upload</span>
                   <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="uploadAlbumCover" />
                 </label>
@@ -400,7 +433,7 @@
                   size="small"
                   @click="finalMetadata.album.action = 'create'; finalMetadata.album.existingId = undefined"
                 >
-                  <i class="pi pi-plus mr-1"></i>Create New
+                  <i aria-hidden="true" class="pi pi-plus mr-1"></i>Create New
                 </Button>
                 <Button
                   :severity="finalMetadata.album.action === 'link' ? 'primary' : 'secondary'"
@@ -408,7 +441,7 @@
                   size="small"
                   @click="finalMetadata.album.action = 'link'"
                 >
-                  <i class="pi pi-link mr-1"></i>Use Existing
+                  <i aria-hidden="true" class="pi pi-link mr-1"></i>Use Existing
                 </Button>
               </div>
             </div>
@@ -417,7 +450,7 @@
               <label class="mb-2 block text-xs font-medium text-surface-400">Search Existing Albums</label>
               <div class="relative">
                 <IconField>
-                  <InputIcon><i class="pi pi-search"></i></InputIcon>
+                  <InputIcon><i aria-hidden="true" class="pi pi-search"></i></InputIcon>
                   <InputText
                     v-model="albumSearchQuery"
                     placeholder="Type album title..."
@@ -440,7 +473,7 @@
                     class="h-8 w-8 rounded object-cover"
                   />
                   <div v-else class="flex h-8 w-8 items-center justify-center rounded bg-surface-600 text-xs">
-                    <i class="pi pi-image"></i>
+                    <i aria-hidden="true" class="pi pi-image"></i>
                   </div>
                   <div>
                     <p class="font-medium text-white">{{ a.title }}</p>
@@ -551,9 +584,8 @@
                 />
               </div>
               <div v-if="suggestedAlbumCover">
-                <p class="mb-2 text-xs font-medium text-surface-500">
-                  Spotify
-                  <i class="pi pi-spotify ml-1 text-green-400 text-[10px]"></i>
+                <p class="mb-2 text-xs font-medium text-surface-500 flex items-center gap-1">
+                  <i aria-hidden="true" class="pi pi-spotify text-green-400"></i>Spotify
                 </p>
                 <img
                   :src="suggestedAlbumCover"
@@ -563,7 +595,19 @@
                   @click="finalMetadata.track.coverUrl = suggestedAlbumCover"
                 />
               </div>
-              <div v-if="finalMetadata.track.coverUrl && finalMetadata.track.coverUrl !== embeddedCover && finalMetadata.track.coverUrl !== suggestedAlbumCover" class="flex-shrink-0">
+              <div v-if="suggestedLastfmAlbumCover">
+                <p class="mb-2 text-xs font-medium text-surface-500 flex items-center gap-1">
+                  <i aria-hidden="true" class="pi pi-star-fill text-yellow-400"></i>Last.fm
+                </p>
+                <img
+                  :src="suggestedLastfmAlbumCover"
+                  alt="Last.fm"
+                  class="h-24 w-24 cursor-pointer rounded-lg object-cover shadow-md ring-2 transition-all"
+                  :class="finalMetadata.track.coverUrl === suggestedLastfmAlbumCover ? 'ring-green-500' : 'ring-transparent hover:ring-surface-400'"
+                  @click="finalMetadata.track.coverUrl = suggestedLastfmAlbumCover"
+                />
+              </div>
+              <div v-if="finalMetadata.track.coverUrl && finalMetadata.track.coverUrl !== embeddedCover && finalMetadata.track.coverUrl !== suggestedAlbumCover && finalMetadata.track.coverUrl !== suggestedLastfmAlbumCover" class="flex-shrink-0">
                 <p class="mb-2 text-xs font-medium text-surface-500">Selected</p>
                 <img
                   :src="finalMetadata.track.coverUrl"
@@ -571,6 +615,30 @@
                   class="h-24 w-24 rounded-lg object-cover shadow-md ring-2 ring-green-500"
                   @error="($event.target as HTMLImageElement).style.display='none'"
                 />
+              </div>
+            </div>
+
+            <!-- Audio Preview Player -->
+            <div v-if="trackAudioUrl" class="mb-4 rounded-lg border border-surface-700 bg-surface-800/80 p-3">
+              <div class="flex items-center gap-3">
+                <Button
+                  :icon="audioPlaying ? 'pi pi-pause' : 'pi pi-play'"
+                  :severity="audioPlaying ? 'secondary' : 'primary'"
+                  rounded
+                  size="small"
+                  @click="toggleAudio"
+                />
+                <div class="flex-1">
+                  <div class="relative h-1.5 cursor-pointer rounded-full bg-surface-600" @click="seekAudioFromBar">
+                    <div
+                      class="absolute left-0 top-0 h-full rounded-full bg-primary transition-all duration-150"
+                      :style="{ width: `${audioDuration ? (audioCurrentTime / audioDuration) * 100 : 0}%` }"
+                    />
+                  </div>
+                </div>
+                <span class="w-20 text-right text-[11px] text-surface-400 tabular-nums">
+                  {{ formatAudioTime(audioCurrentTime) }} / {{ formatAudioTime(audioDuration) }}
+                </span>
               </div>
             </div>
 
@@ -632,7 +700,7 @@
                 <div>
                   <label class="mb-1 block text-xs font-medium text-surface-400">
                     Explicit
-                    <i class="pi pi-info-circle ml-1 text-surface-500 text-[10px]"></i>
+                    <i aria-hidden="true" class="pi pi-info-circle ml-1 text-surface-500 text-[10px]"></i>
                   </label>
                   <div class="flex items-center gap-2 pt-1">
                     <ToggleSwitch v-model="finalMetadata.track.explicit" />
@@ -658,6 +726,14 @@
                       size="small"
                     />
                     <Button
+                      v-if="trackAudioUrl && lyricsType === 'lrc' && audioLyrics"
+                      :icon="showSyncedLyrics ? 'pi pi-eye-slash' : 'pi pi-eye'"
+                      :label="showSyncedLyrics ? 'Hide' : 'Karaoke'"
+                      severity="help"
+                      size="small"
+                      @click="showSyncedLyrics = !showSyncedLyrics"
+                    />
+                    <Button
                       icon="pi pi-arrows-alt"
                       severity="secondary"
                       text
@@ -667,6 +743,29 @@
                     />
                   </div>
                 </div>
+
+                <!-- Live synced lyrics display -->
+                <div
+                  v-if="showSyncedLyrics && trackAudioUrl && parsedLyrics.length > 0"
+                  class="mb-3 max-h-64 overflow-y-auto rounded-lg bg-surface-900/80 p-4 scrollbar-none"
+                  ref="syncedLyricsContainer"
+                >
+                  <div
+                    v-for="(line, idx) in parsedLyrics"
+                    :key="idx"
+                    ref="syncedLyricLineRefs"
+                    class="cursor-pointer px-2 py-1.5 text-center text-sm leading-relaxed transition-all duration-300"
+                    :class="{
+                      'scale-105 font-bold text-white': idx === activeLyricLine,
+                      'text-white/15': activeLyricLine >= 0 && idx < activeLyricLine,
+                      'text-white/30': idx > activeLyricLine,
+                    }"
+                    @click="seekAudio(line.timeSeconds)"
+                  >
+                    {{ line.text }}
+                  </div>
+                </div>
+
                 <Textarea
                   v-model="finalMetadata.track.lyrics"
                   dir="auto"
@@ -675,26 +774,6 @@
                   :class="{ 'min-h-64': lyricsExpanded, 'min-h-24': !lyricsExpanded }"
                   placeholder="Lyrics..."
                 />
-                <div v-if="findSuggestion('lyrics_type')?.value === 'lrc'" class="mt-1">
-                  <p class="text-[11px] text-green-400">
-                    <i class="pi pi-check-circle mr-1"></i>Synced LRC lyrics — timestamps will sync with playback.
-                  </p>
-                  <button
-                    class="mt-1 text-[11px] text-primary-400 underline hover:text-primary-300"
-                    @click="showLyricsPreview = !showLyricsPreview"
-                  >
-                    {{ showLyricsPreview ? 'Hide preview' : 'Preview synced lyrics' }}
-                  </button>
-                  <div
-                    v-if="showLyricsPreview"
-                    class="mt-2 max-h-48 overflow-y-auto rounded-lg bg-white/[0.04] p-3 font-mono text-xs leading-relaxed"
-                  >
-                    <div v-for="(line, li) in parsedLRCLines" :key="li" class="flex gap-3">
-                      <span class="w-16 flex-shrink-0 text-right text-slate-500">{{ line.time }}</span>
-                      <span class="text-white">{{ line.text }}</span>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               <div class="grid gap-4 md:grid-cols-2">
@@ -728,7 +807,7 @@
             <div class="mb-6 grid gap-6 md:grid-cols-3">
               <div class="rounded-lg border border-surface-700 bg-surface-800 p-4">
                 <h3 class="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
-                  <i class="pi pi-user text-primary"></i>Artist
+                  <i aria-hidden="true" class="pi pi-user text-primary"></i>Artist
                 </h3>
                 <img
                   v-if="finalMetadata.artist.imageUrl"
@@ -745,7 +824,7 @@
               </div>
               <div class="rounded-lg border border-surface-700 bg-surface-800 p-4">
                 <h3 class="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
-                  <i class="pi pi-book text-primary"></i>Album
+                  <i aria-hidden="true" class="pi pi-book text-primary"></i>Album
                 </h3>
                 <img
                   v-if="finalMetadata.album.coverUrl"
@@ -762,7 +841,7 @@
               </div>
               <div class="rounded-lg border border-surface-700 bg-surface-800 p-4">
                 <h3 class="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
-                  <i class="pi pi-music text-primary"></i>Track
+                  <i aria-hidden="true" class="pi pi-music text-primary"></i>Track
                 </h3>
                 <img
                   v-if="finalMetadata.track.coverUrl"
@@ -852,7 +931,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onUnmounted, onBeforeUnmount, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import AdminSectionHeader from '@/components/admin/AdminSectionHeader.vue'
 import { useIngestionApi } from '@/services/api/ingestion/routes'
@@ -865,6 +944,8 @@ import type {
   AlbumSearchResult,
   FinalizeResult,
 } from '@/services/api/ingestion/types'
+import { parseLRCLines, parsePlainLines } from '@/composables/lyrics'
+import type { ParsedLine } from '@/composables/lyrics'
 import { useToast } from 'primevue/usetoast'
 
 // TODO MEDIUM: This component is 1135 lines — too large. Split into ArtistStep, AlbumStep, TrackStep, ConfirmStep sub-components.
@@ -889,13 +970,136 @@ const publishResult = ref<FinalizeResult | null>(null)
 const rejectDialogVisible = ref(false)
 const rejectReason = ref('')
 const lyricsExpanded = ref(false)
-const showLyricsPreview = ref(false)
+
+// Audio preview & synced lyrics
+const audioPreview = ref<HTMLAudioElement | null>(null)
+const audioPlaying = ref(false)
+const audioCurrentTime = ref(0)
+const audioDuration = ref(0)
+const showSyncedLyrics = ref(false)
+let parsedLyrics: ParsedLine[] = []
+let animFrameId = 0
+const syncedLyricsContainer = ref<HTMLElement | null>(null)
+const syncedLyricLineRefs = ref<HTMLElement[]>([])
 
 const enriching = ref(false)
 
 const draftDetail = ref<DraftDetailResponse | null>(null)
 const enrichment = ref<EnrichmentResult | null>(null)
 const step = ref(0)
+
+const finalMetadata = reactive<SaveFinalMetadataRequest>({
+  artist: { action: 'create', name: '', bio: '', imageUrl: '', country: '', musicbrainzMbid: '' },
+  album: { action: 'create', title: '', releaseYear: undefined, genre: '', coverUrl: '', musicbrainzReleaseId: '' },
+  track: { title: '', trackNumber: undefined, durationSeconds: 0, genre: '', lyrics: '', explicit: false, spotifyPreviewUrl: '', coverUrl: '' },
+})
+
+const trackAudioUrl = computed(() => {
+  return draftDetail.value?.assets?.find(a => a.assetType === 'audio')?.url || null
+})
+
+const lyricsType = computed(() => {
+  return findSuggestion('lyrics_type')?.value || 'plain'
+})
+
+const audioLyrics = computed(() => {
+  return finalMetadata.track.lyrics
+})
+
+watch(trackAudioUrl, (url) => {
+  if (audioPreview.value && url) {
+    audioPreview.value.src = url
+    audioPreview.value.load()
+  }
+})
+
+watch(audioLyrics, () => {
+  rebuildParsedLyrics()
+}, { immediate: true })
+
+function rebuildParsedLyrics() {
+  const text = audioLyrics.value
+  if (!text) {
+    parsedLyrics = []
+    return
+  }
+  parsedLyrics = lyricsType.value === 'lrc' ? parseLRCLines(text) : parsePlainLines(text)
+}
+
+function toggleAudio() {
+  if (!audioPreview.value) return
+  if (audioPlaying.value) {
+    audioPreview.value.pause()
+  } else {
+    audioPreview.value.play()
+  }
+}
+
+function seekAudio(seconds: number) {
+  if (!audioPreview.value) return
+  audioPreview.value.currentTime = seconds
+  audioCurrentTime.value = seconds
+}
+
+function seekAudioFromBar(e: MouseEvent) {
+  if (!audioPreview.value || !audioDuration.value) return
+  const bar = e.currentTarget as HTMLElement
+  const rect = bar.getBoundingClientRect()
+  const ratio = (e.clientX - rect.left) / rect.width
+  seekAudio(ratio * audioDuration.value)
+}
+
+function onAudioTime() {
+  if (!audioPreview.value) return
+  audioCurrentTime.value = audioPreview.value.currentTime
+  animFrameId = requestAnimationFrame(onAudioTime)
+}
+
+function onAudioLoaded() {
+  if (!audioPreview.value) return
+  audioDuration.value = audioPreview.value.duration
+}
+
+function onAudioEnded() {
+  audioPlaying.value = false
+  audioCurrentTime.value = 0
+}
+
+function onAudioPlay() {
+  audioPlaying.value = true
+  animFrameId = requestAnimationFrame(onAudioTime)
+}
+
+function onAudioPause() {
+  audioPlaying.value = false
+  cancelAnimationFrame(animFrameId)
+}
+
+const activeLyricLine = computed(() => {
+  const t = audioCurrentTime.value
+  for (let i = parsedLyrics.length - 1; i >= 0; i--) {
+    if (t >= parsedLyrics[i]!.timeSeconds) return i
+  }
+  return -1
+})
+
+let lyricsScrollTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(activeLyricLine, (idx) => {
+  if (lyricsScrollTimer) clearTimeout(lyricsScrollTimer)
+  lyricsScrollTimer = setTimeout(() => {
+    if (idx < 0 || !syncedLyricsContainer.value) return
+    const target = syncedLyricLineRefs.value[idx]
+    target?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, 80)
+})
+
+function formatAudioTime(seconds: number): string {
+  if (!seconds || !Number.isFinite(seconds)) return '0:00'
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
 
 const steps = [
   { label: 'Artist', key: 'artist' },
@@ -906,22 +1110,24 @@ const steps = [
 
 const hasUnsavedChanges = ref(false)
 
-const finalMetadata = reactive<SaveFinalMetadataRequest>({
-  artist: { action: 'create', name: '', bio: '', imageUrl: '', country: '', musicbrainzMbid: '' },
-  album: { action: 'create', title: '', releaseYear: undefined, genre: '', coverUrl: '', musicbrainzReleaseId: '' },
-  track: { title: '', trackNumber: undefined, durationSeconds: 0, genre: '', lyrics: '', explicit: false, spotifyPreviewUrl: '', coverUrl: '' },
+const embeddedCover = computed(() => {
+  return draftDetail.value?.assets?.find(a => a.assetType === 'cover' || a.assetType === 'track_cover')?.url || null
 })
 
-const embeddedCover = computed(() => {
-  return draftDetail.value?.assets?.find(a => a.assetType === 'cover')?.url || null
+const artistImageAsset = computed(() => {
+  return draftDetail.value?.assets?.find(a => a.assetType === 'artist_image')?.url || null
+})
+
+const albumCoverAsset = computed(() => {
+  return draftDetail.value?.assets?.find(a => a.assetType === 'album_cover')?.url || null
 })
 
 const suggestedAlbumCover = computed(() => {
-  return enrichment.value?.spotify?.albumCoverUrl || null
+  return enrichment.value?.spotify?.albumCoverUrl || enrichment.value?.lastfm?.albumCoverUrl || null
 })
 
-const suggestedArtistImage = computed(() => {
-  return enrichment.value?.spotify?.artistImageUrl || null
+const suggestedLastfmAlbumCover = computed(() => {
+  return enrichment.value?.lastfm?.albumCoverUrl || null
 })
 
 const selectedArtistId = ref<string | undefined>()
@@ -934,24 +1140,6 @@ const artistSearching = ref(false)
 const albumSearching = ref(false)
 let artistSearchTimer: ReturnType<typeof setTimeout> | null = null
 let albumSearchTimer: ReturnType<typeof setTimeout> | null = null
-
-const parsedLRCLines = computed(() => {
-  const text = finalMetadata.track.lyrics
-  if (!text) return []
-  const lines: { time: string; text: string }[] = []
-  for (const line of text.split('\n')) {
-    const match = line.match(/^\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/)
-    if (match) {
-      const m = parseInt(match[1])
-      const s = parseInt(match[2])
-      const time = `${m}:${s.toString().padStart(2, '0')}`
-      lines.push({ time, text: match[4].trim() })
-    } else if (line.trim()) {
-      lines.push({ time: '', text: line.trim() })
-    }
-  }
-  return lines
-})
 
 const canProceed = computed(() => {
   if (step.value === 0) return finalMetadata.artist.name.trim().length > 0
@@ -979,12 +1167,12 @@ function sourceLabel(source: string): string {
 
 function sourceSeverity(source: string) {
   const map: Record<string, string> = { file: 'info', musicbrainz: 'warn', lastfm: 'help', spotify: 'success' }
-  return map[source] || undefined as any
+  return map[source] || undefined
 }
 
 function confidenceSeverity(c: string) {
   const map: Record<string, string> = { exact_match: 'success', fuzzy: 'warn', fallback: 'danger' }
-  return map[c] || undefined as any
+  return map[c] || undefined
 }
 
 function stepperClass(i: number): string {
@@ -1087,7 +1275,7 @@ async function loadDraft() {
     }
     prefillForm(detail)
   } catch (err: any) {
-    error.value = err?.message || 'Failed to load draft.'
+    error.value = err instanceof Error ? err.message : 'Failed to load draft.'
   } finally {
     loading.value = false
   }
@@ -1143,14 +1331,14 @@ function prefillForm(detail: DraftDetailResponse) {
   // Artist
   finalMetadata.artist.name = sugMap.get('artist') || tags?.artist || ''
   finalMetadata.artist.bio = lfm?.artistBio || sugMap.get('artist_bio') || ''
-  finalMetadata.artist.imageUrl = spot?.artistImageUrl || sugMap.get('artist_image_url') || ''
+  finalMetadata.artist.imageUrl = artistImageAsset.value || spot?.artistImageUrl || lfm?.artistImageUrl || sugMap.get('artist_image_url') || ''
   if (mb?.artistMbid) finalMetadata.artist.musicbrainzMbid = mb.artistMbid
 
   // Album
   finalMetadata.album.title = sugMap.get('album') || tags?.album || ''
-  finalMetadata.album.releaseYear = sugMap.get('year') || (tags?.year || undefined) as any
+  finalMetadata.album.releaseYear = (sugMap.get('year') || tags?.year || undefined) as number | undefined
   finalMetadata.album.genre = sugMap.get('genre') || tags?.genre || ''
-  finalMetadata.album.coverUrl = spot?.albumCoverUrl || sugMap.get('album_cover_url') || embeddedCover.value || ''
+  finalMetadata.album.coverUrl = albumCoverAsset.value || spot?.albumCoverUrl || lfm?.albumCoverUrl || sugMap.get('album_cover_url') || sugMap.get('album_cover_url_lastfm') || ''
   if (mb?.albumMbid) finalMetadata.album.musicbrainzReleaseId = mb.albumMbid
 
   // Track
@@ -1161,7 +1349,7 @@ function prefillForm(detail: DraftDetailResponse) {
   finalMetadata.track.lyrics = sugMap.get('lyrics') || tags?.lyrics || ''
   finalMetadata.track.explicit = false
   finalMetadata.track.spotifyPreviewUrl = spot?.previewUrl || ''
-  finalMetadata.track.coverUrl = embeddedCover.value || spot?.albumCoverUrl || ''
+  finalMetadata.track.coverUrl = embeddedCover.value || spot?.albumCoverUrl || lfm?.albumCoverUrl || ''
 }
 
 function goBack() {
@@ -1183,7 +1371,7 @@ async function uploadArtistImage(e: Event) {
       toast.add({ severity: 'success', summary: 'Image uploaded', detail: 'Artist image uploaded successfully.', life: 3000 })
     }
   } catch (err: any) {
-    toast.add({ severity: 'error', summary: 'Upload failed', detail: err?.message || 'Failed to upload image.', life: 5000 })
+    toast.add({ severity: 'error', summary: 'Upload failed', detail: err instanceof Error ? err.message : 'Failed to upload image.', life: 5000 })
   }
   target.value = ''
 }
@@ -1200,7 +1388,7 @@ async function uploadAlbumCover(e: Event) {
       toast.add({ severity: 'success', summary: 'Cover uploaded', detail: 'Album cover uploaded successfully.', life: 3000 })
     }
   } catch (err: any) {
-    toast.add({ severity: 'error', summary: 'Upload failed', detail: err?.message || 'Failed to upload image.', life: 5000 })
+    toast.add({ severity: 'error', summary: 'Upload failed', detail: err instanceof Error ? err.message : 'Failed to upload image.', life: 5000 })
   }
   target.value = ''
 }
@@ -1216,7 +1404,7 @@ async function publish() {
     published.value = true
     toast.add({ severity: 'success', summary: 'Draft published', detail: 'The draft has been published to the catalog.', life: 5000 })
   } catch (err: any) {
-    publishingError.value = err?.message || 'Failed to publish draft.'
+    publishingError.value = err instanceof Error ? err.message : 'Failed to publish draft.'
   } finally {
     publishing.value = false
   }
@@ -1271,13 +1459,29 @@ onMounted(() => {
   loadDraft()
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('beforeunload', handleBeforeUnload)
+
+  const audio = new Audio()
+  audio.preload = 'metadata'
+  audio.addEventListener('loadedmetadata', onAudioLoaded)
+  audio.addEventListener('play', onAudioPlay)
+  audio.addEventListener('pause', onAudioPause)
+  audio.addEventListener('ended', onAudioEnded)
+  audioPreview.value = audio
 })
 
 onUnmounted(() => {
   if (artistSearchTimer) clearTimeout(artistSearchTimer)
   if (albumSearchTimer) clearTimeout(albumSearchTimer)
+  if (lyricsScrollTimer) clearTimeout(lyricsScrollTimer)
+  cancelAnimationFrame(animFrameId)
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('beforeunload', handleBeforeUnload)
+  if (audioPreview.value) {
+    audioPreview.value.pause()
+    audioPreview.value.src = ''
+    audioPreview.value.load()
+    audioPreview.value = null
+  }
 })
 
 onBeforeRouteLeave((_to, _from, next) => {

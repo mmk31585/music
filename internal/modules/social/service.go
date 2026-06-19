@@ -8,12 +8,16 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"music/internal/modules/playlist"
 )
 
 type Service struct {
 	repo             Repository
 	partyBroadcaster *PartyBroadcaster
 	roomBroadcaster  *RoomBroadcaster
+	playlistSvc      *playlist.Service
+	clubSvc          *ClubService
+	discussionSvc    *DiscussionService
 }
 
 func NewService(repo Repository, partyBroadcaster *PartyBroadcaster, roomBroadcaster *RoomBroadcaster) *Service {
@@ -21,7 +25,20 @@ func NewService(repo Repository, partyBroadcaster *PartyBroadcaster, roomBroadca
 		repo:             repo,
 		partyBroadcaster: partyBroadcaster,
 		roomBroadcaster:  roomBroadcaster,
+		discussionSvc:    NewDiscussionService(repo),
 	}
+}
+
+func NewServiceWithPlaylist(repo Repository, partyBroadcaster *PartyBroadcaster, roomBroadcaster *RoomBroadcaster, playlistSvc *playlist.Service) *Service {
+	svc := &Service{
+		repo:             repo,
+		partyBroadcaster: partyBroadcaster,
+		roomBroadcaster:  roomBroadcaster,
+		playlistSvc:      playlistSvc,
+		discussionSvc:    NewDiscussionService(repo),
+	}
+	svc.clubSvc = NewClubService(repo, playlistSvc, svc)
+	return svc
 }
 
 func (s *Service) Follow(ctx context.Context, followerID, followedID string) error {
@@ -272,26 +289,6 @@ func (s *Service) GetRoomQueue(ctx context.Context, roomID string) ([]LiveRoomQu
 
 // --- Music Clubs ---
 
-func (s *Service) CreateClub(ctx context.Context, req CreateClubRequest, userID string) (*MusicClub, error) {
-	uid, _ := uuid.Parse(userID)
-	club := &MusicClub{
-		Name:       req.Name,
-		CreatedBy:  uid,
-		IsPublic:   req.IsPublic,
-		MaxMembers: 1000,
-	}
-	if req.Description != "" {
-		club.Description = &req.Description
-	}
-	if req.MaxMembers > 0 {
-		club.MaxMembers = req.MaxMembers
-	}
-	if err := s.repo.CreateClub(ctx, club); err != nil {
-		return nil, err
-	}
-	return club, nil
-}
-
 func (s *Service) GetClub(ctx context.Context, id string) (*MusicClub, error) {
 	uid, _ := uuid.Parse(id)
 	return s.repo.GetClub(ctx, uid)
@@ -299,18 +296,6 @@ func (s *Service) GetClub(ctx context.Context, id string) (*MusicClub, error) {
 
 func (s *Service) ListClubs(ctx context.Context, limit, offset int) ([]MusicClub, error) {
 	return s.repo.ListClubs(ctx, limit, offset)
-}
-
-func (s *Service) JoinClub(ctx context.Context, clubID, userID string) error {
-	cid, _ := uuid.Parse(clubID)
-	uid, _ := uuid.Parse(userID)
-	return s.repo.JoinClub(ctx, cid, uid)
-}
-
-func (s *Service) LeaveClub(ctx context.Context, clubID, userID string) error {
-	cid, _ := uuid.Parse(clubID)
-	uid, _ := uuid.Parse(userID)
-	return s.repo.LeaveClub(ctx, cid, uid)
 }
 
 func (s *Service) IsClubMember(ctx context.Context, clubID, userID string) (bool, error) {
@@ -417,4 +402,78 @@ func (s *Service) GetTrackRatings(ctx context.Context, trackID string) ([]TrackR
 func (s *Service) GetTrackRatingAverage(ctx context.Context, trackID string) (float64, int, error) {
 	tid, _ := uuid.Parse(trackID)
 	return s.repo.GetTrackRatingAverage(ctx, tid)
+}
+
+// --- Club Enhancements (Phase 5) ---
+
+func (s *Service) ListClubsWithGenre(ctx context.Context, genre string, limit, offset int) ([]MusicClub, error) {
+	if genre == "" {
+		return s.repo.ListClubs(ctx, limit, offset)
+	}
+	return s.repo.ListClubsByGenre(ctx, genre, limit, offset)
+}
+
+func (s *Service) GetClubDetail(ctx context.Context, clubID, userID string) (*ClubDetailResponse, error) {
+	if s.clubSvc == nil {
+		return nil, fmt.Errorf("club service not initialized")
+	}
+	return s.clubSvc.GetClubDetail(ctx, clubID, userID)
+}
+
+func (s *Service) LaunchListeningParty(ctx context.Context, clubID, initiatorID string, req LaunchPartyRequest) (*ListeningParty, error) {
+	if s.clubSvc == nil {
+		return nil, fmt.Errorf("club service not initialized")
+	}
+	return s.clubSvc.LaunchListeningParty(ctx, clubID, initiatorID, req)
+}
+
+func (s *Service) CreateClub(ctx context.Context, req CreateClubRequest, ownerID string) (*Club, error) {
+	if s.clubSvc == nil {
+		return nil, fmt.Errorf("club service not initialized")
+	}
+	return s.clubSvc.CreateClub(ctx, ownerID, req)
+}
+
+func (s *Service) JoinClub(ctx context.Context, clubID, userID string) error {
+	if s.clubSvc == nil {
+		return fmt.Errorf("club service not initialized")
+	}
+	return s.clubSvc.JoinClub(ctx, clubID, userID)
+}
+
+func (s *Service) LeaveClub(ctx context.Context, clubID, userID string) error {
+	if s.clubSvc == nil {
+		return fmt.Errorf("club service not initialized")
+	}
+	return s.clubSvc.LeaveClub(ctx, clubID, userID)
+}
+
+// --- Club Discussions (Phase 6) ---
+
+func (s *Service) CreateClubDiscussion(ctx context.Context, clubID, authorID, title, body string) (*ClubDiscussion, error) {
+	return s.discussionSvc.CreateDiscussion(ctx, clubID, authorID, title, body)
+}
+
+func (s *Service) ListClubDiscussions(ctx context.Context, clubID string, limit, offset int) ([]ClubDiscussion, error) {
+	return s.discussionSvc.ListDiscussions(ctx, clubID, limit, offset)
+}
+
+func (s *Service) GetClubDiscussion(ctx context.Context, discussionID string) (*ClubDiscussion, error) {
+	return s.discussionSvc.GetDiscussion(ctx, discussionID)
+}
+
+func (s *Service) CreateClubDiscussionReply(ctx context.Context, discussionID, authorID, body string) (*ClubDiscussionReply, error) {
+	return s.discussionSvc.CreateReply(ctx, discussionID, authorID, body)
+}
+
+func (s *Service) GetClubDiscussionReplies(ctx context.Context, discussionID string) ([]ClubDiscussionReply, error) {
+	return s.discussionSvc.GetReplies(ctx, discussionID)
+}
+
+func (s *Service) DeleteClubDiscussion(ctx context.Context, discussionID, userID string) error {
+	return s.discussionSvc.DeleteDiscussion(ctx, discussionID, userID)
+}
+
+func (s *Service) DeleteClubDiscussionReply(ctx context.Context, replyID, userID string) error {
+	return s.discussionSvc.DeleteReply(ctx, replyID, userID)
 }

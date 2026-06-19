@@ -38,6 +38,7 @@ describe('useFeatureFlagsStore', () => {
       tips: true,
       subscription: true,
       notification: true,
+      redesignedPlayer: true,
     })
     expect(store.isEnabled('social')).toBe(false)
     expect(store.isEnabled('analytics')).toBe(true)
@@ -51,7 +52,8 @@ describe('useFeatureFlagsStore', () => {
       analytics: false, recommendation: false, search: false,
       social: false, reactions: false, creator: false,
       moderation: false, ai: false, contribution: false,
-      gamification: false, tips: false, subscription: false, notification: false,
+      gamification: false, tips: false, subscription: false,
+      notification: false, redesignedPlayer: false,
     })
     expect(store.fetched).toBe(true)
     store.$reset()
@@ -64,14 +66,15 @@ describe('useFeatureFlagsStore', () => {
     const keys = [
       'analytics', 'recommendation', 'search', 'social',
       'reactions', 'creator', 'moderation', 'ai',
-      'contribution', 'gamification', 'tips', 'subscription', 'notification',
+      'contribution', 'gamification', 'tips', 'subscription',
+      'notification', 'redesignedPlayer',
     ] as const
     const store = useFeatureFlagsStore()
     const enabled: Record<string, boolean> = {}
     keys.forEach((k) => { enabled[k] = true })
     enabled.social = false
     enabled.ai = false
-    store.setFlags(enabled as FeatureFlags)
+    store.setFlags(enabled as any as FeatureFlags)
     keys.forEach((k) => {
       if (k === 'social' || k === 'ai') {
         expect(store.isEnabled(k)).toBe(false)

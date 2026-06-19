@@ -23,7 +23,7 @@
           class="flex h-14 w-14 items-center justify-center rounded-2xl text-2xl"
           :class="card.iconClass"
         >
-          <i :class="card.icon" />
+          <i aria-hidden="true" :class="card.icon" />
         </div>
 
         <h2 class="mt-5 text-xl font-black text-white">
@@ -43,7 +43,7 @@
           <h2 class="mt-1 text-2xl font-black text-white">Start exploring</h2>
         </div>
 
-        <i class="pi pi-headphones text-3xl text-white/20" />
+        <i aria-hidden="true" class="pi pi-headphones text-3xl text-white/20" />
       </div>
 
       <p class="mt-4 max-w-2xl text-sm leading-6 text-slate-400">

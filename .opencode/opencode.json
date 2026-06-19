@@ -1,0 +1,60 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "skills": {
+    "paths": [".opencode/skills"]
+  },
+  "references": {
+    "docs": {
+      "path": "docs",
+      "description": "Use for product behavior, architecture decisions, and documentation conventions"
+    },
+    "design-system": {
+      "path": "docs/DESIGN_SYSTEM.md",
+      "description": "Use for UI/UX design tokens, brand identity, component specifications, and visual language"
+    }
+  },
+  "agent": {
+    "muse": {
+      "description": "Coordinator for the Muse Persian music ecosystem. Knows the full stack and delegates work across 8 specialized sub-agents (@auth, @player, @catalog, @social, @creator, @admin, @ui, @infra). Use for multi-domain tasks, cross-cutting changes, and architecture decisions.",
+      "mode": "primary"
+    },
+    "muse-sre": {
+      "description": "Site Reliability Engineer for Muse. Monitors frontend (:5173) and API (:8080) health, detects crashes/runtime errors, restarts servers, and delegates fixes to the right sub-agent. Run the watchdog script with `bash scripts/watchdog.sh` for background monitoring.",
+      "mode": "primary",
+      "color": "error"
+    },
+    "muse-auth": {
+      "description": "Auth & Security agent for Muse. Login/register flows, JWT, token refresh, auth guards, session restoration.",
+      "mode": "subagent",
+      "hidden": false
+    },
+    "muse-player": {
+      "description": "Player & Audio agent for Muse. Audio engine, queue, radio mode, visualizer, theatre, mini player, PiP, lyrics.",
+      "mode": "subagent"
+    },
+    "muse-catalog": {
+      "description": "Catalog & Search agent for Muse. Tracks, albums, artists, genres, search, playlists, library, history, recommendations, AI features.",
+      "mode": "subagent"
+    },
+    "muse-social": {
+      "description": "Social & Community agent for Muse. Social features, rooms, clubs, parties, notifications, reactions.",
+      "mode": "subagent"
+    },
+    "muse-creator": {
+      "description": "Creator & Gamification agent for Muse. Creator dashboard, badges, challenges, leaderboard, XP, tips, contributions, subscriptions.",
+      "mode": "subagent"
+    },
+    "muse-admin": {
+      "description": "Admin & Moderation agent for Muse. Admin panel, user management, track/album/artist CRUD, media upload, moderation.",
+      "mode": "subagent"
+    },
+    "muse-ui": {
+      "description": "UI/UX & Layout agent for Muse. App shell, common components, error pages, styling, utils, global stores.",
+      "mode": "subagent"
+    },
+    "muse-infra": {
+      "description": "Infrastructure agent for Muse. API barrel, router config, stores, services, plugins, composables root.",
+      "mode": "subagent"
+    }
+  }
+}

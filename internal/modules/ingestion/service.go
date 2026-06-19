@@ -24,16 +24,16 @@ import (
 )
 
 const (
-	MaxUploadSize       = 200 << 20
-	StorageAudioDir     = "ingestion-audio"
-	StorageCoverDir     = "ingestion-covers"
-	StorageEnrichDir    = "enrichment-images"
+	MaxUploadSize    = 200 << 20
+	StorageAudioDir  = "ingestion-audio"
+	StorageCoverDir  = "ingestion-covers"
+	StorageEnrichDir = "enrichment-images"
 )
 
 type Service struct {
-	storage   platformstorage.Storage
-	repo      *Repository
-	enricher  *enrichment.Enricher
+	storage  platformstorage.Storage
+	repo     *Repository
+	enricher *enrichment.Enricher
 }
 
 func NewService(storage platformstorage.Storage, repo *Repository, enricher *enrichment.Enricher) *Service {
@@ -90,6 +90,7 @@ func (s *Service) enrichAsync(draftID, title, artist, album string) {
 						break
 					}
 				}
+				s.createAsset(ctx, draftID, "album_cover", localURL, "enrichment")
 			}
 		}
 		if result.Spotify.ArtistImageURL != "" {
@@ -103,7 +104,40 @@ func (s *Service) enrichAsync(draftID, title, artist, album string) {
 						break
 					}
 				}
+				s.createAsset(ctx, draftID, "artist_image", localURL, "enrichment")
 			}
+		}
+	}
+
+	if result.Spotify == nil || result.Spotify.ArtistImageURL == "" {
+		if result.LastFM != nil && result.LastFM.ArtistImageURL != "" {
+			if localURL, err := s.downloadAndStoreImage(ctx, result.LastFM.ArtistImageURL, draftID, "artist-image-lfm"); err != nil {
+				zap.L().Warn("failed to download last.fm artist image", zap.String("draft_id", draftID), zap.Error(err))
+			} else {
+				result.LastFM.ArtistImageURL = localURL
+				for i, sug := range result.Suggestions {
+					if sug.Field == "artist_image_url" {
+						result.Suggestions[i].Value = localURL
+						break
+					}
+				}
+				s.createAsset(ctx, draftID, "artist_image", localURL, "enrichment")
+			}
+		}
+	}
+
+	if (result.Spotify == nil || result.Spotify.AlbumCoverURL == "") && result.LastFM != nil && result.LastFM.AlbumCoverURL != "" {
+		if localURL, err := s.downloadAndStoreImage(ctx, result.LastFM.AlbumCoverURL, draftID, "album-cover-lfm"); err != nil {
+			zap.L().Warn("failed to download last.fm album cover", zap.String("draft_id", draftID), zap.Error(err))
+		} else {
+			result.LastFM.AlbumCoverURL = localURL
+			for i, sug := range result.Suggestions {
+				if sug.Field == "album_cover_url" {
+					result.Suggestions[i].Value = localURL
+					break
+				}
+			}
+			s.createAsset(ctx, draftID, "album_cover", localURL, "enrichment")
 		}
 	}
 
@@ -120,6 +154,19 @@ func (s *Service) enrichAsync(draftID, title, artist, album string) {
 		zap.L().Error("failed to save enrichment", zap.String("draft_id", draftID), zap.Error(err))
 		_ = s.repo.UpdateDraftStatus(ctx, draftID, DraftStatusEnrichmentFailed)
 		return
+	}
+}
+
+func (s *Service) createAsset(ctx context.Context, draftID, assetType, url, source string) {
+	_, err := s.repo.CreateAsset(ctx, CreateAssetParams{
+		ID:        uuid.New().String(),
+		DraftID:   draftID,
+		AssetType: assetType,
+		URL:       url,
+		Source:    source,
+	})
+	if err != nil {
+		zap.L().Warn("failed to create asset", zap.String("draft_id", draftID), zap.String("asset_type", assetType), zap.Error(err))
 	}
 }
 
@@ -630,5 +677,3 @@ func jsonToMap(rawJSON string) map[string]interface{} {
 	}
 	return data
 }
-
-

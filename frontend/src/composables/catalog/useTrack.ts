@@ -22,18 +22,18 @@ export function useTrack(id: string | number) {
   const trackCredits = ref<TrackCredit[]>([])
   const isLiked = ref(false)
   const loading = ref(false)
-  const error = ref<unknown>(null)
+  const error = ref<any>(null)
 
   const mainArtist = computed(() => {
     if (!trackArtists.value.length) return null
     return (
-      trackArtists.value.find((a: any) => a.role === 'main' || a.role === 'primary') ??
+      trackArtists.value.find((a: TrackArtist) => a.role === 'main' || a.role === 'primary') ??
       trackArtists.value[0]!
     )
   })
 
   const featuredArtists = computed(() => {
-    return trackArtists.value.filter((a: any) => a.role && !['main', 'primary'].includes(a.role))
+    return trackArtists.value.filter((a: TrackArtist) => a.role && !['main', 'primary'].includes(a.role))
   })
 
   const genreList = computed(() => {
@@ -56,19 +56,8 @@ export function useTrack(id: string | number) {
         ? likedTracks.some((t) => t.track_id === String(id))
         : false
 
-      tracksApi
-        .getTrackArtists(id)
-        .then((res: any) => {
-          trackArtists.value = res ?? []
-        })
-        .catch(() => {})
-
-      tracksApi
-        .getTrackCredits(id)
-        .then((res: any) => {
-          trackCredits.value = res ?? []
-        })
-        .catch(() => {})
+      trackArtists.value = []
+      trackCredits.value = []
 
       recsApi
         .getSimilar(String(id), { limit: 8 })

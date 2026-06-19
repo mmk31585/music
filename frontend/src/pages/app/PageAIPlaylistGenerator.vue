@@ -39,14 +39,14 @@
                 >
                   <template #value="slotProps">
                     <div v-if="slotProps.value" class="flex items-center gap-2">
-                      <i :class="getMoodIcon(slotProps.value)" class="text-xs" />
+                      <i aria-hidden="true" :class="getMoodIcon(slotProps.value)" class="text-xs" />
                       <span>{{ getMoodLabel(slotProps.value) }}</span>
                     </div>
                     <span v-else class="text-slate-400">Any mood</span>
                   </template>
                   <template #option="slotProps">
                     <div class="flex items-center gap-2">
-                      <i :class="slotProps.option.icon" class="text-xs" />
+                      <i aria-hidden="true" :class="slotProps.option.icon" class="text-xs" />
                       <span>{{ slotProps.option.label }}</span>
                     </div>
                   </template>
@@ -66,14 +66,14 @@
                 >
                   <template #value="slotProps">
                     <div v-if="slotProps.value" class="flex items-center gap-2">
-                      <i :class="getActivityIcon(slotProps.value)" class="text-xs" />
+                      <i aria-hidden="true" :class="getActivityIcon(slotProps.value)" class="text-xs" />
                       <span>{{ getActivityLabel(slotProps.value) }}</span>
                     </div>
                     <span v-else class="text-slate-400">Any activity</span>
                   </template>
                   <template #option="slotProps">
                     <div class="flex items-center gap-2">
-                      <i :class="slotProps.option.icon" class="text-xs" />
+                      <i aria-hidden="true" :class="slotProps.option.icon" class="text-xs" />
                       <span>{{ slotProps.option.label }}</span>
                     </div>
                   </template>
@@ -130,7 +130,7 @@
           v-if="generating"
           class="flex flex-col items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.03] px-6 py-24 text-center"
         >
-          <i class="pi pi-spin pi-spinner text-3xl text-[#1db954]" />
+          <i aria-hidden="true" class="pi pi-spin pi-spinner text-3xl text-[#1db954]" />
           <p class="mt-4 text-sm font-medium text-white">Generating your perfect playlist...</p>
           <p class="mt-1 text-xs text-slate-400">AI is curating tracks based on your preferences</p>
         </div>
@@ -186,14 +186,14 @@
                     @error="onImgError"
                   />
                   <div v-else class="flex h-full items-center justify-center">
-                    <i class="pi pi-music text-xs text-slate-500" />
+                    <i aria-hidden="true" class="pi pi-music text-xs text-slate-500" />
                   </div>
                   <button
                     type="button"
                     class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
                     @click="playTrack(index)"
                   >
-                    <i class="pi pi-play-fill text-xs text-white" />
+                    <i aria-hidden="true" class="pi pi-play-fill text-xs text-white" />
                   </button>
                 </div>
 
@@ -208,7 +208,7 @@
               </div>
             </template>
             <div v-else class="flex flex-col items-center gap-3 py-16 text-center">
-              <i class="pi pi-inbox text-4xl text-slate-500" />
+              <i aria-hidden="true" class="pi pi-inbox text-4xl text-slate-500" />
               <p class="text-sm text-slate-400">No tracks in generated playlist</p>
             </div>
           </div>
@@ -221,7 +221,7 @@
           <div
             class="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1db954]/20 to-purple-500/20"
           >
-            <i class="pi pi-sparkles text-2xl text-[#1db954]" />
+            <i aria-hidden="true" class="pi pi-sparkles text-2xl text-[#1db954]" />
           </div>
           <h3 class="mt-6 text-lg font-bold text-white">Ready when you are</h3>
           <p class="mt-2 max-w-xs text-sm text-slate-400">

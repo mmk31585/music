@@ -24,7 +24,7 @@
 
     <div v-else class="space-y-2">
       <div
-        v-for="(entry, i) in filteredEntries"
+        v-for="entry in filteredEntries"
         :key="entry.user_id"
         class="group flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200"
         :class="entry.rank <= 3 ? 'bg-white/5' : 'hover:bg-white/[0.03]'"
@@ -91,10 +91,6 @@ const activeTab = ref('all')
 const filteredEntries = computed(() => {
   return props.entries
 })
-
-function onTabChange(key: string) {
-  activeTab.value = key
-}
 
 function rankClass(rank: number): string {
   if (rank === 1) return 'text-amber-400'

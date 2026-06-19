@@ -59,7 +59,7 @@
       class="flex flex-col items-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-6 py-20 text-center"
     >
       <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
-        <i class="pi pi-bell text-2xl text-slate-400" />
+        <i aria-hidden="true" class="pi pi-bell text-2xl text-slate-400" />
       </div>
       <h3 class="text-xl font-bold text-white">All caught up!</h3>
       <p class="max-w-sm text-sm text-slate-400">
@@ -71,7 +71,7 @@
       v-if="error"
       class="flex flex-col items-center gap-4 rounded-2xl border border-red-500/20 bg-red-500/5 px-6 py-16 text-center"
     >
-      <i class="pi pi-exclamation-triangle text-3xl text-red-400" />
+      <i aria-hidden="true" class="pi pi-exclamation-triangle text-3xl text-red-400" />
       <h3 class="text-xl font-bold text-white">Failed to load</h3>
       <p class="text-sm text-slate-400">{{ error }}</p>
       <button

@@ -486,7 +486,7 @@ function splitArtists(value?: string | null) {
     .filter(Boolean)
 }
 
-function splitGenres(values?: string[] | string | null) {
+function splitGenres(values?: string[] | string | null): string[] {
   if (!values) return []
 
   if (Array.isArray(values)) {
@@ -631,7 +631,7 @@ async function readAudioMetadata(file: File): Promise<TrackMetadataResult> {
 
   if (firstPicture?.data?.length) {
     const extension = imageMimeToExtension(firstPicture.format)
-    const coverBlob = new Blob([firstPicture.data], {
+    const coverBlob = new Blob([new Uint8Array(firstPicture.data)], {
       type: firstPicture.format,
     })
 
@@ -708,7 +708,7 @@ async function autoFillFromAudioFile(file: File) {
       const matched = toOptionsByNames(props.artistsOptions, metadata.artists)
 
       if (matched.length) {
-        primaryArtistModels.value = [matched[0]]
+        primaryArtistModels.value = [matched[0]!]
         featuredArtistModels.value = matched.slice(1)
       }
     }
@@ -890,7 +890,7 @@ function closeDialog() {
                 alt="Cover"
                 class="h-full w-full object-cover"
               />
-              <i v-else class="pi pi-image text-2xl text-slate-500" />
+              <i aria-hidden="true" v-else class="pi pi-image text-2xl text-slate-500" />
             </div>
 
             <div class="flex flex-col gap-2">
@@ -952,7 +952,7 @@ function closeDialog() {
             >
               <template #option="{ option }">
                 <div class="flex items-center gap-2 text-sm text-white">
-                  <i class="pi pi-user text-xs text-slate-500" />
+                  <i aria-hidden="true" class="pi pi-user text-xs text-slate-500" />
                   <span>{{ option.name }}</span>
                 </div>
               </template>
@@ -987,7 +987,7 @@ function closeDialog() {
             >
               <template #option="{ option }">
                 <div class="flex items-center gap-2 text-sm text-white">
-                  <i class="pi pi-user-plus text-xs text-slate-500" />
+                  <i aria-hidden="true" class="pi pi-user-plus text-xs text-slate-500" />
                   <span>{{ option.name }}</span>
                 </div>
               </template>
@@ -1070,7 +1070,7 @@ function closeDialog() {
           >
             <template #option="{ option }">
               <div class="flex items-center gap-2 text-sm text-white">
-                <i class="pi pi-tag text-xs text-slate-500" />
+                <i aria-hidden="true" class="pi pi-tag text-xs text-slate-500" />
                 <span>{{ option.name }}</span>
               </div>
             </template>

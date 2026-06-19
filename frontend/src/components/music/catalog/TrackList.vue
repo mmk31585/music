@@ -8,7 +8,7 @@
       :queue="queue"
     />
     <div v-if="!tracks.length" class="flex flex-col items-center gap-2 px-6 py-12 text-center">
-      <i class="pi pi-music text-2xl text-slate-500" />
+      <i aria-hidden="true" class="pi pi-music text-2xl text-slate-500" />
       <p class="text-sm text-slate-400">
         {{ emptyMessage || 'No tracks' }}
       </p>

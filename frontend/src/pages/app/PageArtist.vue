@@ -8,7 +8,7 @@
     </div>
 
     <div v-else-if="error" class="flex flex-col items-center gap-4 py-24 text-center">
-      <i class="pi pi-exclamation-circle text-4xl text-slate-500" />
+      <i aria-hidden="true" class="pi pi-exclamation-circle text-4xl text-slate-500" />
       <h2 class="text-xl font-bold text-white">Artist not found</h2>
       <RouterLink to="/" class="text-sm font-medium text-[#1db954] underline underline-offset-2">
         Go home
@@ -35,15 +35,21 @@
       </div>
 
       <!-- Top Tracks -->
-      <section class="mt-10">
+      <section class="mt-14">
         <template v-if="displayedTracks.length">
-          <HomeSection title="Popular" eyebrow="Top tracks" />
-          <div class="mt-4">
+          <div class="flex items-baseline justify-between gap-4">
+            <div>
+              <p class="text-[10px] font-bold tracking-[0.3em] text-white/30 uppercase">Top tracks</p>
+              <h2 class="mt-1 text-xl font-bold text-white md:text-2xl">Popular</h2>
+            </div>
+            <span class="text-xs tabular-nums text-white/25">{{ tracks.length }} tracks</span>
+          </div>
+          <div class="mt-5">
             <TrackList :tracks="displayedTracks" />
             <button
               v-if="tracks.length > 5"
               type="button"
-              class="mt-3 text-sm font-medium text-slate-400 transition hover:text-white"
+              class="mt-3 text-sm font-medium text-white/40 transition hover:text-white"
               @click="showAllTracks = !showAllTracks"
             >
               {{ showAllTracks ? 'Show less' : `Show all (${tracks.length} tracks)` }}
@@ -51,58 +57,87 @@
           </div>
         </template>
         <div v-else class="flex flex-col items-center gap-3 py-16 text-center">
-          <i class="pi pi-music text-4xl text-slate-500" />
-          <p class="text-sm text-slate-400">No tracks found for this artist</p>
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+            <i aria-hidden="true" class="pi pi-music text-xl text-slate-500" />
+          </div>
+          <p class="text-sm font-medium text-white/60">No tracks found for this artist</p>
         </div>
       </section>
 
+      <!-- Section divider -->
+      <div v-if="albums.length || related.length || artist.bio" class="relative mt-14">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-white/[0.06]" />
+        </div>
+      </div>
+
       <!-- Albums -->
-      <section class="mt-10">
+      <section class="mt-14">
         <template v-if="albums.length">
-          <HomeSection title="Albums" eyebrow="Discography">
-            <template #action>
-              <span class="text-xs text-slate-500">{{ albums.length }} albums</span>
-            </template>
-          </HomeSection>
-          <div class="mt-4">
+          <div class="flex items-baseline justify-between gap-4">
+            <div>
+              <p class="text-[10px] font-bold tracking-[0.3em] text-white/30 uppercase">Discography</p>
+              <h2 class="mt-1 text-xl font-bold text-white md:text-2xl">Albums</h2>
+            </div>
+            <span class="text-xs tabular-nums text-white/25">{{ albums.length }} album{{ albums.length === 1 ? '' : 's' }}</span>
+          </div>
+          <div class="mt-5">
             <HomeCarousel>
               <AlbumCard v-for="album in albums" :key="String(album.id)" :album="album" />
             </HomeCarousel>
           </div>
         </template>
         <div v-else class="flex flex-col items-center gap-3 py-16 text-center">
-          <i class="pi pi-inbox text-4xl text-slate-500" />
-          <p class="text-sm text-slate-400">No albums yet</p>
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+            <i aria-hidden="true" class="pi pi-inbox text-xl text-slate-500" />
+          </div>
+          <p class="text-sm font-medium text-white/60">No albums yet</p>
         </div>
       </section>
 
       <!-- Related -->
-      <section class="mt-10">
+      <section class="mt-14">
         <template v-if="related.length">
-          <HomeSection title="Related Artists" eyebrow="You might also like" />
-          <div class="mt-4">
+          <div class="flex items-baseline justify-between gap-4">
+            <div>
+              <p class="text-[10px] font-bold tracking-[0.3em] text-white/30 uppercase">You might also like</p>
+              <h2 class="mt-1 text-xl font-bold text-white md:text-2xl">Related Artists</h2>
+            </div>
+          </div>
+          <div class="mt-5">
             <HomeCarousel>
               <ArtistCard v-for="a in related" :key="String(a.id)" :artist="a" />
             </HomeCarousel>
           </div>
         </template>
         <div v-else class="flex flex-col items-center gap-3 py-16 text-center">
-          <i class="pi pi-inbox text-4xl text-slate-500" />
-          <p class="text-sm text-slate-400">No related artists</p>
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+            <i aria-hidden="true" class="pi pi-inbox text-xl text-slate-500" />
+          </div>
+          <p class="text-sm font-medium text-white/60">No related artists</p>
         </div>
       </section>
 
       <!-- Bio -->
-      <section v-if="artist.bio" class="mt-10">
-        <HomeSection title="About" eyebrow="Biography" />
-        <div class="mt-4 max-w-3xl rounded-2xl bg-white/[0.03] p-6">
-          <p class="text-sm leading-relaxed whitespace-pre-line text-slate-400">
+      <section v-if="artist.bio" class="mt-14">
+        <div class="relative mb-8">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-white/[0.06]" />
+          </div>
+          <div class="relative flex justify-center">
+            <span class="bg-[#0a0a0a] px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
+              Biography
+            </span>
+          </div>
+        </div>
+        <div class="mx-auto max-w-3xl rounded-2xl border border-white/[0.04] bg-white/[0.02] p-8">
+          <p class="text-sm leading-relaxed whitespace-pre-line text-white/50">
             {{ bioExpanded ? artist.bio : truncateBio(artist.bio) }}
           </p>
           <button
             v-if="artist.bio.length > 300"
             type="button"
-            class="mt-2 text-sm font-medium text-[#1db954] hover:underline"
+            class="mt-3 text-sm font-medium text-[#1db954] transition hover:underline"
             @click="bioExpanded = !bioExpanded"
           >
             {{ bioExpanded ? 'Show less' : 'Show more' }}
@@ -122,7 +157,6 @@ import { usePlayer } from '@/composables/player'
 import { usePlayerApi } from '@/services/api/player'
 import { useAlbumColors } from '@/composables/useAlbumColors'
 import {
-  HomeSection,
   HomeCarousel,
   TrackList,
   ArtistHero,

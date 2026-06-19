@@ -1,7 +1,10 @@
 # Muse — Design System & UX Specification
 
-> **Vision:** The most beautiful, immersive, and social music streaming platform ever created.
-> More premium than Spotify. More beautiful than Apple Music. More social than SoundCloud.
+> **Product:** Muse — Persian Music Ecosystem
+> **Vision:** The most beautiful, immersive, and social Persian music platform ever created.
+> **Tagline:** "Feel the music. Share the moment."
+> **Stack:** Vue 3 (Composition API + TypeScript) · Tailwind CSS v4 · PrimeVue 4 · Pinia · Vite 7
+> **Backend:** Go + Gin · PostgreSQL 16 · Redis 7 · OpenSearch 2.x · MinIO/S3
 
 ---
 
@@ -22,6 +25,14 @@
 13. [Creator Studio UX](#13-creator-studio-ux)
 14. [Admin UX Specifications](#14-admin-ux-specifications)
 15. [Figma Implementation Guide](#15-figma-implementation-guide)
+16. [Route Map](#16-route-map-actual-implementation)
+17. [Backend Architecture Reference](#17-backend-architecture-reference)
+
+**Appendices:**
+- [A: Player Controls Quick Reference](#appendix-a-player-controls-quick-reference)
+- [B: Page Load Performance Targets](#appendix-b-page-load-performance-targets)
+- [C: Accessibility Requirements](#appendix-c-accessibility-requirements)
+- [D: Persian / RTL Design Considerations](#appendix-d-persian--rtl-design-considerations)
 
 ---
 
@@ -35,28 +46,54 @@
 
 ### Color Palette
 
-```
-Primary Green:    #1DB954  (Spotify-inspired, our accent)
-Primary Purple:   #B646FF  (creative energy)
-Aurora Green:     #00FF87  (energy, freshness)
-Aurora Blue:      #60A5FA  (depth, calm)
-Aurora Pink:      #F472B6  (warmth, emotion)
-Aurora Purple:    #A855F7  (mystery, creativity)
+The design system uses a tokenized color architecture defined in `assets/css/main.css` under `@theme`:
 
-Surface Dark:     #050505  (deepest background)
+```
+--color-spotify:           #1DB954  (primary green, accent)
+--color-electric-purple:   #B646FF  (creative energy)
+--color-aurora-green:      #00FF87  (energy, freshness)
+--color-aurora-blue:       #60A5FA  (depth, calm)
+--color-aurora-pink:       #F472B6  (warmth, emotion)
+--color-aurora-purple:     #A855F7  (mystery, creativity)
+--color-primary-main:      #B646FF  (electric purple, primary brand)
+
+Surface Dark:     #050505  (deepest background, <html>)
 Surface Base:     #0A0A0A  (main background)
 Surface Raised:   #121212  (cards, containers)
 Surface Overlay:  #1A1A1A  (hover states)
 Surface Border:   rgba(255,255,255,0.06)
 ```
 
+Neutral gray scale: 13 shades (`--color-neutral-gray-01` through `-13`), with semantic aliases for background, foreground, and border.
+
+Dark mode (`.app-dark` class) overrides background/foreground using `color-mix()`.
+
+### Persian / RTL
+
+- **PrimeVue RTL:** Enabled globally via `rtl: true` in `main.ts`
+- **Locale:** Custom Persian locale (`primeLocale`) imported from `@/utils`
+- **Direction:** Layout components use logical CSS properties where possible
+- **Typography:** Primary font is `IRANYekanWeb` (Persian-compatible) applied globally
+
 ### Typography
 
+The font stack uses a layered approach -- Persian text uses `IRANYekanWeb` as the global base, with Latin/display fonts for specific contexts:
+
 ```css
---font-display: 'Cabinet Grotesk', sans-serif;  /* Headlines, display text */
---font-ui:      'Inter', sans-serif;             /* UI elements, body */
---font-music:   'Satoshi', sans-serif;           /* Music metadata, lyrics */
+/* Global base (declared in fonts.css) */
+* { font-family: 'IRANYekanWeb', Arial, sans-serif; }
+
+/* Display / headlines */
+--font-display: 'Cabinet Grotesk', 'IRANYekanWeb', sans-serif;
+
+/* UI elements, body */
+--font-ui:      'Inter', 'IRANYekanWeb', sans-serif;
+
+/* Music metadata, lyrics */
+--font-music:   'Satoshi', 'IRANYekanWeb', sans-serif;
 ```
+
+Font files bundled: `IRANYekanWeb` in 3 weights (light, regular, bold) as woff2.
 
 Scale:
 
@@ -76,6 +113,8 @@ Scale:
 
 ## 2. Design Tokens
 
+All tokens are defined as CSS custom properties in `assets/css/main.css`.
+
 ### Spacing
 
 4px base unit. Scale: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 128.
@@ -87,6 +126,7 @@ Scale:
 --radius-md:    12px;   /* Cards, small containers */
 --radius-lg:    16px;   /* Album art, modals */
 --radius-xl:    24px;   /* Large cards, sections */
+--radius-2xl:   32px;   /* Extra large containers */
 --radius-full:  9999px; /* Pills, avatars */
 ```
 
@@ -184,21 +224,42 @@ Background aurora                     → extreme blur (120px)
 
 ### 4.1 Audio Player (Core)
 
+Implemented in `services/player/audio-engine.ts` (singleton class wrapping HTML5 Audio + Web Audio API):
+
 ```
-<AudioEngine>
-├── Audio Source (HTML5 <audio> or Media Source Extensions)
+AudioEngine (singleton)
+├── Audio Source (HTML5 <audio> element)
 ├── Audio Analyzer (Web Audio API AnalyserNode)
-│   ├── Frequency data (for spectrum visualizer)
-│   └── Waveform data (for waveform visualization)
-├── Queue Manager
-│   ├── Current queue (ordered)
-│   ├── History stack
-│   ├── Shuffle (2 modes: smart + true random)
-│   └── Repeat (off / all / one)
-└── Preload Manager
-    ├── Next track preload
-    └── Buffer management
+│   ├── Frequency data (FFT, for spectrum visualizer)
+│   └── Waveform data (time-domain, for waveform viz)
+├── QueueManager (ordered queue + history + shuffle/repeat)
+│   ├── queue: PlaybackTrack[]
+│   ├── history: PlaybackTrack[] (stack)
+│   ├── Shuffle: boolean (Fisher-Yates on play)
+│   └── Repeat: 'off' | 'one' | 'all'
+├── PreloadManager (next track preloading)
+└── MediaSession (browser media controls integration)
 ```
+
+Player state is managed in `stores/player.ts` (Pinia `usePlayerStore`):
+
+| State | Type | Default |
+|-------|------|---------|
+| currentTrack | PlaybackTrack \| null | null |
+| queue | PlaybackTrack[] | [] |
+| isPlaying | boolean | false |
+| isBuffering | boolean | false |
+| currentTime | number | 0 |
+| duration | number | 0 |
+| volume | number | 0.85 (persisted) |
+| muted | boolean | false (persisted) |
+| shuffleMode | boolean | false |
+| repeatMode | 'off' \| 'one' \| 'all' | 'off' |
+| playbackRate | number | 1 |
+| sleepTimerMinutes | number | 0 |
+| crossfadeDuration | number | 0 |
+| audioQuality | 'auto' \| 'low' \| 'medium' \| 'high' \| 'lossless' | 'auto' |
+| error | string \| null | null |
 
 ### 4.2 Media Session API Integration
 
@@ -226,32 +287,34 @@ navigator.mediaSession.setActionHandler('seekto', () => { /* ... */ })
 ### 4.3 Component Tree
 
 ```
-App.vue
+App.vue (dynamic layout switching via route.meta.layout)
 ├── LayoutAuth.vue
-│   └── Auth pages (Login, Register)
+│   └── Auth pages (PageLogin, PageRegister)
 ├── LayoutMusicApp.vue  ← MAIN APP SHELL
-│   ├── MusicSidebar.vue
-│   │   ├── AppLogo
-│   │   ├── NavLinks (Home, Search, Library, Discover)
-│   │   ├── PlaylistSection
-│   │   └── UserSection
-│   ├── MusicTopbar.vue
-│   │   ├── PageTitle
-│   │   ├── SearchTrigger (Ctrl+K)
-│   │   └── UserMenu
-│   ├── RouterView (pages)
-│   ├── NowPlayingBar.vue  ← Sticky bottom bar
-│   ├── FloatingMiniPlayer.vue  ← Draggable floating player
-│   ├── QueuePanel.vue  ← Slide-in queue
-│   ├── SearchOverlay.vue  ← Fullscreen search
-│   ├── FullscreenPlayer.vue  ← Immersive player
-│   ├── MobileBottomSheet.vue  ← Mobile player
-│   └── LyricsDisplay.vue
+│   ├── SkipLink (#main-content)
+│   ├── MusicSidebar.vue (desktop, 280px collapsible to 72px)
+│   │   ├── AppLogo (pulses when playing)
+│   │   ├── NavLinks: Browse (Home, Discover, Search, Recommendations)
+│   │   │              Library (Library, Playlists, Recently Played)
+│   │   │              Social (Social Hub, Notifications)
+│   │   │              More (Profile, Settings, AI, Subscription, etc.)
+│   │   └── UserSection (auth-aware: login/signup or user menu)
+│   ├── MusicAppHeader.vue (top bar: title, search trigger, user menu)
+│   ├── <main> → RouterView
+│   │   └── Transition (page: fade-in-up, 350ms) + KeepAlive (max 3)
+│   ├── NowPlayingBar.vue  ← Sticky bottom bar (72px)
+│   ├── FloatingMiniPlayer.vue  ← Draggable PiP (3 sizes)
+│   ├── QueuePanel.vue  ← Slide-in from right (360px)
+│   ├── SearchOverlay.vue  ← Fullscreen search modal (Ctrl+K)
+│   ├── FullscreenPlayer.vue  ← Immersive overlay
+│   ├── ExpandedPlayer.vue  ← Alternative (feature-flagged)
+│   ├── MobileBottomSheet.vue  ← Mobile player (3 snap points)
+│   └── KeyboardShortcuts.vue  ← Help overlay
 ├── LayoutAdmin.vue
 │   ├── AdminSidebar
 │   ├── AdminTopbar
 │   └── RouterView (admin pages)
-└── LayoutEmpty.vue
+└── LayoutEmpty.vue (error pages)
 ```
 
 ### 4.4 Key Components
@@ -506,7 +569,18 @@ App.vue
 
 ## 6. Player UX Specifications
 
-### 6.1 Core Player Architecture
+### 6.1 Core Player Architecture (8 Modes)
+
+| Mode | Trigger | Description |
+|------|---------|-------------|
+| **Compact** | Default | NowPlayingBar — persistent bottom bar (72px desktop, 64px mobile) |
+| **Fullscreen** | Space / N / tap art | Cinematic overlay with album art, controls, lyrics/queue/spectrum |
+| **Floating Mini** | Swipe down / minimize | Draggable PiP, 3 sizes (mini 64px / compact 200x120 / extended 320x200) |
+| **Theatre** | Ctrl+T / button | Album art left + lyrics right, dimmed background |
+| **Karaoke** | K / button | Word-level lyric highlighting, particle background |
+| **Lyrics Focus** | Ctrl+L / button | Fullscreen lyrics with scroll, album art thumbnail |
+| **Ambient** | Ctrl+A / button | Fullscreen album art + particle effects, minimal UI |
+| **Visualizer** | V / button | WebGL / Canvas spectrum visualizations |
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -517,7 +591,7 @@ App.vue
 │  │  NowPlayingBar (persistent bottom bar)            │   │
 │  │  Height: 72px desktop, 64px mobile               │   │
 │  │  Glass-darker background                          │   │
-│  │  3 columns: track | controls | extras             │   │
+│  │  3 columns: track info | controls | extras        │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
@@ -529,25 +603,33 @@ App.vue
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │  FloatingMiniPlayer (draggable PiP)               │   │
-│  │  Sizes: mini (64px) | compact (120px) | full     │   │
-│  │  Draggable anywhere on screen                     │   │
-│  │  Picture-in-Picture API fallback                  │   │
+│  │  Sizes: mini (64x64) | compact (200x120) |       │   │
+│  │         extended (320x200)                        │   │
+│  │  Draggable anywhere, fade to 50% when idle       │   │
+│  │  Browser PiP API fallback via video element       │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │  MobileBottomSheet (mobile player)                │   │
-│  │  Snap points: collapsed(64px) | half | full      │   │
+│  │  Snap points: collapsed(64px) | half(40%) | full │   │
 │  │  Gesture: drag up to expand, down to collapse     │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
 │  │  QueuePanel (slide-in from right)                 │   │
-│  │  Width: 360px                                     │   │
+│  │  Width: 360px, glass-strong background            │   │
 │  │  Tabs: Queue | Recommendations                    │   │
-│  │  Glass-strong background                           │   │
+│  │  Drag to reorder tracks                           │   │
+│  └──────────────────────────────────────────────────┘   │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │  TheatreMode / Karaoke / Ambient / Visualizer     │   │
+│  │  (additional overlay modes)                       │   │
 │  └──────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────┘
 ```
+
+Player state is managed via Pinia (`usePlayerStore` in `stores/player.ts`) and the singleton `AudioEngine` (`services/player/audio-engine.ts`). Events flow: AudioEngine → PlayerStore → UI components. Progress updates use `requestAnimationFrame` throttled to 250ms.
 
 ### 6.2 NowPlayingBar — Detailed
 
@@ -1029,32 +1111,42 @@ Share Sheet (overlay, glass-strong):
 
 ## 10. Navigation System
 
-### 10.1 Sidebar Navigation (Desktop)
+### 10.1 Sidebar Navigation (Desktop) — `MusicSidebar.vue`
 
 ```
 ┌──────────────────┐
 │  [MUSE LOGO]      │  ← 32x32, pulses when playing
 │                   │
-│  🏠 Home          │  ← Active state: green text + left border
+│  ── BROWSE ──      │
+│  🏠 Home          │  ← Active: green accent + left border
 │  🔍 Search        │
-│  📚 Library       │
 │  ✨ Discover      │
+│  📋 Recommendations│
 │                   │
-│  ── LIBRARY ──    │  ← Section label
-│  ▶ Liked Songs    │
+│  ── LIBRARY ──    │
+│  📚 Library       │
 │  📋 Playlists     │
 │  ⏱ Recently      │
 │                   │
 │  ── SOCIAL ──     │
-│  👥 Following     │
+│  🌐 Social Hub    │
 │  🔔 Notifications │
 │                   │
-│  [AI Playlist Gen]│  ← Special CTA button
+│  ── MORE ──       │
+│  👤 Profile       │
+│  ⚙️ Settings      │
+│  🤖 AI Mood Explorer│
+│  🎵 AI Playlist Gen│  ← Special CTA
+│  💎 Subscription  │
+│  🏆 Gamification  │
+│  ✏️ Contributions  │
+│  🎨 Creator Dash  │
 │                   │
-│  [User Avatar]    │
-│  Alex          ↓  │  ← User menu dropdown
+│  [User Avatar]    │  ← Auth-aware: initials/admin badge or login/signup
+│  Alex          ↓  │
 └──────────────────┘
 Width: 280px (collapsible to 72px icon-only mode)
+Mobile: overlay sidebar triggered by hamburger menu
 ```
 
 ### 10.2 Top Bar
@@ -1561,6 +1653,115 @@ Radius/Md                   → var(--radius-md)  [12px]
 Radius/Lg                   → var(--radius-lg)  [16px]
 Radius/Xl                   → var(--radius-xl)  [24px]
 ```
+
+---
+
+## 16. Route Map (Actual Implementation)
+
+### App Routes (under `LayoutMusicApp`)
+
+| Path | Component | Auth | Notes |
+|------|-----------|------|-------|
+| `/` | `PageHome.vue` | No | Personalized home feed |
+| `/search` | `PageSearch.vue` | No | Full-text search |
+| `/discover` | `PageDiscover.vue` | No | Discovery hub |
+| `/recommendations` | `PageRecommendationsHub.vue` | No | Recommendations overview |
+| `/recommendations/for-you` | `PageRecommendationsForYou.vue` | No | |
+| `/recommendations/popular` | `PageRecommendationsPopular.vue` | No | |
+| `/recommendations/best` | `PageRecommendationsBest.vue` | No | |
+| `/recommendations/recent` | `PageRecommendationsRecent.vue` | No | |
+| `/library` | `PageLibrary.vue` | Yes | |
+| `/playlists` | `PagePlaylists.vue` | Yes | |
+| `/playlist/:id` | `PagePlaylistDetail.vue` | No | |
+| `/recently-played` | `PageRecentlyPlayed.vue` | No | |
+| `/track/:id` | `PageTrack.vue` | No | |
+| `/album/:id` | `PageAlbum.vue` | No | |
+| `/artist/:id` | `PageArtist.vue` | No | |
+| `/notifications` | `PageNotifications.vue` | Yes | |
+| `/social` | `PageSocial.vue` | Yes | |
+| `/social/party/:id` | `PagePartyDetail.vue` | No | |
+| `/social/room/:id` | `PageRoomLive.vue` | No | |
+| `/social/club/:id` | `PageClubDetail.vue` | No | |
+| `/profile` | redirect → `/user/:id` | No | |
+| `/user/:id?` | `PageUserProfile.vue` | No | |
+| `/settings` | `PageUserSettings.vue` | Yes | |
+| `/subscription` | `PageSubscriptions.vue` | Yes | |
+| `/contributions` | `PageContributions.vue` | Yes | |
+| `/creator-dashboard` | `PageCreatorDashboard.vue` | Yes | |
+| `/gamification` | `PageGamification.vue` | Yes | |
+| `/ai/mood-explorer` | `PageAIMoodExplorer.vue` | No | |
+| `/ai/playlist-generator` | `PageAIPlaylistGenerator.vue` | Yes | |
+
+### Admin Routes (under `LayoutAdmin`, role: admin)
+
+| Path | Component |
+|------|-----------|
+| `/admin` | `PageAdminDashboard.vue` |
+| `/admin/catalog` | `PageAdminCatalog.vue` |
+| `/admin/tracks` | `PageAdminTracks.vue` |
+| `/admin/artists` | `AdminArtistsPage.vue` |
+| `/admin/albums` | `AdminAlbumsPage.vue` |
+| `/admin/genres` | `AdminGenresPage.vue` |
+| `/admin/users` | `PageAdminUsers.vue` |
+| `/admin/media` | `PageAdminMedia.vue` |
+| `/admin/import` | `PageAdminImport.vue` |
+| `/admin/ingestion` | `PageAdminIngestion.vue` |
+| `/admin/ingestion/review/:id` | `PageAdminIngestionReview.vue` |
+| `/admin/moderation` | `PageAdminModeration.vue` |
+| `/admin/subscriptions` | `PageAdminSubscriptions.vue` |
+| `/admin/contributions` | `PageAdminContributions.vue` |
+
+---
+
+## 17. Backend Architecture Reference
+
+The backend is a Go monolith with modular service layers (28 domain modules):
+
+```
+cmd/api/main.go  →  App bootstrap  →  Gin router  →  Module handlers
+cmd/worker/main.go  →  Background workers (9 types)
+```
+
+**Key backend modules:** auth, catalog (artist/album/genre/track), playlist, library, queue, player, history, recommendation, search, social, follow, reactions, lyrics, media, analytics, notification, moderation, subscription, ai, creator, gamification, contribution, tips, ingestion, importcmd, dashboard, features, health.
+
+**Architecture pattern per module:** Handler → Service → Repository (with DI container)
+
+**API base:** `/api/v1/` — JWT auth (access 15min + refresh 30 days), RBAC roles
+
+**Background workers:** ai, analytics, cleanup, eventbus, indexer, notification, recommendation, recommender_v2, transcoder
+
+See `docs/architecture/` for detailed API (`API.md`), database (`DATABASE.md`), services (`SERVICES.md`), and operations (`OPS.md`) documentation.
+
+---
+
+## Appendix D: Persian / RTL Design Considerations
+
+### Typography
+- **Primary font:** `IRANYekanWeb` (3 weights: light 300, normal 400, bold 700) — applied globally via `* { font-family }` in `fonts.css`
+- Fallback stack: `IRANYekanWeb, Arial, sans-serif`
+- Latin fonts (Cabinet Grotesk, Inter, Satoshi) coexist for English text and UI labels
+- Font files bundled as woff2 in `assets/fonts/`
+
+### RTL Layout
+- PrimeVue configured with `rtl: true` globally in `main.ts`
+- Custom Persian locale (`primeLocale`) for PrimeVue component labels
+- Logical CSS properties preferred (`margin-inline-start`, `padding-inline-end`)
+- Sidebar flips to right in RTL, navigation order reverses
+- Text alignment defaults to right for Persian content
+
+### Dastgah Modal System
+- Persian classical music modes (Dastgah) are first-class citizens alongside genres
+- Dastgah filtering available on discovery, search, and artist pages
+- Each Dastgah has associated moods and recommended listening times
+
+### Calendar
+- Persian (Jalali) calendar used for release dates, listening history, and analytics
+- Gregorian dates also stored for compatibility
+
+### Content Moderation
+- Persian NLP for spam detection in Farsi/Arabic text
+- RTL-aware text rendering in moderation queue
+- Mixed LTR/RTL content (e.g., English lyrics + Persian translation) handled with unicode-bidi
 
 ---
 

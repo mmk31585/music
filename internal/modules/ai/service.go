@@ -204,6 +204,14 @@ func (s *Service) GeneratePlaylist(ctx context.Context, req GeneratePlaylistRequ
 		var err error
 		candidates, err = s.repo.GetTracksByMoodRange(ctx, 0, 1, 0, 1, 50)
 		if err != nil {
+			s.logger.Warn("mood range query failed, falling back to plain tracks", zap.Error(err))
+		}
+	}
+
+	if len(candidates) == 0 {
+		var err error
+		candidates, err = s.repo.GetTracks(ctx, 50)
+		if err != nil {
 			return nil, fmt.Errorf("get candidate tracks: %w", err)
 		}
 	}

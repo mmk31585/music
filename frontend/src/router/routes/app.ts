@@ -121,6 +121,12 @@ export const appRoutes: RouteRecordRaw[] = [
         meta: { title: 'Live Room' },
       },
       {
+        path: 'social/clubs/browse',
+        name: 'social.clubs.browse',
+        component: () => import('@/pages/app/PageClubsBrowse.vue'),
+        meta: { title: 'Browse Clubs', requiresAuth: true },
+      },
+      {
         path: 'social/club/:id',
         name: 'social.club',
         component: () => import('@/pages/app/PageClubDetail.vue'),

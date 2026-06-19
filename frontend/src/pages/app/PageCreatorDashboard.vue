@@ -10,7 +10,7 @@
 
     <!-- Not a creator -->
     <div v-else-if="!isCreator" class="flex flex-col items-center gap-4 py-24 text-center">
-      <i class="pi pi-megaphone text-4xl text-slate-500" />
+      <i aria-hidden="true" class="pi pi-megaphone text-4xl text-slate-500" />
       <h2 class="text-xl font-bold text-white">Creator Studio</h2>
       <p class="max-w-md text-sm text-slate-400">
         Upload tracks and build your audience to unlock creator analytics.
@@ -42,7 +42,7 @@
               to="/admin/media"
               class="inline-flex items-center gap-2 rounded-full bg-[#1db954] px-6 py-2.5 text-sm font-bold text-black transition hover:scale-105 hover:bg-[#1ed760]"
             >
-              <i class="pi pi-upload text-xs" /> Upload
+              <i aria-hidden="true" class="pi pi-upload text-xs" /> Upload
             </RouterLink>
             <button
               type="button"
@@ -50,7 +50,7 @@
               @click="refreshStats"
               class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-5 py-2.5 text-sm font-medium text-white backdrop-blur transition hover:bg-white/[0.10] disabled:opacity-50"
             >
-              <i :class="refreshing ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'" />
+              <i aria-hidden="true" :class="refreshing ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'" />
               {{ refreshing ? 'Refreshing...' : 'Refresh' }}
             </button>
           </div>
@@ -102,7 +102,7 @@
               v-if="dailyStats.length === 0"
               class="flex flex-col items-center gap-3 py-16 text-center"
             >
-              <i class="pi pi-inbox text-4xl text-slate-500" />
+              <i aria-hidden="true" class="pi pi-inbox text-4xl text-slate-500" />
               <p class="text-sm text-slate-400">No daily data yet</p>
             </div>
             <div v-else class="space-y-2">
@@ -130,7 +130,7 @@
         <section>
           <h3 class="mb-3 text-lg font-bold text-white">Top Tracks</h3>
           <div v-if="!trackStats.length" class="flex flex-col items-center gap-3 py-16 text-center">
-            <i class="pi pi-inbox text-4xl text-slate-500" />
+            <i aria-hidden="true" class="pi pi-inbox text-4xl text-slate-500" />
             <p class="text-sm text-slate-400">No track stats yet</p>
           </div>
           <div v-else class="space-y-2">
@@ -231,7 +231,7 @@
         <section>
           <h3 class="mb-3 text-lg font-bold text-white">Payout History</h3>
           <div v-if="payouts.length === 0" class="flex flex-col items-center gap-3 py-16 text-center">
-            <i class="pi pi-inbox text-4xl text-slate-500" />
+            <i aria-hidden="true" class="pi pi-inbox text-4xl text-slate-500" />
             <p class="text-sm text-slate-400">No payouts yet</p>
           </div>
           <div v-else class="space-y-2">
@@ -286,7 +286,7 @@
             v-if="audience.top_listeners?.length === 0"
             class="flex flex-col items-center gap-3 py-16 text-center"
           >
-            <i class="pi pi-inbox text-4xl text-slate-500" />
+            <i aria-hidden="true" class="pi pi-inbox text-4xl text-slate-500" />
             <p class="text-sm text-slate-400">No listener data yet</p>
           </div>
           <div v-else class="space-y-2">
@@ -325,7 +325,7 @@
             v-if="audience.geographics?.length === 0"
             class="flex flex-col items-center gap-3 py-16 text-center"
           >
-            <i class="pi pi-inbox text-4xl text-slate-500" />
+            <i aria-hidden="true" class="pi pi-inbox text-4xl text-slate-500" />
             <p class="text-sm text-slate-400">No geo data yet</p>
           </div>
           <div v-else class="space-y-2">
@@ -352,7 +352,7 @@
             Tracks ({{ contentData.tracks?.length || 0 }})
           </h3>
           <div v-if="!contentData.tracks?.length" class="flex flex-col items-center gap-3 py-16 text-center">
-            <i class="pi pi-inbox text-4xl text-slate-500" />
+            <i aria-hidden="true" class="pi pi-inbox text-4xl text-slate-500" />
             <p class="text-sm text-slate-400">No tracks uploaded yet</p>
           </div>
           <div v-else class="space-y-2">
@@ -380,7 +380,7 @@
             Albums ({{ contentData.albums?.length || 0 }})
           </h3>
           <div v-if="!contentData.albums?.length" class="flex flex-col items-center gap-3 py-16 text-center">
-            <i class="pi pi-inbox text-4xl text-slate-500" />
+            <i aria-hidden="true" class="pi pi-inbox text-4xl text-slate-500" />
             <p class="text-sm text-slate-400">No albums yet</p>
           </div>
           <div v-else class="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -398,7 +398,7 @@
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full items-center justify-center text-white/20">
-                  <i class="pi pi-compact-disc text-2xl" />
+                  <i aria-hidden="true" class="pi pi-compact-disc text-2xl" />
                 </div>
               </div>
               <p class="truncate text-sm font-medium text-white">{{ album.title }}</p>
@@ -573,7 +573,7 @@ async function fetchDashboard() {
     }
     if (daily.success && daily.data) {
       dailyStats.value = daily.data
-      maxPlays = Math.max(1, ...daily.data.map((d: any) => d.plays))
+      maxPlays = Math.max(1, ...daily.data.map((d: any) => (d as { plays: number }).plays))
     }
     if (tracks.success && tracks.data) trackStats.value = tracks.data
     isCreator.value = creatorCheck.is_creator
@@ -625,15 +625,6 @@ function playTrack(track: any) {
     streamUrl: playerApi.getTrackStreamUrl(String(track.track_id)),
   }
   player.playTrack(pb)
-}
-
-function openTrackEdit(track: TrackStats) {
-  editTrack.value = track
-  editForm.title = track.title
-  editForm.persian_title = ''
-  editForm.lyrics = ''
-  editForm.explicit = false
-  showTrackModal.value = true
 }
 
 async function saveTrack() {

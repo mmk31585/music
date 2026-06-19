@@ -9,7 +9,7 @@
           class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/5 hover:text-white lg:hidden"
           @click="$emit('toggleMobile')"
         >
-          <i class="pi pi-bars text-base" />
+          <i aria-hidden="true" class="pi pi-bars text-base" />
         </button>
 
         <!-- Desktop collapse toggle -->
@@ -17,7 +17,7 @@
           class="hidden h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/5 hover:text-white lg:flex"
           @click="$emit('toggleCollapse')"
         >
-          <i class="pi text-sm" :class="collapsed ? 'pi-angle-right' : 'pi-angle-left'" />
+          <i aria-hidden="true" class="pi text-sm" :class="collapsed ? 'pi-angle-right' : 'pi-angle-left'" />
         </button>
 
         <div>
@@ -31,14 +31,14 @@
           to="/"
           class="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-1.5 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-white"
         >
-          <i class="pi pi-home text-xs" />
+          <i aria-hidden="true" class="pi pi-home text-xs" />
           <span class="hidden sm:inline">Back to app</span>
         </RouterLink>
         <RouterLink
           to="/admin/media"
           class="inline-flex items-center gap-2 rounded-full bg-[#1db954] px-4 py-1.5 text-sm font-semibold text-black transition hover:opacity-90"
         >
-          <i class="pi pi-upload text-xs" />
+          <i aria-hidden="true" class="pi pi-upload text-xs" />
           <span class="hidden sm:inline">Upload</span>
         </RouterLink>
       </div>

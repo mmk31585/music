@@ -30,19 +30,19 @@ func (h *Handler) GetStats(c *gin.Context) {
 
 	var trackCount, artistCount, albumCount, genreCount int
 
-	if err := h.db.GetContext(ctx, &trackCount, "SELECT COUNT(*) FROM music_tracks"); err != nil {
+	if err := h.db.GetContext(ctx, &trackCount, "SELECT COUNT(*) FROM tracks"); err != nil {
 		response.Error(c, err)
 		return
 	}
-	if err := h.db.GetContext(ctx, &artistCount, "SELECT COUNT(*) FROM music_artists"); err != nil {
+	if err := h.db.GetContext(ctx, &artistCount, "SELECT COUNT(*) FROM artists"); err != nil {
 		response.Error(c, err)
 		return
 	}
-	if err := h.db.GetContext(ctx, &albumCount, "SELECT COUNT(*) FROM music_albums"); err != nil {
+	if err := h.db.GetContext(ctx, &albumCount, "SELECT COUNT(*) FROM albums"); err != nil {
 		response.Error(c, err)
 		return
 	}
-	if err := h.db.GetContext(ctx, &genreCount, "SELECT COUNT(*) FROM music_genres"); err != nil {
+	if err := h.db.GetContext(ctx, &genreCount, "SELECT COUNT(*) FROM genres"); err != nil {
 		response.Error(c, err)
 		return
 	}

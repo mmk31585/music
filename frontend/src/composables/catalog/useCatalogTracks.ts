@@ -7,7 +7,7 @@ export function useCatalogTracks() {
 
   const tracks = ref<Track[]>([])
   const loading = ref(false)
-  const error = ref<unknown>(null)
+  const error = ref<any>(null)
 
   async function fetchTracks() {
     loading.value = true

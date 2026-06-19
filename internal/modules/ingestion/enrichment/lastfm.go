@@ -61,7 +61,14 @@ func (c *lastFMClient) SearchTrack(ctx context.Context, query TrackQuery) (*Last
 		Track *struct {
 			PlayCount string `json:"playcount"`
 			Listeners string `json:"listeners"`
-			Tags      struct {
+			Album     *struct {
+				Title string `json:"title"`
+				Image []struct {
+					URL  string `json:"#text"`
+					Size string `json:"size"`
+				} `json:"image"`
+			} `json:"album"`
+			Tags struct {
 				Tag []struct {
 					Name string `json:"name"`
 				} `json:"tag"`
@@ -70,6 +77,10 @@ func (c *lastFMClient) SearchTrack(ctx context.Context, query TrackQuery) (*Last
 				Bio struct {
 					Summary string `json:"summary"`
 				} `json:"bio"`
+				Image []struct {
+					URL  string `json:"#text"`
+					Size string `json:"size"`
+				} `json:"image"`
 				Similar struct {
 					Artist []struct {
 						Name string `json:"name"`
@@ -106,8 +117,34 @@ func (c *lastFMClient) SearchTrack(ctx context.Context, query TrackQuery) (*Last
 		}
 	}
 
+	if t.Album != nil {
+		for _, img := range t.Album.Image {
+			if img.Size == "extralarge" || img.Size == "large" {
+				if img.URL != "" {
+					result.AlbumCoverURL = img.URL
+					break
+				}
+			}
+		}
+		if result.AlbumCoverURL == "" && len(t.Album.Image) > 0 {
+			result.AlbumCoverURL = t.Album.Image[0].URL
+		}
+	}
+
 	if t.Artist.Bio.Summary != "" {
 		result.ArtistBio = truncateBio(t.Artist.Bio.Summary)
+	}
+
+	for _, img := range t.Artist.Image {
+		if img.Size == "extralarge" || img.Size == "large" {
+			if img.URL != "" {
+				result.ArtistImageURL = img.URL
+				break
+			}
+		}
+	}
+	if result.ArtistImageURL == "" && len(t.Artist.Image) > 0 {
+		result.ArtistImageURL = t.Artist.Image[0].URL
 	}
 
 	for _, a := range t.Artist.Similar.Artist {

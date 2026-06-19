@@ -21,7 +21,7 @@ export interface NotificationResponse {
   body: string
   entityType?: string | null
   entityId?: string | null
-  payload?: Record<string, unknown>
+  payload?: Record<string, any>
   isRead: boolean
   readAt?: string | null
   createdAt: string

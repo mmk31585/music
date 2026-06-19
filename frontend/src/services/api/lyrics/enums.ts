@@ -4,5 +4,5 @@ export enum LyricsApiRoutes {
 
   ADMIN_CREATE = 'admin/lyrics',
   ADMIN_UPDATE = 'admin/lyrics/:id',
-  ADMIN_DELETE = 'admin/lyrics/:id',
+  ADMIN_DELETE = 'admin/lyrics/:id/delete',
 }

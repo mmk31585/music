@@ -12,7 +12,7 @@
         >
           <!-- Search input -->
           <div class="relative flex items-center border-b border-white/10 px-4">
-            <i class="pi pi-search text-sm text-slate-400" />
+            <i aria-hidden="true" class="pi pi-search text-sm text-slate-400" />
             <input
               ref="inputRef"
               v-model="query"
@@ -28,7 +28,7 @@
               class="spring mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs text-slate-400 transition hover:bg-white/20"
               @click="clearQuery"
             >
-              <i class="pi pi-times" />
+              <i aria-hidden="true" class="pi pi-times" />
             </button>
             <kbd
               class="hidden rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-slate-500 md:inline-block"
@@ -60,7 +60,7 @@
                   class="spring flex items-center gap-2 rounded-full bg-white/[0.08] px-4 py-2 text-sm text-white transition-all hover:scale-105 hover:bg-white/[0.12]"
                   @click="query = term; doSearch()"
                 >
-                  <i class="pi pi-history text-xs text-slate-500" />
+                  <i aria-hidden="true" class="pi pi-history text-xs text-slate-500" />
                   {{ term }}
                 </button>
               </div>
@@ -105,7 +105,7 @@
             v-if="searching"
             class="flex items-center justify-center gap-3 p-12 text-sm text-slate-400"
           >
-            <i class="pi pi-spin pi-spinner" />
+            <i aria-hidden="true" class="pi pi-spin pi-spinner" />
             Searching...
           </div>
 
@@ -113,7 +113,7 @@
           <div v-if="query && !searching" class="max-h-[60vh] overflow-y-auto p-2">
             <div v-if="noResults" class="flex flex-col items-center gap-4 p-12 text-center">
               <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5">
-                <i class="pi pi-search text-3xl text-slate-600" />
+                <i aria-hidden="true" class="pi pi-search text-3xl text-slate-600" />
               </div>
               <p class="text-sm text-slate-400">
                 No results for "<span class="font-medium text-white">{{ query }}</span
@@ -142,7 +142,7 @@
                       @error="onImgError"
                     />
                     <div v-else class="flex h-full items-center justify-center">
-                      <i class="pi pi-music text-lg text-slate-500" />
+                      <i aria-hidden="true" class="pi pi-music text-lg text-slate-500" />
                     </div>
                   </div>
                   <div class="min-w-0 flex-1">
@@ -156,7 +156,7 @@
                   <div
                     class="spring flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954]/0 text-white opacity-0 transition-all group-hover:bg-[#1db954] group-hover:opacity-100"
                   >
-                    <i class="pi pi-play-fill text-lg" />
+                    <i aria-hidden="true" class="pi pi-play-fill text-lg" />
                   </div>
                 </div>
               </div>
@@ -187,7 +187,7 @@
                       @error="onImgError"
                     />
                     <div v-else class="flex h-full items-center justify-center">
-                      <i class="pi pi-music text-xs text-slate-500" />
+                      <i aria-hidden="true" class="pi pi-music text-xs text-slate-500" />
                     </div>
                   </div>
                   <div class="min-w-0 flex-1">
@@ -234,7 +234,7 @@
                         @error="onImgError"
                       />
                       <div v-else class="flex h-full items-center justify-center">
-                        <i class="pi pi-user text-sm text-slate-500" />
+                        <i aria-hidden="true" class="pi pi-user text-sm text-slate-500" />
                       </div>
                     </div>
                     <div class="min-w-0 flex-1">
@@ -243,7 +243,7 @@
                         {{ item.genre ? `Artist · ${item.genre}` : 'Artist' }}
                       </p>
                     </div>
-                    <i class="pi pi-chevron-left text-xs text-slate-500" />
+                    <i aria-hidden="true" class="pi pi-chevron-left text-xs text-slate-500" />
                   </RouterLink>
                 </div>
               </div>
@@ -278,7 +278,7 @@
                         @error="onImgError"
                       />
                       <div v-else class="flex h-full items-center justify-center">
-                        <i class="pi pi-compact-disc text-sm text-slate-500" />
+                        <i aria-hidden="true" class="pi pi-compact-disc text-sm text-slate-500" />
                       </div>
                     </div>
                     <div class="min-w-0 flex-1">
@@ -287,7 +287,7 @@
                         {{ item.artist_name || 'Album' }}
                       </p>
                     </div>
-                    <i class="pi pi-chevron-left text-xs text-slate-500" />
+                    <i aria-hidden="true" class="pi pi-chevron-left text-xs text-slate-500" />
                   </RouterLink>
                 </div>
               </div>
@@ -324,7 +324,7 @@
                         @error="onImgError"
                       />
                       <div v-else class="flex h-full items-center justify-center">
-                        <i class="pi pi-list text-sm text-purple-400" />
+                        <i aria-hidden="true" class="pi pi-list text-sm text-purple-400" />
                       </div>
                     </div>
                     <div class="min-w-0 flex-1">
@@ -333,7 +333,7 @@
                         {{ item.description || 'Playlist' }}
                       </p>
                     </div>
-                    <i class="pi pi-chevron-left text-xs text-slate-500" />
+                    <i aria-hidden="true" class="pi pi-chevron-left text-xs text-slate-500" />
                   </RouterLink>
                 </div>
               </div>
@@ -348,10 +348,31 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { useSearchApi } from '@/services/api/catalog/search'
+import { useSearchApi, type SearchResult } from '@/services/api/catalog/search'
+import type { UseRequestConfig } from '@/plugins/client/types'
 import { usePlayer } from '@/composables/player'
 import { onImgError } from '@/utils/helpers'
 import { usePlayerApi } from '@/services/api/player'
+
+interface SearchItem {
+  id: string | number
+  title?: string
+  name?: string
+  cover_url?: string | null
+  artist_name?: string | null
+  album_title?: string | null
+  artist_id?: string | number | null
+  genre?: string | null
+  duration_seconds?: number | null
+  description?: string | null
+}
+
+interface SearchResults {
+  tracks: SearchItem[]
+  artists: SearchItem[]
+  albums: SearchItem[]
+  playlists: SearchItem[]
+}
 
 const router = useRouter()
 const player = usePlayer()
@@ -365,7 +386,7 @@ const _visible = ref(false)
 const query = ref('')
 const searching = ref(false)
 const highlightedIndex = ref<string | null>(null)
-const results = ref<{ tracks?: any[]; artists?: any[]; albums?: any[]; playlists?: any[] }>({})
+const results = ref<SearchResults>({ tracks: [], artists: [], albums: [], playlists: [] })
 const recentSearches = ref<string[]>([])
 const noResults = ref(false)
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -440,8 +461,8 @@ function clearRecent() {
   recentSearches.value = []
 }
 
-function setItemRef(group: string, index: number, el: any) {
-  if (el && el instanceof Element) itemRefs[`${group}-${index}`] = el as HTMLElement
+function setItemRef(group: string, index: number, el: Element | null) {
+  if (el) itemRefs[`${group}-${index}`] = el as HTMLElement
 }
 
 let abortController: AbortController | null = null
@@ -461,13 +482,15 @@ async function doSearch() {
   noResults.value = false
 
   try {
-    const res = await searchApi.searchCatalog({ query: term, limit: 20 }, { signal: abortController.signal } as any)
-    const data = res as any
+    const res = await searchApi.searchCatalog(
+      { query: term, limit: 20 },
+      { signal: abortController.signal } as UseRequestConfig<SearchResult>,
+    )
     results.value = {
-      tracks: data.tracks || [],
-      artists: data.artists || [],
-      albums: data.albums || [],
-      playlists: data.playlists || [],
+      tracks: res.tracks ?? [],
+      artists: res.artists ?? [],
+      albums: res.albums ?? [],
+      playlists: [],
     }
     noResults.value =
       !results.value.tracks?.length &&
@@ -475,9 +498,10 @@ async function doSearch() {
       !results.value.albums?.length &&
       !results.value.playlists?.length
     saveRecent(term)
-  } catch (err) {
-    if ((err as any)?.name === 'AbortError' || (err as any)?.code === 'ERR_CANCELED') return
-    results.value = {}
+  } catch (err: any) {
+    const abortErr = err as { name?: string; code?: string }
+    if (abortErr?.name === 'AbortError' || abortErr?.code === 'ERR_CANCELED') return
+    results.value = { tracks: [], artists: [], albums: [], playlists: [] }
     noResults.value = true
   } finally {
     searching.value = false
@@ -493,8 +517,8 @@ function onInput() {
 function getFlatItems(): { group: string; index: number; el?: HTMLElement }[] {
   const flat: { group: string; index: number; el?: HTMLElement }[] = []
   for (const group of ['track', 'artist', 'album', 'playlist'] as const) {
-    const key = group === 'playlist' ? 'playlists' : `${group}s`
-    const items = (results.value as any)[key] || []
+    const key = group === 'playlist' ? 'playlists' : (`${group}s` as keyof SearchResults)
+    const items = results.value[key] ?? []
     items.forEach((_: any, i: number) =>
       flat.push({ group, index: i, el: itemRefs[`${group}-${i}`] }),
     )
@@ -543,8 +567,8 @@ function activateHighlight() {
   if (!highlightedIndex.value) return
   const [group, indexStr] = highlightedIndex.value.split('-')
   const i = Number(indexStr)
-  const key = group === 'track' ? 'tracks' : group === 'playlist' ? 'playlists' : `${group}s`
-  const items = (results.value as any)[key] || []
+  const key = group === 'track' ? 'tracks' : group === 'playlist' ? 'playlists' : (`${group}s` as keyof SearchResults)
+  const items = results.value[key] ?? []
   const item = items[i]
   if (!item) return
   if (group === 'track') selectTrack(item)
@@ -560,10 +584,10 @@ function activateHighlight() {
   }
 }
 
-function selectTrack(track: any) {
+function selectTrack(track: SearchItem) {
   const playable = {
     id: String(track.id),
-    title: track.title,
+    title: track.title ?? '',
     artistName: track.artist_name || 'Unknown',
     albumTitle: track.album_title || null,
     coverUrl: track.cover_url || null,
@@ -572,7 +596,7 @@ function selectTrack(track: any) {
   }
   player.playTrack(playable)
   if (track.artist_name) saveRecent(`${track.artist_name} - ${track.title}`)
-  else saveRecent(track.title)
+  else saveRecent(track.title ?? '')
   close()
 }
 

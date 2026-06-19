@@ -22,7 +22,7 @@
         "
         @click="activeTab = tab.key"
       >
-        <i :class="tab.icon" class="mr-2" />
+        <i aria-hidden="true" :class="tab.icon" class="mr-2" />
         {{ tab.label }}
       </button>
     </div>
@@ -42,7 +42,7 @@
             class="absolute -right-1 -bottom-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-black bg-[#1db954] text-[10px] text-black transition hover:bg-[#1ed760]"
             @click="triggerAvatarUpload"
           >
-            <i class="pi pi-pencil" />
+            <i aria-hidden="true" class="pi pi-pencil" />
           </button>
           <input
             ref="avatarInput"
@@ -289,15 +289,12 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
-import { useRouter } from 'vue-router'
 import { SkeletonLoader } from '@/components/common'
 import { useUserAuthStore } from '@/stores'
 import { useRequest } from '@/composables/useRequest'
-import { useUserApi } from '@/services/api/users/routes'
 
 const auth = useUserAuthStore()
 const toast = useToast()
-const router = useRouter()
 
 const activeTab = ref('profile')
 const tabs = [
@@ -351,9 +348,9 @@ onMounted(() => {
   if (auth.user) {
     form.displayName = auth.user.displayName || ''
     form.username = auth.user.username || ''
-    form.bio = (auth.user as any).bio || ''
-    form.location = (auth.user as any).location || ''
-    form.website = (auth.user as any).website || ''
+    form.bio = (auth.user as any as { bio?: string }).bio || ''
+    form.location = (auth.user as any as { location?: string }).location || ''
+    form.website = (auth.user as any as { website?: string }).website || ''
   }
   loading.value = false
 })

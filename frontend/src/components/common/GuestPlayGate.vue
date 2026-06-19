@@ -17,7 +17,7 @@ const emit = defineEmits<{
   proceed: []
 }>()
 
-const { isAuthenticated, isGuest } = useUserAuthStore()
+const { isAuthenticated } = useUserAuthStore()
 const { hasReachedLimit, incrementGuestPlay } = useGuestSession()
 
 const showPrompt = ref(false)

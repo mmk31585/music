@@ -17,7 +17,7 @@
           class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/15 lg:hidden"
           @click="$emit('toggle-mobile')"
         >
-          <i class="pi pi-bars" />
+          <i aria-hidden="true" class="pi pi-bars" />
         </button>
 
         <div>
@@ -35,7 +35,7 @@
           class="hidden items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/15 md:inline-flex"
           @click="$emit('toggle-search')"
         >
-          <i class="pi pi-search" />
+          <i aria-hidden="true" class="pi pi-search" />
           Search
           <kbd class="rounded-md border border-white/10 bg-white/10 px-1.5 py-0.5 text-[10px] text-slate-400">Ctrl+K</kbd>
         </button>
@@ -46,7 +46,7 @@
             aria-label="Notifications"
             class="relative flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/15"
           >
-            <i class="pi pi-bell" />
+            <i aria-hidden="true" class="pi pi-bell" />
             <span
               v-if="unreadCount > 0"
               class="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#1db954] px-1 text-[10px] font-bold text-black"

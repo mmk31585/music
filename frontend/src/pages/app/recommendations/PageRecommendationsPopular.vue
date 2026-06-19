@@ -22,7 +22,7 @@
         <div
           class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/10 text-2xl text-white"
         >
-          <i class="pi pi-chart-line" />
+          <i aria-hidden="true" class="pi pi-chart-line" />
         </div>
         <h2 class="mt-5 text-xl font-black text-white">No popular tracks yet</h2>
         <p class="mt-2 text-sm text-slate-400">Tracks need plays to appear here.</p>
@@ -42,7 +42,7 @@
           <div
             class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#1db954]/20 text-lg text-[#1db954]"
           >
-            <i class="pi pi-music" />
+            <i aria-hidden="true" class="pi pi-music" />
           </div>
 
           <div class="min-w-0 flex-1">

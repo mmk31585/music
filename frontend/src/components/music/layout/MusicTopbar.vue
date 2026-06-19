@@ -5,7 +5,7 @@
     <div class="flex items-center justify-between gap-4">
       <div class="flex items-center gap-3">
         <button class="rounded-full bg-white/10 p-2 text-white lg:hidden">
-          <i class="pi pi-bars" />
+          <i aria-hidden="true" class="pi pi-bars" />
         </button>
         <div>
           <p class="text-xs tracking-[0.3em] text-slate-500 uppercase">Music App</p>
@@ -17,7 +17,7 @@
         to="/search"
         class="hidden rounded-full bg-white/10 px-4 py-2 text-sm text-slate-300 transition hover:bg-white/15 md:block"
       >
-        <i class="pi pi-search mr-2" />
+        <i aria-hidden="true" class="pi pi-search mr-2" />
         Search tracks, artists, albums...
       </RouterLink>
     </div>

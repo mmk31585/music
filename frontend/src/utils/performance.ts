@@ -9,9 +9,10 @@ export function detectPerformanceTier(): PerformanceTier {
       else if (navigator.hardwareConcurrency >= 4) score += 1
     }
 
-    if ((navigator as any).deviceMemory) {
-      if ((navigator as any).deviceMemory >= 8) score += 2
-      else if ((navigator as any).deviceMemory >= 4) score += 1
+    const nav = navigator as Navigator & { deviceMemory?: number }
+    if (nav.deviceMemory) {
+      if (nav.deviceMemory >= 8) score += 2
+      else if (nav.deviceMemory >= 4) score += 1
     }
   }
 

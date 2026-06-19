@@ -15,7 +15,7 @@
         loading="lazy"
       />
       <div v-else class="flex h-full items-center justify-center">
-        <i class="pi pi-music text-lg text-white/30" />
+        <i aria-hidden="true" class="pi pi-music text-lg text-white/30" />
       </div>
     </div>
     <div class="min-w-0 flex-1">
@@ -32,19 +32,28 @@
     <div
       class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1db954] text-black opacity-0 transition-all duration-200 group-hover:opacity-100"
     >
-      <i class="pi pi-play-fill text-sm" />
+      <i aria-hidden="true" class="pi pi-play-fill text-sm" />
     </div>
   </button>
 </template>
 
 <script setup lang="ts">
+interface QuickPlayItem {
+  cover_url?: string | null
+  coverUrl?: string | null
+  title?: string | null
+  track_title?: string | null
+  artist_name?: string | null
+  artistName?: string | null
+}
+
 defineProps<{
-  item: Record<string, any>
+  item: QuickPlayItem
   isPlaying?: boolean
   delay?: number
 }>()
 
 defineEmits<{
-  play: [item: Record<string, any>]
+  play: [item: QuickPlayItem]
 }>()
 </script>

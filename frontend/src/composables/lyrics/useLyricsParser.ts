@@ -56,7 +56,7 @@ function parseWordTimings(text: string): WordPart[] {
     return text
       .split(/\s+/)
       .filter(Boolean)
-      .map((word, i, arr) => ({
+      .map((word) => ({
         text: word,
         timeSeconds: -1,
       }))

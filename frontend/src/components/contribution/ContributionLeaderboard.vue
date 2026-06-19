@@ -18,7 +18,7 @@
       class="flex flex-col items-center gap-3 py-8 text-center"
     >
       <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5">
-        <i class="pi pi-trophy text-xl text-white/15" />
+        <i aria-hidden="true" class="pi pi-trophy text-xl text-white/15" />
       </div>
       <p class="text-sm text-white/25">No contributors yet. Be the first!</p>
     </div>
@@ -35,13 +35,13 @@
           :class="rankClass(idx)"
         >
           <template v-if="idx === 0">
-            <i class="pi pi-star-fill text-sm text-[#f59e0b]" />
+            <i aria-hidden="true" class="pi pi-star-fill text-sm text-[#f59e0b]" />
           </template>
           <template v-else-if="idx === 1">
-            <i class="pi pi-star-fill text-sm text-[#94a3b8]" />
+            <i aria-hidden="true" class="pi pi-star-fill text-sm text-[#94a3b8]" />
           </template>
           <template v-else-if="idx === 2">
-            <i class="pi pi-star-fill text-sm text-[#cd7f32]" />
+            <i aria-hidden="true" class="pi pi-star-fill text-sm text-[#cd7f32]" />
           </template>
           <template v-else>
             {{ c.rank }}

@@ -13,7 +13,7 @@
           :class="{ '!border-[#1db954] !bg-[#1db954]/10': selectedType === option.value }"
           @click="selectedType = option.value; step = 2"
         >
-          <i :class="option.icon" class="text-xl" :style="{ color: option.color }" />
+          <i aria-hidden="true" :class="option.icon" class="text-xl" :style="{ color: option.color }" />
           <span class="text-xs font-medium text-white/70">{{ option.label }}</span>
         </button>
       </div>
@@ -27,7 +27,7 @@
             class="text-xs text-white/40 transition-colors hover:text-white/60"
             @click="step = 1; selectedType = null"
           >
-            <i class="pi pi-arrow-left mr-1" /> Back
+            <i aria-hidden="true" class="pi pi-arrow-left mr-1" /> Back
           </button>
           <span class="text-white/20">|</span>
           <span class="text-sm font-medium text-white/70">{{ typeLabel }}</span>
@@ -107,7 +107,7 @@ For LRC format: [00:00.00]Line 1&#10;[00:05.00]Line 2"
           class="spring flex-1 rounded-xl bg-[#1db954] py-3 text-sm font-bold text-black transition-all hover:bg-[#1ed760] disabled:opacity-40"
           @click="submit"
         >
-          <i v-if="submitting" class="pi pi-spin pi-spinner mr-2" />
+          <i aria-hidden="true" v-if="submitting" class="pi pi-spin pi-spinner mr-2" />
           Submit {{ typeLabel }}
         </button>
       </div>
@@ -229,11 +229,11 @@ async function submit() {
     })
 
     success.value = true
-    successStatus.value = (res as any)?.status || 'pending'
+    successStatus.value = (res as Record<string, any>)?.status || 'pending'
     emit('submitted')
     setTimeout(reset, 2000)
   } catch (e: any) {
-    error.value = e?.message || 'Failed to submit'
+    error.value = (e as Record<string, any>)?.message || 'Failed to submit'
   } finally {
     submitting.value = false
   }

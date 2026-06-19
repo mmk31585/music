@@ -44,52 +44,7 @@
         </div>
       </div>
 
-      <!-- Now Playing -->
-      <div class="now-playing-card">
-        <h2 class="mb-4 text-xs font-bold uppercase tracking-wider text-white/30">Now Playing</h2>
-        <div v-if="currentTrack" class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-          <div class="relative mx-auto sm:mx-0">
-            <div class="disc" :class="{ spinning: isPlayingTrack }">
-              <div class="disc-inner">
-                <img
-                  v-if="currentTrack.coverUrl"
-                  :src="currentTrack.coverUrl"
-                  :alt="currentTrack.albumTitle || currentTrack.title"
-                />
-                <div v-else class="flex items-center justify-center h-full w-full">
-                  <i class="pi pi-headphones text-2xl text-white/40" />
-                </div>
-              </div>
-              <div class="disc-hole" />
-            </div>
-          </div>
-          <div class="min-w-0 flex-1 text-center sm:text-left">
-            <p class="truncate text-lg font-bold text-white">{{ currentTrack.title }}</p>
-            <p class="truncate text-sm text-white/50">{{ currentTrack.artistName }}</p>
-            <p v-if="currentTrack.albumTitle" class="truncate text-xs text-white/30 mt-0.5">{{ currentTrack.albumTitle }}</p>
-            <div class="mt-3 flex items-center justify-center sm:justify-start gap-3">
-              <button
-                class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 hover:scale-105 active:scale-95"
-                @click="togglePlay"
-              >
-                <i v-if="isPlayingTrack" class="pi pi-pause text-lg" />
-                <i v-else class="pi pi-play ml-0.5 text-lg" />
-              </button>
-              <span class="text-xs text-white/30">
-                <span v-if="isPlayingTrack" class="text-green-400">● Playing</span>
-                <span v-else-if="party?.status === 'paused'" class="text-yellow-400">⏸ Paused</span>
-                <span v-else-if="party?.status === 'ended'" class="text-white/40">Ended</span>
-              </span>
-            </div>
-          </div>
-        </div>
-        <div v-else class="flex flex-col items-center gap-3 py-8 text-sm text-white/30">
-          <i class="pi pi-headphones text-3xl" />
-          <span>Waiting for host to start playing...</span>
-        </div>
-      </div>
-
-      <!-- Controls -->
+      <!-- Host Controls -->
       <div v-if="party.host_id === auth.user?.id" class="glass-strong rounded-2xl p-6">
         <h2 class="mb-4 text-sm font-bold uppercase tracking-wider text-white/30">Host Controls</h2>
         <div class="flex flex-wrap gap-3">
@@ -105,12 +60,24 @@
             class="rounded-xl bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/20"
             @click="updateStatus('ended')"
           >End</button>
-          <button
-            class="rounded-xl bg-blue-500/10 px-4 py-2 text-sm font-semibold text-blue-400 transition hover:bg-blue-500/20"
-            @click="showTrackPicker = true"
-          ><i class="pi pi-music mr-1" />Select Track</button>
         </div>
       </div>
+
+      <!-- Now Playing Hero -->
+      <RoomNowPlayingHero
+        :now-playing="queueState?.now_playing ?? null"
+        :is-loading="!queueState"
+        :is-playing="isPlayingTrack"
+        @toggle-play="handleTogglePlay"
+      />
+
+      <!-- Candidate Queue -->
+      <RoomQueueList
+        :candidates="queueState?.candidates ?? []"
+        @vote="handleVote"
+        @unvote="handleUnvote"
+        @suggest-clicked="showTrackPicker = true"
+      />
 
       <!-- Join/Leave -->
       <button
@@ -122,19 +89,42 @@
       >
         {{ isParticipant ? 'Leave Party' : 'Join Party' }}
       </button>
+
       <!-- Track picker -->
       <TrackPickerDialog
         :visible="showTrackPicker"
         title="Choose a track for the party"
         @update:visible="showTrackPicker = false"
-        @select="onTrackSelected"
+        @select="handleSuggest"
       />
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+/*
+ * MANUAL TEST — RUN WITH TWO BROWSER WINDOWS:
+ * 1. Start backend (go run cmd/api/main.go) + frontend (npm run dev)
+ * 2. Log in as User A in window 1, User B in window 2
+ * 3. User A creates a Listening Party
+ * 4. User B joins the same party
+ * 5. Verify: both windows show the same now playing (or "waiting" state)
+ * 6. User A clicks "+ پیشنهاد آهنگ", picks a track
+ * 7. Verify: track appears in User B's queue list in real time
+ * 8. User B votes on it (▲)
+ * 9. Verify: vote count updates in both windows instantly
+ * 10. Wait for current track to finish (or manually trigger track-ended)
+ * 11. Verify: the voted track becomes Now Playing in both windows
+ * 12. Verify: it's removed from the candidate queue
+ *
+ * FLIP transition: we use TransitionGroup with `queue-promote` name on
+ * the candidate list. When a candidate wins and becomes now_playing,
+ * the track's card is removed from the list (candidates shrinks) and
+ * the hero shows the new track. The fade-out/fade-in approach is used
+ * for reliability — the candidate fades out (200ms), then the hero
+ * fades in (200ms, 100ms delay). prefers-reduced-motion disables all.
+ */
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { SkeletonLoader } from '@/components/common'
 import { useSocialApi } from '@/services/api/social'
@@ -142,10 +132,10 @@ import { usePlayerApi } from '@/services/api/player'
 import { usePlayerStore } from '@/stores/player'
 import { useUserApi } from '@/services/api/users'
 import { useUserAuthStore } from '@/stores'
-import { TrackPickerDialog } from '@/components/social'
+import { TrackPickerDialog, RoomNowPlayingHero, RoomQueueList } from '@/components/social'
+import { useRoomQueueSocket } from '@/composables/social/useRoomQueueSocket'
 import type { ListeningParty } from '@/services/api/social'
-import type { PlaybackTrack } from '@/services/api/player'
-
+import type { Track } from '@/services/api/catalog/tracks'
 
 const router = useRouter()
 const route = useRoute()
@@ -165,28 +155,80 @@ const userNames = ref<Record<string, string>>({})
 const isParticipant = ref(false)
 const showTrackPicker = ref(false)
 
-function onTrackSelected(track: any) {
-  showTrackPicker.value = false
-  const trackId = String(track.id)
-  updateStatus('active', trackId)
-  party.value!.current_track_id = trackId
-  currentTrack.value = {
-    id: trackId,
-    title: track.title,
-    artistName: track.artist_name || 'Unknown',
-    albumTitle: track.album_title || null,
-    coverUrl: track.cover_url || null,
-    durationSeconds: track.duration_seconds ?? null,
-    streamUrl: playerApi.getTrackStreamUrl(trackId),
+// Room queue socket composable
+const roomQueue = useRoomQueueSocket(partyId)
+const { queueState, playbackContext } = roomQueue
+
+/* ---- Track from player store for play/pause ---- */
+const isPlayingTrack = computed(() => {
+  return playerStore.isPlaying && playerStore.currentTrack?.id === currentTrack.value?.id
+})
+
+/* ---- Re-import PlaybackTrack type inline ---- */
+interface PlaybackTrack {
+  id: string
+  title: string
+  artistName: string
+  albumTitle?: string | null
+  coverUrl?: string | null
+  durationSeconds?: number | null
+  streamUrl: string
+}
+/* ---- end PlaybackTrack type ---- */
+
+function handleTogglePlay() {
+  if (isPlayingTrack.value) {
+    playerStore.pause()
+  } else if (currentTrack.value && party.value?.current_track_id) {
+    if (playerStore.currentTrack?.id === party.value.current_track_id) {
+      playerStore.resume()
+    } else {
+      playerStore.playTrackById(party.value.current_track_id)
+    }
   }
 }
+
+/* ---- Track suggestion & voting ---- */
+function handleSuggest(track: Track) {
+  showTrackPicker.value = false
+  const trackId = String(track.id)
+  roomQueue.suggest(trackId)
+  // Also reflect the track as now playing if host selected it
+  if (party.value && party.value.host_id === auth.user?.id) {
+    updateStatus('active', trackId)
+    party.value.current_track_id = trackId
+    currentTrack.value = {
+      id: trackId,
+      title: track.title,
+      artistName: track.artist_name || 'Unknown',
+      albumTitle: track.album_title || null,
+      coverUrl: track.cover_url || null,
+      durationSeconds: track.duration_seconds ?? null,
+      streamUrl: playerApi.getTrackStreamUrl(trackId),
+    }
+  }
+}
+
+async function handleVote(candidateId: string) {
+  try {
+    await roomQueue.vote(candidateId)
+  } catch { /* ignore */ }
+}
+
+async function handleUnvote(candidateId: string) {
+  try {
+    await roomQueue.unvote(candidateId)
+  } catch { /* ignore */ }
+}
+
+/* ---- Existing party logic ---- */
 
 async function fetchUserName(userId: string) {
   if (userNames.value[userId]) return
   try {
-    const profile = await useUserApi().getPublicUserProfile(userId)
-    const p = profile as any
-    userNames.value[userId] = p.full_name || p.username || userId.slice(0, 8)
+    const profile = await useUserApi().getPublicUserProfile(userId) as Record<string, any>
+    const p = profile
+    userNames.value[userId] = String(p.full_name || p.username || userId.slice(0, 8))
   } catch {
     userNames.value[userId] = userId.slice(0, 8)
   }
@@ -206,10 +248,6 @@ const statusClass = computed(() => {
   }
 })
 
-const isPlayingTrack = computed(() => {
-  return playerStore.isPlaying && playerStore.currentTrack?.id === currentTrack.value?.id
-})
-
 async function loadParty() {
   try {
     const partyData = await api.getParty(partyId)
@@ -224,21 +262,9 @@ async function loadParty() {
 
     isParticipant.value = false
   } catch (e: any) {
-    error.value = e?.message || 'Failed to load party'
+    error.value = e instanceof Error ? e.message : 'Failed to load party'
   } finally {
     loading.value = false
-  }
-}
-
-function togglePlay() {
-  if (isPlayingTrack.value) {
-    playerStore.pause()
-  } else if (currentTrack.value && party.value?.current_track_id) {
-    if (playerStore.currentTrack?.id === party.value.current_track_id) {
-      playerStore.resume()
-    } else {
-      playerStore.playTrackById(party.value.current_track_id)
-    }
   }
 }
 
@@ -267,63 +293,37 @@ function goBack() {
   router.push({ name: 'social' })
 }
 
-onMounted(loadParty)
+/* ---- Track-ended detection ---- */
+// Watch for audio engine "ended" events via the player store.
+// When the currentParty track finishes and this room is our
+// playback context, report it to the backend so the next
+// candidate advances.
+let unsubscribeEnded: (() => void) | null = null
+
+onMounted(() => {
+  loadParty()
+  // Set playback context when this page mounts
+  playbackContext.value = { type: 'room', roomId: partyId }
+
+  // Detect track ended via player store's currentTime + duration watcher
+  const stopWatch = watch(
+    () => [playerStore.currentTime, playerStore.duration, playerStore.isPlaying] as const,
+    ([time, dur, playing]) => {
+      if (!playing && dur > 0 && time >= dur - 1 && currentTrack.value) {
+        // Track ended naturally
+        const trackedId = currentTrack.value.id
+        roomQueue.reportEnded(trackedId)
+      }
+    },
+  )
+  unsubscribeEnded = stopWatch
+})
+
+onUnmounted(() => {
+  playbackContext.value = null
+  if (unsubscribeEnded) {
+    unsubscribeEnded()
+    unsubscribeEnded = null
+  }
+})
 </script>
-
-<style scoped>
-.now-playing-card {
-  border-radius: 20px;
-  padding: 24px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  transition: border-color 0.3s ease;
-}
-
-.now-playing-card:has(.spinning) {
-  border-color: rgba(29, 185, 84, 0.2);
-}
-
-.disc {
-  width: 120px;
-  height: 120px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.disc-inner {
-  width: 100%;
-  height: 100%;
-  border-radius: 999px;
-  overflow: hidden;
-  background: #1a1a1a;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-}
-
-.disc-inner img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.disc.spinning .disc-inner {
-  animation: spinDisc 6s linear infinite;
-}
-
-.disc-hole {
-  position: absolute;
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 2px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(4px);
-}
-
-@keyframes spinDisc {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-</style>

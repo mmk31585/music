@@ -16,7 +16,7 @@
     <template #header>
       <div class="flex items-center gap-3">
         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
-          <i class="pi pi-headphones text-emerald-400" />
+          <i aria-hidden="true" class="pi pi-headphones text-emerald-400" />
         </div>
         <div>
           <h3 class="text-base font-semibold text-white">

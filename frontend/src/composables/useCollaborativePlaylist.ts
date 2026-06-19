@@ -25,7 +25,7 @@ export function useCollaborativePlaylist(
     if (onTrackAdded) {
       cleanupFns.push(
         wsClient.on('playlist.track_added', (msg: any) => {
-          const ev = msg.payload as PlaylistEvent
+          const ev = (msg as { payload: PlaylistEvent }).payload
           if (ev.playlist_id === playlistId) {
             onTrackAdded(ev.track_id!, ev.user_id)
           }
@@ -36,7 +36,7 @@ export function useCollaborativePlaylist(
     if (onTrackRemoved) {
       cleanupFns.push(
         wsClient.on('playlist.track_removed', (msg: any) => {
-          const ev = msg.payload as PlaylistEvent
+          const ev = (msg as { payload: PlaylistEvent }).payload
           if (ev.playlist_id === playlistId) {
             onTrackRemoved(ev.track_id!, ev.user_id)
           }
@@ -47,7 +47,7 @@ export function useCollaborativePlaylist(
     if (onTrackReordered) {
       cleanupFns.push(
         wsClient.on('playlist.track_reordered', (msg: any) => {
-          const ev = msg.payload as PlaylistEvent
+          const ev = (msg as { payload: PlaylistEvent }).payload
           if (ev.playlist_id === playlistId) {
             onTrackReordered(ev.track_id!, ev.position!, ev.user_id)
           }
@@ -58,7 +58,7 @@ export function useCollaborativePlaylist(
     if (onPlaylistUpdated) {
       cleanupFns.push(
         wsClient.on('playlist.updated', (msg: any) => {
-          const ev = msg.payload as PlaylistEvent
+          const ev = (msg as { payload: PlaylistEvent }).payload
           if (ev.playlist_id === playlistId) {
             onPlaylistUpdated(ev.user_id)
           }

@@ -22,7 +22,7 @@
         >
           <div v-if="!uploading" class="flex flex-col items-center gap-3">
             <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-800">
-              <i class="pi pi-cloud-upload text-3xl text-surface-400"></i>
+              <i aria-hidden="true" class="pi pi-cloud-upload text-3xl text-surface-400"></i>
             </div>
             <div class="text-center">
               <p class="text-sm font-medium text-surface-700 dark:text-surface-300">
@@ -37,7 +37,7 @@
 
           <div v-else class="flex flex-col items-center gap-3">
             <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-              <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+              <i aria-hidden="true" class="pi pi-spin pi-spinner text-3xl text-primary"></i>
             </div>
             <div class="text-center">
               <p class="text-sm font-medium text-surface-700 dark:text-surface-300">
@@ -80,7 +80,7 @@
         <template #content>
           <div class="flex items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-              <i class="pi pi-spin pi-spinner text-info"></i>
+              <i aria-hidden="true" class="pi pi-spin pi-spinner text-info"></i>
               <div>
                 <p class="text-sm font-medium text-surface-700 dark:text-surface-300">
                   Enriching metadata
@@ -132,7 +132,7 @@
             <!-- Enrichment Suggestions -->
             <div v-if="showSuggestions" class="mb-6 rounded-lg border border-primary/20 bg-primary/5 p-5">
               <h4 class="mb-4 flex items-center gap-2 text-sm font-semibold text-primary-700 dark:text-primary-300">
-                <i class="pi pi-magic"></i>Enrichment Suggestions
+                <i aria-hidden="true" class="pi pi-magic"></i>Enrichment Suggestions
               </h4>
 
               <div v-if="uploadResult.coverArtUrl || spotifyAlbumCover" class="mb-4 flex flex-wrap gap-4">
@@ -183,8 +183,8 @@
               </div>
 
               <div v-if="musicBrainzInfo || lastFmInfo" class="mt-4 flex flex-wrap gap-x-6 gap-y-1 border-t border-primary/10 pt-4 text-xs text-surface-500">
-                <span v-if="musicBrainzInfo"><i class="pi pi-book mr-1"></i>{{ musicBrainzInfo }}</span>
-                <span v-if="lastFmInfo"><i class="pi pi-star mr-1"></i>{{ lastFmInfo }}</span>
+                <span v-if="musicBrainzInfo"><i aria-hidden="true" class="pi pi-book mr-1"></i>{{ musicBrainzInfo }}</span>
+                <span v-if="lastFmInfo"><i aria-hidden="true" class="pi pi-star mr-1"></i>{{ lastFmInfo }}</span>
               </div>
             </div>
 
@@ -197,10 +197,10 @@
                     v-if="field.value"
                     class="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400"
                   >
-                    <i class="pi pi-check-circle text-[10px]"></i>{{ field.value }}
+                    <i aria-hidden="true" class="pi pi-check-circle text-[10px]"></i>{{ field.value }}
                   </span>
                   <span v-else class="flex items-center gap-1 text-xs text-orange-500">
-                    <i class="pi pi-exclamation-circle text-[10px]"></i>Not found
+                    <i aria-hidden="true" class="pi pi-exclamation-circle text-[10px]"></i>Not found
                   </span>
                 </div>
               </div>
@@ -252,7 +252,7 @@
           class="mb-4"
         >
           <div class="flex items-center gap-2">
-            <i class="pi pi-info-circle"></i>
+            <i aria-hidden="true" class="pi pi-info-circle"></i>
             <span>
               You have <strong>{{ draftsInReview }}</strong> draft{{ draftsInReview > 1 ? 's' : '' }} pending review.
               <a class="cursor-pointer underline" @click="goBulkReview">Review all pending</a>
@@ -301,20 +301,20 @@
             <Column field="title" header="Title" sortable>
               <template #body="{ data }">
                 <span v-if="data.title" class="text-emerald-600 dark:text-emerald-400">
-                  <i class="pi pi-check-circle mr-1 text-xs"></i>{{ data.title }}
+                  <i aria-hidden="true" class="pi pi-check-circle mr-1 text-xs"></i>{{ data.title }}
                 </span>
                 <span v-else class="text-orange-500">
-                  <i class="pi pi-exclamation-circle mr-1 text-xs"></i>Not found
+                  <i aria-hidden="true" class="pi pi-exclamation-circle mr-1 text-xs"></i>Not found
                 </span>
               </template>
             </Column>
             <Column field="artist" header="Artist">
               <template #body="{ data }">
                 <span v-if="data.artist" class="text-emerald-600 dark:text-emerald-400">
-                  <i class="pi pi-check-circle mr-1 text-xs"></i>{{ data.artist }}
+                  <i aria-hidden="true" class="pi pi-check-circle mr-1 text-xs"></i>{{ data.artist }}
                 </span>
                 <span v-else class="text-orange-500">
-                  <i class="pi pi-exclamation-circle mr-1 text-xs"></i>Not found
+                  <i aria-hidden="true" class="pi pi-exclamation-circle mr-1 text-xs"></i>Not found
                 </span>
               </template>
             </Column>
@@ -574,8 +574,9 @@ async function uploadFile(file: File) {
     }
     await loadDrafts()
   } catch (err: any) {
-    if (err?.code !== 'ERR_CANCELED' && err?.message !== 'canceled') {
-      uploadError.value = err?.message || 'Upload failed. Please try again.'
+    const errObj = err as { code?: string; message?: string } | null
+    if (errObj?.code !== 'ERR_CANCELED' && errObj?.message !== 'canceled') {
+      uploadError.value = errObj?.message || 'Upload failed. Please try again.'
     }
   } finally {
     uploading.value = false
@@ -663,8 +664,9 @@ function onFilterChange() {
 }
 
 function handlePageChange(event: any) {
-  currentPage.value = Math.floor(event.first / event.rows) + 1
-  pageSize.value = event.rows
+  const ev = event as { first: number; rows: number }
+  currentPage.value = Math.floor(ev.first / ev.rows) + 1
+  pageSize.value = ev.rows
   loadDrafts()
 }
 

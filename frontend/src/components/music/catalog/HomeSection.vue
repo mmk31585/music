@@ -15,7 +15,7 @@
         class="shrink-0 text-xs font-semibold text-white/30 transition hover:text-white/70"
       >
         {{ actionLabel || 'See all' }}
-        <i class="pi pi-chevron-left mr-1 text-[10px]" />
+        <i aria-hidden="true" class="pi pi-chevron-left mr-1 text-[10px]" />
       </RouterLink>
       <slot name="action" />
     </div>

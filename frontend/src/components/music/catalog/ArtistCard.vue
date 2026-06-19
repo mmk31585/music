@@ -12,7 +12,7 @@
         @error="onImgError"
       />
       <div v-else class="flex h-full items-center justify-center">
-        <i class="pi pi-user text-3xl text-slate-500" />
+        <i aria-hidden="true" class="pi pi-user text-3xl text-slate-500" />
       </div>
     </div>
     <div class="space-y-0.5 text-center">

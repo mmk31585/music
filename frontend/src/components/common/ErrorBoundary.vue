@@ -1,7 +1,7 @@
 <template>
   <div v-if="hasError" class="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-12 text-center backdrop-blur">
     <div class="flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10">
-      <i class="pi pi-exclamation-circle text-2xl text-red-400" />
+      <i aria-hidden="true" class="pi pi-exclamation-circle text-2xl text-red-400" />
     </div>
     <div>
       <h3 class="text-lg font-bold text-white">Something went wrong</h3>

@@ -20,7 +20,7 @@ export type LoadingOptionsType<T, TBody = unknown, TQuery = Record<string, any>>
   /** Query params; can be plain value or a Ref */
   query?: TQuery | Ref<TQuery>
 
-  parameters?: unknown[]
+  parameters?: any[]
 }
 
 type LoadingResult<T> =
@@ -32,7 +32,7 @@ type LoadingResult<T> =
 
 export function useLoading<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  T extends object | unknown[] | PaginatedProps<any>,
+  T extends object | any[] | PaginatedProps<any>,
   TBody = unknown,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TQuery = Record<string, any>,
@@ -67,12 +67,12 @@ export function useLoading<
         ? U[]
         : T extends object
           ? T[]
-          : unknown[]
+          : any[]
 
   const items = computed(() => {
     const val = data.value
     if (val && isObject(val) && 'items' in val) return (val as PaginatedProps<ItemsType[0]>).items
-    if (Array.isArray(val)) return val as unknown as ItemsType
+    if (Array.isArray(val)) return val as any as ItemsType
     return (val ? [val] : []) as ItemsType
   })
 
@@ -132,7 +132,7 @@ export function useLoading<
     error,
     load,
     reload: load,
-  } as unknown as LoadingResult<T> & {
+  } as any as LoadingResult<T> & {
     pending: Ref<boolean>
     error: Ref<Error | ApiResponseProps | null>
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -13,6 +13,7 @@ import (
 	artist "music/internal/modules/catalog/artist"
 	"music/internal/modules/catalog/genre"
 	"music/internal/modules/catalog/track"
+	"music/internal/modules/contribution"
 	"music/internal/modules/creator"
 	"music/internal/modules/dashboard"
 	"music/internal/modules/follow"
@@ -20,6 +21,9 @@ import (
 	"music/internal/modules/health"
 	"music/internal/modules/history"
 	"music/internal/modules/importcmd"
+	"music/internal/modules/importcmd/acquisition"
+	importsearch "music/internal/modules/importcmd/search"
+	importworker "music/internal/modules/importcmd/worker"
 	"music/internal/modules/ingestion"
 	"music/internal/modules/ingestion/enrichment"
 	"music/internal/modules/ingestion/finalization"
@@ -122,8 +126,10 @@ type Container struct {
 	SearchService *search.Service
 	SearchHandler *search.Handler
 
-	SocialService *social.Service
-	SocialHandler *social.Handler
+	SocialService      *social.Service
+	SocialHandler      *social.Handler
+	SocialQueueEngine  *social.QueueEngine
+	SocialStageManager *social.StageManager
 
 	ReactionsService *reactions.Service
 	ReactionsHandler *reactions.Handler
@@ -136,8 +142,14 @@ type Container struct {
 
 	DashboardHandler *dashboard.Handler
 
-	ImportService *importcmd.Service
-	ImportHandler *importcmd.Handler
+	ContributionHandler *contribution.Handler
+
+	ImportService     *importcmd.Service
+	ImportHandler     *importcmd.Handler
+	ImportSvc         *importcmd.ImportService
+	ImportSearch      *importsearch.Service
+	ImportAcquisition *acquisition.Service
+	ImportWorker      *importworker.ImportWorker
 
 	AIHandler *ai.Handler
 }
@@ -179,6 +191,7 @@ func NewContainer(a *App) *Container {
 	c.buildGamification()
 	c.buildCreator()
 	c.buildDashboard()
+	c.buildContribution()
 	c.buildImport()
 	c.buildAI(a)
 	c.subscribeEvents()
@@ -368,23 +381,24 @@ func (c *Container) buildIngestion(a *App) {
 }
 
 func (c *Container) buildSearch(a *App) {
-	if a.Config.OpenSearch.URL == "" {
-		return
+	var osClient *opensearch.Client
+
+	if a.Config.OpenSearch.URL != "" {
+		cfg := opensearch.Config{
+			Addresses: []string{a.Config.OpenSearch.URL},
+			Username:  a.Config.OpenSearch.Username,
+			Password:  a.Config.OpenSearch.Password,
+		}
+
+		var err error
+		osClient, err = opensearch.NewClient(cfg)
+		if err != nil {
+			zap.L().Warn("failed to initialize opensearch client, falling back to SQL search", zap.Error(err))
+		}
 	}
 
-	cfg := opensearch.Config{
-		Addresses: []string{a.Config.OpenSearch.URL},
-		Username:  a.Config.OpenSearch.Username,
-		Password:  a.Config.OpenSearch.Password,
-	}
-
-	osClient, err := opensearch.NewClient(cfg)
-	if err != nil {
-		zap.L().Warn("failed to initialize opensearch client", zap.Error(err))
-		return
-	}
-
-	c.SearchService = search.NewService(osClient)
+	searchRepo := search.NewRepository(c.SQLX)
+	c.SearchService = search.NewService(osClient, searchRepo)
 	c.SearchHandler = search.NewHandler(c.SearchService)
 }
 
@@ -401,8 +415,11 @@ func (c *Container) buildSocial(a *App) {
 	socialRepo := social.NewRepository(c.SQLX)
 	partyBroadcaster := social.NewPartyBroadcaster(c.WSHub)
 	roomBroadcaster := social.NewRoomBroadcaster(c.WSHub)
-	c.SocialService = social.NewService(socialRepo, partyBroadcaster, roomBroadcaster)
-	c.SocialHandler = social.NewHandler(c.SocialService)
+	c.SocialService = social.NewServiceWithPlaylist(socialRepo, partyBroadcaster, roomBroadcaster, c.PlaylistService)
+
+	c.SocialQueueEngine = social.NewQueueEngine(socialRepo, roomBroadcaster, a.Logger)
+	c.SocialStageManager = social.NewStageManager(socialRepo, roomBroadcaster, c.Bus, a.Logger)
+	c.SocialHandler = social.NewHandlerFull(c.SocialService, c.SocialQueueEngine, c.SocialStageManager)
 }
 
 func (c *Container) buildReactions() {
@@ -437,13 +454,67 @@ func (c *Container) buildDashboard() {
 	c.DashboardHandler = dashboard.NewHandler(c.SQLX)
 }
 
+func (c *Container) buildContribution() {
+	contributionRepo := contribution.NewRepository(c.SQLX)
+	contributionSvc := contribution.NewService(contributionRepo, contribution.NewAIVerifier(), nil)
+	c.ContributionHandler = contribution.NewHandler(contributionSvc)
+}
+
 func (c *Container) buildImport() {
 	c.ImportService = importcmd.NewService(zap.L())
 	downloadDir := os.Getenv("IMPORT_DOWNLOAD_DIR")
 	if downloadDir == "" {
 		downloadDir = filepath.Join(os.TempDir(), "music-imports")
 	}
-	c.ImportHandler = importcmd.NewHandler(c.ImportService, c.IngestionService, downloadDir)
+
+	proxy := os.Getenv("IMPORT_PROXY")
+
+	// Build discovery providers
+	discoveryProviders := []importsearch.Provider{
+		importsearch.NewLocalProvider(c.SQLX),
+		importsearch.NewDeezerProvider(),
+	}
+
+	lastfmKey := os.Getenv("LASTFM_API_KEY")
+	if lastfmKey != "" {
+		discoveryProviders = append(discoveryProviders, importsearch.NewLastFMProvider(lastfmKey))
+	}
+
+	spotifyID := os.Getenv("SPOTIFY_CLIENT_ID")
+	spotifySecret := os.Getenv("SPOTIFY_CLIENT_SECRET")
+	if spotifyID != "" && spotifySecret != "" {
+		discoveryProviders = append(discoveryProviders, importsearch.NewSpotifyProvider(spotifyID, spotifySecret))
+	}
+
+	discoveryProviders = append(discoveryProviders, importsearch.NewMusicBrainzProvider())
+
+	c.ImportSearch = importsearch.NewService(zap.L(), c.RDB, discoveryProviders)
+
+	// Build acquisition layer
+	c.ImportAcquisition = acquisition.NewService(zap.L(), proxy)
+
+	// Build import worker
+	dlSvc := importworker.NewDownloadService(proxy)
+	c.ImportWorker = importworker.NewImportWorker(
+		zap.L(),
+		c.RDB,
+		dlSvc,
+		c.IngestionService,
+		c.ImportAcquisition,
+		downloadDir,
+	)
+
+	c.ImportSvc = importcmd.NewImportService(
+		zap.L(),
+		c.ImportService,
+		c.IngestionService,
+		c.ImportAcquisition,
+		c.ImportSearch,
+		c.ImportWorker,
+		downloadDir,
+	)
+
+	c.ImportHandler = importcmd.NewHandler(c.ImportSvc)
 }
 
 func (c *Container) subscribeEvents() {

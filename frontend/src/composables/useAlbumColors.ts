@@ -10,17 +10,6 @@ export interface AlbumColorPalette {
   dominant: string
 }
 
-function hexToRgb(hex: string) {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-  return result
-    ? {
-        r: parseInt(result[1]!, 16),
-        g: parseInt(result[2]!, 16),
-        b: parseInt(result[3]!, 16),
-      }
-    : { r: 0, g: 0, b: 0 }
-}
-
 function rgbToHex(r: number, g: number, b: number) {
   const toHex = (n: number) =>
     Math.max(0, Math.min(255, Math.round(n)))
@@ -75,14 +64,6 @@ function extractPalette(imageData: ImageData): AlbumColorPalette {
   const light = sorted.reduce((acc, c) => (c.r + c.g + c.b > acc.r + acc.g + acc.b ? c : acc))
 
   const muted = sorted.length > 2 ? sorted[2]! : dominant
-
-  function adjustBrightness(color: { r: number; g: number; b: number }, factor: number) {
-    return {
-      r: Math.round(color.r * factor),
-      g: Math.round(color.g * factor),
-      b: Math.round(color.b * factor),
-    }
-  }
 
   const gradient = `linear-gradient(135deg, ${rgbToHex(dark.r, dark.g, dark.b)} 0%, ${rgbToHex(dominant.r, dominant.g, dominant.b)} 50%, ${rgbToHex(muted.r, muted.g, muted.b)} 100%)`
 

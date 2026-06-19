@@ -5,7 +5,7 @@
       @click="openDialog"
       class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/60 backdrop-blur transition hover:border-[#e91e63]/30 hover:bg-[#e91e63]/10 hover:text-[#e91e63]"
     >
-      <i class="pi pi-heart text-xs" />
+      <i aria-hidden="true" class="pi pi-heart text-xs" />
       Tip
     </button>
 
@@ -19,7 +19,7 @@
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-bold text-white">Send a Tip</h3>
             <button class="text-white/30 hover:text-white/50" @click="visible = false">
-              <i class="pi pi-times" />
+              <i aria-hidden="true" class="pi pi-times" />
             </button>
           </div>
 
@@ -69,8 +69,8 @@
               class="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#e91e63] to-[#ff6b9d] py-3 text-sm font-bold text-white transition hover:scale-[1.02] disabled:opacity-50"
               :disabled="sending"
             >
-              <i v-if="sending" class="pi pi-spin pi-spinner" />
-              <i v-else class="pi pi-heart" />
+              <i aria-hidden="true" v-if="sending" class="pi pi-spin pi-spinner" />
+              <i aria-hidden="true" v-else class="pi pi-heart" />
               {{ sending ? 'Processing...' : `Send ${formatAmount(finalAmount)}` }}
             </button>
 
@@ -80,7 +80,7 @@
           </div>
 
           <div v-else class="py-8 text-center">
-            <i class="pi pi-check-circle text-4xl text-[#1db954]" />
+            <i aria-hidden="true" class="pi pi-check-circle text-4xl text-[#1db954]" />
             <p class="mt-3 text-lg font-bold text-white">Tip Sent!</p>
             <p class="mt-1 text-sm text-white/40">Thank you for supporting the artist.</p>
             <button

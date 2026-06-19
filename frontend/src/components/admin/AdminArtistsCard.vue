@@ -7,15 +7,14 @@
           {{ filteredArtists.length }} artist{{ filteredArtists.length !== 1 ? 's' : '' }}
         </span>
         <div class="h-4 w-px bg-white/10" />
-        <InputText
-          v-model="searchQuery"
-          placeholder="Search artists..."
-          class="!h-9 !w-56 !rounded-lg !border-white/[0.08] !bg-white/[0.03] !text-sm !text-white placeholder:!text-slate-600"
-        >
-          <template #prefix>
-            <i class="pi pi-search text-xs text-slate-500" />
-          </template>
-        </InputText>
+        <IconField class="!w-56">
+          <InputIcon><i aria-hidden="true" class="pi pi-search text-xs text-slate-500" /></InputIcon>
+          <InputText
+            v-model="searchQuery"
+            placeholder="Search artists..."
+            class="!h-9 !w-full !rounded-lg !border-white/[0.08] !bg-white/[0.03] !text-sm !text-white placeholder:!text-slate-600"
+          />
+        </IconField>
       </div>
 
       <Button
@@ -115,6 +114,15 @@
             class="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100"
           >
             <Button
+              icon="pi pi-eye"
+              text
+              rounded
+              size="small"
+              class="!h-8 !w-8 !text-slate-400 hover:!text-white"
+              v-tooltip.top="'View'"
+              @click="router.push({ name: 'admin.artist.detail', params: { id: artist.id } })"
+            />
+            <Button
               icon="pi pi-pencil"
               text
               rounded
@@ -158,6 +166,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import { useToast } from 'primevue/usetoast'
@@ -167,6 +176,7 @@ import AdminDeleteConfirm from './AdminDeleteConfirm.vue'
 import { useAdminArtists, type ArtistFormPayload } from '@/composables/admin/useAdminArtists'
 import type { Artist } from '@/services/api/catalog/artists'
 
+const router = useRouter()
 const toast = useToast()
 const {
   artists,

@@ -46,8 +46,6 @@ export function useAdminCatalog() {
     ])
   }
 
-  // TODO HIGH: tracks.resetTracks() does not exist — useAdminTracks doesn't export resetTracks.
-  // This will throw a runtime error. Add resetTracks to useAdminTracks or remove this call.
   function resetAll() {
     tracks.resetTracks()
     artists.resetArtists()

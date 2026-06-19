@@ -10,7 +10,7 @@
           to="/admin/media"
           class="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
         >
-          <i class="pi pi-upload text-xs" />
+          <i aria-hidden="true" class="pi pi-upload text-xs" />
           Upload media
         </RouterLink>
       </template>
@@ -21,7 +21,7 @@
       class="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-300"
     >
       <div class="flex items-start gap-3">
-        <i class="pi pi-exclamation-triangle mt-0.5 text-xs" />
+        <i aria-hidden="true" class="pi pi-exclamation-triangle mt-0.5 text-xs" />
         <div>
           <p class="font-semibold">Dashboard data could not be fully loaded.</p>
           <p class="mt-1 text-xs text-red-300/80">
@@ -103,7 +103,7 @@
         to="/admin/ingestion"
         class="flex items-center justify-center gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-8 transition-colors hover:bg-white/[0.04]"
       >
-        <i class="pi pi-arrow-right text-sm text-primary" />
+        <i aria-hidden="true" class="pi pi-arrow-right text-sm text-primary" />
         <span class="text-sm font-medium text-white">Go to Ingestion</span>
       </RouterLink>
     </section>
@@ -120,7 +120,7 @@
         <div class="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
           <div class="flex items-center gap-3">
             <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
-              <i class="pi pi-play-circle text-xs text-emerald-400" />
+              <i aria-hidden="true" class="pi pi-play-circle text-xs text-emerald-400" />
             </div>
 
             <div>
@@ -149,7 +149,7 @@
         </div>
 
         <div v-else-if="recentTracks.length === 0" class="py-12 text-center">
-          <i class="pi pi-play-circle text-2xl text-slate-700" />
+          <i aria-hidden="true" class="pi pi-play-circle text-2xl text-slate-700" />
           <p class="mt-2 text-sm text-slate-500">No tracks yet</p>
         </div>
 
@@ -173,7 +173,7 @@
               />
 
               <div v-else class="flex h-full w-full items-center justify-center">
-                <i class="pi pi-music text-xs text-slate-700" />
+                <i aria-hidden="true" class="pi pi-music text-xs text-slate-700" />
               </div>
             </div>
 
@@ -201,7 +201,7 @@
           <div class="border-b border-white/[0.06] px-5 py-4">
             <div class="flex items-center gap-3">
               <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
-                <i class="pi pi-info-circle text-xs text-blue-400" />
+                <i aria-hidden="true" class="pi pi-info-circle text-xs text-blue-400" />
               </div>
 
               <h2 class="text-base font-semibold text-white">Getting started</h2>
@@ -219,7 +219,7 @@
                       : 'bg-white/[0.06] text-slate-500'
                   "
                 >
-                  <i v-if="tip.done" class="pi pi-check text-[10px]" />
+                  <i aria-hidden="true" v-if="tip.done" class="pi pi-check text-[10px]" />
                   <span v-else>{{ i + 1 }}</span>
                 </div>
 
@@ -290,12 +290,13 @@ import CatalogQuickActions from '@/components/admin/CatalogQuickActions.vue'
 import { useTracksApi, type Track } from '@/services/api/catalog/tracks'
 import { useIngestionApi } from '@/services/api/ingestion/routes'
 import type { IngestionStats } from '@/services/api/ingestion/types'
+import { client } from '@/composables/useRequest'
 
 const { getTracks } = useTracksApi()
 const ingestionApi = useIngestionApi()
 
 const loading = ref(false)
-const error = ref<unknown>(null)
+const error = ref<any>(null)
 
 const tracks = ref<Track[]>([])
 const ingestionStats = ref<IngestionStats | null>(null)
@@ -335,7 +336,7 @@ const tips = computed(() => [
   },
 ])
 
-function toArray<T>(value: unknown): T[] {
+function toArray<T>(value: any): T[] {
   if (Array.isArray(value)) {
     return value as T[]
   }
@@ -344,7 +345,7 @@ function toArray<T>(value: unknown): T[] {
     value &&
     typeof value === 'object' &&
     'data' in value &&
-    Array.isArray((value as { data?: unknown }).data)
+    Array.isArray((value as { data?: any }).data)
   ) {
     return (value as { data: T[] }).data
   }
@@ -353,7 +354,7 @@ function toArray<T>(value: unknown): T[] {
     value &&
     typeof value === 'object' &&
     'items' in value &&
-    Array.isArray((value as { items?: unknown }).items)
+    Array.isArray((value as { items?: any }).items)
   ) {
     return (value as { items: T[] }).items
   }
@@ -388,7 +389,7 @@ async function fetchDashboard(): Promise<void> {
 
   try {
     const [statsResult, tracksResult, ingestionResult] = await Promise.allSettled([
-      fetch('/api/v1/admin/dashboard/stats').then(r => r.json()).then(r => r.data),
+      client.get('/admin/dashboard/stats').then(r => r.data.data),
       getTracks(),
       ingestionApi.getIngestionStats(),
     ])

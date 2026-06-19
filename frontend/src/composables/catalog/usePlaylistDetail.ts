@@ -13,7 +13,7 @@ export function usePlaylistDetail(id: string) {
   const playlist = ref<PlaylistDetail | null>(null)
   const tracks = ref<PlaylistTrackItem[]>([])
   const loading = ref(false)
-  const error = ref<unknown>(null)
+  const error = ref<any>(null)
 
   async function fetchPlaylist() {
     loading.value = true

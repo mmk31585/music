@@ -21,7 +21,7 @@
           <div class="h-0.5 w-6 rounded-full bg-white/15" />
         </div>
 
-        <div ref="sheetRef" class="relative z-10 flex h-full flex-col px-5 pt-12 pb-6">
+        <div ref="sheetRef" class="relative z-10 flex h-full flex-col px-5 pt-12" :style="{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }">
           <!-- Track info + art -->
           <div class="flex items-start gap-4">
             <div
@@ -38,7 +38,7 @@
                 @error="onImgError"
               />
               <div v-else class="flex h-full items-center justify-center bg-white/10">
-                <i class="pi pi-music text-white/30" />
+                <i aria-hidden="true" class="pi pi-music text-white/30" />
               </div>
             </div>
 
@@ -52,7 +52,7 @@
               class="flex h-10 w-10 items-center justify-center rounded-full text-white/50 transition-all hover:bg-white/10 hover:text-white"
               @click="close"
             >
-              <i class="pi pi-chevron-down text-lg" />
+              <i aria-hidden="true" class="pi pi-chevron-down text-lg" />
             </button>
           </div>
 
@@ -103,7 +103,7 @@
               :style="shuffleMode ? { color: accentColor } : {}"
               @click="toggleShuffle"
             >
-              <i class="pi pi-sort-alt text-lg" />
+              <i aria-hidden="true" class="pi pi-sort-alt text-lg" />
               <span class="text-[8px] font-medium">Shuffle</span>
             </button>
 
@@ -113,7 +113,7 @@
               :disabled="!hasPrevious"
               @click="playPrevious"
             >
-              <i class="pi pi-step-backward text-2xl" />
+              <i aria-hidden="true" class="pi pi-step-backward text-2xl" />
             </button>
 
             <button
@@ -132,7 +132,7 @@
               :disabled="!currentTrack"
               @click="togglePlayPause"
             >
-              <i v-if="isBuffering" class="pi pi-spin pi-spinner text-xl" />
+              <i aria-hidden="true" v-if="isBuffering" class="pi pi-spin pi-spinner text-xl" />
               <i
                 v-else
                 :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'"
@@ -151,7 +151,7 @@
               :disabled="!hasNext"
               @click="playNext"
             >
-              <i class="pi pi-step-forward text-2xl" />
+              <i aria-hidden="true" class="pi pi-step-forward text-2xl" />
             </button>
 
             <button
@@ -161,7 +161,7 @@
               :style="repeatMode !== 'off' ? { color: accentColor } : {}"
               @click="toggleRepeat"
             >
-              <i class="pi pi-refresh text-lg" />
+              <i aria-hidden="true" class="pi pi-refresh text-lg" />
               <span class="text-[8px] font-medium">
                 {{ repeatMode === 'one' ? '1' : repeatMode === 'all' ? 'All' : 'Off' }}
               </span>
@@ -176,7 +176,7 @@
                 class="flex h-10 w-10 items-center justify-center rounded-full text-white/40 transition-all hover:bg-white/10 hover:text-white"
                 @click="toggleMute"
               >
-                <i :class="volumeIcon" class="text-base" />
+                <i aria-hidden="true" :class="volumeIcon" class="text-base" />
               </button>
               <input
                 type="range"
@@ -201,7 +201,7 @@
               "
               @click="cycleSpeed"
             >
-              <i class="pi pi-forward text-[10px]" />
+              <i aria-hidden="true" class="pi pi-forward text-[10px]" />
               {{ speedLabel }}
             </button>
 
@@ -210,7 +210,7 @@
               class="flex h-10 w-10 items-center justify-center rounded-full text-white/40 transition-all hover:bg-white/10 hover:text-white"
               @click="$emit('open-fullscreen')"
             >
-              <i class="pi pi-expand text-base" />
+              <i aria-hidden="true" class="pi pi-expand text-base" />
             </button>
           </div>
 
@@ -291,10 +291,19 @@ const bgGradient = computed(() => {
 const sheetEl = ref<HTMLElement | null>(null)
 const isDragging = ref(false)
 
-const SHEET_HEIGHT = 560
+const sheetHeight = ref(0)
+
+function recalcHeight() {
+  const vh = window.innerHeight
+  const bottomNavH = 64
+  const minH = 420
+  const maxH = vh - bottomNavH - 16
+  sheetHeight.value = Math.max(minH, Math.min(maxH, vh * 0.72))
+}
 
 const sheetStyle = computed(() => ({
-  height: `${SHEET_HEIGHT}px`,
+  height: `${sheetHeight.value}px`,
+  bottom: '0',
   transform: `translateY(0px)`,
   transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
 }))
@@ -383,12 +392,15 @@ watch(
 )
 
 onMounted(() => {
+  recalcHeight()
   window.addEventListener('popstate', close)
+  window.addEventListener('resize', recalcHeight)
   document.addEventListener('keydown', onKeydown)
 })
 
 onUnmounted(() => {
   window.removeEventListener('popstate', close)
+  window.removeEventListener('resize', recalcHeight)
   document.removeEventListener('keydown', onKeydown)
 })
 </script>

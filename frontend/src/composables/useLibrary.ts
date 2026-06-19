@@ -29,7 +29,8 @@ export const useLibrary = () => {
       likedAlbums.value = albumsRes ?? []
       followedArtists.value = artistsRes ?? []
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Failed to load library.'
+      const e = err as Record<string, any>
+      const msg = (e.response as Record<string, any> | undefined)?.data?.message || e?.message || 'Failed to load library.'
       error.value = msg
       toast.add({ severity: 'error', summary: 'Library Error', detail: msg, life: 5000 })
     } finally {

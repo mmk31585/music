@@ -1,11 +1,11 @@
 // utils/arrUtil.ts
-export type AnyObject = Record<string, unknown>
+export type AnyObject = Record<string, any>
 
 const FORBIDDEN_KEYS = new Set(['__proto__', 'prototype', 'constructor'])
 
 const isSafeKey = (k: string) => k.length > 0 && !FORBIDDEN_KEYS.has(k)
 
-const isPlainObject = (v: unknown): v is AnyObject =>
+const isPlainObject = (v: any): v is AnyObject =>
   typeof v === 'object' && v !== null && !Array.isArray(v)
 
 const parsePath = (path: string): string[] =>
@@ -21,7 +21,7 @@ export const nestedArray = {
    */
   get<T = unknown>(obj: AnyObject, path: string, fallback?: T): T | undefined {
     const segments = parsePath(path)
-    let cur: unknown = obj
+    let cur: any = obj
 
     for (const seg of segments) {
       if (!isSafeKey(seg)) return fallback
@@ -49,7 +49,7 @@ export const nestedArray = {
     const segments = parsePath(path)
     if (segments.length === 0) return obj
 
-    let cur: unknown = obj
+    let cur: any = obj
 
     for (let i = 0; i < segments.length; i++) {
       const seg = segments[i] as string
@@ -65,7 +65,7 @@ export const nestedArray = {
         if (!Number.isInteger(idx) || idx < 0) return obj
 
         if (isLast) {
-          cur[idx] = value as unknown
+          cur[idx] = value as any
           return obj
         }
 
@@ -83,7 +83,7 @@ export const nestedArray = {
       if (!isPlainObject(cur)) return obj
 
       if (isLast) {
-        ;(cur as AnyObject)[seg] = value as unknown
+        ;(cur as AnyObject)[seg] = value as any
         return obj
       }
 
@@ -112,7 +112,7 @@ export const nestedArray = {
     if (!isSafeKey(last)) return obj
 
     const parentPath = segments.join('.')
-    const parent = parentPath ? this.get<unknown>(obj, parentPath) : obj
+    const parent = parentPath ? this.get<any>(obj, parentPath) : obj
     if (parent == null) return obj
 
     if (Array.isArray(parent)) {
@@ -153,7 +153,7 @@ export const arrUtil = {
   has(obj: AnyObject, path: string): boolean {
     const token = Symbol('missing')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return nestedArray.get(obj, path, token as unknown as any) !== (token as unknown as any)
+    return nestedArray.get(obj, path, token as any as any) !== (token as any as any)
   },
 
   /**
@@ -196,7 +196,7 @@ export const arrUtil = {
 
     const out: Record<string, V> = {}
     for (const it of items) {
-      const k = nestedArray.get<unknown>(it, keyPath)
+      const k = nestedArray.get<any>(it, keyPath)
       out[String(k)] = nestedArray.get<V>(it, valuePath) as V
     }
     return out

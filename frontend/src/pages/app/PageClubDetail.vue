@@ -1,208 +1,361 @@
 <template>
-  <div class="mx-auto max-w-5xl space-y-6 px-4 pt-20 pb-24 md:px-8">
+  <div class="mx-auto max-w-5xl px-4 pt-16 pb-24 md:px-8">
+    <!-- Back -->
     <button
-      class="inline-flex items-center gap-1.5 text-sm text-white/40 transition hover:text-white/70"
-      @click="goBack"
+      class="mb-6 inline-flex items-center gap-1.5 text-sm text-white/40 transition hover:text-white/70"
+      @click="router.push({ name: 'social' })"
     >
-      &larr; Back to Social
+      &larr; بازگشت
     </button>
 
-    <div v-if="loading" class="space-y-6">
-      <SkeletonLoader variant="card" />
-      <SkeletonLoader variant="card" class="h-48" />
-    </div>
+    <SkeletonLoader v-if="loading" variant="card" class="h-64" />
 
     <div v-else-if="error" class="rounded-2xl bg-white/[0.03] p-12 text-center">
       <p class="text-sm text-white/40">{{ error }}</p>
     </div>
 
-    <template v-else-if="club">
-      <div class="grid gap-6 lg:grid-cols-3">
-
-        <!-- Main column -->
-        <div class="space-y-6 lg:col-span-2">
-          <!-- Club header -->
-          <div class="glass-strong rounded-2xl p-6">
-            <div class="flex items-start gap-4">
-              <div
-                class="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[#1db954]/10 text-2xl"
-                :style="club.cover_url ? { backgroundImage: `url(${club.cover_url})`, backgroundSize: 'cover' } : {}"
+    <template v-else-if="detail">
+      <!-- Cover Hero -->
+      <div
+        class="relative mb-8 overflow-hidden rounded-[2rem] border border-white/[0.06]"
+        :style="coverBg"
+      >
+        <div class="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/70 to-transparent" />
+        <div class="relative z-10 flex flex-col gap-6 p-8 pt-48">
+          <div>
+            <div class="flex items-center gap-3">
+              <h1 class="text-3xl font-black text-white md:text-4xl">{{ detail.club.name }}</h1>
+              <span
+                v-if="detail.club.genre"
+                class="rounded-full bg-white/10 px-3 py-0.5 text-[11px] font-medium text-white/60"
               >
-                <span v-if="!club.cover_url">🏛</span>
-              </div>
-              <div class="min-w-0 flex-1">
-                <h1 class="truncate text-2xl font-black text-white">{{ club.name }}</h1>
-                <p v-if="club.description" class="mt-1.5 line-clamp-2 text-sm text-white/40">
-                  {{ club.description }}
-                </p>
-                <div class="mt-3 flex items-center gap-4 text-xs text-white/30">
-                  <span>{{ club.member_count }} / {{ club.max_members }} members</span>
-                  <span>Created by {{ userName(club.created_by) }}</span>
-                </div>
-              </div>
+                {{ detail.club.genre }}
+              </span>
+            </div>
+            <div class="mt-2 flex items-center gap-4 text-sm text-white/40">
+              <span>{{ detail.club.member_count }} عضو</span>
+              <span>{{ detail.track_count }} آهنگ</span>
             </div>
           </div>
 
-          <!-- Posts -->
-          <div class="glass-strong rounded-2xl p-6">
-            <h2 class="mb-4 text-sm font-bold uppercase tracking-wider text-white/30">Posts</h2>
+          <div class="flex flex-wrap items-center gap-3">
+            <button
+              v-if="!detail.is_member"
+              class="inline-flex items-center gap-2 rounded-xl bg-[#1db954] px-6 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760]"
+              @click="handleJoin"
+            >
+              عضو شدم ✓
+            </button>
 
-            <!-- Create post -->
-            <form class="mb-6 flex gap-2" @submit.prevent="createPost">
-              <input
-                v-model="postInput"
-                type="text"
-                placeholder="Write something..."
-                class="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none transition focus:border-white/20"
-              />
+            <template v-else>
               <button
-                type="submit"
-                class="rounded-xl bg-[#1db954]/10 px-4 py-2.5 text-sm font-semibold text-[#1db954] transition hover:bg-[#1db954]/20 disabled:opacity-40"
-                :disabled="!postInput.trim()"
+                class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-white/10"
+                @click="handleLaunchParty"
               >
-                Post
+                شروع گوش دادن گروهی
               </button>
-            </form>
-
-            <!-- Posts list -->
-            <div class="space-y-3">
-              <div
-                v-for="post in posts"
-                :key="post.id"
-                class="rounded-xl bg-white/[0.03] px-4 py-3"
+              <button
+                class="rounded-xl border border-red-500/20 px-4 py-2.5 text-xs font-medium text-red-400 transition hover:bg-red-500/10"
+                @click="showLeaveConfirm = true"
               >
-                <div class="flex items-center gap-2 text-xs text-white/30">
-                  <span class="font-semibold text-[#1db954]">{{ userName(post.user_id) }}</span>
-                  <span>{{ timeAgo(post.created_at) }}</span>
-                </div>
-                <p class="mt-1 text-sm text-white/70">{{ post.content }}</p>
+                خروج از کلاب
+              </button>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid gap-8 lg:grid-cols-3">
+        <!-- Main content -->
+        <div class="space-y-8 lg:col-span-2">
+          <!-- About -->
+          <section class="rounded-2xl bg-white/[0.03] p-6">
+            <h2 class="mb-3 text-sm font-bold uppercase tracking-wider text-white/30">درباره</h2>
+            <p class="text-sm leading-relaxed text-white/60">
+              {{ detail.club.description || 'هنوز توضیحی ثبت نشده.' }}
+            </p>
+          </section>
+
+          <!-- Shared Playlist -->
+          <section class="rounded-2xl bg-white/[0.03] p-6">
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-sm font-bold uppercase tracking-wider text-white/30">
+                پلی‌لیست مشترک
+              </h2>
+              <button
+                v-if="detail.is_member && playlistId"
+                class="inline-flex items-center gap-1.5 rounded-lg bg-[#1db954]/10 px-3 py-1.5 text-xs font-semibold text-[#1db954] transition hover:bg-[#1db954]/20"
+                @click="showTrackPicker = true"
+              >
+                افزودن آهنگ
+              </button>
+            </div>
+    <TrackList
+      v-if="mappedTracks.length > 0"
+      :tracks="mappedTracks"
+    />
+            <div
+              v-else
+              class="flex flex-col items-center gap-3 py-12 text-center"
+            >
+              <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+                <i aria-hidden="true" class="pi pi-music text-xl text-slate-500" />
               </div>
-              <div v-if="!posts.length" class="flex flex-col items-center gap-3 py-16 text-center">
-                <i class="pi pi-inbox text-4xl text-slate-500" />
-                <p class="text-sm text-slate-400">No posts yet</p>
+              <p class="text-sm text-white/40">هنوز آهنگی به پلی‌لیست اضافه نشده.</p>
+            </div>
+          </section>
+
+          <!-- Members -->
+          <section class="rounded-2xl bg-white/[0.03] p-6">
+            <h2 class="mb-4 text-sm font-bold uppercase tracking-wider text-white/30">
+              اعضا ({{ detail.members.length }})
+            </h2>
+            <div class="flex flex-wrap gap-3">
+              <div
+                v-for="m in visibleMembers"
+                :key="m.id"
+                class="group relative"
+              >
+                <div
+                  class="flex h-10 w-10 items-center justify-center rounded-full bg-[#1db954]/20 text-xs font-bold text-[#1db954] transition hover:bg-[#1db954]/30"
+                  :title="m.user_id"
+                >
+                  {{ initials(m.user_id) }}
+                </div>
+              </div>
+              <div
+                v-if="overflowCount > 0"
+                class="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-[11px] font-medium text-white/40"
+                :title="`+${overflowCount} more`"
+              >
+                +{{ overflowCount }}
               </div>
             </div>
-          </div>
+          </section>
+
+          <!-- Discussions (Phase 6) -->
+          <section class="rounded-2xl bg-white/[0.03] p-6">
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-sm font-bold uppercase tracking-wider text-white/30">
+                بحث و گفتگو
+              </h2>
+              <button
+                v-if="detail.is_member"
+                class="inline-flex items-center gap-1.5 rounded-lg bg-[#1db954]/10 px-3 py-1.5 text-xs font-semibold text-[#1db954] transition hover:bg-[#1db954]/20"
+                @click="showCreateDiscussion = true"
+              >
+                بحث جدید
+              </button>
+            </div>
+            <ClubDiscussionThread
+              :discussions="discussions"
+              :current-user-id="authUserId"
+              :current-user-role="detail?.member_role ?? ''"
+              @delete="handleDeleteDiscussion"
+            />
+            <button
+              v-if="discussions.length > 0 && discussions.length >= discussionLimit"
+              class="mt-4 w-full rounded-lg bg-white/5 py-2.5 text-xs font-medium text-white/40 transition hover:bg-white/10"
+              @click="loadMoreDiscussions"
+            >
+              بیشتر
+            </button>
+          </section>
         </div>
 
         <!-- Sidebar -->
         <div class="space-y-6">
-          <!-- Members -->
-          <div class="glass-strong rounded-2xl p-6">
-            <h2 class="mb-4 text-sm font-bold uppercase tracking-wider text-white/30">
-              Members ({{ members.length }})
-            </h2>
-            <div class="space-y-2">
-              <div
-                v-for="m in members"
-                :key="m.id"
-                class="flex items-center gap-3 rounded-lg bg-white/[0.03] px-3 py-2"
-              >
-                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1db954]/20 text-xs font-bold text-[#1db954]">
-                  {{ userName(m.user_id)?.charAt(0).toUpperCase() || '?' }}
-                </div>
-                <div class="min-w-0 flex-1">
-                  <p class="truncate text-xs font-medium text-white">{{ userName(m.user_id) || 'Unknown' }}</p>
-                </div>
-                <span
-                  v-if="m.role === 'admin'"
-                  class="rounded bg-yellow-500/10 px-2 py-0.5 text-[10px] font-semibold text-yellow-400"
-                >Admin</span>
-                <span
-                  v-else-if="m.role === 'moderator'"
-                  class="rounded bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-400"
-                >Mod</span>
+          <div class="rounded-2xl bg-white/[0.03] p-6">
+            <h3 class="mb-3 text-xs font-bold uppercase tracking-wider text-white/30">اطلاعات</h3>
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between">
+                <span class="text-white/40">وضعیت</span>
+                <span class="text-white/70">{{ detail.club.is_public ? 'عمومی' : 'خصوصی' }}</span>
               </div>
-              <div v-if="!members.length" class="flex flex-col items-center gap-3 py-16 text-center">
-                <i class="pi pi-inbox text-4xl text-slate-500" />
-                <p class="text-sm text-slate-400">No members yet</p>
+              <div class="flex justify-between">
+                <span class="text-white/40">اعضا</span>
+                <span class="text-white/70">{{ detail.club.member_count }} / {{ detail.club.max_members }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-white/40">آهنگ‌ها</span>
+                <span class="text-white/70">{{ detail.track_count }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-white/40">پست‌ها</span>
+                <span class="text-white/70">{{ detail.post_count }}</span>
               </div>
             </div>
           </div>
-
-          <!-- Join/Leave button -->
-          <button
-            class="w-full rounded-xl py-3 text-sm font-bold transition"
-            :class="isMember
-              ? 'border border-red-500/20 text-red-400 hover:bg-red-500/10'
-              : 'bg-[#1db954] text-black hover:bg-[#1db954]/90'"
-            @click="isMember ? handleLeave() : handleJoin()"
-          >
-            {{ isMember ? 'Leave Club' : 'Join Club' }}
-          </button>
         </div>
       </div>
     </template>
+
+    <!-- Track Picker Dialog -->
+    <TrackPickerDialog
+      :visible="showTrackPicker"
+      title="افزودن آهنگ به پلی‌لیست کلاب"
+      @select="handleAddTrack"
+      @update:visible="showTrackPicker = $event"
+    />
+
+    <!-- Leave Confirm Dialog -->
+    <Teleport to="body">
+      <div
+        v-if="showLeaveConfirm"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        @click.self="showLeaveConfirm = false"
+      >
+        <div class="glass-strong mx-4 w-full max-w-sm rounded-2xl p-8 text-center">
+          <p class="mb-6 text-sm text-white/60">
+            مطمئنی می‌خوای از این کلاب خارج بشی؟
+          </p>
+          <div class="flex gap-3">
+            <button
+              class="flex-1 rounded-xl bg-white/5 py-3 text-sm font-medium text-white/50 transition hover:bg-white/10"
+              @click="showLeaveConfirm = false"
+            >
+              انصراف
+            </button>
+            <button
+              class="flex-1 rounded-xl bg-red-500 py-3 text-sm font-bold text-white transition hover:bg-red-600"
+              @click="handleLeave"
+            >
+              خروج
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <CreateDiscussionDialog
+      :visible="showCreateDiscussion"
+      :club-id="clubId"
+      @close="showCreateDiscussion = false"
+      @created="onDiscussionCreated"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { SkeletonLoader } from '@/components/common'
+import { TrackList } from '@/components/music'
+import TrackPickerDialog from '@/components/social/TrackPickerDialog.vue'
 import { useSocialApi } from '@/services/api/social'
-import { useUserApi } from '@/services/api/users'
+import { usePlaylistsApi } from '@/services/api/playlist'
+import { useCollaborativePlaylist } from '@/composables/useCollaborativePlaylist'
 import { useUserAuthStore } from '@/stores'
-import type { MusicClub, MusicClubMember, MusicClubPost } from '@/services/api/social'
+import type { ClubDetailResponse } from '@/services/api/social'
+import type { ClubDiscussion } from '@/services/api/social'
+import type { PlaylistTrackItem } from '@/services/api/playlist'
+import type { Track } from '@/services/api/catalog/tracks'
+import ClubDiscussionThread from '@/components/social/ClubDiscussionThread.vue'
+import CreateDiscussionDialog from '@/components/social/CreateDiscussionDialog.vue'
 
 const router = useRouter()
 const route = useRoute()
-const api = useSocialApi()
+const socialApi = useSocialApi()
+const playlistApi = usePlaylistsApi()
+
 const auth = useUserAuthStore()
 
 const clubId = route.params.id as string
+const authUserId = computed(() => String(auth.user?.id ?? ''))
 
 const loading = ref(true)
 const error = ref('')
-const club = ref<MusicClub | null>(null)
-const members = ref<MusicClubMember[]>([])
-const posts = ref<MusicClubPost[]>([])
-const postInput = ref('')
-const userNames = ref<Record<string, string>>({})
+const detail = ref<ClubDetailResponse | null>(null)
+const showTrackPicker = ref(false)
+const showLeaveConfirm = ref(false)
 
-const isMember = ref(false)
+const playlistTracks = ref<PlaylistTrackItem[]>([])
 
-async function fetchUserName(userId: string) {
-  if (userNames.value[userId]) return
+const collab = useCollaborativePlaylist('', () => loadDetail(), () => loadDetail())
+
+const mappedTracks = computed(() => playlistTracks.value.map(t => ({
+  id: t.track_id,
+  title: t.title,
+  duration_seconds: t.duration_seconds ?? 0,
+  audio_url: t.audio_url ?? null,
+  cover_url: t.cover_url ?? null,
+  artist_id: null,
+  album_id: null,
+  genre_id: null,
+  artist_name: t.artist_name ?? null,
+  album_title: null,
+  genres: [],
+  play_count: 0,
+  track_number: null,
+  explicit: false,
+})))
+
+const coverBg = computed(() => {
+  if (!detail.value?.club.cover_url) {
+    return { background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)' }
+  }
+  return {
+    backgroundImage: `url(${detail.value.club.cover_url})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  }
+})
+
+const playlistId = computed(() => detail.value?.club.playlist_id ?? '')
+
+const visibleMembers = computed(() => detail.value?.members.slice(0, 12) ?? [])
+const overflowCount = computed(() => {
+  const total = detail.value?.members.length ?? 0
+  return Math.max(0, total - 12)
+})
+
+function initials(userId: string): string {
+  if (!userId) return '?'
+  return userId.charAt(0).toUpperCase()
+}
+
+const discussions = ref<ClubDiscussion[]>([])
+const showCreateDiscussion = ref(false)
+const discussionLimit = ref(20)
+const discussionOffset = ref(0)
+
+async function loadDiscussions() {
   try {
-    const profile = await useUserApi().getPublicUserProfile(userId)
-    const p = profile as any
-    userNames.value[userId] = p.full_name || p.username || userId.slice(0, 8)
+    const data = await socialApi.listClubDiscussions(clubId, { limit: discussionLimit.value, offset: discussionOffset.value })
+    const items = Array.isArray(data) ? data : []
+    if (discussionOffset.value === 0) {
+      discussions.value = items
+    } else {
+      discussions.value = [...discussions.value, ...items]
+    }
   } catch {
-    userNames.value[userId] = userId.slice(0, 8)
+    // ignore
   }
 }
 
-function userName(userId: string): string {
-  return userNames.value[userId] || userId?.slice(0, 8) || ''
+function loadMoreDiscussions() {
+  discussionOffset.value += discussionLimit.value
+  loadDiscussions()
 }
 
-async function loadClub() {
+async function handleDeleteDiscussion(discussionId: string) {
   try {
-    const [clubData, membersData, postsData] = await Promise.all([
-      api.getClub(clubId),
-      api.getClubMembers(clubId),
-      api.getClubPosts(clubId, { limit: 50 }),
-    ])
-    club.value = clubData
-    members.value = Array.isArray(membersData) ? membersData : []
-    posts.value = Array.isArray(postsData) ? postsData : []
+    await socialApi.deleteClubDiscussion(discussionId)
+    discussions.value = discussions.value.filter(d => d.id !== discussionId)
+  } catch { /* ignore */ }
+}
 
-    const userIds = new Set<string>()
-    userIds.add(clubData.created_by)
-    if (Array.isArray(membersData)) {
-      membersData.forEach((m: MusicClubMember) => userIds.add(m.user_id))
-    }
-    if (Array.isArray(postsData)) {
-      postsData.forEach((p: MusicClubPost) => userIds.add(p.user_id))
-    }
-    await Promise.all(Array.from(userIds).map(fetchUserName))
+async function loadDetail() {
+  try {
+    const res = await socialApi.getClubDetail(clubId)
+    detail.value = res
 
-    isMember.value = Array.isArray(membersData) && membersData.some(
-      (m: MusicClubMember) => m.user_id === auth.user?.id
-    )
-  } catch (e: any) {
-    error.value = e?.message || 'Failed to load club'
+    if (res.club.playlist_id) {
+      const playlistDetail = await playlistApi.getPlaylist(res.club.playlist_id)
+      playlistTracks.value = playlistDetail.tracks ?? []
+    }
+  } catch {
+    error.value = 'خطا در بارگذاری کلاب'
   } finally {
     loading.value = false
   }
@@ -210,42 +363,50 @@ async function loadClub() {
 
 async function handleJoin() {
   try {
-    await api.joinClub(clubId)
-    isMember.value = true
-    loadClub()
+    await socialApi.joinClub(clubId)
+    await loadDetail()
   } catch { /* ignore */ }
 }
 
 async function handleLeave() {
   try {
-    await api.leaveClub(clubId)
-    isMember.value = false
-    loadClub()
+    showLeaveConfirm.value = false
+    await socialApi.leaveClub(clubId)
+    await loadDetail()
   } catch { /* ignore */ }
 }
 
-async function createPost() {
-  if (!postInput.value.trim()) return
+async function handleLaunchParty() {
   try {
-    await api.createClubPost(clubId, postInput.value.trim())
-    postInput.value = ''
-    loadClub()
+    const party = await socialApi.launchParty(clubId, { title: detail.value?.club.name, is_public: true })
+    if (party?.id) {
+      router.push({ name: 'social.party', params: { id: party.id } })
+    }
   } catch { /* ignore */ }
 }
 
-function goBack() {
-  router.push({ name: 'social' })
+async function handleAddTrack(track: Track) {
+  try {
+    const pid = playlistId.value
+    if (!pid) return
+    await playlistApi.addTrack(pid, { track_id: String(track.id) })
+    showTrackPicker.value = false
+    await loadDetail()
+  } catch { /* ignore */ }
 }
 
-function timeAgo(dateStr: string): string {
-  const now = Date.now()
-  const then = new Date(dateStr).getTime()
-  const diff = Math.max(0, Math.floor((now - then) / 1000))
-  if (diff < 60) return 'just now'
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
-  return `${Math.floor(diff / 86400)}d ago`
+function onDiscussionCreated() {
+  showCreateDiscussion.value = false
+  discussionOffset.value = 0
+  loadDiscussions()
 }
 
-onMounted(loadClub)
+onMounted(() => {
+  loadDetail()
+  loadDiscussions()
+})
+
+onUnmounted(() => {
+  collab.teardown()
+})
 </script>

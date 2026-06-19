@@ -79,7 +79,7 @@
               :key="feat"
               class="flex items-center gap-2 text-xs text-white/60"
             >
-              <i class="pi pi-check text-[10px] text-[#1db954]" /> {{ formatFeature(feat) }}
+              <i aria-hidden="true" class="pi pi-check text-[10px] text-[#1db954]" /> {{ formatFeature(feat) }}
             </li>
           </ul>
 
@@ -144,7 +144,7 @@
         @click.self="showCheckout = false"
       >
         <div class="glass-strong mx-4 w-full max-w-md rounded-2xl p-8 text-center">
-          <i class="pi pi-external-link text-4xl text-[#1db954]" />
+          <i aria-hidden="true" class="pi pi-external-link text-4xl text-[#1db954]" />
           <h3 class="mt-4 text-xl font-bold text-white">Redirecting to Payment</h3>
           <p class="mt-2 text-sm text-white/40">
             You'll be redirected to the payment gateway to complete your subscription.

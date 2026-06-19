@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useSocialApi } from '@/services/api/social'
 import { useRecommendationsApi } from '@/services/api/recommendation'
 import { useToast } from 'primevue/usetoast'
@@ -16,10 +16,7 @@ export function useDiscover() {
   const recent = ref<RecommendationTrack[]>([])
   const feed = ref<ActivityFeedItem[]>([])
   const loading = ref(false)
-  const error = ref<unknown>(null)
-
-  const hasTrending = computed(() => trending.value.length > 0)
-  const hasForYou = computed(() => forYou.value.length > 0)
+  const error = ref<any>(null)
 
   async function fetchDiscover() {
     loading.value = true
@@ -34,15 +31,15 @@ export function useDiscover() {
       ])
 
       if (popularData) {
-        popular.value = Array.isArray(popularData) ? popularData : ((popularData as any).data ?? [])
+        popular.value = Array.isArray(popularData) ? popularData : ((popularData as Record<string, any[]>).data ?? [])
       }
 
       if (forYouData) {
-        forYou.value = Array.isArray(forYouData) ? forYouData : ((forYouData as any).data ?? [])
+        forYou.value = Array.isArray(forYouData) ? forYouData : ((forYouData as Record<string, any[]>).data ?? [])
       }
 
       if (recentData) {
-        recent.value = Array.isArray(recentData) ? recentData : ((recentData as any).data ?? [])
+        recent.value = Array.isArray(recentData) ? recentData : ((recentData as Record<string, any[]>).data ?? [])
       }
 
       if (feedData) {

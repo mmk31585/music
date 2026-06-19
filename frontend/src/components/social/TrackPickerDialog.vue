@@ -16,12 +16,12 @@
               class="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-xs text-slate-400 transition hover:bg-white/20"
               @click="close"
             >
-              <i class="pi pi-times" />
+              <i aria-hidden="true" class="pi pi-times" />
             </button>
           </div>
 
           <div class="relative flex items-center border-b border-white/10 px-4">
-            <i class="pi pi-search text-sm text-slate-400" />
+            <i aria-hidden="true" class="pi pi-search text-sm text-slate-400" />
             <input
               ref="inputRef"
               v-model="query"
@@ -31,12 +31,12 @@
               @input="onInput"
               @keydown="onKeydown"
             />
-            <i v-if="searching" class="pi pi-spin pi-spinner text-xs text-slate-400" />
+            <i aria-hidden="true" v-if="searching" class="pi pi-spin pi-spinner text-xs text-slate-400" />
           </div>
 
           <div class="max-h-72 overflow-y-auto p-2">
             <div v-if="!query" class="flex items-center justify-center py-12 text-xs text-slate-500">
-              <i class="pi pi-headphones mr-2" /> Type to search for tracks
+              <i aria-hidden="true" class="pi pi-headphones mr-2" /> Type to search for tracks
             </div>
 
             <div v-else-if="searching" class="flex items-center justify-center py-12 text-xs text-slate-400">
@@ -51,7 +51,7 @@
             </div>
 
             <div v-else-if="!results.length" class="flex items-center justify-center py-12 text-xs text-slate-500">
-              <i class="pi pi-info-circle mr-2" /> No tracks found for "{{ query }}"
+              <i aria-hidden="true" class="pi pi-info-circle mr-2" /> No tracks found for "{{ query }}"
             </div>
 
             <div v-else class="space-y-1">
@@ -74,10 +74,10 @@
                     class="h-full w-full object-cover"
                   />
                   <div v-else class="flex h-full items-center justify-center">
-                    <i class="pi pi-headphones text-xs text-slate-500" />
+                    <i aria-hidden="true" class="pi pi-headphones text-xs text-slate-500" />
                   </div>
                   <div class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition group-hover:opacity-100">
-                    <i class="pi pi-plus text-xs text-white" />
+                    <i aria-hidden="true" class="pi pi-plus text-xs text-white" />
                   </div>
                 </div>
                 <div class="min-w-0 flex-1">
@@ -153,10 +153,10 @@ async function doSearch() {
 
   searching.value = true
   try {
-    const res = await searchApi.searchCatalog({ query: term, type: 'tracks', limit: 10 }, { signal: abortController.signal } as any)
+    const res = await searchApi.searchCatalog({ query: term, type: 'tracks', limit: 10 }, { signal: abortController.signal } as Record<string, any>)
     results.value = res.tracks ?? []
   } catch (err) {
-    if ((err as any)?.name === 'AbortError' || (err as any)?.code === 'ERR_CANCELED') return
+    if ((err as Record<string, any>)?.name === 'AbortError' || (err as Record<string, any>)?.code === 'ERR_CANCELED') return
     results.value = []
   } finally {
     searching.value = false

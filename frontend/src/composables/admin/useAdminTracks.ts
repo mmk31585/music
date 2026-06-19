@@ -144,7 +144,7 @@ export function useAdminTracks() {
   const loading = ref(false)
   const saving = ref(false)
   const deleting = ref(false)
-  const error = ref<unknown>(null)
+  const error = ref<any>(null)
 
   async function fetchTracks() {
     loading.value = true
@@ -290,7 +290,6 @@ export function useAdminTracks() {
     }
   }
 
-  // TODO MEDIUM: Add resetTracks() method — currently missing but called by useAdminCatalog.ts
   function resetTracks() {
     tracks.value = []
     error.value = null

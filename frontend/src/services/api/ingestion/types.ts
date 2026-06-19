@@ -97,6 +97,8 @@ export const LastFMResultSchema = z.object({
   listenerCount: z.number().optional(),
   tags: z.array(z.string()).optional(),
   artistBio: z.string().optional(),
+  artistImageUrl: z.string().optional(),
+  albumCoverUrl: z.string().optional(),
   similarArtists: z.array(z.string()).optional(),
 })
 

@@ -8,7 +8,6 @@
         :style="resolvedBgStyle"
         @keydown="onKeydown"
         tabindex="0"
-        dir="rtl"
       >
         <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
           <img
@@ -32,7 +31,7 @@
             @click="close"
             aria-label="بستن"
           >
-            <i class="pi pi-chevron-down text-lg" />
+            <i aria-hidden="true" class="pi pi-chevron-down text-lg" />
           </button>
 
           <div class="text-[13px] font-semibold uppercase tracking-widest text-[rgba(255,255,255,0.6)]">
@@ -47,7 +46,7 @@
               aria-label="بیشتر"
               :aria-expanded="showOverflow"
             >
-              <i class="pi pi-ellipsis-h text-sm" />
+              <i aria-hidden="true" class="pi pi-ellipsis-h text-sm" />
             </button>
           </div>
         </div>
@@ -76,7 +75,7 @@
                     v-else
                     class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1db954]/30 to-[#121212]"
                   >
-                    <i class="pi pi-music text-5xl text-white/30" />
+                    <i aria-hidden="true" class="pi pi-music text-5xl text-white/30" />
                   </div>
                 </div>
                 <div
@@ -147,7 +146,7 @@
                   :class="shuffleMode ? 'text-[#1db954]' : 'text-[rgba(255,255,255,0.35)]'"
                   @click="toggleShuffle"
                 >
-                  <i class="pi pi-sort-alt text-sm" />
+                  <i aria-hidden="true" class="pi pi-sort-alt text-sm" />
                 </button>
 
                 <button
@@ -157,7 +156,7 @@
                   @click="playPrevious"
                   aria-label="قبلی"
                 >
-                  <i class="pi pi-step-backward text-xl" />
+                  <i aria-hidden="true" class="pi pi-step-backward text-xl" />
                 </button>
 
                 <button
@@ -168,8 +167,8 @@
                   :disabled="!currentTrack || isLoadingTrack"
                   @click="togglePlayPause"
                 >
-                  <i v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-xl" />
-                  <i v-else :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" class="text-xl" />
+                  <i aria-hidden="true" v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-xl" />
+                  <i aria-hidden="true" v-else :class="isPlaying ? 'pi pi-pause' : 'pi pi-play'" class="text-xl" />
                   <span
                     v-if="isPlaying"
                     class="absolute inset-0 animate-[play-ring_2s_ease-out_infinite] rounded-full border-2 border-[#1db954]/40"
@@ -183,7 +182,7 @@
                   @click="playNext"
                   aria-label="بعدی"
                 >
-                  <i class="pi pi-step-forward text-xl" />
+                  <i aria-hidden="true" class="pi pi-step-forward text-xl" />
                 </button>
 
                 <button
@@ -193,7 +192,7 @@
                   :class="repeatMode !== 'off' ? 'text-[#1db954]' : 'text-[rgba(255,255,255,0.35)]'"
                   @click="toggleRepeat"
                 >
-                  <i class="pi pi-refresh text-sm" />
+                  <i aria-hidden="true" class="pi pi-refresh text-sm" />
                   <span
                     v-if="repeatMode === 'one'"
                     class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#1db954] text-[9px] font-bold text-black"
@@ -208,7 +207,7 @@
                   :aria-label="muted ? 'باز کردن صدا' : 'بی صدا'"
                   @click="toggleMute"
                 >
-                  <i :class="volumeIcon" class="text-sm" />
+                  <i aria-hidden="true" :class="volumeIcon" class="text-sm" />
                 </button>
                 <div class="group/vol relative flex items-center">
                   <div class="relative h-1 w-24 overflow-hidden rounded-full bg-white/[0.15]">
@@ -234,7 +233,7 @@
                   :class="{ 'bg-[#1db954]/10 text-[#1db954]': playbackRate !== 1 }"
                   @click="cycleSpeed"
                 >
-                  <i class="pi pi-forward text-[10px]" />
+                  <i aria-hidden="true" class="pi pi-forward text-[10px]" />
                   <span class="tabular-nums">{{ speedLabel }}</span>
                 </button>
 
@@ -244,7 +243,7 @@
                   :class="{ 'bg-[#1db954]/10 text-[#1db954]': sleepTimerMinutes > 0 }"
                   @click="sleepMenuOpen = !sleepMenuOpen"
                 >
-                  <i class="pi pi-clock text-[10px]" />
+                  <i aria-hidden="true" class="pi pi-clock text-[10px]" />
                   <span v-if="sleepTimerMinutes > 0" class="tabular-nums">{{ sleepTimerLabel }}</span>
                 </button>
 
@@ -254,7 +253,7 @@
                   :class="{ 'bg-[#1db954]/10 text-[#1db954]': crossfadeDuration > 0 }"
                   @click="cycleCrossfade"
                 >
-                  <i class="pi pi-arrows-alt text-[10px]" />
+                  <i aria-hidden="true" class="pi pi-arrows-alt text-[10px]" />
                   <span v-if="crossfadeDuration > 0" class="tabular-nums">{{ crossfadeDuration }}s</span>
                 </button>
 
@@ -264,7 +263,7 @@
                   aria-label="Picture in Picture"
                   @click="onTogglePiP"
                 >
-                  <i class="pi pi-window-maximize text-xs" />
+                  <i aria-hidden="true" class="pi pi-window-maximize text-xs" />
                 </button>
               </div>
             </div>
@@ -288,7 +287,7 @@
                       @error="onImgError"
                     />
                     <div v-else class="flex h-full items-center justify-center">
-                      <i class="pi pi-music text-xs text-white/30" />
+                      <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
                     </div>
                   </div>
                   <div class="min-w-0 flex-1">
@@ -333,14 +332,14 @@
                       @error="onImgError"
                     />
                     <div v-else class="flex h-full items-center justify-center">
-                      <i class="pi pi-music text-xs text-white/30" />
+                      <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
                     </div>
                   </div>
                   <div class="min-w-0 flex-1">
                     <p class="truncate text-sm font-bold text-white" dir="auto">{{ currentTrack.title }}</p>
                     <p class="truncate text-xs text-white/40" dir="auto">{{ currentTrack.artistName }}</p>
                   </div>
-                  <i class="pi pi-waveform text-lg text-[#1db954]" />
+                  <i aria-hidden="true" class="pi pi-waveform text-lg text-[#1db954]" />
                 </div>
               </div>
 
@@ -358,7 +357,7 @@
                     @click="playQueueItem(idx)"
                   >
                     <span class="cursor-grab text-[rgba(255,255,255,0.2)] hover:text-white/50" @click.stop>
-                      <i class="pi pi-bars text-xs" />
+                      <i aria-hidden="true" class="pi pi-bars text-xs" />
                     </span>
                     <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
                       <img
@@ -370,7 +369,7 @@
                         @error="onImgError"
                       />
                       <div v-else class="flex h-full items-center justify-center">
-                        <i class="pi pi-music text-xs text-white/30" />
+                        <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
                       </div>
                     </div>
                     <div class="min-w-0 flex-1">
@@ -384,7 +383,7 @@
                       @click.stop="removeFromQueue(idx)"
                       aria-label="حذف از صف"
                     >
-                      <i class="pi pi-times text-xs" />
+                      <i aria-hidden="true" class="pi pi-times text-xs" />
                     </button>
                   </div>
                 </div>
@@ -393,7 +392,7 @@
                   class="flex flex-col items-center justify-center py-16 text-center"
                 >
                   <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5">
-                    <i class="pi pi-list text-lg text-white/20" />
+                    <i aria-hidden="true" class="pi pi-list text-lg text-white/20" />
                   </div>
                   <p class="text-sm text-white/25">صف پخش خالی است</p>
                 </div>
@@ -443,7 +442,7 @@
                 class="mr-1 rounded-full px-2 py-1.5 text-xs text-white/30 transition-colors hover:text-white/60"
                 @click="sleepMenuOpen = false"
               >
-                <i class="pi pi-times" />
+                <i aria-hidden="true" class="pi pi-times" />
               </button>
             </div>
           </div>
@@ -463,7 +462,7 @@
                 class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white"
                 @click="shareTelegram"
               >
-                <i class="pi pi-send text-base text-white/40" />
+                <i aria-hidden="true" class="pi pi-send text-base text-white/40" />
                 <span>اشتراک‌گذاری در تلگرام</span>
               </button>
 
@@ -472,7 +471,7 @@
                 class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white"
                 @click="addToPlaylist"
               >
-                <i class="pi pi-plus-circle text-base text-white/40" />
+                <i aria-hidden="true" class="pi pi-plus-circle text-base text-white/40" />
                 <span>افزودن به پلی‌لیست</span>
               </button>
 
@@ -481,7 +480,7 @@
                 class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white"
                 @click="goToAlbum"
               >
-                <i class="pi pi-disc text-base text-white/40" />
+                <i aria-hidden="true" class="pi pi-disc text-base text-white/40" />
                 <span>رفتن به صفحه آلبوم</span>
               </button>
 
@@ -490,7 +489,7 @@
                 class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white"
                 @click="goToArtist"
               >
-                <i class="pi pi-user text-base text-white/40" />
+                <i aria-hidden="true" class="pi pi-user text-base text-white/40" />
                 <span>رفتن به صفحه خواننده</span>
               </button>
 
@@ -501,7 +500,7 @@
                 class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white"
                 @click="switchToClassic"
               >
-                <i class="pi pi-external-link text-base text-white/40" />
+                <i aria-hidden="true" class="pi pi-external-link text-base text-white/40" />
                 <span>نمایش کلاسیک</span>
               </button>
             </div>
@@ -533,7 +532,12 @@ const emit = defineEmits<{
 const router = useRouter()
 const player = usePlayer()
 
-const { playNext, playPrevious, toggleMute } = player
+const {
+  playNext, playPrevious, toggleMute, toggleShuffle, toggleRepeat,
+  setPlaybackRate, setSleepTimer, clearSleepTimer,
+  shuffleMode, repeatMode, playbackRate,
+  sleepTimerMinutes, crossfadeDuration,
+} = player
 
 const currentTrack = computed(() => player.currentTrack.value)
 const isPlaying = computed(() => player.isPlaying.value)
@@ -577,20 +581,6 @@ const showOverflow = ref(false)
 const sleepMenuOpen = ref(false)
 const karaokeMode = ref(true)
 
-const shuffleMode = ref(false)
-const repeatMode = ref<'off' | 'all' | 'one'>('off')
-const playbackRate = ref(1)
-
-function toggleShuffle() {
-  shuffleMode.value = !shuffleMode.value
-}
-
-function toggleRepeat() {
-  if (repeatMode.value === 'off') repeatMode.value = 'all'
-  else if (repeatMode.value === 'all') repeatMode.value = 'one'
-  else repeatMode.value = 'off'
-}
-
 const repeatTitle = computed(() => {
   if (repeatMode.value === 'off') return 'Repeat: off'
   if (repeatMode.value === 'all') return 'Repeat: all'
@@ -598,69 +588,31 @@ const repeatTitle = computed(() => {
 })
 
 const speedOptions = [0.5, 0.75, 1, 1.25, 1.5, 2]
-const speedLabel = computed(() => `${playbackRate.value}x`)
 
 function cycleSpeed() {
   const idx = speedOptions.indexOf(playbackRate.value)
   const nextIdx = (idx + 1) % speedOptions.length
-  playbackRate.value = speedOptions[nextIdx]!
+  setPlaybackRate(speedOptions[nextIdx]!)
 }
 
-const sleepTimerMinutes = ref(0)
-let sleepTimerHandle: ReturnType<typeof setTimeout> | null = null
-let sleepCountdownHandle: ReturnType<typeof setInterval> | null = null
-const sleepRemainingSeconds = ref(0)
-
 const sleepTimerLabel = computed(() => {
-  if (sleepRemainingSeconds.value > 0) {
-    const m = Math.floor(sleepRemainingSeconds.value / 60)
-    const s = sleepRemainingSeconds.value % 60
-    return `${m}:${String(s).padStart(2, '0')}`
-  }
-  return `${sleepTimerMinutes.value}m`
+  const minutes = sleepTimerMinutes.value
+  if (minutes <= 0) return ''
+  return `${minutes}m`
 })
 
 const sleepOptions = [
-  { value: 5, label: '۵ دقیقه' },
-  { value: 15, label: '۱۵ دقیقه' },
-  { value: 30, label: '۳۰ دقیقه' },
-  { value: 45, label: '۴۵ دقیقه' },
-  { value: 60, label: '۱ ساعت' },
+  { value: 5, label: '5 min' },
+  { value: 15, label: '15 min' },
+  { value: 30, label: '30 min' },
+  { value: 45, label: '45 min' },
+  { value: 60, label: '1 hour' },
 ]
 
 function setTimer(minutes: number) {
-  clearSleepTimer()
-  if (minutes === 0) return
-  sleepTimerMinutes.value = minutes
-  sleepRemainingSeconds.value = minutes * 60
-  sleepTimerHandle = setTimeout(() => {
-    player.pause()
-    clearSleepTimer()
-  }, minutes * 60 * 1000)
-  sleepCountdownHandle = setInterval(() => {
-    if (sleepRemainingSeconds.value > 0) {
-      sleepRemainingSeconds.value--
-    } else {
-      clearSleepTimer()
-    }
-  }, 1000)
+  setSleepTimer(minutes)
   sleepMenuOpen.value = false
 }
-
-function clearSleepTimer() {
-  if (sleepTimerHandle) {
-    clearTimeout(sleepTimerHandle)
-    sleepTimerHandle = null
-  }
-  if (sleepCountdownHandle) {
-    clearInterval(sleepCountdownHandle)
-    sleepCountdownHandle = null
-  }
-  sleepTimerMinutes.value = 0
-  sleepRemainingSeconds.value = 0
-}
-
-const crossfadeDuration = ref(0)
 
 function cycleCrossfade() {
   crossfadeDuration.value = crossfadeDuration.value > 0 ? 0 : 5
@@ -726,6 +678,8 @@ const volumeIcon = computed(() => {
   if (volume.value < 0.5) return 'pi pi-volume-down'
   return 'pi pi-volume-up'
 })
+
+const speedLabel = computed(() => `${playbackRate.value}x`)
 
 function togglePlayPause() {
   if (isPlaying.value) {
@@ -904,10 +858,6 @@ function goToArtist() {
     router.push(`/artist/${currentTrack.value.id}`)
   }
   showOverflow.value = false
-}
-
-function goToContributions() {
-  router.push('/contributions')
 }
 
 function switchToClassic() {

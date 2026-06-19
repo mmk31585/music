@@ -12,7 +12,7 @@
         <div
           class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 transition-colors group-hover:bg-emerald-500/10"
         >
-          <i :class="[action.icon, 'text-sm text-slate-400 group-hover:text-emerald-400 transition-colors']" />
+          <i aria-hidden="true" :class="[action.icon, 'text-sm text-slate-400 group-hover:text-emerald-400 transition-colors']" />
         </div>
         <div class="min-w-0">
           <p class="text-sm font-medium text-white">{{ action.label }}</p>

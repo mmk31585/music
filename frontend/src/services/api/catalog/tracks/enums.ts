@@ -5,8 +5,8 @@ export enum TrackApiRoutes {
 
   // Admin routes
   ADMIN_LIST = '/admin/catalog/tracks',
-  ADMIN_CREATE = '/admin/catalog/tracks',
+  ADMIN_CREATE = '/admin/catalog/tracks/create',
   ADMIN_UPDATE = '/admin/catalog/tracks/:trackId',
-  ADMIN_DELETE = '/admin/catalog/tracks/:trackId',
+  ADMIN_DELETE = '/admin/catalog/tracks/:trackId/delete',
   ADMIN_UPLOAD = '/admin/media/upload',
 }

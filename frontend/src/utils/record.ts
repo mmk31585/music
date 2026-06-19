@@ -1,10 +1,10 @@
-export type UnknownRecord = Record<string, unknown>
+export type UnknownRecord = Record<string, any>
 
-export function isPlainRecord(v: unknown): v is UnknownRecord {
+export function isPlainRecord(v: any): v is UnknownRecord {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
 }
 
-function toFiniteNumber(v: unknown): number | null {
+function toFiniteNumber(v: any): number | null {
   if (typeof v === 'number' && Number.isFinite(v)) return v
 
   if (typeof v === 'string') {
@@ -41,8 +41,8 @@ export function pickFirstKey(d: UnknownRecord, keys: readonly string[], fallback
   return fallback
 }
 
-export function getAt(obj: unknown, path: readonly string[]): unknown {
-  let cur: unknown = obj
+export function getAt(obj: any, path: readonly string[]): any {
+  let cur: any = obj
   for (const key of path) {
     if (!isPlainRecord(cur)) return undefined
     cur = cur[key]

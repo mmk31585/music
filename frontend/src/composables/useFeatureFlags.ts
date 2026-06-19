@@ -16,7 +16,7 @@ export function useFeatureFlags() {
       try {
         const res = await api.list()
         if (res) {
-          store.setFlags(res as unknown as FeatureFlags)
+          store.setFlags(res as any as FeatureFlags)
         }
       } catch {
         store.setFlags({} as FeatureFlags)

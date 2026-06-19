@@ -8,7 +8,7 @@
     </div>
 
     <div v-else-if="error" class="flex flex-col items-center gap-4 py-24 text-center">
-      <i class="pi pi-exclamation-circle text-4xl text-slate-500" />
+      <i aria-hidden="true" class="pi pi-exclamation-circle text-4xl text-slate-500" />
       <h2 class="text-xl font-bold text-white">Failed to load profile</h2>
       <button
         class="text-sm font-medium text-[#1db954] underline underline-offset-2"
@@ -39,8 +39,10 @@
         <!-- Feed Tab -->
         <div v-show="activeTab === 'feed'">
           <div v-if="feed.length === 0" class="flex flex-col items-center gap-3 py-16 text-center">
-            <i class="pi pi-clock text-3xl text-slate-600" />
-            <p class="text-sm text-slate-500">No activity yet</p>
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+              <i aria-hidden="true" class="pi pi-clock text-xl text-slate-500" />
+            </div>
+            <p class="text-sm font-medium text-white/60">No activity yet</p>
           </div>
           <ActivityItem v-for="item in feed" :key="item.id" :item="item" />
           <button
@@ -57,8 +59,10 @@
             v-if="likedTracks.length === 0"
             class="flex flex-col items-center gap-3 py-16 text-center"
           >
-            <i class="pi pi-heart text-3xl text-slate-600" />
-            <p class="text-sm text-slate-500">No liked tracks yet</p>
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+              <i aria-hidden="true" class="pi pi-heart text-xl text-slate-500" />
+            </div>
+            <p class="text-sm font-medium text-white/60">No liked tracks yet</p>
           </div>
           <TrackList v-else :tracks="likedTracks as any" />
         </div>
@@ -69,8 +73,10 @@
             v-if="likedAlbums.length === 0"
             class="flex flex-col items-center gap-3 py-16 text-center"
           >
-            <i class="pi pi-compact-disc text-3xl text-slate-600" />
-            <p class="text-sm text-slate-500">No liked albums yet</p>
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+              <i aria-hidden="true" class="pi pi-compact-disc text-xl text-slate-500" />
+            </div>
+            <p class="text-sm font-medium text-white/60">No liked albums yet</p>
           </div>
           <div v-else class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             <AlbumCard
@@ -87,24 +93,26 @@
             v-if="followers.length === 0"
             class="flex flex-col items-center gap-3 py-16 text-center"
           >
-            <i class="pi pi-users text-3xl text-slate-600" />
-            <p class="text-sm text-slate-500">No followers yet</p>
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+              <i aria-hidden="true" class="pi pi-users text-xl text-slate-500" />
+            </div>
+            <p class="text-sm font-medium text-white/60">No followers yet</p>
           </div>
           <div v-else class="space-y-2">
             <div
               v-for="f in followers"
               :key="f.follower_id"
-              class="flex items-center gap-3 rounded-xl bg-white/[0.03] px-4 py-3"
+              class="group flex items-center gap-4 rounded-2xl border border-white/[0.04] bg-white/[0.02] px-4 py-3 transition hover:border-white/[0.08] hover:bg-white/[0.04]"
             >
               <div
-                class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/40"
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white/[0.08] to-white/[0.02] text-sm font-bold text-white/70 ring-1 ring-white/[0.04]"
               >
-                <i class="pi pi-user text-sm" />
+                {{ (f.follower_name || f.follower_id).charAt(0).toUpperCase() }}
               </div>
-              <div>
-                <p class="text-sm font-medium text-white">{{ f.follower_id }}</p>
-                <p class="text-xs text-slate-500">
-                  {{ new Date(f.created_at).toLocaleDateString() }}
+              <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-white">{{ f.follower_name || f.follower_id }}</p>
+                <p class="mt-0.5 text-xs text-white/40">
+                  Following since {{ new Date(f.created_at).toLocaleDateString() }}
                 </p>
               </div>
             </div>
@@ -117,24 +125,26 @@
             v-if="following.length === 0"
             class="flex flex-col items-center gap-3 py-16 text-center"
           >
-            <i class="pi pi-users text-3xl text-slate-600" />
-            <p class="text-sm text-slate-500">Not following anyone yet</p>
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+              <i aria-hidden="true" class="pi pi-users text-xl text-slate-500" />
+            </div>
+            <p class="text-sm font-medium text-white/60">Not following anyone yet</p>
           </div>
           <div v-else class="space-y-2">
             <div
               v-for="f in following"
               :key="f.followed_id"
-              class="flex items-center gap-3 rounded-xl bg-white/[0.03] px-4 py-3"
+              class="group flex items-center gap-4 rounded-2xl border border-white/[0.04] bg-white/[0.02] px-4 py-3 transition hover:border-white/[0.08] hover:bg-white/[0.04]"
             >
               <div
-                class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/40"
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white/[0.08] to-white/[0.02] text-sm font-bold text-white/70 ring-1 ring-white/[0.04]"
               >
-                <i class="pi pi-user text-sm" />
+                {{ (f.followed_name || f.followed_id).charAt(0).toUpperCase() }}
               </div>
-              <div>
-                <p class="text-sm font-medium text-white">{{ f.followed_id }}</p>
-                <p class="text-xs text-slate-500">
-                  {{ new Date(f.created_at).toLocaleDateString() }}
+              <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-white">{{ f.followed_name || f.followed_id }}</p>
+                <p class="mt-0.5 text-xs text-white/40">
+                  Following since {{ new Date(f.created_at).toLocaleDateString() }}
                 </p>
               </div>
             </div>
@@ -152,23 +162,19 @@ import { SkeletonLoader } from '@/components/common'
 import { useSocialApi } from '@/services/api/social'
 import { useReactionsApi } from '@/services/api/reactions'
 import { useUserAuthStore } from '@/stores'
-import { useTracksApi, type Track } from '@/services/api/catalog/tracks'
-import { useAlbumsApi, type Album } from '@/services/api/catalog/albums'
-import { TrackList, AlbumCard, HomeSection } from '@/components/music'
+import { TrackList, AlbumCard } from '@/components/music'
 
 const route = useRoute()
 const auth = useUserAuthStore()
 const socialApi = useSocialApi()
 const reactionsApi = useReactionsApi()
-const tracksApi = useTracksApi()
-const albumsApi = useAlbumsApi()
 
 const userId = route.params.id as string | undefined
 const targetUserId = userId || String(auth.user?.id || '')
 const isOwnProfile = !userId || userId === String(auth.user?.id)
 
 const loading = ref(false)
-const error = ref<unknown>(null)
+const error = ref<any>(null)
 const activeTab = ref('feed')
 
 const followers = ref<any[]>([])
@@ -223,8 +229,8 @@ async function fetchProfile() {
       feed.value = feedData.items
       feedHasMore.value = feedData.pagination.has_more
     }
-    if (likedTracksData) likedTracks.value = likedTracksData.items
-    if (likedAlbumsData) likedAlbums.value = likedAlbumsData.items
+    if (likedTracksData) likedTracks.value = likedTracksData.items ?? []
+    if (likedAlbumsData) likedAlbums.value = likedAlbumsData.items ?? []
 
     if (!isOwnProfile) {
       const f = await socialApi.isFollowing(targetUserId).catch(() => null)

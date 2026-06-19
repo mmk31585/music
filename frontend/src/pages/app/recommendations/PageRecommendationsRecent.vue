@@ -20,7 +20,7 @@
         <div
           class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/10 text-2xl text-white"
         >
-          <i class="pi pi-clock" />
+          <i aria-hidden="true" class="pi pi-clock" />
         </div>
         <h2 class="mt-5 text-xl font-black text-white">No recent tracks</h2>
         <p class="mt-2 text-sm text-slate-400">New tracks will appear here as they are added.</p>
@@ -40,7 +40,7 @@
           <div
             class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sky-400/20 text-lg text-sky-300"
           >
-            <i class="pi pi-clock" />
+            <i aria-hidden="true" class="pi pi-clock" />
           </div>
 
           <div class="min-w-0 flex-1">

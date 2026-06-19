@@ -20,7 +20,7 @@
               class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white"
               @click="close"
             >
-              <i class="pi pi-chevron-down text-lg" />
+              <i aria-hidden="true" class="pi pi-chevron-down text-lg" />
             </button>
             <div class="glass flex items-center gap-2 rounded-full px-4 py-2 text-xs text-white/50">
               <span
@@ -36,7 +36,7 @@
               @click="karaokeMode = !karaokeMode"
               title="Karaoke"
             >
-              <i class="pi pi-file text-sm" />
+              <i aria-hidden="true" class="pi pi-file text-sm" />
             </button>
           </div>
 
@@ -60,7 +60,7 @@
                   v-else
                   class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1db954]/30 to-[#121212]"
                 >
-                  <i class="pi pi-music text-5xl text-white/30" />
+                  <i aria-hidden="true" class="pi pi-music text-5xl text-white/30" />
                 </div>
               </div>
 
@@ -86,7 +86,7 @@
                   :disabled="!currentTrack"
                   @click="toggleShuffle"
                 >
-                  <i class="pi pi-sort-alt text-sm" />
+                  <i aria-hidden="true" class="pi pi-sort-alt text-sm" />
                 </button>
 
                 <button
@@ -95,7 +95,7 @@
                   :disabled="!hasPrevious"
                   @click="playPrevious"
                 >
-                  <i class="pi pi-step-backward text-lg" />
+                  <i aria-hidden="true" class="pi pi-step-backward text-lg" />
                 </button>
 
                 <button
@@ -105,7 +105,7 @@
                   :disabled="!currentTrack || isLoadingTrack"
                   @click="togglePlayPause"
                 >
-                  <i v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-lg" />
+                  <i aria-hidden="true" v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-lg" />
                   <i
                     v-else
                     :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'"
@@ -123,7 +123,7 @@
                   :disabled="!hasNext"
                   @click="playNext"
                 >
-                  <i class="pi pi-step-forward text-lg" />
+                  <i aria-hidden="true" class="pi pi-step-forward text-lg" />
                 </button>
 
                 <button
@@ -133,7 +133,7 @@
                   :disabled="!currentTrack"
                   @click="toggleRepeat"
                 >
-                  <i class="pi pi-refresh text-sm" />
+                  <i aria-hidden="true" class="pi pi-refresh text-sm" />
                   <span
                     v-if="repeatMode === 'one'"
                     class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#1db954] text-[9px] font-bold text-black"
@@ -197,10 +197,9 @@ import { usePlayerControls } from '@/composables/player'
 import { useAlbumColors } from '@/composables/useAlbumColors'
 import KaraokeLyrics from './KaraokeLyrics.vue'
 import { useLyricsApi, type Lyrics } from '@/services/api/lyrics'
-import type { PlaybackTrack } from '@/services/api/player'
 import { onImgError } from '@/utils/helpers'
 
-const props = defineProps<{ visible: boolean }>()
+defineProps<{ visible: boolean }>()
 const emit = defineEmits<{
   'update:visible': [value: boolean]
 }>()
@@ -220,8 +219,6 @@ const hasNext = pc.hasNext
 const hasPrevious = pc.hasPrevious
 const shuffleMode = pc.shuffleMode
 const repeatMode = pc.repeatMode
-const volumeIcon = pc.volumeIcon
-const speedLabel = pc.speedLabel
 
 const togglePlayPause = pc.togglePlayPause
 const seekPercent = pc.seekPercent
@@ -230,8 +227,6 @@ const playNext = pc.playNext
 const playPrevious = pc.playPrevious
 const toggleShuffle = pc.toggleShuffle
 const toggleRepeat = pc.toggleRepeat
-const setPlaybackRate = pc.setPlaybackRate
-const toggleMute = pc.toggleMute
 
 const title = computed(() => currentTrack.value?.title || 'No track')
 const artistName = computed(() => currentTrack.value?.artistName || '')
@@ -252,8 +247,6 @@ const bgStyle = computed(() => {
     `,
   }
 })
-
-const coverSizeClass = 'h-80 w-80'
 
 function fmtTime(s: number) {
   const total = Math.max(0, Math.floor(Number(s) || 0))
@@ -307,7 +300,7 @@ async function fetchLyrics(trackId: string) {
   try {
     const res = await lyricsApi.getTrackLyrics(trackId)
     lyricsData.value = (res ?? null) as Lyrics | null
-    lyricsLanguage.value = (res as any)?.language || null
+    lyricsLanguage.value = (res as any as { language?: string })?.language || null
   } catch {
     lyricsError.value = true
   } finally {

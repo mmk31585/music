@@ -2,7 +2,6 @@ import { useRequest } from '@/composables/useRequest'
 import type { UseRequestConfig } from '@/plugins/client/types'
 import { ReactionsApiRoutes } from './enums'
 import {
-  ReactionSchema,
   CountsResponseSchema,
   type Reaction,
   type CountsResponse,
@@ -59,9 +58,9 @@ export const useReactionsApi = () => {
 
   const getLikedTracks = async (
     params?: { user_id?: string; limit?: number; offset?: number },
-    config?: UseRequestConfig<{ items: unknown[] }>,
+    config?: UseRequestConfig<{ items: any[] }>,
   ) => {
-    return useRequest<{ items: unknown[] }>(
+    return useRequest<{ items: any[] }>(
       ReactionsApiRoutes.LIKED_TRACKS,
       { method: 'GET', params },
       { silent: true, ...config },
@@ -70,9 +69,9 @@ export const useReactionsApi = () => {
 
   const getLikedAlbums = async (
     params?: { user_id?: string; limit?: number; offset?: number },
-    config?: UseRequestConfig<{ items: unknown[] }>,
+    config?: UseRequestConfig<{ items: any[] }>,
   ) => {
-    return useRequest<{ items: unknown[] }>(
+    return useRequest<{ items: any[] }>(
       ReactionsApiRoutes.LIKED_ALBUMS,
       { method: 'GET', params },
       { silent: true, ...config },

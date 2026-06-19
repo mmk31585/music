@@ -14,7 +14,7 @@
 
     <div v-else-if="items.length === 0" class="flex flex-col items-center gap-3 py-8 text-center">
       <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5">
-        <i class="pi pi-history text-xl text-white/15" />
+        <i aria-hidden="true" class="pi pi-history text-xl text-white/15" />
       </div>
       <p class="text-sm text-white/25">No version history yet</p>
     </div>
@@ -27,7 +27,7 @@
           class="relative z-10 mt-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
           :class="badgeClass(item.change_type)"
         >
-          <i :class="iconClass(item.change_type)" class="text-xs" />
+          <i aria-hidden="true" :class="iconClass(item.change_type)" class="text-xs" />
         </div>
 
         <div class="min-w-0 flex-1">

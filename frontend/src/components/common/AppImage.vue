@@ -6,7 +6,7 @@
     class="flex items-center justify-center bg-white/5"
     :class="[containerClass, containerStyle]"
   >
-    <i :class="fallbackIcon || 'pi pi-music'" class="text-slate-500" :style="{ fontSize: iconSize }" />
+    <i aria-hidden="true" :class="fallbackIcon || 'pi pi-music'" class="text-slate-500" :style="{ fontSize: iconSize }" />
   </div>
   <img
     v-else
@@ -35,7 +35,7 @@ interface Props {
   iconSize?: string
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   src: '',
   alt: '',
   lazy: true,

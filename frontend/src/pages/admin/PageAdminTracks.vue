@@ -93,7 +93,7 @@
                 <th class="hidden px-5 py-3 font-medium lg:table-cell">Album</th>
                 <th class="hidden px-5 py-3 font-medium xl:table-cell">Genres</th>
                 <th class="px-5 py-3 text-right font-medium">
-                  <i class="pi pi-clock text-xs" />
+                  <i aria-hidden="true" class="pi pi-clock text-xs" />
                 </th>
                 <th class="px-5 py-3" />
               </tr>
@@ -121,7 +121,7 @@
                       />
 
                       <div v-else class="flex h-full w-full items-center justify-center">
-                        <i class="pi pi-music text-xs text-slate-700" />
+                        <i aria-hidden="true" class="pi pi-music text-xs text-slate-700" />
                       </div>
                     </div>
 
@@ -240,7 +240,7 @@
             />
 
             <div v-else class="flex h-full w-full items-center justify-center">
-              <i class="pi pi-music text-3xl text-slate-700" />
+              <i aria-hidden="true" class="pi pi-music text-3xl text-slate-700" />
             </div>
 
             <div class="absolute top-2 left-2 flex flex-wrap gap-1">
@@ -384,11 +384,11 @@ const { tracks, loading, saving, deleting, fetchTracks, createTrack, updateTrack
  * - genres: array of genre records
  * - fetchArtists/fetchAlbums/fetchGenres: loaders
  */
-const { artists, loading: artistsLoading, fetchArtists } = useAdminArtists()
+const { artists, fetchArtists } = useAdminArtists()
 
-const { albums, loading: albumsLoading, fetchAlbums } = useAdminAlbums()
+const { albums, fetchAlbums } = useAdminAlbums()
 
-const { genres, loading: genresLoading, fetchGenres } = useAdminGenres()
+const { genres, fetchGenres } = useAdminGenres()
 
 const searchQuery = ref('')
 const viewMode = ref<'table' | 'card'>('table')
@@ -397,20 +397,16 @@ const showDelete = ref(false)
 const selectedTrack = ref<Track | null>(null)
 const deleteTarget = ref<Track | null>(null)
 
-const catalogOptionsLoading = computed(() => {
-  return Boolean(artistsLoading?.value || albumsLoading?.value || genresLoading?.value)
+const artistOptions = computed(() => {
+  return normalizeCatalogOptions(artists.value, 'artist').filter(Boolean) as CatalogOption[]
 })
 
-const artistOptions = computed<CatalogOption[]>(() => {
-  return normalizeCatalogOptions(artists.value, 'artist')
+const albumOptions = computed(() => {
+  return normalizeCatalogOptions(albums.value, 'album').filter(Boolean) as CatalogOption[]
 })
 
-const albumOptions = computed<CatalogOption[]>(() => {
-  return normalizeCatalogOptions(albums.value, 'album')
-})
-
-const genreOptions = computed<CatalogOption[]>(() => {
-  return normalizeCatalogOptions(genres.value, 'genre')
+const genreOptions = computed(() => {
+  return normalizeCatalogOptions(genres.value, 'genre').filter(Boolean) as CatalogOption[]
 })
 
 const filteredTracks = computed(() => {
@@ -515,7 +511,6 @@ async function handleDelete() {
 
 function normalizeCatalogOptions(
   items: any[] | undefined | null,
-  kind: 'artist' | 'album' | 'genre',
 ) {
   if (!Array.isArray(items)) return []
 
@@ -528,23 +523,23 @@ function normalizeCatalogOptions(
 
       if (id === undefined || id === null || !name) return null
 
-      return {
+      const opt: CatalogOption = {
         id,
         name,
         slug: item.slug,
         image_url: item.image_url ?? item.avatar_url ?? item.cover_url ?? null,
         avatar_url: item.avatar_url ?? item.image_url ?? null,
         cover_url: item.cover_url ?? item.image_url ?? null,
-      } satisfies CatalogOption
+      }
+      return opt
     })
-    .filter((item): item is CatalogOption => Boolean(item))
 }
 
 function normalizeSearch(value: string) {
   return value.toLowerCase().trim().replace(/\s+/g, ' ')
 }
 
-function compactStrings(values: Array<unknown>) {
+function compactStrings(values: Array<any>) {
   return values
     .filter((value) => value !== null && value !== undefined && String(value).trim().length > 0)
     .map((value) => String(value).trim())
@@ -601,24 +596,27 @@ function getTrackArtistNamesByRole(track: Track, roles: string[]) {
   const fromArtists = Array.isArray(t.artists)
     ? t.artists
         .filter((item: any) => {
-          const role = String(item.role ?? '').toLowerCase()
+          const it = item as Record<string, any>
+          const role = String(it.role ?? '').toLowerCase()
 
           if (normalizedRoles.includes('primary')) {
-            if (item.is_primary === true) return true
+            if (it.is_primary === true) return true
           }
 
           return normalizedRoles.includes(role)
         })
         .map((item: any) => {
-          return item.name ?? item.artist_name ?? item.artist?.name ?? item.artist?.title
+          const it = item as Record<string, any>
+          return it.name ?? it.artist_name ?? (it.artist as Record<string, any>)?.name ?? (it.artist as Record<string, any>)?.title
         })
     : []
 
   const fromCredits = Array.isArray(t.credits)
     ? t.credits
-        .filter((item: any) => normalizedRoles.includes(String(item.role ?? '').toLowerCase()))
+        .filter((item: any) => normalizedRoles.includes(String((item as Record<string, any>).role ?? '').toLowerCase()))
         .map((item: any) => {
-          return item.name ?? item.artist_name ?? item.artist?.name ?? item.artist?.title
+          const it = item as Record<string, any>
+          return it.name ?? it.artist_name ?? (it.artist as Record<string, any>)?.name ?? (it.artist as Record<string, any>)?.title
         })
     : []
 
@@ -638,7 +636,10 @@ function getTrackPrimaryArtistNames(track: Track) {
       t.primary_artist_name,
       t.artist?.name,
       ...(Array.isArray(t.primary_artists)
-        ? t.primary_artists.map((item: any) => item.name ?? item.artist_name ?? item.artist?.name)
+        ? t.primary_artists.map((item: any) => {
+            const it = item as Record<string, any>
+            return it.name ?? it.artist_name ?? (it.artist as Record<string, any>)?.name
+          })
         : []),
     ]),
   )
@@ -654,7 +655,10 @@ function getTrackFeaturedArtistNames(track: Track) {
   return uniqStrings(
     compactStrings([
       ...(Array.isArray(t.featured_artists)
-        ? t.featured_artists.map((item: any) => item.name ?? item.artist_name ?? item.artist?.name)
+        ? t.featured_artists.map((item: any) => {
+            const it = item as Record<string, any>
+            return it.name ?? it.artist_name ?? (it.artist as Record<string, any>)?.name
+          })
         : []),
     ]),
   )
@@ -683,7 +687,8 @@ function getTrackGenreNames(track: Track) {
 
   const fromGenres = Array.isArray(t.genres)
     ? t.genres.map((item: any) => {
-        return item.name ?? item.genre_name ?? item.genre?.name
+        const it = item as Record<string, any>
+        return it.name ?? it.genre_name ?? (it.genre as Record<string, any>)?.name
       })
     : []
 
@@ -702,7 +707,8 @@ function getTrackCreditNames(track: Track) {
   return uniqStrings(
     compactStrings(
       t.credits.map((item: any) => {
-        return item.name ?? item.artist_name ?? item.artist?.name
+        const it = item as Record<string, any>
+        return it.name ?? it.artist_name ?? (it.artist as Record<string, any>)?.name
       }),
     ),
   )

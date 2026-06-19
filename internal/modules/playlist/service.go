@@ -25,6 +25,12 @@ type RepositoryInterface interface {
 	AddTrack(ctx context.Context, playlistID, trackID uuid.UUID) error
 	RemoveTrack(ctx context.Context, playlistID, trackID uuid.UUID) error
 	ReorderTrack(ctx context.Context, playlistID, trackID uuid.UUID, newPosition int) error
+	IsCollaborator(ctx context.Context, playlistID, userID string) (bool, error)
+	IsCollaborativePlaylist(ctx context.Context, playlistID string) (bool, error)
+	SetCollaborative(ctx context.Context, playlistID string, collab bool) error
+	AddCollaborator(ctx context.Context, playlistID, userID string) error
+	RemoveCollaborator(ctx context.Context, playlistID, userID string) error
+	ListCollaborators(ctx context.Context, playlistID string) ([]CollaboratorResponse, error)
 }
 
 type Service struct {
@@ -126,4 +132,33 @@ func (s *Service) ReorderTrack(ctx context.Context, playlistID, userID, trackID 
 	}
 
 	return s.repo.ReorderTrack(ctx, playlistID, trackID, newPosition)
+}
+
+// Collaborator delegation methods
+func (s *Service) IsCollaborator(ctx context.Context, playlistID, userID string) (bool, error) {
+	return s.repo.IsCollaborator(ctx, playlistID, userID)
+}
+
+func (s *Service) IsCollaborativePlaylist(ctx context.Context, playlistID string) (bool, error) {
+	return s.repo.IsCollaborativePlaylist(ctx, playlistID)
+}
+
+func (s *Service) SetCollaborative(ctx context.Context, playlistID string, collab bool) error {
+	return s.repo.SetCollaborative(ctx, playlistID, collab)
+}
+
+func (s *Service) AddCollaborator(ctx context.Context, playlistID, userID string) error {
+	return s.repo.AddCollaborator(ctx, playlistID, userID)
+}
+
+func (s *Service) RemoveCollaborator(ctx context.Context, playlistID, userID string) error {
+	return s.repo.RemoveCollaborator(ctx, playlistID, userID)
+}
+
+func (s *Service) ListPlaylistTracks(ctx context.Context, playlistID string) ([]PlaylistTrackItem, error) {
+	pid, err := uuid.Parse(playlistID)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.ListPlaylistTracks(ctx, pid)
 }

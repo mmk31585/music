@@ -59,7 +59,7 @@ func (r *Repository) GetCounts(ctx context.Context, targetID, targetType string)
 }
 
 func (r *Repository) GetUserReactions(ctx context.Context, userID uuid.UUID, targetType string, limit, offset int) ([]Reaction, error) {
-	var items []Reaction
+	items := make([]Reaction, 0)
 	err := r.db.SelectContext(ctx, &items, `
 		SELECT id, user_id, target_id, target_type, type, created_at
 		FROM reactions

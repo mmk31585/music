@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap');
+
 @font-face {
   font-family: 'IRANYekanWeb';
   font-style: normal;
@@ -19,6 +21,21 @@
   src: url('../fonts/iranyekanwebbold.woff2') format('woff');
 }
 
+:root {
+  --font-persian: 'Vazirmatn', 'IRANYekanWeb', Arial, sans-serif;
+  --font-numbers: 'Inter', 'Vazirmatn', 'IRANYekanWeb', Arial, sans-serif;
+  --font-hero: 'IRANYekanWeb', 'Vazirmatn', Arial, sans-serif;
+}
+
 * {
-  font-family: 'IRANYekanWeb', Arial, sans-serif;
+  font-family: var(--font-persian);
+}
+
+input, textarea, .tabular-nums, [class*="tabular"] {
+  font-family: var(--font-numbers);
+}
+
+.font-hero {
+  font-family: var(--font-hero);
+  font-weight: bold;
 }

@@ -25,7 +25,7 @@ type AudioEngineListener<K extends AudioEngineEventName> = (payload: AudioEngine
 
 class AudioEngine {
   private audio: HTMLAudioElement
-  private listeners = new Map<AudioEngineEventName, Set<Function>>()
+  private listeners = new Map<AudioEngineEventName, Set<(payload: AudioEngineEventMap[AudioEngineEventName]) => void>>()
   private animationFrameId: number | null = null
   private lastProgressEmit = 0
   private audioContext: AudioContext | null = null
@@ -42,7 +42,7 @@ class AudioEngine {
 
   private ensureAudioContext() {
     if (this.audioContext) return
-    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+    this.audioContext = new (window.AudioContext || (window as any as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
     this.sourceNode = this.audioContext.createMediaElementSource(this.audio)
     this.analyser = this.audioContext.createAnalyser()
     this.analyser.fftSize = 256

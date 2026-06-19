@@ -95,16 +95,19 @@ type LiveRoomQueueItem struct {
 
 // MusicClub
 type MusicClub struct {
-	ID          uuid.UUID `db:"id" json:"id"`
-	Name        string    `db:"name" json:"name"`
-	Description *string   `db:"description" json:"description,omitempty"`
-	CoverURL    *string   `db:"cover_url" json:"cover_url,omitempty"`
-	CreatedBy   uuid.UUID `db:"created_by" json:"created_by"`
-	IsPublic    bool      `db:"is_public" json:"is_public"`
-	MaxMembers  int       `db:"max_members" json:"max_members"`
-	MemberCount int       `db:"member_count" json:"member_count"`
-	CreatedAt   time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
+	ID          uuid.UUID  `db:"id" json:"id"`
+	Name        string     `db:"name" json:"name"`
+	Slug        string     `db:"slug" json:"slug"`
+	Description *string    `db:"description" json:"description,omitempty"`
+	CoverURL    *string    `db:"cover_url" json:"cover_url,omitempty"`
+	Genre       *string    `db:"genre" json:"genre,omitempty"`
+	PlaylistID  *uuid.UUID `db:"playlist_id" json:"playlist_id,omitempty"`
+	CreatedBy   uuid.UUID  `db:"created_by" json:"created_by"`
+	IsPublic    bool       `db:"is_public" json:"is_public"`
+	MaxMembers  int        `db:"max_members" json:"max_members"`
+	MemberCount int        `db:"member_count" json:"member_count"`
+	CreatedAt   time.Time  `db:"created_at" json:"created_at"`
+	UpdatedAt   time.Time  `db:"updated_at" json:"updated_at"`
 }
 
 type MusicClubMember struct {
@@ -163,9 +166,27 @@ type CreateRoomRequest struct {
 
 type CreateClubRequest struct {
 	Name        string `json:"name" binding:"required"`
+	Slug        string `json:"slug"`
 	Description string `json:"description"`
+	Genre       string `json:"genre"`
 	IsPublic    bool   `json:"is_public"`
 	MaxMembers  int    `json:"max_members"`
+}
+
+type ClubDetailResponse struct {
+	Club       MusicClub         `json:"club"`
+	IsMember   bool              `json:"is_member"`
+	MemberRole string            `json:"member_role"`
+	Members    []MusicClubMember `json:"members"`
+	Posts      []MusicClubPost   `json:"posts"`
+	PostCount  int               `json:"post_count"`
+	TrackCount int               `json:"track_count"`
+}
+
+type LaunchPartyRequest struct {
+	Title       string `json:"title" binding:"required"`
+	Description string `json:"description"`
+	IsPublic    bool   `json:"is_public"`
 }
 
 type CreateDiscussionRequest struct {

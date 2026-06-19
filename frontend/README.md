@@ -1,135 +1,53 @@
-# ./
+# Muse — Frontend
 
-This template should help get you started developing with Vue 3 in Vite.
+> Premium Persian Music Ecosystem — Vue 3 SPA
 
-## Recommended IDE Setup
+## Stack
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+Vue 3 (Composition API + `<script setup>`) · TypeScript (strict) · Vite 7 · Pinia 3 · PrimeVue 4 · Tailwind CSS v4 · Vue Router 4 · Axios · Zod 4
 
-## Recommended Browser Setup
+## Setup
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
+```bash
+cp .env.example .env   # Configure VITE_API_BASE_URL
 npm install
+npm run dev            # Vite dev server → :5173
 ```
 
-### Compile and Hot-Reload for Development
+## Scripts
 
-```sh
-npm run dev
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Vite dev server with HMR |
+| `npm run build` | Type-check + production build |
+| `npm run lint` | ESLint check |
+| `npm run type-check` | vue-tsc type check |
+| `npm run test:unit` | Vitest unit tests |
+| `npm run audit:ci` | Production-only npm audit |
+
+## Directory Structure
+
+```
+src/
+├── assets/          # CSS, fonts, images
+├── components/      # UI components by domain (admin/, auth/, common/, music/, social/)
+├── composables/     # 27 composables (useAuth, usePlayer, useCatalogSearch, etc.)
+├── layouts/         # LayoutMusicApp, LayoutAuth, LayoutAdmin, LayoutEmpty
+├── pages/           # Page components (app/, admin/, auth/, errors/)
+├── plugins/         # Axios client, request factory
+├── router/          # Vue Router config + domain route files
+├── services/        # API modules, audio engine, WebSocket, storage
+├── stores/          # Pinia stores (player, user-auth, feature-flags)
+├── types/           # TypeScript type definitions
+└── utils/           # PrimeVue preset, utility functions
 ```
 
-### Type-Check, Compile and Minify for Production
+## CI/CD
 
-```sh
-npm run build
-```
+GitLab CI pipeline in `.gitlab-ci.yml`. Stages: prepare → quality (typecheck, lint, prettier) → test (vitest) → build → docs → security (npm audit).
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+## Docs
 
-```sh
-npm run test:unit
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
-```
-
-## GitLab CI Pipeline
-
-This repository includes a production-oriented pipeline in `.gitlab-ci.yml` for npm + Vue 3 + Vite + TypeScript.
-
-### Pipeline triggers
-
-The pipeline runs for:
-
-- Merge request pipelines
-- Default branch pipelines
-- `main`/`master` branch pipelines
-- Tag pipelines
-
-### Stage order
-
-1. `prepare`
-2. `quality`
-3. `test`
-4. `build`
-5. `docs`
-6. `security`
-
-### Runtime and install strategy
-
-- Default image: `node:22.12.0-bookworm-slim` (override with `NODE_IMAGE`)
-- Deterministic installs: `npm ci`
-- npm cache path: `$CI_PROJECT_DIR/.npm` via `NPM_CONFIG_CACHE`
-- Jobs are `interruptible` to reduce wasted CI time on superseded pipelines
-
-### Jobs
-
-- `install`:
-  - Validates Node/npm versions
-  - Runs `npm ci --prefer-offline --no-audit`
-- `typecheck`:
-  - Runs `npm run -s type-check`
-- `lint_oxlint`:
-  - Runs check-only Oxlint via `ci/lint-oxlint-check.sh`
-  - No `--fix` in CI
-- `lint_eslint`:
-  - Runs check-only ESLint via `ci/lint-eslint-check.sh`
-  - Keeps `--cache`, no `--fix` in CI
-- `prettier_check`:
-  - Runs `prettier --check` via `ci/prettier-check.sh`
-  - No `--write` in CI
-- `test_unit`:
-  - Runs Vitest in CI mode
-  - Publishes `reports/junit.xml` and `reports/vitest.log`
-  - Artifacts retained for 2 weeks
-- `build_app`:
-  - Runs `npm run -s build`
-  - Publishes `dist/` artifacts for 1 week
-- `docs_build`:
-  - Runs `npm run -s docs:gen` then `npm run -s docs:build`
-  - Runs on default branch/tags, and on MRs only when docs-related files change
-  - Publishes `docs/.vitepress/dist/` for 1 week
-- `security_audit`:
-  - Runs `npm run -s audit:ci` (`npm audit --omit=dev`)
-  - Uses `NPM_CONFIG_AUDIT_LEVEL=high`
-
-## Security Audit Policy
-
-Use production-only audit results for fail/pass gates:
-
-```sh
-npm run audit:ci
-```
-
-Useful audit commands:
-
-```sh
-npm run audit:prod
-npm run audit:full
-```
-
-Notes:
-
-- `audit:prod` checks runtime dependencies only and is the required security gate.
-- `audit:full` includes dev tooling and is informational.
-- Current dev-only advisories are from the ESLint 9 toolchain (`ajv`/`minimatch`) and are tracked for a later ESLint 10 migration.
+- [`AGENTS.md`](AGENTS.md) — Agent team architecture (file ownership, contracts)
+- [`PERFORMANCE.md`](PERFORMANCE.md) — Performance-sensitive code guidelines
+- [`../docs/README.md`](../docs/README.md) — Project documentation index

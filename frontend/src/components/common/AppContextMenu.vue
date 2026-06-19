@@ -28,7 +28,7 @@
             @click="handleAction(item)"
             @mouseenter="focusedIndex = i"
           >
-            <i v-if="item.icon" :class="item.icon" class="w-4 text-xs text-slate-500" />
+            <i aria-hidden="true" v-if="item.icon" :class="item.icon" class="w-4 text-xs text-slate-500" />
             <span>{{ item.label }}</span>
           </button>
         </div>
@@ -54,6 +54,7 @@ const props = withDefaults(defineProps<{
   position?: { x: number; y: number }
 }>(), {
   label: 'Context menu',
+  position: () => ({ x: 0, y: 0 }),
 })
 
 const emit = defineEmits<{
@@ -111,7 +112,8 @@ function onKeydown(e: KeyboardEvent) {
   } else if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault()
     if (focusedIndex.value >= 0 && focusedIndex.value < len) {
-      handleAction(props.items[focusedIndex.value])
+      const item = props.items[focusedIndex.value]
+      if (item) handleAction(item)
     }
   } else if (e.key === 'Escape') {
     close()

@@ -18,7 +18,7 @@ export interface Contribution {
   target_type: TargetType
   target_id: string
   locale: string | null
-  data: any
+  data: Record<string, any>
   summary: string | null
   status: ContributionStatus
   ai_verdict: string | null
@@ -34,8 +34,8 @@ export interface Contribution {
 
 export interface ContributionHistoryItem {
   id: string
-  data: any
-  previous: any | null
+  data: Record<string, any>
+  previous: Record<string, any> | null
   changed_by: string
   change_type: string
   created_at: string
@@ -44,7 +44,7 @@ export interface ContributionHistoryItem {
 export interface ContentVersion {
   id: string
   version: number
-  data: any
+  data: Record<string, any>
   applied_by: string
   created_at: string
 }
@@ -66,7 +66,7 @@ export interface CreateContributionPayload {
   target_type: TargetType
   target_id: string
   locale?: string
-  data: any
+  data: Record<string, any>
   summary?: string
   is_minor?: boolean
 }

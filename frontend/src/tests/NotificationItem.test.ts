@@ -8,7 +8,7 @@ vi.mock('primevue/usetoast', () => ({
   })),
 }))
 
-function makeNotification(overrides: Record<string, unknown> = {}) {
+function makeNotification(overrides: Record<string, any> = {}) {
   return {
     id: 'n1',
     type: 'user_followed',

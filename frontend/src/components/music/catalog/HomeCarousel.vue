@@ -13,7 +13,7 @@
       class="absolute top-1/2 -left-3 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/80 text-white shadow-lg backdrop-blur transition hover:bg-black/90"
       @click="scroll(-300)"
     >
-      <i class="pi pi-chevron-left text-sm" />
+      <i aria-hidden="true" class="pi pi-chevron-left text-sm" />
     </button>
     <button
       v-if="showScroll && !isAtEnd"
@@ -21,7 +21,7 @@
       class="absolute top-1/2 -right-3 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/80 text-white shadow-lg backdrop-blur transition hover:bg-black/90"
       @click="scroll(300)"
     >
-      <i class="pi pi-chevron-right text-sm" />
+      <i aria-hidden="true" class="pi pi-chevron-right text-sm" />
     </button>
   </div>
 </template>

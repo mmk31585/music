@@ -13,7 +13,7 @@
       v-else-if="error"
       class="flex flex-col items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-6 py-12 text-center"
     >
-      <i class="pi pi-align-left text-2xl text-slate-500" />
+      <i aria-hidden="true" class="pi pi-align-left text-2xl text-slate-500" />
       <p class="text-sm text-slate-400">No lyrics available</p>
       <button
         v-if="onAddLyrics"
@@ -47,7 +47,7 @@
       v-else
       class="flex flex-col items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-6 py-12 text-center"
     >
-      <i class="pi pi-align-left text-2xl text-slate-500" />
+      <i aria-hidden="true" class="pi pi-align-left text-2xl text-slate-500" />
       <p class="text-sm text-slate-400">No lyrics available</p>
     </div>
   </div>

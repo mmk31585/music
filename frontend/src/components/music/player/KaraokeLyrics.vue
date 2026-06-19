@@ -19,7 +19,7 @@
       class="relative z-10 flex h-full flex-col items-center justify-center gap-4 px-6 text-center"
     >
       <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5">
-        <i class="pi pi-align-left text-3xl text-white/15" />
+        <i aria-hidden="true" class="pi pi-align-left text-3xl text-white/15" />
       </div>
       <p class="text-sm text-white/25">No lyrics available</p>
       <p class="text-xs text-white/15">Lyrics will appear here when available</p>

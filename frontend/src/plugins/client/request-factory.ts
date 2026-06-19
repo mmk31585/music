@@ -47,7 +47,7 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
 
     if (isFormData && config.headers) {
       // Let browser set multipart boundary automatically.
-      delete (config.headers as Record<string, unknown>)['Content-Type']
+      delete (config.headers as Record<string, any>)['Content-Type']
     }
 
     // Attach maintenance secret if present
@@ -85,13 +85,13 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
   /* -------------------------------------------------------------------------- */
   let isRefreshing = false
   type QueueItem = {
-    resolve: (val?: unknown) => void
-    reject: (err: unknown) => void
+    resolve: (val?: any) => void
+    reject: (err: any) => void
     config: AxiosRequestConfig
   }
   let failedQueue: QueueItem[] = []
 
-  function processQueue(error: unknown, token: string | null = null) {
+  function processQueue(error: any, token: string | null = null) {
     failedQueue.forEach((p) => {
       if (error) {
         p.reject(error)
@@ -181,7 +181,7 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
   ): Promise<IsArray extends true ? T[] : T> {
     type DataType = IsArray extends true ? T[] : T
 
-    function isPaginatedResponse(value: unknown): value is PaginatedProps<T> {
+    function isPaginatedResponse(value: any): value is PaginatedProps<T> {
       return (value &&
         typeof value === 'object' &&
         Array.isArray((value as PaginatedProps<T>).items) &&
@@ -189,10 +189,10 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
     }
 
     function invalidZodSchema(
-      onAnyError: ((data: unknown | null, msg: string) => void) | undefined,
-      onError: ((data: unknown, msg: string) => boolean | void) | undefined,
+      onAnyError: ((data: any | null, msg: string) => void) | undefined,
+      onError: ((data: any, msg: string) => boolean | void) | undefined,
       silent: boolean,
-      validation: ZodSafeParseResult<unknown>,
+      validation: ZodSafeParseResult<any>,
     ): string {
       // Turn a validation failure into a “non‑critical” error
       const zErr = validation.error as ZodError
@@ -210,7 +210,7 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
       return msg
     }
 
-    return new Promise<DataType>((resolve, reject: (reason: unknown) => void) => {
+    return new Promise<DataType>((resolve, reject: (reason: any) => void) => {
       // ----- callbacks -------------------------------------------------
       const silent = resultConfig?.silent === true
       const allowEmptyArray =

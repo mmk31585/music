@@ -92,7 +92,7 @@ export function useRegisterForm() {
     return valid
   }
 
-  function applyBackendErrors(error: unknown) {
+  function applyBackendErrors(error: any) {
     const err = error as {
       response?: {
         data?: BackendValidationError

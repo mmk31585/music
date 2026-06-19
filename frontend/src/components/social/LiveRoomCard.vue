@@ -16,6 +16,7 @@
       </div>
 
       <div class="mt-4 flex items-center gap-4 text-xs text-white/30">
+        <span v-if="hostName" class="flex items-center gap-1 truncate">👤 {{ hostName }}</span>
         <span class="flex items-center gap-1">🎤 {{ room.listener_count }} listening</span>
         <span v-if="room.current_track_id" class="flex items-center gap-1">🎵 Now playing</span>
       </div>
@@ -37,6 +38,7 @@ import type { LiveRoom } from '@/services/api/social'
 
 defineProps<{
   room: LiveRoom
+  hostName?: string
 }>()
 
 defineEmits<{

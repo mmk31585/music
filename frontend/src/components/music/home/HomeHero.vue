@@ -10,32 +10,37 @@
     @mouseenter="pauseAutoRotate"
     @mouseleave="resumeAutoRotate"
   >
-    <!-- Blurred background layer -->
-    <div
-      class="absolute inset-0 overflow-hidden"
-      :style="{ transition: 'background-color 600ms ease' }"
-    >
+    <!-- Video background (loop) -->
+    <video
+      v-if="videoSrc"
+      :key="activeIndex"
+      :src="videoSrc"
+      class="absolute inset-0 h-full w-full object-cover"
+      autoplay
+      muted
+      loop
+      playsinline
+    />
+    <!-- Fallback blurred image background when no video -->
+    <div v-else class="absolute inset-0 overflow-hidden">
       <img
         v-for="(item, i) in items"
         :key="i"
         :src="item.image"
-        class="absolute inset-0 h-full w-full object-cover"
+        class="absolute inset-0 h-full w-full object-cover transition-opacity duration-700"
         :class="i === activeIndex ? 'opacity-100' : 'opacity-0'"
-        :style="{
-          filter: 'blur(40px) saturate(1.3)',
-          transform: 'scale(1.1)',
-          transition: 'opacity 600ms ease',
-        }"
+        style="filter: blur(40px) saturate(1.3); transform: scale(1.1)"
         aria-hidden="true"
       />
     </div>
-    <div class="absolute inset-0 bg-gradient-to-l from-transparent via-black/30 to-black/85" />
+    <div class="absolute inset-0 bg-gradient-to-l from-transparent via-black/40 to-black/80" />
 
+    <!-- Frosted glass card overlay -->
     <div class="relative z-10 flex h-full items-center px-6 md:px-10">
-      <!-- Slide content -->
       <div class="flex w-full items-center justify-between">
         <div
-          class="max-w-lg"
+          class="max-w-lg rounded-2xl border border-white/10 bg-black/30 px-8 py-8 backdrop-blur-xl shadow-2xl"
+          style="backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);"
           :style="{
             opacity: slideVisible ? 1 : 0,
             transform: slideVisible ? 'translateY(0)' : 'translateY(12px)',
@@ -48,28 +53,28 @@
           >
             {{ currentItem.badge }}
           </span>
-          <h2 class="text-3xl font-black leading-tight text-white md:text-4xl" style="letter-spacing: -0.03em">
+          <h2 class="font-hero text-4xl font-black leading-tight text-white md:text-5xl lg:text-6xl" style="letter-spacing: -0.03em">
             {{ currentItem.title }}
           </h2>
-          <p class="mt-2 text-base text-white/60 md:text-lg">
+          <p class="mt-3 text-lg text-white/60 md:text-xl">
             {{ currentItem.subtitle }}
           </p>
           <div class="mt-5 flex flex-wrap gap-3">
             <button
               type="button"
-              class="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full bg-[#1db954] px-6 text-sm font-bold text-black transition-all hover:bg-[#1ed760] hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#1db954] focus-visible:ring-offset-2 focus-visible:outline-none"
+              class="glow-green inline-flex h-12 cursor-pointer items-center gap-2 rounded-full bg-[#1db954] px-8 text-base font-bold text-black transition-all hover:bg-[#1ed760] hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#1db954] focus-visible:ring-offset-2 focus-visible:outline-none"
               :aria-label="'پخش ' + currentItem.title"
               @click="$emit('play', currentItem)"
             >
-              <i class="pi pi-play-fill text-sm" />
+              <i aria-hidden="true" class="pi pi-play-fill text-sm" />
               پخش
             </button>
             <button
               type="button"
-              class="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-5 text-sm font-medium text-white backdrop-blur transition-all hover:bg-white/10 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#1db954] focus-visible:ring-offset-2 focus-visible:outline-none"
+              class="inline-flex h-12 cursor-pointer items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-6 text-base font-medium text-white backdrop-blur transition-all hover:bg-white/10 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#1db954] focus-visible:ring-offset-2 focus-visible:outline-none"
               @click="$emit('add-to-library', currentItem)"
             >
-              <i class="pi pi-plus text-sm" />
+              <i aria-hidden="true" class="pi pi-plus text-sm" />
               افزودن به کتابخانه
             </button>
           </div>
@@ -91,7 +96,7 @@
       </div>
     </div>
 
-    <!-- Arrow buttons (desktop hover) -->
+    <!-- Arrow buttons -->
     <button
       type="button"
       class="absolute top-1/2 right-4 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur transition hover:bg-white/10 md:flex"
@@ -99,7 +104,7 @@
       aria-label="اسلاید قبلی"
       @click="prev"
     >
-      <i class="pi pi-chevron-right text-sm" />
+      <i aria-hidden="true" class="pi pi-chevron-right text-sm" />
     </button>
     <button
       type="button"
@@ -108,7 +113,7 @@
       aria-label="اسلاید بعدی"
       @click="next"
     >
-      <i class="pi pi-chevron-left text-sm" />
+      <i aria-hidden="true" class="pi pi-chevron-left text-sm" />
     </button>
 
     <!-- Indicators -->
@@ -134,13 +139,13 @@
       :aria-label="autoRotating ? 'توقف چرخش خودکار' : 'شروع چرخش خودکار'"
       @click="toggleAutoRotate"
     >
-      <i :class="autoRotating ? 'pi pi-pause' : 'pi pi-play'" class="text-xs" />
+      <i aria-hidden="true" :class="autoRotating ? 'pi pi-pause' : 'pi pi-play'" class="text-xs" />
     </button>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 export interface HeroItem {
   id: string
@@ -150,6 +155,7 @@ export interface HeroItem {
   badge: string
   badgeVariant?: 'green' | 'purple'
   type: 'album' | 'artist' | 'playlist'
+  videoSrc?: string
 }
 
 const props = withDefaults(defineProps<{
@@ -174,9 +180,11 @@ let reducedMotion = false
 
 const currentItem = computed((): HeroItem => props.items[activeIndex.value] ?? props.items[0]!)
 
+const videoSrc = computed(() => currentItem.value.videoSrc || '')
+
 const heroHeight = computed(() => {
-  if (typeof window !== 'undefined' && window.innerWidth < 768) return 240
-  return 360
+  if (typeof window !== 'undefined' && window.innerWidth < 768) return 360
+  return 520
 })
 
 const badgeClass = computed(() => {

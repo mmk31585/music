@@ -7,7 +7,7 @@
       class="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
       :class="iconBgClass"
     >
-      <i :class="iconClass" class="text-sm" />
+      <i aria-hidden="true" :class="iconClass" class="text-sm" />
     </div>
 
     <div class="min-w-0 flex-1 cursor-pointer" @click="handleClick">

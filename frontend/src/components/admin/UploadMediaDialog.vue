@@ -74,6 +74,8 @@ const fieldName = computed(() => {
       return 'albumCover'
     case 'artist-image':
       return 'artistImage'
+    default:
+      return ''
   }
 })
 
@@ -107,6 +109,8 @@ const dialogTitle = computed(() => {
       return 'Upload album cover'
     case 'artist-image':
       return 'Upload artist image'
+    default:
+      return 'Upload media'
   }
 })
 
@@ -120,6 +124,8 @@ const description = computed(() => {
       return 'Upload a cover image for the album.'
     case 'artist-image':
       return 'Upload an image for the artist.'
+    default:
+      return ''
   }
 })
 

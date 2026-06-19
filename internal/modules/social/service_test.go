@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"music/internal/modules/playlist"
 )
 
 type mockRepo struct {
@@ -162,9 +163,193 @@ func (m *mockRepo) GetTrackRatingAverage(ctx context.Context, trackID uuid.UUID)
 	args := m.Called(ctx, trackID)
 	return args.Get(0).(float64), args.Int(1), args.Error(2)
 }
+func (m *mockRepo) SuggestTrack(ctx context.Context, c *QueueCandidate) error {
+	return m.Called(ctx, c).Error(0)
+}
+func (m *mockRepo) GetCandidates(ctx context.Context, roomID uuid.UUID) ([]QueueCandidate, error) {
+	args := m.Called(ctx, roomID)
+	return args.Get(0).([]QueueCandidate), args.Error(1)
+}
+func (m *mockRepo) GetCandidateByID(ctx context.Context, candidateID uuid.UUID) (*QueueCandidate, error) {
+	args := m.Called(ctx, candidateID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*QueueCandidate), args.Error(1)
+}
+func (m *mockRepo) CastVoteTx(ctx context.Context, candidateID, userID uuid.UUID) error {
+	return m.Called(ctx, candidateID, userID).Error(0)
+}
+func (m *mockRepo) RemoveVoteTx(ctx context.Context, candidateID, userID uuid.UUID) error {
+	return m.Called(ctx, candidateID, userID).Error(0)
+}
+func (m *mockRepo) HasVoted(ctx context.Context, candidateID, userID uuid.UUID) (bool, error) {
+	args := m.Called(ctx, candidateID, userID)
+	return args.Bool(0), args.Error(1)
+}
+func (m *mockRepo) GetNowPlaying(ctx context.Context, roomID uuid.UUID) (*RoomNowPlaying, error) {
+	args := m.Called(ctx, roomID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*RoomNowPlaying), args.Error(1)
+}
+func (m *mockRepo) SetNowPlaying(ctx context.Context, np *RoomNowPlaying) error {
+	return m.Called(ctx, np).Error(0)
+}
+func (m *mockRepo) RemoveCandidate(ctx context.Context, candidateID uuid.UUID) error {
+	return m.Called(ctx, candidateID).Error(0)
+}
+func (m *mockRepo) GetCandidatesWithVoteState(ctx context.Context, roomID, userID uuid.UUID) ([]CandidateWithVoteState, error) {
+	args := m.Called(ctx, roomID, userID)
+	return args.Get(0).([]CandidateWithVoteState), args.Error(1)
+}
+func (m *mockRepo) LockRoomQueue(ctx context.Context, roomID uuid.UUID) (func(), error) {
+	args := m.Called(ctx, roomID)
+	if args.Get(0) == nil {
+		return func() {}, args.Error(1)
+	}
+	return args.Get(0).(func()), args.Error(1)
+}
+func (m *mockRepo) PickRandomTrack(ctx context.Context) (*uuid.UUID, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*uuid.UUID), args.Error(1)
+}
+func (m *mockRepo) GetRoomMembers(ctx context.Context, roomID uuid.UUID) (int, error) {
+	args := m.Called(ctx, roomID)
+	return args.Int(0), args.Error(1)
+}
+
+func (m *mockRepo) GetHandRaise(ctx context.Context, roomID, userID uuid.UUID) (*HandRaise, error) {
+	args := m.Called(ctx, roomID, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*HandRaise), args.Error(1)
+}
+
+func (m *mockRepo) RaiseHand(ctx context.Context, roomID, userID uuid.UUID) error {
+	return m.Called(ctx, roomID, userID).Error(0)
+}
+
+func (m *mockRepo) LowerHand(ctx context.Context, roomID, userID uuid.UUID) error {
+	return m.Called(ctx, roomID, userID).Error(0)
+}
+
+func (m *mockRepo) UpdateHandRaiseStatus(ctx context.Context, id uuid.UUID, status string) error {
+	return m.Called(ctx, id, status).Error(0)
+}
+
+func (m *mockRepo) ListPendingHandRaises(ctx context.Context, roomID uuid.UUID) ([]HandRaise, error) {
+	args := m.Called(ctx, roomID)
+	return args.Get(0).([]HandRaise), args.Error(1)
+}
+
+func (m *mockRepo) GetStageMember(ctx context.Context, roomID, userID uuid.UUID) (*StageMember, error) {
+	args := m.Called(ctx, roomID, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*StageMember), args.Error(1)
+}
+
+func (m *mockRepo) SetStageMember(ctx context.Context, member *StageMember) error {
+	return m.Called(ctx, member).Error(0)
+}
+
+func (m *mockRepo) RemoveStageMember(ctx context.Context, roomID, userID uuid.UUID) error {
+	return m.Called(ctx, roomID, userID).Error(0)
+}
+
+func (m *mockRepo) ListStageSpeakers(ctx context.Context, roomID uuid.UUID) ([]StageMember, error) {
+	args := m.Called(ctx, roomID)
+	return args.Get(0).([]StageMember), args.Error(1)
+}
+
+func (m *mockRepo) GetStageHost(ctx context.Context, roomID uuid.UUID) (*StageMember, error) {
+	args := m.Called(ctx, roomID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*StageMember), args.Error(1)
+}
+
+func (m *mockRepo) UpdateStageMemberMuted(ctx context.Context, roomID, userID uuid.UUID, muted bool) error {
+	return m.Called(ctx, roomID, userID, muted).Error(0)
+}
+
+func (m *mockRepo) ListClubsByGenre(ctx context.Context, genre string, limit, offset int) ([]MusicClub, error) {
+	args := m.Called(ctx, genre, limit, offset)
+	return args.Get(0).([]MusicClub), args.Error(1)
+}
+
+func (m *mockRepo) UpdateClubPlaylistID(ctx context.Context, clubID, playlistID uuid.UUID) error {
+	return m.Called(ctx, clubID, playlistID).Error(0)
+}
+
+// Club Discussions (Phase 6) - mock pass-throughs
+
+func (m *mockRepo) CreateClubDiscussion(ctx context.Context, d *ClubDiscussion) error {
+	return m.Called(ctx, d).Error(0)
+}
+
+func (m *mockRepo) ListClubDiscussions(ctx context.Context, clubID uuid.UUID, limit, offset int) ([]ClubDiscussion, error) {
+	args := m.Called(ctx, clubID, limit, offset)
+	return args.Get(0).([]ClubDiscussion), args.Error(1)
+}
+
+func (m *mockRepo) GetClubDiscussion(ctx context.Context, id uuid.UUID) (*ClubDiscussion, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*ClubDiscussion), args.Error(1)
+}
+
+func (m *mockRepo) DeleteClubDiscussion(ctx context.Context, id uuid.UUID) error {
+	return m.Called(ctx, id).Error(0)
+}
+
+func (m *mockRepo) IncrementClubDiscussionReplyCount(ctx context.Context, id uuid.UUID) error {
+	return m.Called(ctx, id).Error(0)
+}
+
+func (m *mockRepo) DecrementClubDiscussionReplyCount(ctx context.Context, id uuid.UUID) error {
+	return m.Called(ctx, id).Error(0)
+}
+
+func (m *mockRepo) CreateClubDiscussionReply(ctx context.Context, r *ClubDiscussionReply) error {
+	return m.Called(ctx, r).Error(0)
+}
+
+func (m *mockRepo) GetClubDiscussionReplies(ctx context.Context, discussionID uuid.UUID) ([]ClubDiscussionReply, error) {
+	args := m.Called(ctx, discussionID)
+	return args.Get(0).([]ClubDiscussionReply), args.Error(1)
+}
+
+func (m *mockRepo) GetClubDiscussionReply(ctx context.Context, id uuid.UUID) (*ClubDiscussionReply, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*ClubDiscussionReply), args.Error(1)
+}
+
+func (m *mockRepo) DeleteClubDiscussionReply(ctx context.Context, id uuid.UUID) error {
+	return m.Called(ctx, id).Error(0)
+}
 
 func newSvc(m *mockRepo) *Service {
 	return NewService(m, nil, nil)
+}
+
+func newSvcWithPlaylist(m *mockRepo, mockPlaylist PlaylistCollaborator) *Service {
+	svc := NewServiceWithPlaylist(m, nil, nil, nil)
+	svc.clubSvc = NewClubService(m, mockPlaylist, svc)
+	return svc
 }
 
 func TestFollow_Success(t *testing.T) {
@@ -521,9 +706,14 @@ func TestGetRoomQueue_Success(t *testing.T) {
 
 func TestCreateClub_DefaultMaxMembers(t *testing.T) {
 	m := new(mockRepo)
-	svc := newSvc(m)
-	uid := uuid.New().String()
+	mp := new(MockPlaylistSvc)
+	svc := newSvcWithPlaylist(m, mp)
+	uid := uuid.New()
+	playlistID := uuid.New()
 
+	mp.On("CreatePlaylist", mock.Anything, mock.Anything, uid).Return(playlist.Playlist{ID: playlistID}, nil)
+	mp.On("SetCollaborative", mock.Anything, playlistID.String(), true).Return(nil)
+	mp.On("AddCollaborator", mock.Anything, playlistID.String(), uid.String()).Return(nil)
 	m.On("CreateClub", mock.Anything, mock.MatchedBy(func(c *MusicClub) bool {
 		return c.Name == "Music Lovers" && c.MaxMembers == 1000
 	})).Return(nil)
@@ -531,19 +721,25 @@ func TestCreateClub_DefaultMaxMembers(t *testing.T) {
 	club, err := svc.CreateClub(context.Background(), CreateClubRequest{
 		Name:     "Music Lovers",
 		IsPublic: true,
-	}, uid)
+	}, uid.String())
 
 	assert.NoError(t, err)
 	assert.Equal(t, "Music Lovers", club.Name)
 	assert.Equal(t, 1000, club.MaxMembers)
 	m.AssertExpectations(t)
+	mp.AssertExpectations(t)
 }
 
 func TestCreateClub_CustomMaxMembers(t *testing.T) {
 	m := new(mockRepo)
-	svc := newSvc(m)
-	uid := uuid.New().String()
+	mp := new(MockPlaylistSvc)
+	svc := newSvcWithPlaylist(m, mp)
+	uid := uuid.New()
+	playlistID := uuid.New()
 
+	mp.On("CreatePlaylist", mock.Anything, mock.Anything, uid).Return(playlist.Playlist{ID: playlistID}, nil)
+	mp.On("SetCollaborative", mock.Anything, playlistID.String(), true).Return(nil)
+	mp.On("AddCollaborator", mock.Anything, playlistID.String(), uid.String()).Return(nil)
 	m.On("CreateClub", mock.Anything, mock.MatchedBy(func(c *MusicClub) bool {
 		return c.MaxMembers == 50
 	})).Return(nil)
@@ -552,10 +748,11 @@ func TestCreateClub_CustomMaxMembers(t *testing.T) {
 		Name:       "Small Club",
 		IsPublic:   true,
 		MaxMembers: 50,
-	}, uid)
+	}, uid.String())
 
 	assert.NoError(t, err)
 	assert.Equal(t, 50, club.MaxMembers)
+	mp.AssertExpectations(t)
 	m.AssertExpectations(t)
 }
 
@@ -586,10 +783,15 @@ func TestListClubs_Success(t *testing.T) {
 
 func TestJoinClub_Success(t *testing.T) {
 	m := new(mockRepo)
-	svc := newSvc(m)
+	mp := new(MockPlaylistSvc)
+	svc := newSvcWithPlaylist(m, mp)
 	cid, uid := uuid.New(), uuid.New()
 
+	playlistID := uuid.New()
+	m.On("IsClubMember", mock.Anything, cid, uid).Return(false, nil)
+	m.On("GetClub", mock.Anything, cid).Return(&MusicClub{ID: cid, PlaylistID: &playlistID}, nil)
 	m.On("JoinClub", mock.Anything, cid, uid).Return(nil)
+	mp.On("AddCollaborator", mock.Anything, playlistID.String(), uid.String()).Return(nil)
 
 	err := svc.JoinClub(context.Background(), cid.String(), uid.String())
 	assert.NoError(t, err)
@@ -598,10 +800,15 @@ func TestJoinClub_Success(t *testing.T) {
 
 func TestLeaveClub_Success(t *testing.T) {
 	m := new(mockRepo)
-	svc := newSvc(m)
+	mp := new(MockPlaylistSvc)
+	svc := newSvcWithPlaylist(m, mp)
 	cid, uid := uuid.New(), uuid.New()
 
+	playlistID := uuid.New()
+	m.On("IsClubAdmin", mock.Anything, cid, uid).Return(false, nil)
+	m.On("GetClub", mock.Anything, cid).Return(&MusicClub{ID: cid, PlaylistID: &playlistID}, nil)
 	m.On("LeaveClub", mock.Anything, cid, uid).Return(nil)
+	mp.On("RemoveCollaborator", mock.Anything, playlistID.String(), uid.String()).Return(nil)
 
 	err := svc.LeaveClub(context.Background(), cid.String(), uid.String())
 	assert.NoError(t, err)

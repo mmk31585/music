@@ -13,10 +13,11 @@ import (
 
 type Service struct {
 	client *opensearch.Client
+	repo   *Repository
 }
 
-func NewService(client *opensearch.Client) *Service {
-	return &Service{client: client}
+func NewService(client *opensearch.Client, repo *Repository) *Service {
+	return &Service{client: client, repo: repo}
 }
 
 func (s *Service) Search(ctx context.Context, query string, limit int) (*SearchResponse, error) {
@@ -41,19 +42,49 @@ func (s *Service) Search(ctx context.Context, query string, limit int) (*SearchR
 		return resp, nil
 	}
 
-	tracks, _ := s.searchTracks(ctx, query, limit)
-	albums, _ := s.searchAlbums(ctx, query, limit)
-	artists, _ := s.searchArtists(ctx, query, limit)
-	playlists, _ := s.searchPlaylists(ctx, query, limit)
-
+	tracks, err := s.searchTracks(ctx, query, limit)
+	if err != nil {
+		tracks, _ = s.repo.SearchTracks(ctx, query, limit)
+	}
 	resp.Tracks = tracks
+	if resp.Tracks == nil {
+		resp.Tracks = []TrackResult{}
+	}
+
+	albums, err := s.searchAlbums(ctx, query, limit)
+	if err != nil {
+		albums, _ = s.repo.SearchAlbums(ctx, query, limit)
+	}
 	resp.Albums = albums
+	if resp.Albums == nil {
+		resp.Albums = []AlbumResult{}
+	}
+
+	artists, err := s.searchArtists(ctx, query, limit)
+	if err != nil {
+		artists, _ = s.repo.SearchArtists(ctx, query, limit)
+	}
 	resp.Artists = artists
+	if resp.Artists == nil {
+		resp.Artists = []ArtistResult{}
+	}
+
+	playlists, err := s.searchPlaylists(ctx, query, limit)
+	if err != nil {
+		playlists, _ = s.repo.SearchPlaylists(ctx, query, limit)
+	}
 	resp.Playlists = playlists
+	if resp.Playlists == nil {
+		resp.Playlists = []PlaylistResult{}
+	}
+
 	return resp, nil
 }
 
 func (s *Service) searchTracks(ctx context.Context, q string, limit int) ([]TrackResult, error) {
+	if s.client == nil {
+		return nil, fmt.Errorf("opensearch not available")
+	}
 	body := map[string]any{
 		"size": limit,
 		"query": map[string]any{
@@ -91,6 +122,9 @@ func (s *Service) searchTracks(ctx context.Context, q string, limit int) ([]Trac
 }
 
 func (s *Service) searchAlbums(ctx context.Context, q string, limit int) ([]AlbumResult, error) {
+	if s.client == nil {
+		return nil, fmt.Errorf("opensearch not available")
+	}
 	body := map[string]any{
 		"size": limit,
 		"query": map[string]any{
@@ -128,6 +162,9 @@ func (s *Service) searchAlbums(ctx context.Context, q string, limit int) ([]Albu
 }
 
 func (s *Service) searchArtists(ctx context.Context, q string, limit int) ([]ArtistResult, error) {
+	if s.client == nil {
+		return nil, fmt.Errorf("opensearch not available")
+	}
 	body := map[string]any{
 		"size": limit,
 		"query": map[string]any{
@@ -165,6 +202,9 @@ func (s *Service) searchArtists(ctx context.Context, q string, limit int) ([]Art
 }
 
 func (s *Service) searchPlaylists(ctx context.Context, q string, limit int) ([]PlaylistResult, error) {
+	if s.client == nil {
+		return nil, fmt.Errorf("opensearch not available")
+	}
 	body := map[string]any{
 		"size": limit,
 		"query": map[string]any{

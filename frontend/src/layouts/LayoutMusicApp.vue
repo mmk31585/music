@@ -5,7 +5,7 @@
     <div class="flex min-h-screen">
       <MusicSidebar />
 
-      <main id="main-content" class="min-w-0 flex-1">
+      <main id="main-content" class="min-w-0 flex-1" :class="mainPadding">
         <MusicAppHeader
           :page-title="pageTitle"
           :unread-count="unreadCount"
@@ -36,7 +36,7 @@
               <div
                 class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#1db954] text-black"
               >
-                <i class="pi pi-volume-up" />
+                <i aria-hidden="true" class="pi pi-volume-up" />
               </div>
               <span class="font-black text-white">Music App</span>
             </RouterLink>
@@ -47,7 +47,7 @@
               class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white"
               @click="mobileOpen = false"
             >
-              <i class="pi pi-times" />
+              <i aria-hidden="true" class="pi pi-times" />
             </button>
           </div>
 
@@ -63,7 +63,7 @@
               :class="activeNavBase === item.to ? 'bg-white/[0.10] text-white' : ''"
               @click="mobileOpen = false"
             >
-              <i :class="item.icon" class="text-lg" />
+              <i aria-hidden="true" :class="item.icon" class="text-lg" />
               <span>{{ item.label }}</span>
             </RouterLink>
 
@@ -78,7 +78,7 @@
               :class="activeNavBase === item.to ? 'bg-white/[0.10] text-white' : ''"
               @click="mobileOpen = false"
             >
-              <i :class="item.icon" class="text-lg" />
+              <i aria-hidden="true" :class="item.icon" class="text-lg" />
               <span>{{ item.label }}</span>
             </RouterLink>
 
@@ -93,7 +93,7 @@
               :class="activeNavBase === item.to ? 'bg-white/[0.10] text-white' : ''"
               @click="mobileOpen = false"
             >
-              <i :class="item.icon" class="text-lg" />
+              <i aria-hidden="true" :class="item.icon" class="text-lg" />
               <span>{{ item.label }}</span>
             </RouterLink>
 
@@ -108,7 +108,7 @@
               :class="activeNavBase === item.to ? 'bg-white/[0.10] text-white' : ''"
               @click="mobileOpen = false"
             >
-              <i :class="item.icon" class="text-lg" />
+              <i aria-hidden="true" :class="item.icon" class="text-lg" />
               <span>{{ item.label }}</span>
             </RouterLink>
           </nav>
@@ -132,7 +132,7 @@
                 class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-red-400"
                 @click="handleLogout"
               >
-                <i class="pi pi-sign-out text-lg" />
+                <i aria-hidden="true" class="pi pi-sign-out text-lg" />
                 <span>Log out</span>
               </button>
             </template>
@@ -143,7 +143,7 @@
                 class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1db954] px-4 py-3 text-sm font-bold text-black transition hover:bg-[#1ed760]"
                 @click="mobileOpen = false"
               >
-                <i class="pi pi-sign-in" />
+                <i aria-hidden="true" class="pi pi-sign-in" />
                 <span>Log in</span>
               </RouterLink>
 
@@ -172,6 +172,7 @@
     <QueuePanel v-model:visible="showQueue" />
     <MobileBottomSheet v-model:visible="mobileSheetOpen" @open-fullscreen="fullscreenOpen = true" />
     <KeyboardShortcuts v-model:visible="showShortcuts" />
+    <MobileBottomNav />
   </div>
 </template>
 
@@ -189,8 +190,8 @@ import {
   KeyboardShortcuts,
 } from '@/components/music'
 import MusicAppHeader from '@/components/layouts/MusicAppHeader.vue'
-import { useUserAuthStore, useFeatureFlagsStore } from '@/stores'
-import type { FeatureFlagKey } from '@/services/api/feature-flags'
+import { MobileBottomNav } from '@/components/layouts'
+import { useUserAuthStore, useFeatureFlagsStore, usePlayerStore } from '@/stores'
 import { useAuth } from '@/composables/auth/useAuth'
 import { client } from '@/composables'
 import { wsClient } from '@/services/socket/client'
@@ -247,6 +248,7 @@ const pageTitleMap: Record<string, string> = {
 
 const route = useRoute()
 const store = useUserAuthStore()
+const playerStore = usePlayerStore()
 const ff = useFeatureFlagsStore()
 const { logout } = useAuth()
 const mobileOpen = ref(false)
@@ -254,6 +256,13 @@ const searchOpen = ref(false)
 const fullscreenOpen = ref(false)
 const showQueue = ref(false)
 const mobileSheetOpen = ref(false)
+
+const mainPadding = computed(() => {
+  if (playerStore.currentTrack) {
+    return 'pb-32 lg:pb-28'
+  }
+  return 'pb-16 lg:pb-0'
+})
 const showShortcuts = ref(false)
 const playerInitialTab = ref<'now-playing' | 'queue' | 'lyrics'>('now-playing')
 const unreadCount = ref(0)

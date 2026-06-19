@@ -25,7 +25,7 @@ fmt:
 	go fmt ./...
 
 infra-up:
-	$(DOCKER_COMPOSE) up -d postgres redis minio
+	$(DOCKER_COMPOSE) up -d postgres opensearch redis minio
 
 infra-down:
 	$(DOCKER_COMPOSE) down

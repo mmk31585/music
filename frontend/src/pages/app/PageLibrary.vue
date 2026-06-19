@@ -1,11 +1,14 @@
 <template>
   <div class="mx-auto w-full max-w-7xl px-4 pt-6 pb-32 md:px-6 lg:px-8">
-    <section class="rounded-[2rem] border border-white/10 bg-white/[0.05] p-8 text-white">
-      <p class="text-sm font-bold tracking-[0.35em] text-[#1db954] uppercase">Your music</p>
-      <h1 class="mt-3 text-4xl font-black md:text-6xl">Library</h1>
-      <p class="mt-4 max-w-2xl text-slate-300">
-        Saved songs, favorite artists, albums, and playlists will appear here.
-      </p>
+    <section class="relative overflow-hidden rounded-[2rem] border border-white/[0.06] bg-[#0C0C14] p-10 text-white">
+      <div class="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-[#1db954]/10 blur-3xl" />
+      <div class="relative">
+        <p class="text-[10px] font-bold tracking-[0.35em] text-white/30 uppercase">Your music</p>
+        <h1 class="mt-2 text-4xl font-black md:text-6xl">Library</h1>
+        <p class="mt-3 max-w-2xl text-sm text-white/50">
+          Saved songs, favorite artists, albums, and playlists will appear here.
+        </p>
+      </div>
     </section>
 
     <div v-if="loading" class="mt-10 space-y-6">
@@ -19,14 +22,14 @@
 
     <template v-else>
       <section v-if="likedTracks.length" class="mt-10">
-        <div class="mb-4 flex items-end justify-between">
+        <div class="mb-5 flex items-end justify-between gap-4">
           <div>
-            <p class="text-xs font-bold tracking-[0.2em] text-[#1db954] uppercase">Songs</p>
-            <h2 class="mt-1 text-2xl font-black text-white">Liked Tracks</h2>
+            <p class="text-[10px] font-bold tracking-[0.3em] text-white/30 uppercase">Songs</p>
+            <h2 class="mt-1 text-xl font-bold text-white md:text-2xl">Liked Tracks</h2>
           </div>
-          <span class="text-xs text-slate-400">{{ likedTracks.length }} tracks</span>
+          <span class="text-xs tabular-nums text-white/30">{{ likedTracks.length }} tracks</span>
         </div>
-        <div class="overflow-hidden rounded-3xl border border-white/10 bg-black/20 p-2 backdrop-blur">
+        <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
           <TrackRow
             v-for="(item, index) in likedTrackRows"
             :key="item.id"
@@ -37,13 +40,13 @@
         </div>
       </section>
 
-      <section v-if="likedAlbums.length" class="mt-10">
-        <div class="mb-4 flex items-end justify-between">
+      <section v-if="likedAlbums.length" class="mt-12">
+        <div class="mb-5 flex items-end justify-between gap-4">
           <div>
-            <p class="text-xs font-bold tracking-[0.2em] text-[#1db954] uppercase">Albums</p>
-            <h2 class="mt-1 text-2xl font-black text-white">Saved Albums</h2>
+            <p class="text-[10px] font-bold tracking-[0.3em] text-white/30 uppercase">Albums</p>
+            <h2 class="mt-1 text-xl font-bold text-white md:text-2xl">Saved Albums</h2>
           </div>
-          <span class="text-xs text-slate-400">{{ likedAlbums.length }} albums</span>
+          <span class="text-xs tabular-nums text-white/30">{{ likedAlbums.length }} albums</span>
         </div>
         <HomeCarousel>
           <AlbumCard
@@ -54,13 +57,13 @@
         </HomeCarousel>
       </section>
 
-      <section v-if="followedArtists.length" class="mt-10">
-        <div class="mb-4 flex items-end justify-between">
+      <section v-if="followedArtists.length" class="mt-12">
+        <div class="mb-5 flex items-end justify-between gap-4">
           <div>
-            <p class="text-xs font-bold tracking-[0.2em] text-[#1db954] uppercase">Artists</p>
-            <h2 class="mt-1 text-2xl font-black text-white">Followed Artists</h2>
+            <p class="text-[10px] font-bold tracking-[0.3em] text-white/30 uppercase">Artists</p>
+            <h2 class="mt-1 text-xl font-bold text-white md:text-2xl">Followed Artists</h2>
           </div>
-          <span class="text-xs text-slate-400">{{ followedArtists.length }} artists</span>
+          <span class="text-xs tabular-nums text-white/30">{{ followedArtists.length }} artists</span>
         </div>
         <HomeCarousel>
           <RouterLink
@@ -69,7 +72,7 @@
             :to="`/artist/${artist.artist_id}`"
             class="group block w-40 shrink-0 space-y-3"
           >
-            <div class="mx-auto h-36 w-36 overflow-hidden rounded-full bg-white/[0.06] ring-1 ring-white/10 transition group-hover:ring-[#1db954]/50">
+            <div class="mx-auto h-36 w-36 overflow-hidden rounded-full bg-white/[0.06] ring-1 ring-white/10 transition group-hover:ring-[#1db954]/30">
               <img
                 v-if="artist.cover_url"
                 :src="artist.cover_url"
@@ -78,7 +81,7 @@
                 class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
               />
               <div v-else class="flex h-full items-center justify-center">
-                <i class="pi pi-user text-3xl text-slate-500" />
+                <i aria-hidden="true" class="pi pi-user text-3xl text-slate-500" />
               </div>
             </div>
             <div class="space-y-0.5 text-center">
@@ -89,20 +92,19 @@
         </HomeCarousel>
       </section>
 
-      <section v-if="!hasAnyData" class="mt-10 grid gap-5 md:grid-cols-3">
+      <section v-if="!hasAnyData" class="mt-12 grid gap-5 md:grid-cols-3">
         <div
           v-for="item in placeholderItems"
           :key="item.title"
-          class="rounded-3xl border border-white/10 bg-black/20 p-6"
+          class="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6"
         >
           <div
-            class="flex h-14 w-14 items-center justify-center rounded-2xl text-2xl"
-            :class="item.iconClass"
+            class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.06] text-lg"
           >
-            <i :class="item.icon" />
+            <i aria-hidden="true" :class="[item.icon, 'text-white/50']" />
           </div>
-          <h2 class="mt-5 text-xl font-black text-white">{{ item.title }}</h2>
-          <p class="mt-2 text-sm text-slate-400">{{ item.description }}</p>
+          <h2 class="mt-4 text-base font-bold text-white">{{ item.title }}</h2>
+          <p class="mt-1 text-sm text-white/40">{{ item.description }}</p>
         </div>
       </section>
     </template>
@@ -155,19 +157,16 @@ const placeholderItems = [
     title: 'Liked Songs',
     description: 'Tracks you liked will be collected here.',
     icon: 'pi pi-heart',
-    iconClass: 'bg-pink-500/20 text-pink-300',
   },
   {
     title: 'Saved Albums',
     description: 'Albums saved to your library.',
     icon: 'pi pi-images',
-    iconClass: 'bg-purple-500/20 text-purple-300',
   },
   {
     title: 'Followed Artists',
     description: 'Artists you follow and listen to often.',
     icon: 'pi pi-users',
-    iconClass: 'bg-[#1db954]/20 text-[#1db954]',
   },
 ]
 

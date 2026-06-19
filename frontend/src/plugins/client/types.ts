@@ -66,11 +66,11 @@ export interface UseRequestConfig<T = unknown> {
   schema?: z.ZodTypeAny
   beforeRequest?: () => void
   /** Called on success – receives the parsed payload (`T`). */
-  success?: (data: T, total: number, response: unknown) => boolean | void
+  success?: (data: T, total: number, response: any) => boolean | void
   criticalError?: (msg: string) => void
   /** Called on a non‑critical error – receives the raw error payload (may be `unknown`). */
-  error?: (data: unknown, msg: string) => boolean | void
-  anyError?: (data: unknown | null, msg: string) => void
+  error?: (data: any, msg: string) => boolean | void
+  anyError?: (data: any | null, msg: string) => void
   finally?: () => void
 }
 

@@ -115,8 +115,27 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 		return nil, fmt.Errorf("unmarshal final metadata: %w", err)
 	}
 
-	// TODO LOW: Album cover_url only uses final.Album.CoverURL. If user provides no cover and embedded cover exists (asset type "cover"), the album gets NULL cover. Fall back to embedded cover for album too.
-	// Re-host external images to local storage
+	assets, err := s.getAssetsByDraftID(ctx, draftID)
+	if err != nil {
+		return nil, fmt.Errorf("get assets: %w", err)
+	}
+
+	// Prefer locally-hosted draft assets over external re-hosted URLs
+	assetArtistImage := assetByType(assets, "artist_image")
+	assetAlbumCover := assetByType(assets, "album_cover")
+	assetTrackCover := assetByType(assets, "cover", "track_cover")
+
+	if final.Artist.ImageURL == "" && assetArtistImage != "" {
+		final.Artist.ImageURL = assetArtistImage
+	}
+	if final.Album.CoverURL == "" && assetAlbumCover != "" {
+		final.Album.CoverURL = assetAlbumCover
+	}
+	if final.Track.CoverURL == "" && assetTrackCover != "" {
+		final.Track.CoverURL = assetTrackCover
+	}
+
+	// Re-host external images to local storage (only for URLs not already hosted)
 	if final.Artist.ImageURL != "" && s.isExternalURL(final.Artist.ImageURL) {
 		if localURL, err := s.rehostExternalImage(ctx, final.Artist.ImageURL, draftID, "artist"); err != nil {
 			s.logger.Warn("failed to re-host artist image", zap.Error(err))
@@ -160,10 +179,7 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 		s.logger.Info("album resolved", zap.String("album_id", albumID.String()))
 	}
 
-	coverURL := final.Track.CoverURL
-	if coverURL == "" {
-		coverURL = final.Album.CoverURL
-	}
+	trackCoverURL := final.Track.CoverURL
 
 	audioKey := draftFilepath
 	lastSlash := strings.LastIndex(audioKey, "/")
@@ -198,59 +214,56 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 		AlbumID:  albumID.String(),
 	}
 
-	assets, err := s.getAssetsByDraftID(ctx, draftID)
-	if err != nil {
-		return nil, fmt.Errorf("get assets: %w", err)
-	}
-
+	// Copy and resize track cover from the first matching asset
 	for _, asset := range assets {
-		if asset.AssetType == "cover" {
-			coverKey := extractStorageKey(asset.URL, s.getBaseURLPrefix(ctx))
-			if idx := strings.LastIndex(coverKey, "."); idx != -1 {
-				ext := coverKey[idx:]
-				baseCoverKey := fmt.Sprintf("%s/%s/cover", CatalogCoverDir, albumID.String())
+		if asset.AssetType != "cover" && asset.AssetType != "track_cover" {
+			continue
+		}
+		coverKey := extractStorageKey(asset.URL, s.getBaseURLPrefix(ctx))
+		if idx := strings.LastIndex(coverKey, "."); idx != -1 {
+			ext := coverKey[idx:]
+			baseCoverKey := fmt.Sprintf("%s/%s/cover", CatalogCoverDir, albumID.String())
 
-				dstCoverKey := baseCoverKey + ext
-				if err := s.storage.Copy(ctx, coverKey, dstCoverKey); err != nil {
-					s.logger.Warn("failed to copy cover art", zap.String("src", coverKey), zap.Error(err))
-				} else {
-					copiedKeys = append(copiedKeys, dstCoverKey)
-					if cvURL, cvErr := s.storage.GetURL(ctx, dstCoverKey); cvErr == nil {
-						coverURL = cvURL
-					}
-				}
-
-				coverData, err := s.storage.Get(ctx, coverKey)
-				if err == nil && len(coverData) > 0 {
-					thumbURL, medURL, resizeErr := s.resizeAndStoreCover(ctx, coverData, ext, baseCoverKey)
-					if resizeErr != nil {
-						s.logger.Warn("cover resize failed", zap.Error(resizeErr))
-					} else {
-						result.CoverThumbURL = thumbURL
-						result.CoverMedURL = medURL
-						if thumbURL != "" {
-							thumbKey := extractStorageKey(thumbURL, s.getBaseURLPrefix(ctx))
-							copiedKeys = append(copiedKeys, thumbKey)
-						}
-						if medURL != "" {
-							medKey := extractStorageKey(medURL, s.getBaseURLPrefix(ctx))
-							copiedKeys = append(copiedKeys, medKey)
-						}
-					}
-				}
+			dstCoverKey := baseCoverKey + ext
+			if err := s.storage.Copy(ctx, coverKey, dstCoverKey); err != nil {
+				s.logger.Warn("failed to copy cover art", zap.String("src", coverKey), zap.Error(err))
 			} else {
-				coverKey = fmt.Sprintf("%s/%s/cover", CatalogCoverDir, albumID.String()) + ".jpg"
-				if err := s.storage.Copy(ctx, coverKey, coverKey); err != nil {
-					s.logger.Warn("failed to copy cover art", zap.String("src", coverKey), zap.Error(err))
+				copiedKeys = append(copiedKeys, dstCoverKey)
+				if cvURL, cvErr := s.storage.GetURL(ctx, dstCoverKey); cvErr == nil {
+					trackCoverURL = cvURL
+				}
+			}
+
+			coverData, err := s.storage.Get(ctx, coverKey)
+			if err == nil && len(coverData) > 0 {
+				thumbURL, medURL, resizeErr := s.resizeAndStoreCover(ctx, coverData, ext, baseCoverKey)
+				if resizeErr != nil {
+					s.logger.Warn("cover resize failed", zap.Error(resizeErr))
 				} else {
-					copiedKeys = append(copiedKeys, coverKey)
-					if cvURL, cvErr := s.storage.GetURL(ctx, coverKey); cvErr == nil {
-						coverURL = cvURL
+					result.CoverThumbURL = thumbURL
+					result.CoverMedURL = medURL
+					if thumbURL != "" {
+						thumbKey := extractStorageKey(thumbURL, s.getBaseURLPrefix(ctx))
+						copiedKeys = append(copiedKeys, thumbKey)
+					}
+					if medURL != "" {
+						medKey := extractStorageKey(medURL, s.getBaseURLPrefix(ctx))
+						copiedKeys = append(copiedKeys, medKey)
 					}
 				}
 			}
-			break
+		} else {
+			coverKey = fmt.Sprintf("%s/%s/cover", CatalogCoverDir, albumID.String()) + ".jpg"
+			if err := s.storage.Copy(ctx, coverKey, coverKey); err != nil {
+				s.logger.Warn("failed to copy cover art", zap.String("src", coverKey), zap.Error(err))
+			} else {
+				copiedKeys = append(copiedKeys, coverKey)
+				if cvURL, cvErr := s.storage.GetURL(ctx, coverKey); cvErr == nil {
+					trackCoverURL = cvURL
+				}
+			}
 		}
+		break
 	}
 
 	explicit := final.Track.Explicit
@@ -278,7 +291,7 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 		TrackNumber:     trackNumber,
 		Explicit:        explicit,
 		AudioURL:        audioURL,
-		CoverURL:        coverURL,
+		CoverURL:        trackCoverURL,
 		GenreIDs:        genreIDs,
 	})
 	if err != nil {
@@ -306,7 +319,7 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 	}
 
 	result.AudioURL = audioURL
-	result.CoverURL = coverURL
+	result.CoverURL = trackCoverURL
 	result.TrackID = trackID.String()
 
 	return result, nil
@@ -579,6 +592,17 @@ func splitGenres(genre string) []string {
 		out = append(out, p)
 	}
 	return out
+}
+
+func assetByType(assets []draftAsset, types ...string) string {
+	for _, asset := range assets {
+		for _, t := range types {
+			if asset.AssetType == t {
+				return asset.URL
+			}
+		}
+	}
+	return ""
 }
 
 func extractStorageKey(url, baseURL string) string {

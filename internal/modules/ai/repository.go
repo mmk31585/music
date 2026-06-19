@@ -262,6 +262,36 @@ func (r *Repository) GetSimilarByEmbedding(ctx context.Context, embedding []floa
 	return results, nil
 }
 
+func (r *Repository) GetTracks(ctx context.Context, limit int) ([]TrackMeta, error) {
+	query := `
+		SELECT t.id::text, t.title, COALESCE(a.name, '') as artist,
+			COALESCE(al.title, '') as album, COALESCE(g.name, '') as genre,
+			COALESCE(t.duration_seconds, 0) as duration
+		FROM tracks t
+		LEFT JOIN track_artists ta ON ta.track_id = t.id AND ta.position = 0
+		LEFT JOIN artists a ON a.id = ta.artist_id
+		LEFT JOIN albums al ON al.id = t.album_id
+		LEFT JOIN track_genres tg ON tg.track_id = t.id
+		LEFT JOIN genres g ON g.id = tg.genre_id
+		LIMIT $1
+	`
+	rows, err := r.db.QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []TrackMeta
+	for rows.Next() {
+		var m TrackMeta
+		if err := rows.Scan(&m.ID, &m.Title, &m.Artist, &m.Album, &m.Genre, &m.Duration); err != nil {
+			return nil, err
+		}
+		results = append(results, m)
+	}
+	return results, nil
+}
+
 func (r *Repository) LogGeneration(ctx context.Context, log GenerationLog) error {
 	query := `
 		INSERT INTO ai_generation_log (user_id, playlist_id, prompt, track_count, model_used, latency_ms)

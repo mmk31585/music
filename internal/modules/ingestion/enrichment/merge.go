@@ -19,6 +19,8 @@ func MergeResults(mb *MusicBrainzResult, lfm *LastFMResult, spot *SpotifyResult,
 	result.Suggestions = append(result.Suggestions, mergePlayCount(lfm)...)
 	result.Suggestions = append(result.Suggestions, mergePopularity(spot)...)
 	result.Suggestions = append(result.Suggestions, mergeArtistBio(lfm)...)
+	result.Suggestions = append(result.Suggestions, mergeArtistImage(lfm)...)
+	result.Suggestions = append(result.Suggestions, mergeAlbumCover(lfm)...)
 	result.Suggestions = append(result.Suggestions, mergeSimilarArtists(lfm)...)
 	result.Suggestions = append(result.Suggestions, mergeLyrics(lrc)...)
 
@@ -247,6 +249,30 @@ func mergeSimilarArtists(lfm *LastFMResult) []EnrichedSuggestion {
 	return []EnrichedSuggestion{{
 		Field:      "similar_artists",
 		Value:      lfm.SimilarArtists,
+		Source:     SourceLastFM,
+		Confidence: ConfidenceFuzzy,
+	}}
+}
+
+func mergeArtistImage(lfm *LastFMResult) []EnrichedSuggestion {
+	if lfm == nil || lfm.ArtistImageURL == "" {
+		return nil
+	}
+	return []EnrichedSuggestion{{
+		Field:      "artist_image_url",
+		Value:      lfm.ArtistImageURL,
+		Source:     SourceLastFM,
+		Confidence: ConfidenceFuzzy,
+	}}
+}
+
+func mergeAlbumCover(lfm *LastFMResult) []EnrichedSuggestion {
+	if lfm == nil || lfm.AlbumCoverURL == "" {
+		return nil
+	}
+	return []EnrichedSuggestion{{
+		Field:      "album_cover_url_lastfm",
+		Value:      lfm.AlbumCoverURL,
 		Source:     SourceLastFM,
 		Confidence: ConfidenceFuzzy,
 	}}

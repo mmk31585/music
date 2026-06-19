@@ -7,16 +7,17 @@
 
     <form class="space-y-5" @submit.prevent="onSubmit">
       <div>
-        <label class="mb-2 block text-sm font-medium text-slate-300">Email</label>
-        <InputText v-model="form.email" type="email" placeholder="you@example.com" class="w-full" />
+        <label for="login-email" class="mb-2 block text-sm font-medium text-slate-300">Email</label>
+        <InputText id="login-email" v-model="form.email" type="email" placeholder="you@example.com" class="w-full" />
         <small v-if="errors.email" class="mt-1 block text-red-400">
           {{ errors.email }}
         </small>
       </div>
 
       <div>
-        <label class="mb-2 block text-sm font-medium text-slate-300">Password</label>
+        <label for="login-password" class="mb-2 block text-sm font-medium text-slate-300">Password</label>
         <Password
+          id="login-password"
           v-model="form.password"
           placeholder="Enter password"
           class="w-full"

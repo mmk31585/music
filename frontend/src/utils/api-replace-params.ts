@@ -31,7 +31,7 @@ export function apiReplaceParams(url: string, params: Record<string, ParamValue>
   // Append leftover params as query string
   // First, collect all placeholder keys from the template
   const placeholderKeys = Array.from(url.matchAll(/[:{]([a-zA-Z0-9_]+)\??}?/g)).map((m) => m[1])
-  const queryEntries = Object.entries(params).filter(([k, _]) => !placeholderKeys.includes(k))
+  const queryEntries = Object.entries(params).filter(([k]) => !placeholderKeys.includes(k))
 
   if (queryEntries.length) {
     const qs = queryEntries

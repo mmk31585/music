@@ -4,7 +4,7 @@ export enum ArtistApiRoutes {
   GET = '/catalog/artists/:artistId',
 
   ADMIN_LIST = '/admin/catalog/artist',
-  ADMIN_CREATE = '/admin/catalog/artist',
+  ADMIN_CREATE = '/admin/catalog/artist/create',
   ADMIN_UPDATE = '/admin/catalog/artist/:artistId',
-  ADMIN_DELETE = '/admin/catalog/artist/:artistId',
+  ADMIN_DELETE = '/admin/catalog/artist/:artistId/delete',
 }
