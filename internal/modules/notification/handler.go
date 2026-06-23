@@ -16,6 +16,18 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// ListNotifications godoc
+// @Summary      List user notifications
+// @Description  Retrieve a paginated list of notifications for the authenticated user
+// @Tags         notification
+// @Produce      json
+// @Param        limit   query     int  false  "Limit"
+// @Param        offset  query     int  false  "Offset"
+// @Success      200     {object}  ListNotificationsResponse
+// @Failure      401     {object}  map[string]interface{}
+// @Failure      500     {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /notifications [get]
 func (h *Handler) ListNotifications(c *gin.Context) {
 	userID, ok := getUserID(c)
 	if !ok {
@@ -35,6 +47,18 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+// MarkAsRead godoc
+// @Summary      Mark notification as read
+// @Description  Mark a specific notification as read by ID
+// @Tags         notification
+// @Produce      json
+// @Param        id   path      string  true  "Notification ID"
+// @Success      200  {object}  MarkReadResponse
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /notifications/{id}/read [post]
 func (h *Handler) MarkAsRead(c *gin.Context) {
 	userID, ok := getUserID(c)
 	if !ok {
@@ -63,6 +87,16 @@ func (h *Handler) MarkAsRead(c *gin.Context) {
 	})
 }
 
+// MarkAllAsRead godoc
+// @Summary      Mark all notifications as read
+// @Description  Mark all unread notifications for the authenticated user as read
+// @Tags         notification
+// @Produce      json
+// @Success      200  {object}  MarkReadResponse
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /notifications/read-all [post]
 func (h *Handler) MarkAllAsRead(c *gin.Context) {
 	userID, ok := getUserID(c)
 	if !ok {

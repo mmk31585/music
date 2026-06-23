@@ -39,6 +39,16 @@ func parseLimit(c *gin.Context) (int, error) {
 	return limit, nil
 }
 
+// PopularTracks godoc
+// @Summary      Get popular tracks
+// @Description  Retrieve a list of globally popular tracks
+// @Tags         recommendation
+// @Produce      json
+// @Param        limit  query     int  false  "Limit"
+// @Success      200    {object}  map[string]interface{}
+// @Failure      400    {object}  map[string]interface{}
+// @Failure      500    {object}  map[string]interface{}
+// @Router       /recommendations/popular [get]
 func (h *Handler) PopularTracks(c *gin.Context) {
 	limit, err := parseLimit(c)
 	if err != nil {
@@ -62,6 +72,16 @@ func (h *Handler) PopularTracks(c *gin.Context) {
 	})
 }
 
+// BestTracks godoc
+// @Summary      Get best tracks
+// @Description  Retrieve a list of top-rated tracks
+// @Tags         recommendation
+// @Produce      json
+// @Param        limit  query     int  false  "Limit"
+// @Success      200    {object}  map[string]interface{}
+// @Failure      400    {object}  map[string]interface{}
+// @Failure      500    {object}  map[string]interface{}
+// @Router       /recommendations/best [get]
 func (h *Handler) BestTracks(c *gin.Context) {
 	limit, err := parseLimit(c)
 	if err != nil {
@@ -85,6 +105,18 @@ func (h *Handler) BestTracks(c *gin.Context) {
 	})
 }
 
+// RecentTracks godoc
+// @Summary      Get recent tracks
+// @Description  Retrieve tracks recently played by the user
+// @Tags         recommendation
+// @Produce      json
+// @Param        limit  query     int  false  "Limit"
+// @Success      200    {object}  map[string]interface{}
+// @Failure      400    {object}  map[string]interface{}
+// @Failure      401    {object}  map[string]interface{}
+// @Failure      500    {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /recommendations/recent [get]
 func (h *Handler) RecentTracks(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -114,6 +146,18 @@ func (h *Handler) RecentTracks(c *gin.Context) {
 	})
 }
 
+// SimilarTracks godoc
+// @Summary      Get similar tracks
+// @Description  Retrieve tracks similar to a given track ID
+// @Tags         recommendation
+// @Produce      json
+// @Param        trackId  path      string  true   "Track ID"
+// @Param        limit    query     int     false  "Limit"
+// @Success      200      {object}  map[string]interface{}
+// @Failure      400      {object}  map[string]interface{}
+// @Failure      404      {object}  map[string]interface{}
+// @Failure      500      {object}  map[string]interface{}
+// @Router       /recommendations/similar/{trackId} [get]
 func (h *Handler) SimilarTracks(c *gin.Context) {
 	trackID := c.Param("trackId")
 	if trackID == "" {
@@ -147,6 +191,17 @@ func (h *Handler) SimilarTracks(c *gin.Context) {
 	})
 }
 
+// TracksByArtist godoc
+// @Summary      Get tracks by artist
+// @Description  Retrieve recommendations based on an artist
+// @Tags         recommendation
+// @Produce      json
+// @Param        artistId  path      string  true   "Artist ID"
+// @Param        limit     query     int     false  "Limit"
+// @Success      200       {object}  map[string]interface{}
+// @Failure      400       {object}  map[string]interface{}
+// @Failure      500       {object}  map[string]interface{}
+// @Router       /recommendations/artist/{artistId} [get]
 func (h *Handler) TracksByArtist(c *gin.Context) {
 	artistID := c.Param("artistId")
 	if artistID == "" {
@@ -176,6 +231,17 @@ func (h *Handler) TracksByArtist(c *gin.Context) {
 	})
 }
 
+// TracksByGenre godoc
+// @Summary      Get tracks by genre
+// @Description  Retrieve recommendations for a specific genre
+// @Tags         recommendation
+// @Produce      json
+// @Param        genre  path      string  true   "Genre Name"
+// @Param        limit  query     int     false  "Limit"
+// @Success      200    {object}  map[string]interface{}
+// @Failure      400    {object}  map[string]interface{}
+// @Failure      500    {object}  map[string]interface{}
+// @Router       /recommendations/genre/{genre} [get]
 func (h *Handler) TracksByGenre(c *gin.Context) {
 	genre := c.Param("genre")
 	if genre == "" {
@@ -205,6 +271,18 @@ func (h *Handler) TracksByGenre(c *gin.Context) {
 	})
 }
 
+// ForYou godoc
+// @Summary      Get personalized recommendations
+// @Description  Retrieve tracks personalized for the authenticated user
+// @Tags         recommendation
+// @Produce      json
+// @Param        limit  query     int  false  "Limit"
+// @Success      200    {object}  map[string]interface{}
+// @Failure      400    {object}  map[string]interface{}
+// @Failure      401    {object}  map[string]interface{}
+// @Failure      500    {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /recommendations/for-you [get]
 func (h *Handler) ForYou(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {

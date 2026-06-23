@@ -16,6 +16,16 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// Search godoc
+// @Summary      Search across the platform
+// @Description  Search for tracks, albums, artists, and playlists
+// @Tags         search
+// @Produce      json
+// @Param        q      query     string  true   "Search query"
+// @Param        limit  query     int     false  "Number of results per category"
+// @Success      200    {object}  map[string]interface{}
+// @Failure      500    {object}  map[string]interface{}
+// @Router       /search [get]
 func (h *Handler) Search(c *gin.Context) {
 	query := strings.TrimSpace(c.Query("q"))
 	limit := 10

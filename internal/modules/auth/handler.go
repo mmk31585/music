@@ -24,6 +24,17 @@ func NewHandler(service *Service, validator *validator.Validator) *Handler {
 	}
 }
 
+// Register godoc
+// @Summary      Register a new user
+// @Description  Create a new user account with email, username, and password
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      RegisterRequest  true  "Registration Details"
+// @Success      201      {object}  response.SuccessResponse[AuthResponse]
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      422      {object}  response.ErrorResponse
+// @Router       /auth/register [post]
 func (h *Handler) Register(c *gin.Context) {
 	var req RegisterRequest
 
@@ -46,6 +57,17 @@ func (h *Handler) Register(c *gin.Context) {
 	response.Success(c, http.StatusCreated, "registered successfully", result)
 }
 
+// Login godoc
+// @Summary      Login user
+// @Description  Authenticate user and return access/refresh tokens
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      LoginRequest  true  "Login Credentials"
+// @Success      200      {object}  response.SuccessResponse[AuthResponse]
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      401      {object}  response.ErrorResponse
+// @Router       /auth/login [post]
 func (h *Handler) Login(c *gin.Context) {
 	var req LoginRequest
 
@@ -70,6 +92,17 @@ func (h *Handler) Login(c *gin.Context) {
 	response.Success(c, http.StatusOK, "logged in successfully", result)
 }
 
+// Refresh godoc
+// @Summary      Refresh token
+// @Description  Renew access token using a valid refresh token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      RefreshRequest  true  "Refresh Token"
+// @Success      200      {object}  response.SuccessResponse[AuthResponse]
+// @Failure      400      {object}  response.ErrorResponse
+// @Failure      401      {object}  response.ErrorResponse
+// @Router       /auth/refresh [post]
 func (h *Handler) Refresh(c *gin.Context) {
 	var req RefreshRequest
 
@@ -92,6 +125,16 @@ func (h *Handler) Refresh(c *gin.Context) {
 	response.Success(c, http.StatusOK, "token refreshed successfully", result)
 }
 
+// Logout godoc
+// @Summary      Logout user
+// @Description  Revoke refresh token and logout user
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      LogoutRequest  true  "Logout Details"
+// @Success      200      {object}  response.SuccessResponse[any]
+// @Failure      400      {object}  response.ErrorResponse
+// @Router       /auth/logout [post]
 func (h *Handler) Logout(c *gin.Context) {
 	var req LogoutRequest
 
@@ -113,6 +156,15 @@ func (h *Handler) Logout(c *gin.Context) {
 	response.Success[any](c, http.StatusOK, "logged out successfully", nil)
 }
 
+// Me godoc
+// @Summary      Get current user
+// @Description  Get the profile of the currently authenticated user
+// @Tags         auth
+// @Produce      json
+// @Success      200      {object}  response.SuccessResponse[MeResponse]
+// @Failure      401      {object}  response.ErrorResponse
+// @Security     Bearer
+// @Router       /auth/me [get]
 func (h *Handler) Me(c *gin.Context) {
 	userID := UserIDFromContext(c) // uses the Gin context getter from middleware.go
 	if userID == "" {
