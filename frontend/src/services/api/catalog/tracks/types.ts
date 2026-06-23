@@ -109,22 +109,22 @@ export function toTrackMutationPayload(payload: Partial<Track>): TrackCreatePayl
 
   return {
     title: payload.title,
-    artist_id: payload.artist_id,
+    artistId: payload.artist_id,
     artists: payload.artist_id
       ? [
         {
-          artist_id: payload.artist_id,
+          artistId: payload.artist_id,
           role: 'primary',
           position: 0,
         },
       ]
       : [],
-    album_id: payload.album_id ?? null,
-    duration_seconds: payload.duration_seconds ?? 0,
-    audio_url: payload.audio_url ?? null,
-    cover_url: payload.cover_url ?? null,
-    genre_ids: payload.genre_id ? [payload.genre_id] : [],
-    track_number: payload.track_number ?? null,
+    albumId: payload.album_id ?? null,
+    durationSeconds: payload.duration_seconds ?? 0,
+    audioUrl: payload.audio_url ?? null,
+    coverUrl: payload.cover_url ?? null,
+    genreIds: payload.genre_id ? [payload.genre_id] : [],
+    trackNumber: payload.track_number ?? null,
     explicit: payload.explicit ?? false,
   }
 }

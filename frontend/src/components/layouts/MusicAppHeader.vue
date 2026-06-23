@@ -227,8 +227,8 @@ const initials = computed(() => {
     : name.slice(0, 2).toUpperCase()
 })
 
-const menuItems = computed(() => {
-  const items = [
+const menuItems = computed<Array<{ label: string; icon: string; iconBg: string; to: string; badge?: string }>>(() => {
+  const items: Array<{ label: string; icon: string; iconBg: string; to: string; badge?: string }> = [
     {
       label: 'Profile',
       icon: 'pi pi-user',

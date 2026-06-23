@@ -7,3 +7,6 @@ uploads
 .env
 # Copilot session audit logs
 logs/
+
+# Vercel
+.vercel

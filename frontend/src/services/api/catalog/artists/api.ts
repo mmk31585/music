@@ -133,6 +133,7 @@ export const useArtistsApi = () => {
     // Public
     getArtists,
     getArtist,
+    searchArtists,
     // Admin
     adminGetArtists,
     adminCreateArtist,
