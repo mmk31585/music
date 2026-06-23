@@ -2,7 +2,7 @@
   <div class="glass-strong rounded-2xl p-6 md:p-8">
     <div class="mb-6 flex items-center justify-between">
       <h3 class="text-lg font-bold text-white">Challenges</h3>
-      <span class="rounded-full bg-[#1db954]/10 px-2.5 py-0.5 text-xs font-medium text-[#1db954]">
+      <span class="rounded-full bg-spotify/10 px-2.5 py-0.5 text-xs font-medium text-spotify">
         +{{ earnedXP }} XP earned
       </span>
     </div>
@@ -16,7 +16,7 @@
         v-for="item in combined"
         :key="item.challenge.id"
         class="overflow-hidden rounded-xl border border-white/5 transition-all duration-300"
-        :class="item.progress?.is_completed ? 'bg-[#1db954]/5' : 'bg-white/[0.03]'"
+        :class="item.progress?.is_completed ? 'bg-spotify/5' : 'bg-white/3'"
       >
         <div class="p-4">
           <div class="flex items-start justify-between gap-4">
@@ -37,11 +37,11 @@
           <div v-if="isActiveChallenge(item.challenge)" class="mt-3">
             <div class="flex items-center justify-between text-[11px] text-white/30">
               <span>{{ item.progress?.progress || 0 }} / {{ item.challenge.target_count }}</span>
-              <span v-if="item.progress?.is_completed" class="text-[#1db954]">Completed!</span>
+              <span v-if="item.progress?.is_completed" class="text-spotify">Completed!</span>
             </div>
             <div class="mt-1.5 h-2 overflow-hidden rounded-full bg-white/5">
               <div
-                class="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-700"
+                class="h-full rounded-full bg-linear-to-r from-amber-400 to-orange-500 transition-all duration-700"
                 :style="{ width: `${completionPercent(item)}%` }"
               />
             </div>
@@ -87,13 +87,13 @@ function isActiveChallenge(challenge: DailyChallenge): boolean {
 }
 
 function completionPercent(item: ChallengeItem): number {
-  if (!item.challenge.target_count) return 0
+  if (item.challenge.target_count!) return 0
   const progress = item.progress?.progress || 0
   return Math.min(100, (progress / item.challenge.target_count) * 100)
 }
 
 function formatDate(dateStr: string): string {
-  if (!dateStr) return ''
+  if (dateStr!) return ''
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 </script>

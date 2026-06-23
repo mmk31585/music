@@ -3,12 +3,12 @@
     <Transition name="search-fade">
       <div
         v-if="visible"
-        class="fixed inset-0 z-[100] flex items-start justify-center bg-black/80 pt-16 backdrop-blur-sm md:pt-24"
+        class="fixed inset-0 z-[100] flex items-start justify-center bg-black/80 pt-16 backdrop-blur-xs md:pt-24"
         @click.self="close"
       >
         <div
           ref="panelRef"
-          class="mx-4 w-full max-w-2xl overflow-hidden rounded-2xl bg-gradient-to-b from-[#1a1a2e] to-[#121212] shadow-2xl ring-1 ring-white/10"
+          class="mx-4 w-full max-w-2xl overflow-hidden rounded-2xl bg-linear-to-b from-surface-overlay to-surface-raised shadow-2xl ring-1 ring-white/10"
         >
           <!-- Search input -->
           <div class="relative flex items-center border-b border-white/10 px-4">
@@ -19,7 +19,7 @@
               type="text"
               placeholder="Search tracks, artists, albums, playlists..."
               aria-label="Search tracks, artists, albums, playlists"
-              class="flex-1 bg-transparent px-3 py-4 text-sm text-white outline-none placeholder:text-slate-500"
+              class="flex-1 bg-transparent px-3 py-4 text-sm text-white outline-hidden placeholder:text-slate-500"
               @keydown="onKeydown"
               @input="onInput"
             />
@@ -48,7 +48,7 @@
                 <span>Recent</span>
                 <button
                   type="button"
-                  class="text-[10px] text-[#1db954] hover:underline"
+                  class="text-[10px] text-spotify hover:underline"
                   @click="clearRecent"
                 >
                   Clear
@@ -59,7 +59,7 @@
                   v-for="term in recentSearches"
                   :key="term"
                   type="button"
-                  class="spring flex items-center gap-2 rounded-full bg-white/[0.08] px-4 py-2 text-sm text-white transition-all hover:scale-105 hover:bg-white/[0.12]"
+                  class="spring flex items-center gap-2 rounded-full bg-white/8 px-4 py-2 text-sm text-white transition-all hover:scale-105 hover:bg-white/12"
                   @click="query = term; doSearch()"
                 >
                   <i aria-hidden="true" class="pi pi-history text-xs text-slate-500" />
@@ -77,7 +77,7 @@
                   v-for="suggestion in suggestions"
                   :key="suggestion"
                   type="button"
-                  class="spring rounded-full bg-white/[0.06] px-4 py-2 text-sm text-slate-300 transition-all hover:scale-105 hover:bg-white/[0.10] hover:text-white"
+                  class="spring rounded-full bg-white/6 px-4 py-2 text-sm text-slate-300 transition-all hover:scale-105 hover:bg-white/10 hover:text-white"
                   @click="query = suggestion; doSearch()"
                 >
                   {{ suggestion }}
@@ -88,15 +88,15 @@
             <!-- Keyboard shortcut hint -->
             <div class="flex items-center gap-4 text-[11px] text-slate-600">
               <span
-                ><kbd class="rounded border border-white/10 px-1.5 py-0.5 text-[10px]">↑↓</kbd>
+                ><kbd class="rounded-sm border border-white/10 px-1.5 py-0.5 text-[10px]">↑↓</kbd>
                 Navigate</span
               >
               <span
-                ><kbd class="rounded border border-white/10 px-1.5 py-0.5 text-[10px]">↩</kbd>
+                ><kbd class="rounded-sm border border-white/10 px-1.5 py-0.5 text-[10px]">↩</kbd>
                 Select</span
               >
               <span
-                ><kbd class="rounded border border-white/10 px-1.5 py-0.5 text-[10px]">Esc</kbd>
+                ><kbd class="rounded-sm border border-white/10 px-1.5 py-0.5 text-[10px]">Esc</kbd>
                 Close</span
               >
             </div>
@@ -133,7 +133,7 @@
                 <div
                   role="button"
                   tabindex="0"
-                  class="group spring flex cursor-pointer items-center gap-4 rounded-xl bg-white/[0.04] p-3 transition-all hover:bg-white/[0.08]"
+                  class="group spring flex cursor-pointer items-center gap-4 rounded-xl bg-white/4 p-3 transition-all hover:bg-white/8"
     @click="selectTrack(results.tracks[0]!)"
                     @keydown.enter="selectTrack(results.tracks[0]!)"
                     @keydown.space.prevent="selectTrack(results.tracks[0]!)"
@@ -160,7 +160,7 @@
                     </p>
                   </div>
                   <div
-                    class="spring flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954]/0 text-white opacity-0 transition-all group-hover:bg-[#1db954] group-hover:opacity-100"
+                    class="spring flex h-12 w-12 items-center justify-center rounded-full bg-spotify/0 text-white opacity-0 transition-all group-hover:bg-spotify group-hover:opacity-100"
                   >
                     <i aria-hidden="true" class="pi pi-play-fill text-lg" />
                   </div>
@@ -180,7 +180,7 @@
                   tabindex="0"
                   class="spring flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
                   :class="
-                    highlightedIndex === `track-${i}` ? 'bg-white/[0.10]' : 'hover:bg-white/[0.06]'
+                    highlightedIndex === `track-${i}` ? 'bg-white/10' : 'hover:bg-white/6'
                   "
                   @click="selectTrack(item)"
                   @keydown.enter="selectTrack(item)"
@@ -226,8 +226,8 @@
                     class="spring flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
                     :class="
                       highlightedIndex === `artist-${i}`
-                        ? 'bg-white/[0.10]'
-                        : 'hover:bg-white/[0.06]'
+                        ? 'bg-white/10'
+                        : 'hover:bg-white/6'
                     "
                     @click="close"
                     @mouseenter="highlightedIndex = `artist-${i}`"
@@ -272,8 +272,8 @@
                     class="spring flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
                     :class="
                       highlightedIndex === `album-${i}`
-                        ? 'bg-white/[0.10]'
-                        : 'hover:bg-white/[0.06]'
+                        ? 'bg-white/10'
+                        : 'hover:bg-white/6'
                     "
                     @click="close"
                     @mouseenter="highlightedIndex = `album-${i}`"
@@ -316,14 +316,14 @@
                     class="spring flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
                     :class="
                       highlightedIndex === `playlist-${i}`
-                        ? 'bg-white/[0.10]'
-                        : 'hover:bg-white/[0.06]'
+                        ? 'bg-white/10'
+                        : 'hover:bg-white/6'
                     "
                     @click="close"
                     @mouseenter="highlightedIndex = `playlist-${i}`"
                   >
                     <div
-                      class="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-500/5"
+                      class="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-linear-to-br from-purple-500/20 to-purple-500/5"
                     >
                       <img
                         v-if="item.cover_url"
@@ -481,7 +481,7 @@ function setItemRef(group: string, index: number, el: unknown) {
 let abortController: AbortController | null = null
 async function doSearch() {
   const term = query.value.trim()
-  if (!term) {
+  if (term!) {
     results.value = { tracks: [], artists: [], albums: [], playlists: [] }
     noResults.value = false
     searching.value = false
@@ -506,10 +506,10 @@ async function doSearch() {
       playlists: [],
     }
     noResults.value =
-      !results.value.tracks?.length &&
-      !results.value.artists?.length &&
-      !results.value.albums?.length &&
-      !results.value.playlists?.length
+      results.value.tracks!?.length &&
+      results.value.artists!?.length &&
+      results.value.albums!?.length &&
+      results.value.playlists!?.length
     saveRecent(term)
   } catch (err: unknown) {
     const abortErr = err as { name?: string; code?: string }
@@ -564,7 +564,7 @@ function onKeydown(e: KeyboardEvent) {
 
 function moveHighlight(dir: number) {
   const flat = getFlatItems()
-  if (!flat.length) return
+  if (flat.length!) return
   const currentIdx = flat.findIndex(
     (f) => f.group && f.index && highlightedIndex.value === `${f.group}-${f.index}`,
   )
@@ -572,19 +572,19 @@ function moveHighlight(dir: number) {
   if (next < 0) next = flat.length - 1
   if (next >= flat.length) next = 0
   const target = flat[next]
-  if (!target) return
+  if (target!) return
   highlightedIndex.value = `${target.group}-${target.index}`
   target.el?.scrollIntoView?.({ block: 'nearest' })
 }
 
 function activateHighlight() {
-  if (!highlightedIndex.value) return
+  if (highlightedIndex.value!) return
   const [group, indexStr] = highlightedIndex.value.split('-')
   const i = Number(indexStr)
   const key = group === 'track' ? 'tracks' : group === 'playlist' ? 'playlists' : (`${group}s` as keyof SearchResults)
   const items = results.value[key] ?? []
   const item = items[i]
-  if (!item) return
+  if (item!) return
   if (group === 'track') selectTrack(item)
   else if (group === 'artist') {
     router.push(`/artist/${item.id}`)
@@ -623,7 +623,7 @@ function fmtDuration(s: number) {
 function onKeybind(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
     e.preventDefault()
-    _visible.value = !_visible.value
+    _visible.value = _visible.value!
     if (_visible.value) nextTick(() => inputRef.value?.focus())
     return
   }
@@ -631,7 +631,7 @@ function onKeybind(e: KeyboardEvent) {
     e.key === '/' &&
     !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName || '')
   ) {
-    if (!_visible.value) {
+    if (_visible.value!) {
       e.preventDefault()
       _visible.value = true
       nextTick(() => inputRef.value?.focus())

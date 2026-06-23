@@ -1,7 +1,7 @@
 <template>
   <div class="mx-auto w-full max-w-7xl px-4 pt-6 pb-32 md:px-6 lg:px-8">
     <section
-      class="rounded-[2rem] bg-gradient-to-br from-sky-500 via-slate-900 to-black p-8 text-white"
+      class="rounded-2xl bg-linear-to-br from-sky-500 via-slate-900 to-black p-8 text-white"
     >
       <p class="text-sm font-bold tracking-[0.35em] text-white/70 uppercase">History</p>
       <h1 class="mt-3 text-4xl font-black md:text-6xl">Recently Played</h1>
@@ -10,7 +10,7 @@
 
     <section class="mt-10" aria-live="polite">
       <div v-if="loading" class="space-y-3">
-        <div v-for="i in 8" :key="i" class="h-[68px] animate-pulse rounded-2xl bg-white/[0.06]" />
+        <div v-for="i in 8" :key="i" class="h-17 animate-pulse rounded-2xl bg-white/6" />
       </div>
 
       <div
@@ -28,7 +28,7 @@
         </p>
         <RouterLink
           to="/discover"
-          class="mt-5 inline-flex rounded-full bg-[#1db954] px-6 py-3 text-sm font-bold text-black transition hover:bg-[#1ed760]"
+          class="mt-5 inline-flex rounded-full bg-spotify px-6 py-3 text-sm font-bold text-black transition hover:bg-spotify-hover"
         >
           Discover music
         </RouterLink>
@@ -36,7 +36,7 @@
 
       <div
         v-else
-        class="overflow-hidden rounded-3xl border border-white/10 bg-black/20 p-2 backdrop-blur"
+        class="overflow-hidden rounded-3xl border border-white/10 bg-black/20 p-2 backdrop-blur-xs"
       >
         <TrackRow
           v-for="(item, index) in trackRows"

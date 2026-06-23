@@ -12,7 +12,7 @@
           >
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-white/60 backdrop-blur transition hover:bg-white/[0.08] disabled:opacity-40"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-medium text-white/60 backdrop-blur-xs transition hover:bg-white/8 disabled:opacity-40"
             :disabled="loading"
             @click="refreshAll"
           >
@@ -24,7 +24,7 @@
     </AdminSectionHeader>
 
     <!-- Tabs -->
-    <div class="mt-6 flex gap-1 rounded-xl bg-white/[0.04] p-1">
+    <div class="mt-6 flex gap-1 rounded-xl bg-white/4 p-1">
       <button
         v-for="tab in tabs"
         :key="tab.key"
@@ -53,13 +53,13 @@
         <input
           v-model="searchQuery"
           placeholder="Search by summary or contributor name..."
-          class="w-full rounded-lg border border-white/10 bg-white/[0.04] py-2 pl-9 pr-3 text-xs text-white outline-none placeholder:text-white/20 focus:border-white/20"
+          class="w-full rounded-lg border border-white/10 bg-white/4 py-2 pl-9 pr-3 text-xs text-white outline-hidden placeholder:text-white/20 focus:border-white/20"
           @input="onSearchInput"
         />
       </div>
       <select
         v-model="typeFilter"
-        class="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/60 outline-none focus:border-white/20"
+        class="rounded-lg border border-white/10 bg-white/4 px-3 py-2 text-xs text-white/60 outline-hidden focus:border-white/20"
         @change="fetchCurrentTab"
       >
         <option value="">All types</option>
@@ -75,7 +75,7 @@
     <!-- === TAB: PENDING === -->
     <div v-show="activeTab === 'pending'" class="mt-6 space-y-4">
       <div v-if="loading" class="space-y-3">
-        <div v-for="i in 5" :key="i" class="h-24 animate-pulse rounded-xl bg-white/[0.06]" />
+        <div v-for="i in 5" :key="i" class="h-24 animate-pulse rounded-xl bg-white/6" />
       </div>
 
       <AdminEmptyState
@@ -89,7 +89,7 @@
         <div
           v-for="c in pendingItems"
           :key="c.id"
-          class="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4 transition hover:bg-white/[0.04]"
+          class="rounded-xl border border-white/5 bg-white/2 p-4 transition hover:bg-white/4"
         >
           <div class="flex items-start justify-between gap-4">
             <div class="min-w-0 flex-1">
@@ -101,7 +101,7 @@
                   {{ c.contribution_type }}
                 </span>
                 <span
-                  class="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-medium text-white/40"
+                  class="rounded-full bg-white/6 px-2 py-0.5 text-[10px] font-medium text-white/40"
                   >{{ c.target_type }}</span
                 >
                 <router-link
@@ -146,7 +146,7 @@
             <input
               v-model="reviewNote"
               placeholder="Review note (optional)"
-              class="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white outline-none focus:border-white/20"
+              class="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white outline-hidden focus:border-white/20"
               @keyup.esc="reviewingId = null"
             />
             <button
@@ -182,7 +182,7 @@
     <!-- === TAB: APPROVED === -->
     <div v-show="activeTab === 'approved'" class="mt-6 space-y-4">
       <div v-if="loading" class="space-y-3">
-        <div v-for="i in 3" :key="i" class="h-20 animate-pulse rounded-xl bg-white/[0.06]" />
+        <div v-for="i in 3" :key="i" class="h-20 animate-pulse rounded-xl bg-white/6" />
       </div>
 
       <AdminEmptyState
@@ -196,7 +196,7 @@
         <div
           v-for="c in approvedItems"
           :key="c.id"
-          class="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4 transition hover:bg-white/[0.04]"
+          class="rounded-xl border border-white/5 bg-white/2 p-4 transition hover:bg-white/4"
         >
           <div class="flex items-start justify-between gap-4">
             <div class="min-w-0 flex-1">
@@ -212,7 +212,7 @@
                   {{ c.contribution_type }}
                 </span>
                 <span
-                  class="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-medium text-white/40"
+                  class="rounded-full bg-white/6 px-2 py-0.5 text-[10px] font-medium text-white/40"
                   >{{ c.target_type }}</span
                 >
               </div>
@@ -252,7 +252,7 @@
     <!-- === TAB: REJECTED === -->
     <div v-show="activeTab === 'rejected'" class="mt-6 space-y-4">
       <div v-if="loading" class="space-y-3">
-        <div v-for="i in 3" :key="i" class="h-16 animate-pulse rounded-xl bg-white/[0.06]" />
+        <div v-for="i in 3" :key="i" class="h-16 animate-pulse rounded-xl bg-white/6" />
       </div>
 
       <AdminEmptyState
@@ -266,7 +266,7 @@
         <div
           v-for="c in rejectedItems"
           :key="c.id"
-          class="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4 transition hover:bg-white/[0.04]"
+          class="rounded-xl border border-white/5 bg-white/2 p-4 transition hover:bg-white/4"
         >
           <div class="flex items-start gap-4">
             <div class="min-w-0 flex-1">
@@ -282,7 +282,7 @@
                   {{ c.contribution_type }}
                 </span>
                 <span
-                  class="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-medium text-white/40"
+                  class="rounded-full bg-white/6 px-2 py-0.5 text-[10px] font-medium text-white/40"
                   >{{ c.target_type }}</span
                 >
               </div>
@@ -310,11 +310,11 @@
       :draggable="false"
       :style="{ width: '520px' }"
       :pt="{
-        root: { class: '!border-white/[0.06] !bg-[#141414] !rounded-2xl !shadow-2xl' },
-        header: { class: '!bg-transparent !border-0 !pb-2' },
-        content: { class: '!bg-transparent !px-6 !pt-0 !pb-2' },
-        footer: { class: '!bg-transparent !border-0' },
-        mask: { class: '!backdrop-blur-sm' },
+        root: { class: 'border-white/6! bg-[#141414]! rounded-2xl! shadow-2xl!' },
+        header: { class: 'bg-transparent! border-0! pb-2!' },
+        content: { class: 'bg-transparent! px-6! pt-0! pb-2!' },
+        footer: { class: 'bg-transparent! border-0!' },
+        mask: { class: 'backdrop-blur-xs!' },
       }"
     >
       <template #header>
@@ -401,7 +401,7 @@
           <Button
             label="Close"
             text
-            class="!text-slate-400 hover:!text-white"
+            class="text-slate-400! hover:text-white!"
             @click="showDetail = false"
           />
           <Button
@@ -409,7 +409,7 @@
             label="Apply Now"
             icon="pi pi-check"
             :loading="applyingId === selected?.id"
-            class="!rounded-xl !bg-blue-500/20 !text-blue-400 !ring-1 !ring-blue-500/20 hover:!bg-blue-500/30"
+            class="rounded-xl! bg-blue-500/20! text-blue-400! ring-1! ring-blue-500/20! hover:bg-blue-500/30!"
             @click="doApply(selected.id)"
           />
         </div>
@@ -423,8 +423,6 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useContributionApi } from '@/services/api/contribution'
 import { useToast } from 'primevue/usetoast'
 import type { Contribution } from '@/services/api/contribution'
-import Dialog from 'primevue/dialog'
-import Button from 'primevue/button'
 import { AdminSectionHeader, AdminEmptyState } from '@/components/admin'
 
 const api = useContributionApi()

@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-center gap-3">
     <div
-      class="flex h-10 w-10 items-center justify-center rounded-full bg-[#1db954] font-bold text-black"
+      class="flex h-10 w-10 items-center justify-center rounded-full bg-spotify font-bold text-black"
     >
       M
     </div>

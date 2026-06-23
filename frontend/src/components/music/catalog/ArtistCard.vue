@@ -1,7 +1,7 @@
 <template>
   <RouterLink :to="`/artist/${artist.id}`" class="group block w-40 shrink-0 space-y-3">
     <div
-      class="mx-auto h-36 w-36 overflow-hidden rounded-full bg-white/[0.06] ring-1 ring-white/10 transition group-hover:ring-[#1db954]/50"
+      class="mx-auto h-36 w-36 overflow-hidden rounded-full bg-white/6 ring-1 ring-white/10 transition group-hover:ring-spotify/50"
     >
       <img
         v-if="artist.image_url"

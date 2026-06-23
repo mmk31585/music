@@ -1,6 +1,6 @@
 <template>
   <div
-    class="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 transition-all duration-300 hover:border-white/10 hover:bg-white/[0.05]"
+    class="group relative overflow-hidden rounded-2xl border border-white/6 bg-white/3 p-5 transition-all duration-300 hover:border-white/10 hover:bg-white/5"
   >
     <!-- Glow effect on hover -->
     <div

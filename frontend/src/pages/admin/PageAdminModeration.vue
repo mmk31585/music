@@ -9,7 +9,7 @@
         <div class="flex items-center gap-2">
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-white/60 backdrop-blur transition hover:bg-white/[0.08] disabled:opacity-40"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-medium text-white/60 backdrop-blur-xs transition hover:bg-white/8 disabled:opacity-40"
             :disabled="refreshing"
             @click="refreshAll"
           >
@@ -21,7 +21,7 @@
     </AdminSectionHeader>
 
     <!-- Tabs -->
-    <div class="mt-6 flex gap-1 rounded-xl bg-white/[0.04] p-1">
+    <div class="mt-6 flex gap-1 rounded-xl bg-white/4 p-1">
       <button
         v-for="tab in tabs"
         :key="tab.key"
@@ -55,7 +55,7 @@
             :class="
               typeFilter === f
                 ? 'bg-white/10 text-white'
-                : 'bg-white/[0.04] text-white/40 hover:text-white/60'
+                : 'bg-white/4 text-white/40 hover:text-white/60'
             "
             @click="typeFilter = f; fetchQueue()"
           >
@@ -83,7 +83,7 @@
 
       <!-- Loading state -->
       <div v-if="queueLoading" class="space-y-2">
-        <div v-for="i in 4" :key="i" class="h-24 animate-pulse rounded-xl bg-white/[0.06]" />
+        <div v-for="i in 4" :key="i" class="h-24 animate-pulse rounded-xl bg-white/6" />
       </div>
 
       <!-- Empty state -->
@@ -99,7 +99,7 @@
         <div
           v-for="report in filteredQueue"
           :key="report.id"
-          class="group rounded-xl border border-white/[0.05] bg-white/[0.02] p-4 transition hover:bg-white/[0.04]"
+          class="group rounded-xl border border-white/5 bg-white/2 p-4 transition hover:bg-white/4"
           :class="{ 'border-l-2 border-l-red-500/40': isHighPriority(report) }"
         >
           <div class="flex items-start gap-3">
@@ -120,7 +120,7 @@
                   >{{ report.reason }}</span
                 >
                 <span
-                  class="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-medium text-white/40"
+                  class="rounded-full bg-white/6 px-2 py-0.5 text-[10px] font-medium text-white/40"
                   >{{ report.target_type }}</span
                 >
                 <span class="font-mono text-[10px] text-white/20"
@@ -146,7 +146,7 @@
                 <input
                   v-model="resolveNote"
                   placeholder="Resolution note (optional)"
-                  class="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white outline-none focus:border-white/20"
+                  class="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white outline-hidden focus:border-white/20"
                   @keyup.esc="resolvingId = null"
                 />
                 <button
@@ -207,7 +207,7 @@
       </div>
 
       <div v-if="flagsLoading" class="space-y-2">
-        <div v-for="i in 3" :key="i" class="h-16 animate-pulse rounded-xl bg-white/[0.06]" />
+        <div v-for="i in 3" :key="i" class="h-16 animate-pulse rounded-xl bg-white/6" />
       </div>
 
       <AdminEmptyState
@@ -221,7 +221,7 @@
         <div
           v-for="flag in flagItems"
           :key="flag.id"
-          class="flex items-center justify-between rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-3 transition hover:bg-white/[0.04]"
+          class="flex items-center justify-between rounded-xl border border-white/5 bg-white/2 px-4 py-3 transition hover:bg-white/4"
           :class="{ 'opacity-40': isExpired(flag) }"
         >
           <div class="flex min-w-0 items-center gap-3">
@@ -229,7 +229,7 @@
             <div class="min-w-0">
               <div class="flex items-center gap-2">
                 <span
-                  class="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-medium text-white/40"
+                  class="rounded-full bg-white/6 px-2 py-0.5 text-[10px] font-medium text-white/40"
                   >{{ flag.target_type }}</span
                 >
                 <span class="text-xs font-medium text-white/60">{{ flag.flag_type }}</span>
@@ -259,7 +259,7 @@
           :class="
             historyFilter === s
               ? 'bg-white/10 text-white'
-              : 'bg-white/[0.04] text-white/40 hover:text-white/60'
+              : 'bg-white/4 text-white/40 hover:text-white/60'
           "
           @click="historyFilter = s; fetchHistory()"
         >
@@ -268,7 +268,7 @@
       </div>
 
       <div v-if="historyLoading" class="space-y-2">
-        <div v-for="i in 3" :key="i" class="h-20 animate-pulse rounded-xl bg-white/[0.06]" />
+        <div v-for="i in 3" :key="i" class="h-20 animate-pulse rounded-xl bg-white/6" />
       </div>
 
       <AdminEmptyState
@@ -282,7 +282,7 @@
         <div
           v-for="report in historyItems"
           :key="report.id"
-          class="rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-3 transition hover:bg-white/[0.04]"
+          class="rounded-xl border border-white/5 bg-white/2 px-4 py-3 transition hover:bg-white/4"
         >
           <div class="flex items-start justify-between gap-4">
             <div class="min-w-0 flex-1">
@@ -302,7 +302,7 @@
                   >{{ report.reason }}</span
                 >
                 <span
-                  class="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-medium text-white/40"
+                  class="rounded-full bg-white/6 px-2 py-0.5 text-[10px] font-medium text-white/40"
                   >{{ report.target_type }}</span
                 >
               </div>
@@ -322,14 +322,14 @@
     <!-- === TAB: STATS === -->
     <div v-show="activeTab === 'stats'" class="mt-6 space-y-6">
       <div v-if="statsLoading" class="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <div v-for="i in 5" :key="i" class="h-28 animate-pulse rounded-2xl bg-white/[0.06]" />
+        <div v-for="i in 5" :key="i" class="h-28 animate-pulse rounded-2xl bg-white/6" />
       </div>
 
       <template v-else>
         <!-- Metric cards -->
         <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div
-            class="rounded-2xl bg-white/[0.04] p-5 backdrop-blur transition hover:bg-white/[0.06]"
+            class="rounded-2xl bg-white/4 p-5 backdrop-blur-xs transition hover:bg-white/6"
           >
             <p class="text-[10px] font-medium tracking-wider text-white/30 uppercase">
               Total Reports
@@ -339,7 +339,7 @@
             </p>
           </div>
           <div
-            class="rounded-2xl bg-white/[0.04] p-5 backdrop-blur transition hover:bg-white/[0.06]"
+            class="rounded-2xl bg-white/4 p-5 backdrop-blur-xs transition hover:bg-white/6"
           >
             <p class="text-[10px] font-medium tracking-wider text-white/30 uppercase">Pending</p>
             <p class="mt-2 text-3xl font-black text-red-400 tabular-nums">
@@ -347,7 +347,7 @@
             </p>
           </div>
           <div
-            class="rounded-2xl bg-white/[0.04] p-5 backdrop-blur transition hover:bg-white/[0.06]"
+            class="rounded-2xl bg-white/4 p-5 backdrop-blur-xs transition hover:bg-white/6"
           >
             <p class="text-[10px] font-medium tracking-wider text-white/30 uppercase">
               Resolved Today
@@ -357,7 +357,7 @@
             </p>
           </div>
           <div
-            class="rounded-2xl bg-white/[0.04] p-5 backdrop-blur transition hover:bg-white/[0.06]"
+            class="rounded-2xl bg-white/4 p-5 backdrop-blur-xs transition hover:bg-white/6"
           >
             <p class="text-[10px] font-medium tracking-wider text-white/30 uppercase">
               Flagged Content
@@ -370,7 +370,7 @@
 
         <div class="grid grid-cols-2 gap-4 md:grid-cols-3">
           <div
-            class="rounded-2xl bg-white/[0.04] p-5 backdrop-blur transition hover:bg-white/[0.06]"
+            class="rounded-2xl bg-white/4 p-5 backdrop-blur-xs transition hover:bg-white/6"
           >
             <p class="text-[10px] font-medium tracking-wider text-white/30 uppercase">
               Unique Reporters
@@ -380,7 +380,7 @@
             </p>
           </div>
           <div
-            class="rounded-2xl bg-white/[0.04] p-5 backdrop-blur transition hover:bg-white/[0.06]"
+            class="rounded-2xl bg-white/4 p-5 backdrop-blur-xs transition hover:bg-white/6"
           >
             <p class="text-[10px] font-medium tracking-wider text-white/30 uppercase">
               Avg Resolution
@@ -394,7 +394,7 @@
         <!-- By Reason -->
         <section v-if="reasonEntries.length > 0">
           <h4 class="mb-3 text-sm font-bold text-white/60">Reports by Reason</h4>
-          <div class="rounded-2xl bg-white/[0.04] p-6">
+          <div class="rounded-2xl bg-white/4 p-6">
             <div class="space-y-3">
               <div
                 v-for="[reason, count] in reasonEntries"
@@ -402,9 +402,9 @@
                 class="flex items-center gap-3"
               >
                 <span class="w-32 shrink-0 truncate text-xs text-slate-400">{{ reason }}</span>
-                <div class="h-5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                <div class="h-5 flex-1 overflow-hidden rounded-full bg-white/6">
                   <div
-                    class="h-full rounded-full bg-gradient-to-r from-red-400 to-amber-400 transition-all duration-500"
+                    class="h-full rounded-full bg-linear-to-r from-red-400 to-amber-400 transition-all duration-500"
                     :style="{ width: reasonPercent(count) + '%' }"
                   />
                 </div>
@@ -419,13 +419,13 @@
         <!-- By Target Type -->
         <section v-if="typeEntries.length > 0">
           <h4 class="mb-3 text-sm font-bold text-white/60">Reports by Target Type</h4>
-          <div class="rounded-2xl bg-white/[0.04] p-6">
+          <div class="rounded-2xl bg-white/4 p-6">
             <div class="space-y-3">
               <div v-for="[tt, count] in typeEntries" :key="tt" class="flex items-center gap-3">
                 <span class="w-24 shrink-0 text-xs text-slate-400">{{ tt }}</span>
-                <div class="h-5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                <div class="h-5 flex-1 overflow-hidden rounded-full bg-white/6">
                   <div
-                    class="h-full rounded-full bg-gradient-to-r from-blue-400 to-purple-400 transition-all duration-500"
+                    class="h-full rounded-full bg-linear-to-r from-blue-400 to-purple-400 transition-all duration-500"
                     :style="{ width: reasonPercent(count) + '%' }"
                   />
                 </div>
@@ -446,11 +446,11 @@
       :draggable="false"
       :style="{ width: '440px' }"
       :pt="{
-        root: { class: '!border-white/[0.06] !bg-[#141414] !rounded-2xl !shadow-2xl' },
-        header: { class: '!bg-transparent !border-0 !pb-2' },
-        content: { class: '!bg-transparent !px-6 !pt-0 !pb-2' },
-        footer: { class: '!bg-transparent !border-0' },
-        mask: { class: '!backdrop-blur-sm' },
+        root: { class: 'border-white/6! bg-[#141414]! rounded-2xl! shadow-2xl!' },
+        header: { class: 'bg-transparent! border-0! pb-2!' },
+        content: { class: 'bg-transparent! px-6! pt-0! pb-2!' },
+        footer: { class: 'bg-transparent! border-0!' },
+        mask: { class: 'backdrop-blur-xs!' },
       }"
     >
       <template #header>
@@ -472,7 +472,7 @@
           <label class="mb-1.5 block text-xs font-medium text-slate-400">Flag Type</label>
           <select
             v-model="flagForm.flag_type"
-            class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-white/20"
+            class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-hidden focus:border-white/20"
           >
             <option value="inappropriate">Inappropriate</option>
             <option value="copyright">Copyright Violation</option>
@@ -486,7 +486,7 @@
           <label class="mb-1.5 block text-xs font-medium text-slate-400">Duration</label>
           <select
             v-model.number="flagForm.expires_in_hours"
-            class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-white/20"
+            class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-hidden focus:border-white/20"
           >
             <option :value="0">Permanent</option>
             <option :value="24">24 hours</option>
@@ -502,13 +502,13 @@
           <Button
             label="Cancel"
             text
-            class="!text-slate-400 hover:!text-white"
+            class="text-slate-400! hover:text-white!"
             @click="showFlagDialog = false"
           />
           <Button
             label="Flag Content"
             icon="pi pi-flag"
-            class="!rounded-xl !bg-red-500/20 !text-red-400 !ring-1 !ring-red-500/20 hover:!bg-red-500/30"
+            class="rounded-xl! bg-red-500/20! text-red-400! ring-1! ring-red-500/20! hover:bg-red-500/30!"
             @click="confirmFlag"
           />
         </div>
@@ -522,8 +522,6 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useModerationApi } from '@/services/api/moderation'
 import { useToast } from 'primevue/usetoast'
 import type { ContentReport, ContentFlag, ModerationStats } from '@/services/api/moderation/types'
-import Dialog from 'primevue/dialog'
-import Button from 'primevue/button'
 import { AdminSectionHeader, AdminEmptyState } from '@/components/admin'
 
 const moderationApi = useModerationApi()
@@ -619,7 +617,7 @@ function timeAgo(dateStr: string): string {
 }
 
 function isExpired(flag: ContentFlag): boolean {
-  if (!flag.expires_at) return false
+  if (flag.expires_at!) return false
   return new Date(flag.expires_at) < new Date()
 }
 
@@ -723,7 +721,7 @@ async function bulkResolve(action: string) {
   if (selectedIds.value.length === 0) return
   try {
     await moderationApi.bulkAction(selectedIds.value, action)
-    queueItems.value = queueItems.value.filter((r) => !selectedIds.value.includes(r.id))
+    queueItems.value = queueItems.value.filter((r) => selectedIds.value.includes!(r.id))
     toast.add({
       severity: 'success',
       summary: `${selectedIds.value.length} reports ${action}`,
@@ -743,7 +741,7 @@ function openFlagDialog(report: ContentReport) {
 }
 
 async function confirmFlag() {
-  if (!flagTarget.value) return
+  if (flagTarget.value!) return
   try {
     await moderationApi.flagContent({
       target_id: flagTarget.value.target_id,

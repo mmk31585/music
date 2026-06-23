@@ -1,11 +1,11 @@
 <template>
-  <div class="rounded-2xl bg-white/[0.04] p-6 ring-1 ring-white/[0.07]">
+  <div class="rounded-2xl bg-white/4 p-6 ring-1 ring-white/7">
     <div class="mb-4 flex items-center justify-between">
       <h2 class="text-xs font-bold uppercase tracking-wider text-white/30">
         صف پیشنهادی
       </h2>
       <button
-        class="inline-flex items-center gap-1.5 rounded-xl bg-[#1db954]/10 px-4 py-2 text-sm font-semibold text-[#1db954] transition hover:bg-[#1db954]/20"
+        class="inline-flex items-center gap-1.5 rounded-xl bg-spotify/10 px-4 py-2 text-sm font-semibold text-spotify transition hover:bg-spotify/20"
         @click="$emit('suggest-clicked')"
       >
         <i aria-hidden="true" class="pi pi-plus text-xs" />
@@ -22,7 +22,7 @@
       <i aria-hidden="true" class="pi pi-music text-4xl text-white/20" />
       <p>هنوز کسی آهنگی پیشنهاد نداده. اولین نفر باش!</p>
       <button
-        class="inline-flex items-center gap-1.5 rounded-xl bg-[#1db954] px-5 py-2.5 text-sm font-bold text-black transition hover:bg-[#1db954]/90"
+        class="inline-flex items-center gap-1.5 rounded-xl bg-spotify px-5 py-2.5 text-sm font-bold text-black transition hover:bg-spotify/90"
         @click="$emit('suggest-clicked')"
       >
         <i aria-hidden="true" class="pi pi-plus text-xs" />
@@ -65,7 +65,7 @@
 
         <button
           class="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition hover:bg-white/10"
-          :class="candidate.has_voted ? 'text-[#1db954]' : 'text-white/40'"
+          :class="candidate.has_voted ? 'text-spotify' : 'text-white/40'"
           @click="toggleVote(candidate)"
           aria-label="Vote"
         >

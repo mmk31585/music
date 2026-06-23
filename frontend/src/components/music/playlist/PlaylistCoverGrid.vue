@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative h-full w-full overflow-hidden rounded-2xl bg-gradient-to-br from-[#1db954]/20 to-[#a855f7]/20"
+    class="relative h-full w-full overflow-hidden rounded-2xl bg-linear-to-br from-spotify/20 to-aurora-purple/20"
   >
     <!-- 2×2 Grid -->
     <div
@@ -24,7 +24,7 @@
         />
         <div
           v-else
-          class="flex h-full items-center justify-center bg-white/[0.03]"
+          class="flex h-full items-center justify-center bg-white/3"
         >
           <i aria-hidden="true" class="pi pi-music text-lg text-white/20" />
         </div>
@@ -32,11 +32,11 @@
         <!-- Overlays for partial grids -->
         <div
           v-if="index === 0 && covers.length === 1"
-          class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"
+          class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/60 via-black/20 to-transparent"
         />
         <div
           v-if="index === 1 && covers.length === 2"
-          class="pointer-events-none absolute inset-0 bg-gradient-to-l from-black/40 to-transparent"
+          class="pointer-events-none absolute inset-0 bg-linear-to-l from-black/40 to-transparent"
         />
       </div>
     </div>
@@ -44,7 +44,7 @@
     <!-- Track count badge -->
     <div
       v-if="trackCount !== undefined"
-      class="absolute right-2 bottom-2 z-10 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-bold text-white/80 backdrop-blur-sm"
+      class="absolute right-2 bottom-2 z-10 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-bold text-white/80 backdrop-blur-xs"
     >
       {{ trackCount }} {{ trackCount === 1 ? 'track' : 'tracks' }}
     </div>

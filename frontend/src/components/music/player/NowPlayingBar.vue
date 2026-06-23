@@ -46,7 +46,7 @@
                 class="h-full w-full object-cover"
                 loading="lazy"
               />
-              <div v-else class="flex h-full w-full items-center justify-center bg-linear-to-br from-[#1db954]/30 to-[#a855f7]/30">
+              <div v-else class="flex h-full w-full items-center justify-center bg-linear-to-br from-spotify/30 to-aurora-purple/30">
                 <i aria-hidden="true" class="pi pi-headphones text-sm text-slate-500" />
               </div>
             </div>
@@ -63,7 +63,7 @@
                 type="button"
                 class="flex h-9 w-9 items-center justify-center rounded-full shadow-lg disabled:opacity-40 hover:scale-110 active:scale-90 transition-all duration-200"
                 :style="{ background: progressColor }"
-                :disabled="!currentTrack || isLoadingTrack"
+                :disabled="currentTrack! || isLoadingTrack"
                 :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'"
                 @click="isPlaying ? togglePlayPause() : proceed()"
               >
@@ -99,7 +99,7 @@
                     class="h-full w-full object-cover"
                     loading="lazy"
                   />
-                  <div v-else class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1db954]/30 to-[#a855f7]/30">
+                  <div v-else class="flex h-full w-full items-center justify-center bg-linear-to-br from-spotify/30 to-aurora-purple/30">
                     <i aria-hidden="true" class="pi pi-headphones text-lg text-slate-500" />
                   </div>
                 </div>
@@ -111,7 +111,7 @@
                   <button
                     type="button"
                     class="shrink-0 flex items-center justify-center transition-all hover:scale-110 active:scale-90"
-                    :class="liked ? 'text-[#f472b6]' : 'text-white/30 hover:text-white/60'"
+                    :class="liked ? 'text-aurora-pink' : 'text-white/30 hover:text-white/60'"
                     :aria-label="liked ? 'Unlike' : 'Like'"
                     @click.stop="toggleLike"
                   >
@@ -141,15 +141,15 @@
                   ref="shuffleBtnRef"
                   type="button"
                   class="relative flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200"
-                  :class="shuffleMode !== 'off' ? 'text-[#a855f7]' : 'text-white/40 hover:text-white hover:bg-white/10'"
-                  :disabled="!currentTrack"
+                  :class="shuffleMode !== 'off' ? 'text-aurora-purple' : 'text-white/40 hover:text-white hover:bg-white/10'"
+                  :disabled="currentTrack!"
                   :aria-label="shuffleMode === 'queue' ? 'Shuffle queue' : shuffleMode === 'catalog' ? 'Random catalog tracks' : shuffleMode === 'similar' ? 'Similar tracks' : 'Shuffle off'"
                   @click="showShuffleMenu = !showShuffleMenu"
                 >
                   <i aria-hidden="true" class="pi pi-sort-alt text-sm" />
                   <span
                     v-if="shuffleMode !== 'off'"
-                    class="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#a855f7] text-[8px] font-bold text-white"
+                    class="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-aurora-purple text-[8px] font-bold text-white"
                   >{{ shuffleMode === 'queue' ? 'Q' : shuffleMode === 'catalog' ? 'R' : 'S' }}</span>
                 </button>
 
@@ -157,20 +157,20 @@
                 <Transition name="fade">
                   <div
                     v-if="showShuffleMenu"
-                    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[60] min-w-[150px] rounded-xl border border-white/10 bg-[#121212] p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
+                    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[60] min-w-[150px] rounded-xl border border-white/10 bg-surface-raised p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
                     style="backdrop-filter: blur(24px);"
                   >
                     <button
                       v-for="mode in shuffleModes"
                       :key="mode.value"
                       type="button"
-                      class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/[0.08]"
-                      :class="shuffleMode === mode.value ? 'text-[#a855f7] bg-white/[0.06]' : 'text-slate-400 hover:text-white'"
+                      class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/8"
+                      :class="shuffleMode === mode.value ? 'text-aurora-purple bg-white/6' : 'text-slate-400 hover:text-white'"
                       @click="setShuffleMode(mode.value)"
                     >
                       <i aria-hidden="true" :class="mode.icon" class="text-sm" />
                       <span class="flex-1 text-left">{{ mode.label }}</span>
-                      <span v-if="shuffleMode === mode.value" class="h-2 w-2 rounded-full bg-[#a855f7]" />
+                      <span v-if="shuffleMode === mode.value" class="h-2 w-2 rounded-full bg-aurora-purple" />
                     </button>
                   </div>
                 </Transition>
@@ -179,7 +179,7 @@
               <button
                 type="button"
                 class="flex h-9 w-9 items-center justify-center rounded-full text-white/50 hover:text-white disabled:opacity-25 hover:bg-white/10 transition-all duration-200"
-                :disabled="!hasPrevious"
+                :disabled="hasPrevious!"
                 aria-label="Previous track"
                 @click="playPrevious"
               >
@@ -191,7 +191,7 @@
                   type="button"
                   class="flex h-11 w-11 items-center justify-center rounded-full shadow-xl disabled:opacity-40 hover:scale-110 active:scale-95 transition-all duration-200"
                   :style="{ background: progressColor }"
-                  :disabled="!currentTrack || isLoadingTrack"
+                  :disabled="currentTrack! || isLoadingTrack"
                   :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'"
                   @click="isPlaying ? togglePlayPause() : proceed()"
                 >
@@ -203,7 +203,7 @@
               <button
                 type="button"
                 class="flex h-9 w-9 items-center justify-center rounded-full text-white/50 hover:text-white disabled:opacity-25 hover:bg-white/10 transition-all duration-200"
-                :disabled="!hasNext"
+                :disabled="hasNext!"
                 aria-label="Next track"
                 @click="playNext"
               >
@@ -215,15 +215,15 @@
                   ref="repeatBtnRef"
                   type="button"
                   class="relative flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200"
-                  :class="repeatMode !== 'off' ? 'text-[#f472b6]' : 'text-white/40 hover:text-white hover:bg-white/10'"
-                  :disabled="!currentTrack"
+                  :class="repeatMode !== 'off' ? 'text-aurora-pink' : 'text-white/40 hover:text-white hover:bg-white/10'"
+                  :disabled="currentTrack!"
                   :aria-label="repeatMode === 'off' ? 'Repeat off' : repeatMode === 'all' ? 'Repeat all' : 'Repeat one'"
                   @click="showRepeatMenu = !showRepeatMenu"
                 >
                   <i aria-hidden="true" class="pi pi-refresh text-sm" />
                   <span
                     v-if="repeatMode === 'one'"
-                    class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#f472b6] text-[8px] font-bold text-black"
+                    class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-aurora-pink text-[8px] font-bold text-black"
                   >1</span>
                 </button>
 
@@ -231,20 +231,20 @@
                 <Transition name="fade">
                   <div
                     v-if="showRepeatMenu"
-                    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[60] min-w-[130px] rounded-xl border border-white/10 bg-[#121212] p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
+                    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[60] min-w-[130px] rounded-xl border border-white/10 bg-surface-raised p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
                     style="backdrop-filter: blur(24px);"
                   >
                     <button
                       v-for="mode in repeatModes"
                       :key="mode.value"
                       type="button"
-                      class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/[0.08]"
-                      :class="repeatMode === mode.value ? 'text-[#f472b6] bg-white/[0.06]' : 'text-slate-400 hover:text-white'"
+                      class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/8"
+                      :class="repeatMode === mode.value ? 'text-aurora-pink bg-white/6' : 'text-slate-400 hover:text-white'"
                       @click="setRepeatMode(mode.value)"
                     >
                       <i aria-hidden="true" :class="mode.icon" class="text-sm" />
                       <span class="flex-1 text-left">{{ mode.label }}</span>
-                      <span v-if="repeatMode === mode.value" class="h-2 w-2 rounded-full bg-[#f472b6]" />
+                      <span v-if="repeatMode === mode.value" class="h-2 w-2 rounded-full bg-aurora-pink" />
                     </button>
                   </div>
                 </Transition>
@@ -255,7 +255,7 @@
               <button
                 type="button"
                 class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-all duration-200"
-                :disabled="!currentTrack"
+                :disabled="currentTrack!"
                 aria-label="Open queue"
                 @click="emit('toggle-queue')"
               >
@@ -265,7 +265,7 @@
               <button
                 type="button"
                 class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-all duration-200"
-                :disabled="!currentTrack"
+                :disabled="currentTrack!"
                 aria-label="Toggle lyrics"
                 @click="emit('toggle-lyrics')"
               >
@@ -283,15 +283,13 @@
                 <i aria-hidden="true" :class="volumeIcon" class="text-sm" />
               </button>
               <div class="w-20" dir="ltr">
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  class="player-range volume-range w-full"
-                  :style="volumeStyle"
-                  :value="muted ? 0 : volume"
-                  @input="onVolume"
+                <Slider
+                  :model-value="muted ? 0 : volume"
+                  @update:model-value="onVolume"
+                  :min="0"
+                  :max="1"
+                  :step="0.01"
+                  aria-label="Volume"
                 />
               </div>
 
@@ -300,7 +298,7 @@
               <button
                 type="button"
                 class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-all duration-200"
-                :disabled="!currentTrack"
+                :disabled="currentTrack!"
                 aria-label="Fullscreen"
                 @click="emit('toggle-fullscreen')"
               >
@@ -320,7 +318,7 @@
                 <button
                   type="button"
                   class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-all duration-200"
-                  :disabled="!currentTrack"
+                  :disabled="currentTrack!"
                   aria-label="More options"
                   @click.stop="showOverflow = !showOverflow"
                 >
@@ -346,7 +344,7 @@
               <!-- Base track glow -->
               <div
                 v-if="isPlaying"
-                class="absolute inset-0 rounded-full opacity-20 blur-sm transition-opacity duration-500"
+                class="absolute inset-0 rounded-full opacity-20 blur-xs transition-opacity duration-500"
                 :style="{ background: progressColor }"
               />
               <!-- Fill -->
@@ -402,7 +400,7 @@
           :style="{ backgroundImage: `url(${currentTrack.coverUrl})` }"
           aria-hidden="true"
         />
-        <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/80" />
+        <div class="absolute inset-0 bg-linear-to-r from-black/80 via-black/50 to-black/80" />
 
         <div class="relative shrink-0">
           <div class="h-10 w-10 overflow-hidden rounded-xl shadow-lg ring-1 ring-white/10">
@@ -413,7 +411,7 @@
               class="h-full w-full object-cover"
               loading="lazy"
             />
-            <div v-else class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1db954]/30 to-[#a855f7]/30">
+            <div v-else class="flex h-full w-full items-center justify-center bg-linear-to-br from-spotify/30 to-aurora-purple/30">
               <i aria-hidden="true" class="pi pi-headphones text-sm text-slate-500" />
             </div>
           </div>
@@ -429,7 +427,7 @@
             <button
               type="button"
               class="flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-black shadow-lg disabled:opacity-40 active:scale-90 transition-transform"
-              :disabled="!currentTrack || isLoadingTrack"
+              :disabled="currentTrack! || isLoadingTrack"
               :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'"
               @click="isPlaying ? togglePlayPause() : proceed()"
             >
@@ -440,7 +438,7 @@
           <button
             type="button"
             class="flex h-9 w-9 items-center justify-center rounded-full text-white/60 hover:text-white active:scale-90 transition-transform"
-            :disabled="!hasNext"
+            :disabled="hasNext!"
             aria-label="Next track"
             @click.stop="playNext"
           >
@@ -524,16 +522,16 @@ onUnmounted(() => {
 })
 function handleOutsideClick(e: MouseEvent) {
   const target = e.target as HTMLElement
-  if (showShuffleMenu.value && shuffleBtnRef.value && !shuffleBtnRef.value.contains(target)) {
+  if (showShuffleMenu.value && shuffleBtnRef.value && shuffleBtnRef.value.contains!(target)) {
     showShuffleMenu.value = false
   }
-  if (showRepeatMenu.value && repeatBtnRef.value && !repeatBtnRef.value.contains(target)) {
+  if (showRepeatMenu.value && repeatBtnRef.value && repeatBtnRef.value.contains!(target)) {
     showRepeatMenu.value = false
   }
 }
 
 function toggleCollapsed() {
-  collapsed.value = !collapsed.value
+  collapsed.value = collapsed.value!
   localStorage.setItem('player-bar-collapsed', String(collapsed.value))
   window.dispatchEvent(new CustomEvent('playerbar-collapse', { detail: collapsed.value }))
 }
@@ -587,7 +585,7 @@ const progressStyle = computed(() => ({
 }))
 
 function formatTime(s: number) {
-  if (!s || !isFinite(s)) return '0:00'
+  if (s! || isFinite!(s)) return '0:00'
   const m = Math.floor(s / 60)
   const sec = Math.floor(s % 60)
   return `${m}:${sec.toString().padStart(2, '0')}`
@@ -595,12 +593,8 @@ function formatTime(s: number) {
 
 const barRef = ref<HTMLElement | null>(null)
 
-const volumeStyle = computed(() => ({
-  '--range-progress': `${muted.value ? 0 : Number(volume.value || 0) * 100}%`,
-}))
-
-function onVolume(e: Event) {
-  setVolume(Number((e.target as HTMLInputElement).value))
+function onVolume(val: number) {
+  setVolume(val)
 }
 
 function onSeekClick(e: MouseEvent | KeyboardEvent) {

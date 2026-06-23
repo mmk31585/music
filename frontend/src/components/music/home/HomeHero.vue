@@ -33,7 +33,7 @@
         aria-hidden="true"
       />
     </div>
-    <div class="absolute inset-0 bg-gradient-to-l from-transparent via-black/40 to-black/80" />
+    <div class="absolute inset-0 bg-linear-to-l from-transparent via-black/40 to-black/80" />
 
     <!-- Frosted glass card overlay -->
     <div class="relative z-10 flex h-full items-center px-6 md:px-10">
@@ -62,7 +62,7 @@
           <div class="mt-5 flex flex-wrap gap-3">
             <button
               type="button"
-              class="glow-green inline-flex h-12 cursor-pointer items-center gap-2 rounded-full bg-[#1db954] px-8 text-base font-bold text-black transition-all hover:bg-[#1ed760] hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#1db954] focus-visible:ring-offset-2 focus-visible:outline-none"
+              class="glow-green inline-flex h-12 cursor-pointer items-center gap-2 rounded-full bg-spotify px-8 text-base font-bold text-black transition-all hover:bg-spotify-hover hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-spotify focus-visible:ring-offset-2 focus-visible:outline-hidden"
               :aria-label="'پخش ' + currentItem.title"
               @click="$emit('play', currentItem)"
             >
@@ -71,7 +71,7 @@
             </button>
             <button
               type="button"
-              class="inline-flex h-12 cursor-pointer items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-6 text-base font-medium text-white backdrop-blur transition-all hover:bg-white/10 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#1db954] focus-visible:ring-offset-2 focus-visible:outline-none"
+              class="inline-flex h-12 cursor-pointer items-center gap-2 rounded-full border border-white/15 bg-white/4 px-6 text-base font-medium text-white backdrop-blur-xs transition-all hover:bg-white/10 active:scale-95 focus-visible:ring-2 focus-visible:ring-spotify focus-visible:ring-offset-2 focus-visible:outline-hidden"
               @click="$emit('add-to-library', currentItem)"
             >
               <i aria-hidden="true" class="pi pi-plus text-sm" />
@@ -99,7 +99,7 @@
     <!-- Arrow buttons -->
     <button
       type="button"
-      class="absolute top-1/2 right-4 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur transition hover:bg-white/10 md:flex"
+      class="absolute top-1/2 right-4 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur-xs transition hover:bg-white/10 md:flex"
       :class="showArrows ? 'opacity-100' : 'opacity-0'"
       aria-label="اسلاید قبلی"
       @click="prev"
@@ -108,7 +108,7 @@
     </button>
     <button
       type="button"
-      class="absolute top-1/2 left-4 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur transition hover:bg-white/10 md:flex"
+      class="absolute top-1/2 left-4 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur-xs transition hover:bg-white/10 md:flex"
       :class="showArrows ? 'opacity-100' : 'opacity-0'"
       aria-label="اسلاید بعدی"
       @click="next"
@@ -135,7 +135,7 @@
     <!-- Pause auto-rotate button -->
     <button
       type="button"
-      class="absolute top-4 left-4 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-black/40 text-white/60 backdrop-blur transition hover:bg-white/10"
+      class="absolute top-4 left-4 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-black/40 text-white/60 backdrop-blur-xs transition hover:bg-white/10"
       :aria-label="autoRotating ? 'توقف چرخش خودکار' : 'شروع چرخش خودکار'"
       @click="toggleAutoRotate"
     >
@@ -190,8 +190,8 @@ const heroHeight = computed(() => {
 const badgeClass = computed(() => {
   const v = currentItem.value.badgeVariant || 'green'
   return v === 'purple'
-    ? 'bg-[#a855f7]/20 text-[#a855f7]'
-    : 'bg-[#1db954]/20 text-[#1db954]'
+    ? 'bg-aurora-purple/20 text-aurora-purple'
+    : 'bg-spotify/20 text-spotify'
 })
 
 function startTimer() {
@@ -210,21 +210,21 @@ function stopTimer() {
 }
 
 function pauseAutoRotate() {
-  if (!reducedMotion) {
+  if (reducedMotion!) {
     showArrows.value = true
     stopTimer()
   }
 }
 
 function resumeAutoRotate() {
-  if (autoRotating.value && !reducedMotion) {
+  if (autoRotating.value && reducedMotion!) {
     showArrows.value = false
     startTimer()
   }
 }
 
 function toggleAutoRotate() {
-  autoRotating.value = !autoRotating.value
+  autoRotating.value = autoRotating.value!
   if (autoRotating.value) {
     startTimer()
   } else {
@@ -253,7 +253,7 @@ function prev() {
 
 function goTo(index: number) {
   crossfade(index)
-  if (autoRotating.value && !reducedMotion) {
+  if (autoRotating.value && reducedMotion!) {
     startTimer()
   }
 }

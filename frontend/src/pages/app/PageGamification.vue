@@ -12,7 +12,7 @@
     <GamificationXPBar :profile="profile" />
 
     <!-- Tabs -->
-    <div class="flex gap-1 rounded-xl bg-white/[0.04] p-1">
+    <div class="flex gap-1 rounded-xl bg-white/4 p-1">
       <button
         v-for="tab in tabs"
         :key="tab.key"

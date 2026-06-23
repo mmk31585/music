@@ -15,7 +15,7 @@
           icon="pi pi-refresh"
           size="small"
           severity="secondary"
-          class="!rounded-xl !border-white/[0.08] !bg-white/[0.04] !text-white/60 hover:!bg-white/[0.08]"
+          class="rounded-xl! border-white/8! bg-white/4! text-white/60! hover:bg-white/8!"
           :loading="loading"
           @click="fetchUsers()"
         />
@@ -29,13 +29,13 @@
           <InputText
             v-model="searchQuery"
             placeholder="Search email, username, display name..."
-            class="!h-9 !w-full !rounded-lg !border-white/[0.08] !bg-white/[0.03] !pl-9 !text-sm !text-white placeholder:!text-slate-600 sm:!w-72"
+            class="h-9! w-full! rounded-lg! border-white/8! bg-white/3! pl-9! text-sm! text-white! placeholder:text-slate-600! sm:w-72!"
             @input="onSearchInput"
           />
         </div>
 
         <div
-          class="flex items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5"
+          class="flex items-center gap-1 rounded-lg border border-white/6 bg-white/2 p-0.5"
         >
           <button
             v-for="opt in roleOptions"
@@ -53,7 +53,7 @@
         </div>
 
         <div
-          class="flex items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5"
+          class="flex items-center gap-1 rounded-lg border border-white/6 bg-white/2 p-0.5"
         >
           <button
             v-for="opt in statusOptions"
@@ -72,16 +72,16 @@
       </div>
     </div>
 
-    <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
-      <div v-if="loading" class="divide-y divide-white/[0.04]">
+    <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
+      <div v-if="loading" class="divide-y divide-white/4">
         <div v-for="i in 6" :key="i" class="flex items-center gap-4 px-5 py-4">
-          <div class="h-9 w-9 animate-pulse rounded-full bg-white/[0.06]" />
+          <div class="h-9 w-9 animate-pulse rounded-full bg-white/6" />
           <div class="flex-1 space-y-2">
-            <div class="h-4 w-44 animate-pulse rounded bg-white/[0.06]" />
-            <div class="h-3 w-32 animate-pulse rounded bg-white/[0.04]" />
+            <div class="h-4 w-44 animate-pulse rounded bg-white/6" />
+            <div class="h-3 w-32 animate-pulse rounded bg-white/4" />
           </div>
-          <div class="h-4 w-16 animate-pulse rounded bg-white/[0.04]" />
-          <div class="h-4 w-12 animate-pulse rounded bg-white/[0.04]" />
+          <div class="h-4 w-16 animate-pulse rounded bg-white/4" />
+          <div class="h-4 w-12 animate-pulse rounded bg-white/4" />
         </div>
       </div>
 
@@ -101,7 +101,7 @@
 
       <template v-else>
         <div class="overflow-x-auto">
-          <table class="admin-table min-w-[800px]">
+          <table class="admin-table min-w-200">
             <thead>
               <tr>
                 <th
@@ -161,7 +161,7 @@
                 <th class="text-right">Actions</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-white/[0.04]">
+            <tbody class="divide-y divide-white/4">
               <tr
                 v-for="u in users"
                 :key="u.id"
@@ -228,21 +228,21 @@
                       icon="pi pi-eye"
                       size="small"
                       severity="secondary"
-                      class="!h-8 !w-8 !rounded-lg !border-white/[0.06] !bg-transparent !text-slate-500 hover:!bg-white/[0.06] hover:!text-white"
+                      class="h-8! w-8! rounded-lg! border-white/6! bg-transparent! text-slate-500! hover:bg-white/6! hover:text-white!"
                       @click="viewUser(u)"
                     />
                     <Button
                       icon="pi pi-pencil"
                       size="small"
                       severity="secondary"
-                      class="!h-8 !w-8 !rounded-lg !border-white/[0.06] !bg-transparent !text-slate-500 hover:!bg-white/[0.06] hover:!text-white"
+                      class="h-8! w-8! rounded-lg! border-white/6! bg-transparent! text-slate-500! hover:bg-white/6! hover:text-white!"
                       @click="openEdit(u)"
                     />
                     <Button
                       icon="pi pi-trash"
                       size="small"
                       severity="danger"
-                      class="!h-8 !w-8 !rounded-lg !border-white/[0.06] !bg-transparent !text-red-400/60 hover:!bg-red-500/10 hover:!text-red-400"
+                      class="h-8! w-8! rounded-lg! border-white/6! bg-transparent! text-red-400/60! hover:bg-red-500/10! hover:text-red-400!"
                       @click="confirmDelete(u)"
                     />
                   </div>
@@ -252,7 +252,7 @@
           </table>
         </div>
 
-        <div class="flex items-center justify-between border-t border-white/[0.06] px-5 py-3">
+        <div class="flex items-center justify-between border-t border-white/6 px-5 py-3">
           <span class="text-xs text-slate-500 tabular-nums">
             Page {{ page }} of {{ totalPages }}
           </span>
@@ -261,7 +261,7 @@
               icon="pi pi-chevron-left"
               size="small"
               severity="secondary"
-              class="!h-8 !w-8 !rounded-lg !border-white/[0.06] !bg-transparent !text-slate-500 hover:!bg-white/[0.06] hover:!text-white"
+              class="h-8! w-8! rounded-lg! border-white/6! bg-transparent! text-slate-500! hover:bg-white/6! hover:text-white!"
               :disabled="page <= 1"
               @click="page > 1 && goToPage(page - 1)"
             />
@@ -272,7 +272,7 @@
               :class="
                 p === page
                   ? 'bg-white/10 text-white'
-                  : 'text-slate-500 hover:bg-white/[0.04] hover:text-slate-300'
+                  : 'text-slate-500 hover:bg-white/4 hover:text-slate-300'
               "
               @click="goToPage(p)"
             >
@@ -282,7 +282,7 @@
               icon="pi pi-chevron-right"
               size="small"
               severity="secondary"
-              class="!h-8 !w-8 !rounded-lg !border-white/[0.06] !bg-transparent !text-slate-500 hover:!bg-white/[0.06] hover:!text-white"
+              class="h-8! w-8! rounded-lg! border-white/6! bg-transparent! text-slate-500! hover:bg-white/6! hover:text-white!"
               :disabled="page >= totalPages"
               @click="page < totalPages && goToPage(page + 1)"
             />
@@ -297,11 +297,11 @@
       :closable="true"
       :draggable="false"
       :pt="{
-        root: { class: '!border-white/[0.06] !bg-[#141414] !rounded-2xl !shadow-2xl' },
-        header: { class: '!bg-transparent !border-0 !pb-0' },
-        content: { class: '!bg-transparent !p-0' },
-        footer: { class: '!bg-transparent !border-0' },
-        mask: { class: '!backdrop-blur-sm' },
+        root: { class: 'border-white/6! bg-[#141414]! rounded-2xl! shadow-2xl!' },
+        header: { class: 'bg-transparent! border-0! pb-0!' },
+        content: { class: 'bg-transparent! p-0!' },
+        footer: { class: 'bg-transparent! border-0!' },
+        mask: { class: 'backdrop-blur-xs!' },
       }"
     >
       <template #header>
@@ -327,7 +327,7 @@
               :class="
                 editRole === r
                   ? 'bg-white/15 text-white'
-                  : 'bg-white/[0.04] text-slate-400 hover:text-white'
+                  : 'bg-white/4 text-slate-400 hover:text-white'
               "
               @click="editRole = r"
             >
@@ -336,7 +336,7 @@
           </div>
         </div>
 
-        <div class="flex items-center justify-between rounded-xl bg-white/[0.03] px-4 py-3">
+        <div class="flex items-center justify-between rounded-xl bg-white/3 px-4 py-3">
           <div>
             <p class="text-sm font-medium text-white">Active</p>
             <p class="text-xs text-slate-500">Allow this user to log in</p>
@@ -344,7 +344,7 @@
           <label class="relative inline-flex h-5 w-9 cursor-pointer items-center">
             <input type="checkbox" v-model="editActive" class="peer sr-only" />
             <span
-              class="absolute inset-0 rounded-full bg-white/[0.08] transition peer-checked:bg-emerald-500"
+              class="absolute inset-0 rounded-full bg-white/8 transition peer-checked:bg-emerald-500"
             />
             <span
               class="absolute left-0.5 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-4"
@@ -352,7 +352,7 @@
           </label>
         </div>
 
-        <div class="flex items-center justify-between rounded-xl bg-white/[0.03] px-4 py-3">
+        <div class="flex items-center justify-between rounded-xl bg-white/3 px-4 py-3">
           <div>
             <p class="text-sm font-medium text-white">Email verified</p>
             <p class="text-xs text-slate-500">Mark email as confirmed</p>
@@ -360,7 +360,7 @@
           <label class="relative inline-flex h-5 w-9 cursor-pointer items-center">
             <input type="checkbox" v-model="editEmailVerified" class="peer sr-only" />
             <span
-              class="absolute inset-0 rounded-full bg-white/[0.08] transition peer-checked:bg-blue-500"
+              class="absolute inset-0 rounded-full bg-white/8 transition peer-checked:bg-blue-500"
             />
             <span
               class="absolute left-0.5 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-4"
@@ -369,19 +369,19 @@
         </div>
       </div>
 
-      <div class="flex justify-end gap-2 border-t border-white/[0.06] px-6 py-4">
+      <div class="flex justify-end gap-2 border-t border-white/6 px-6 py-4">
         <Button
           label="Cancel"
           severity="secondary"
           size="small"
-          class="!rounded-xl !border-white/[0.08] !bg-white/[0.04] !text-slate-300 hover:!bg-white/[0.08]"
+          class="rounded-xl! border-white/8! bg-white/4! text-slate-300! hover:bg-white/8!"
           @click="showEditDialog = false"
         />
         <Button
           label="Save"
           size="small"
           :loading="saving"
-          class="!rounded-xl !bg-emerald-500 !px-5 !text-black hover:!bg-emerald-400"
+          class="rounded-xl! bg-emerald-500! px-5! text-black! hover:bg-emerald-400!"
           @click="saveEdit"
         />
       </div>
@@ -393,11 +393,11 @@
       :closable="true"
       :draggable="false"
       :pt="{
-        root: { class: '!border-white/[0.06] !bg-[#141414] !rounded-2xl !shadow-2xl' },
-        header: { class: '!bg-transparent !border-0 !pb-0' },
-        content: { class: '!bg-transparent !p-0' },
-        footer: { class: '!bg-transparent !border-0' },
-        mask: { class: '!backdrop-blur-sm' },
+        root: { class: 'border-white/6! bg-[#141414]! rounded-2xl! shadow-2xl!' },
+        header: { class: 'bg-transparent! border-0! pb-0!' },
+        content: { class: 'bg-transparent! p-0!' },
+        footer: { class: 'bg-transparent! border-0!' },
+        mask: { class: 'backdrop-blur-xs!' },
       }"
     >
       <template #header>
@@ -413,7 +413,7 @@
       <div v-if="detailLoading" class="flex items-center justify-center p-12">
         <i aria-hidden="true" class="pi pi-spin pi-spinner text-2xl text-slate-500" />
       </div>
-      <div v-else-if="userDetail" class="divide-y divide-white/[0.06]">
+      <div v-else-if="userDetail" class="divide-y divide-white/6">
         <div class="flex items-center gap-4 p-6">
           <div
             class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/10 text-xl font-bold text-white"
@@ -473,12 +473,12 @@
         </div>
       </div>
       <div v-else class="p-6 text-center text-sm text-slate-500">Could not load user details.</div>
-      <div class="flex justify-end border-t border-white/[0.06] px-6 py-4">
+      <div class="flex justify-end border-t border-white/6 px-6 py-4">
         <Button
           label="Close"
           severity="secondary"
           size="small"
-          class="!rounded-xl !border-white/[0.08] !bg-white/[0.04] !text-slate-300 hover:!bg-white/[0.08]"
+          class="rounded-xl! border-white/8! bg-white/4! text-slate-300! hover:bg-white/8!"
           @click="showDetailDialog = false"
         />
       </div>
@@ -496,9 +496,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Dialog from 'primevue/dialog'
 import { useToast } from 'primevue/usetoast'
 import { useAuthApi } from '@/services/api/auth'
 import { AdminSectionHeader, AdminEmptyState } from '@/components/admin'
@@ -682,7 +679,7 @@ function openEdit(u: AdminUser) {
 }
 
 async function saveEdit() {
-  if (!editTarget.value) return
+  if (editTarget.value!) return
   saving.value = true
   try {
     await adminUpdateUser(editTarget.value.id, {
@@ -709,7 +706,7 @@ function confirmDelete(u: AdminUser) {
 }
 
 async function deleteUser() {
-  if (!deleteTarget.value) return
+  if (deleteTarget.value!) return
   deleting.value = true
   try {
     await adminDeleteUser(deleteTarget.value.id)

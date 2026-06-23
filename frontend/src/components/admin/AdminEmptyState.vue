@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col items-center justify-center py-16 text-center">
     <div
-      class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.04] ring-1 ring-white/[0.06]"
+      class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/4 ring-1 ring-white/6"
     >
       <i aria-hidden="true" :class="[icon, 'text-2xl text-slate-500']" />
     </div>

@@ -1,8 +1,8 @@
 <template>
-  <div class="w-48 shrink-0 rounded-2xl border border-white/[0.06] bg-white/[0.04] p-4 backdrop-blur">
+  <div class="w-48 shrink-0 rounded-2xl border border-white/6 bg-white/4 p-4 backdrop-blur-xs">
     <div class="flex items-center gap-2">
       <div
-        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1db954] to-[#60a5fa] text-sm font-bold text-white"
+        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-spotify to-aurora-blue text-sm font-bold text-white"
       >
         {{ initials }}
       </div>
@@ -39,7 +39,7 @@
     </div>
     <button
       type="button"
-      class="mt-3 w-full rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-[#1db954] focus-visible:outline-none"
+      class="mt-3 w-full rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-spotify focus-visible:outline-hidden"
       @click="$emit('listen-together', activity)"
     >
       پخش با هم

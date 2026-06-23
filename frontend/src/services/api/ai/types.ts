@@ -76,7 +76,7 @@ export const MOOD_OPTIONS = [
   { label: 'Sad', value: 'sad', icon: 'pi pi-flag' },
   { label: 'Focus', value: 'focus', icon: 'pi pi-eye' },
   { label: 'Romantic', value: 'romantic', icon: 'pi pi-heart' },
-  { label: 'Intense', value: 'intense', icon: 'pi pi-fire' },
+  { label: 'Intense', value: 'intense', icon: 'pi pi-trophy' },
   { label: 'Confident', value: 'confident', icon: 'pi pi-star' },
   { label: 'Sleep', value: 'sleep', icon: 'pi pi-moon' },
 ] as const

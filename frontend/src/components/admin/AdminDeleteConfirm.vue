@@ -2,15 +2,15 @@
   <Dialog
     v-model:visible="visible"
     modal
-    :closable="!deleting"
+    :closable="deleting!"
     :draggable="false"
     :style="{ width: '420px' }"
     :pt="{
-      root: { class: '!border-white/[0.06] !bg-[#141414] !rounded-2xl !shadow-2xl' },
-      header: { class: '!bg-transparent !border-0 !pb-0' },
-      content: { class: '!bg-transparent !pt-0' },
-      footer: { class: '!bg-transparent !border-0' },
-      mask: { class: '!backdrop-blur-sm' },
+      root: { class: 'border-white/6! bg-[#141414]! rounded-2xl! shadow-2xl!' },
+      header: { class: 'bg-transparent! border-0! pb-0!' },
+      content: { class: 'bg-transparent! pt-0!' },
+      footer: { class: 'bg-transparent! border-0!' },
+      mask: { class: 'backdrop-blur-xs!' },
     }"
   >
     <template #header>
@@ -37,7 +37,7 @@
           label="Cancel"
           text
           :disabled="deleting"
-          class="!text-slate-400 hover:!text-white"
+          class="text-slate-400! hover:text-white!"
           @click="visible = false"
         />
         <Button
@@ -45,7 +45,7 @@
           icon="pi pi-trash"
           :loading="deleting"
           severity="danger"
-          class="!rounded-xl !bg-red-500/10 !text-red-400 !ring-1 !ring-red-500/20 hover:!bg-red-500/20"
+          class="rounded-xl! bg-red-500/10! text-red-400! ring-1! ring-red-500/20! hover:bg-red-500/20!"
           @click="$emit('confirm')"
         />
       </div>
@@ -54,8 +54,6 @@
 </template>
 
 <script setup lang="ts">
-import Dialog from 'primevue/dialog'
-import Button from 'primevue/button'
 
 const visible = defineModel<boolean>({ default: false })
 

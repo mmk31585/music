@@ -6,7 +6,7 @@
     <div
       v-if="!isOnline"
       role="alert"
-      class="fixed top-0 left-0 right-0 z-[9999] flex items-center justify-center gap-2 bg-red-600/90 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm"
+      class="fixed top-0 left-0 right-0 z-9999 flex items-center justify-center gap-2 bg-red-600/90 px-4 py-2 text-sm font-medium text-white backdrop-blur-xs"
       style="padding-top: max(0.5rem, env(safe-area-inset-top, 0.5rem))"
     >
       <i class="pi pi-wifi text-xs" aria-hidden="true" />
@@ -17,7 +17,7 @@
       class="flex h-screen overflow-hidden bg-transparent text-white"
       :dir="rtlDir"
     >
-    <!-- ── Left Sidebar ── -->
+    <!-- ── right Sidebar ── -->
     <MusicSidebar />
 
     <!-- ── Main Content Area (scrolls independently) ── -->
@@ -53,7 +53,7 @@
     <Transition name="fade">
       <div
         v-if="mobileOpen"
-        class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm lg:hidden"
+        class="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs lg:hidden"
         :aria-hidden="!mobileOpen"
         role="button"
         tabindex="0"
@@ -65,7 +65,7 @@
           <div class="mb-4 flex items-center justify-between">
             <RouterLink to="/" class="flex items-center gap-3" @click="mobileOpen = false">
               <div
-                class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#1db954] text-black"
+                class="flex h-10 w-10 items-center justify-center rounded-2xl bg-spotify text-black"
               >
                 <i aria-hidden="true" class="pi pi-volume-up" />
               </div>
@@ -90,8 +90,8 @@
               v-for="item in browseItems"
               :key="item.to"
               :to="item.to"
-              class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
-              :class="activeNavBase === item.to ? 'bg-white/[0.10] text-white' : ''"
+              class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/8 hover:text-white"
+              :class="activeNavBase === item.to ? 'bg-white/10 text-white' : ''"
               @click="mobileOpen = false"
             >
               <i aria-hidden="true" :class="item.icon" class="text-lg" />
@@ -105,8 +105,8 @@
               v-for="item in libraryItems"
               :key="item.to"
               :to="item.to"
-              class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
-              :class="activeNavBase === item.to ? 'bg-white/[0.10] text-white' : ''"
+              class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/8 hover:text-white"
+              :class="activeNavBase === item.to ? 'bg-white/10 text-white' : ''"
               @click="mobileOpen = false"
             >
               <i aria-hidden="true" :class="item.icon" class="text-lg" />
@@ -120,8 +120,8 @@
               v-for="item in socialItems"
               :key="item.to"
               :to="item.to"
-              class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
-              :class="activeNavBase === item.to ? 'bg-white/[0.10] text-white' : ''"
+              class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/8 hover:text-white"
+              :class="activeNavBase === item.to ? 'bg-white/10 text-white' : ''"
               @click="mobileOpen = false"
             >
               <i aria-hidden="true" :class="item.icon" class="text-lg" />
@@ -135,8 +135,8 @@
               v-for="item in moreItems"
               :key="item.to"
               :to="item.to"
-              class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
-              :class="activeNavBase === item.to ? 'bg-white/[0.10] text-white' : ''"
+              class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/8 hover:text-white"
+              :class="activeNavBase === item.to ? 'bg-white/10 text-white' : ''"
               @click="mobileOpen = false"
             >
               <i aria-hidden="true" :class="item.icon" class="text-lg" />
@@ -148,7 +148,7 @@
             <template v-if="store.isAuthenticated">
               <div class="flex items-center gap-3 rounded-xl px-4 py-2">
                 <div
-                  class="flex h-9 w-9 items-center justify-center rounded-full bg-[#1db954]/20 text-sm font-bold text-[#1db954]"
+                  class="flex h-9 w-9 items-center justify-center rounded-full bg-spotify/20 text-sm font-bold text-spotify"
                 >
                   {{ initials }}
                 </div>
@@ -160,7 +160,7 @@
 
               <button
                 type="button"
-                class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-red-400"
+                class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/8 hover:text-red-400"
                 @click="handleLogout"
               >
                 <i aria-hidden="true" class="pi pi-sign-out text-lg" />
@@ -171,7 +171,7 @@
             <template v-else>
               <RouterLink
                 to="/auth/login"
-                class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1db954] px-4 py-3 text-sm font-bold text-black transition hover:bg-[#1ed760]"
+                class="flex w-full items-center justify-center gap-2 rounded-xl bg-spotify px-4 py-3 text-sm font-bold text-black transition hover:bg-spotify-hover"
                 @click="mobileOpen = false"
               >
                 <i aria-hidden="true" class="pi pi-sign-in" />
@@ -180,7 +180,7 @@
 
               <RouterLink
                 to="/auth/register"
-                class="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/[0.08]"
+                class="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/8"
                 @click="mobileOpen = false"
               >
                 <span>Sign up</span>
@@ -200,7 +200,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   MusicSidebar,
@@ -209,9 +209,8 @@ import {
   PlayerRegion,
 } from '@/components/music'
 import MusicRightPane from '@/components/music/layout/MusicRightPane.vue'
-import MusicAppHeader from '@/components/layouts/MusicAppHeader.vue'
-import { MobileBottomNav } from '@/components/layouts'
-import { useUserAuthStore, useFeatureFlagsStore, usePlayerStore } from '@/stores'
+import { MobileBottomNav, MusicAppHeader  } from '@/components/layouts'
+import { useUserAuthStore, usePlayerStore } from '@/stores'
 import { useAuth } from '@/composables/auth/useAuth'
 import { client, useRTL } from '@/composables'
 import { wsClient } from '@/services/socket/client'
@@ -219,7 +218,6 @@ import type { NotificationResponse } from '@/services/api/notification/routes'
 
 const browseItems = [
   { label: 'Home', icon: 'pi pi-home', to: '/' },
-  { label: 'Discover', icon: 'pi pi-compass', to: '/discover' },
   { label: 'Search', icon: 'pi pi-search', to: '/search' },
   { label: 'Recommendations', icon: 'pi pi-star', to: '/recommendations' },
 ]
@@ -249,7 +247,6 @@ const moreItems = [
 
 const pageTitleMap: Record<string, string> = {
   '/': 'Home',
-  '/discover': 'Discover',
   '/explore': 'Explore',
   '/search': 'Search',
   '/recommendations': 'Recommendations',
@@ -271,7 +268,6 @@ const pageTitleMap: Record<string, string> = {
 const route = useRoute()
 const store = useUserAuthStore()
 const playerStore = usePlayerStore()
-const ff = useFeatureFlagsStore()
 const { logout } = useAuth()
 const mobileOpen = ref(false)
 const fullscreenOpen = ref(false)
@@ -309,9 +305,7 @@ const mainPadding = computed(() => {
   return 'pb-24 lg:pb-0'
 })
 const showShortcuts = ref(false)
-const playerInitialTab = ref<'now-playing' | 'queue' | 'lyrics'>('now-playing')
 const unreadCount = ref(0)
-const ffEnabled = computed(() => ff.isEnabled('redesignedPlayer'))
 let unreadInterval: ReturnType<typeof setInterval> | null = null
 let unsubNotif: (() => void) | null = null
 
@@ -340,7 +334,7 @@ onMounted(() => {
     startPolling()
     unsubNotif = wsClient.on('notification', (msg) => {
       const n = msg.payload as NotificationResponse
-      if (n && n.id && !n.isRead) {
+      if (n && n.id && n.isRead!) {
         unreadCount.value++
       }
     })
@@ -350,8 +344,8 @@ onMounted(() => {
   document.addEventListener('keydown', (e) => {
     const tag = (e.target as HTMLElement)?.tagName
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
-    if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      showShortcuts.value = !showShortcuts.value
+    if (e.key === '?' && e.ctrlKey! && e.metaKey! && e.altKey!) {
+      showShortcuts.value = showShortcuts.value!
     }
   })
   const updateOnline = () => { isOnline.value = navigator.onLine }
@@ -427,11 +421,6 @@ const pageTitle = computed(() => {
 watch(pageTitle, (title) => {
   document.title = title ? `${title} — Muse` : 'Muse'
 }, { immediate: true })
-
-function onToggleLyrics() {
-  playerInitialTab.value = 'lyrics'
-  fullscreenOpen.value = true
-}
 
 function handleLogout() {
   mobileOpen.value = false

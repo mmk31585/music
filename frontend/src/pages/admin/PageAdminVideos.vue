@@ -10,7 +10,7 @@
           label="Upload Video"
           icon="pi pi-plus"
           size="small"
-          class="!rounded-xl !bg-emerald-500 !px-4 !text-black hover:!bg-emerald-400"
+          class="rounded-xl! bg-emerald-500! px-4! text-black! hover:bg-emerald-400!"
           @click="openUpload"
         />
       </template>
@@ -29,7 +29,7 @@
           v-model="searchQuery"
           placeholder="Search videos by title..."
           aria-label="Search videos"
-          class="!h-9 !w-full !rounded-lg !border-white/[0.08] !bg-white/[0.03] !text-sm !text-white placeholder:!text-slate-600 sm:!w-72"
+          class="h-9! w-full! rounded-lg! border-white/8! bg-white/3! text-sm! text-white! placeholder:text-slate-600! sm:w-72!"
         />
       </div>
 
@@ -40,7 +40,7 @@
           text
           rounded
           size="small"
-          class="!text-slate-400"
+          class="text-slate-400!"
           v-tooltip.top="'Refresh'"
           :loading="loading"
           @click="handleRefresh"
@@ -51,18 +51,18 @@
     <!-- Loading state -->
     <div
       v-if="loading && !videos.length"
-      class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]"
+      class="overflow-hidden rounded-2xl border border-white/6 bg-white/2"
     >
-      <div class="divide-y divide-white/[0.04]">
+      <div class="divide-y divide-white/4">
         <div v-for="i in 6" :key="i" class="flex items-center gap-4 px-5 py-4">
-          <div class="h-12 w-8 animate-pulse rounded-lg bg-white/[0.06]" />
+          <div class="h-12 w-8 animate-pulse rounded-lg bg-white/6" />
           <div class="flex-1 space-y-2">
-            <div class="h-4 w-40 animate-pulse rounded bg-white/[0.06]" />
-            <div class="h-3 w-24 animate-pulse rounded bg-white/[0.04]" />
+            <div class="h-4 w-40 animate-pulse rounded bg-white/6" />
+            <div class="h-3 w-24 animate-pulse rounded bg-white/4" />
           </div>
-          <div class="h-4 w-12 animate-pulse rounded bg-white/[0.04]" />
-          <div class="h-4 w-16 animate-pulse rounded bg-white/[0.04]" />
-          <div class="h-4 w-16 animate-pulse rounded bg-white/[0.04]" />
+          <div class="h-4 w-12 animate-pulse rounded bg-white/4" />
+          <div class="h-4 w-16 animate-pulse rounded bg-white/4" />
+          <div class="h-4 w-16 animate-pulse rounded bg-white/4" />
         </div>
       </div>
     </div>
@@ -70,7 +70,7 @@
     <!-- Empty state -->
     <AdminEmptyState
       v-else-if="filteredVideos.length === 0 && !searchQuery"
-      icon="pi pi-video"
+      icon="pi pi-play-circle"
       title="No videos yet"
       description="Upload your first music video to get started."
     >
@@ -79,7 +79,7 @@
           label="Upload Video"
           icon="pi pi-plus"
           size="small"
-          class="!rounded-xl !bg-emerald-500 !px-4 !text-black hover:!bg-emerald-400"
+          class="rounded-xl! bg-emerald-500! px-4! text-black! hover:bg-emerald-400!"
           @click="openUpload"
         />
       </template>
@@ -96,10 +96,10 @@
     <!-- Table -->
     <div
       v-else
-      class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]"
+      class="overflow-hidden rounded-2xl border border-white/6 bg-white/2"
     >
       <!-- Table header (desktop) -->
-      <div class="hidden border-b border-white/[0.06] px-5 py-2.5 text-[11px] font-semibold tracking-wider text-slate-500 uppercase md:grid md:grid-cols-[48px_1fr_80px_100px_100px_80px_80px_100px]">
+      <div class="hidden border-b border-white/6 px-5 py-2.5 text-[11px] font-semibold tracking-wider text-slate-500 uppercase md:grid md:grid-cols-[48px_1fr_80px_100px_100px_80px_80px_100px]">
         <span />
         <span>Title</span>
         <span>Type</span>
@@ -111,17 +111,17 @@
       </div>
 
       <!-- Table body -->
-      <div class="divide-y divide-white/[0.04]">
+      <div class="divide-y divide-white/4">
         <div
           v-for="v in filteredVideos"
           :key="String(v.id)"
-          class="grid grid-cols-1 gap-2 px-4 py-4 text-sm transition hover:bg-white/[0.03] md:grid-cols-[48px_1fr_80px_100px_100px_80px_80px_100px] md:items-center md:px-5 md:py-3"
+          class="grid grid-cols-1 gap-2 px-4 py-4 text-sm transition hover:bg-white/3 md:grid-cols-[48px_1fr_80px_100px_100px_80px_80px_100px] md:items-center md:px-5 md:py-3"
         >
           <!-- Thumbnail (clickable) -->
           <div class="hidden md:block">
             <button
               type="button"
-              class="flex h-12 w-8 items-center justify-center overflow-hidden rounded-md bg-white/[0.06] transition hover:ring-2 hover:ring-sky-400/50"
+              class="flex h-12 w-8 items-center justify-center overflow-hidden rounded-md bg-white/6 transition hover:ring-2 hover:ring-sky-400/50"
               :title="'Watch ' + v.title"
               @click="watchVideo(v)"
             >
@@ -133,7 +133,7 @@
                 loading="lazy"
                 @error="($event.target as HTMLImageElement).style.display='none'"
               />
-              <i v-else aria-hidden="true" class="pi pi-video text-xs text-slate-500" />
+              <i v-else aria-hidden="true" class="pi pi-play-circle text-xs text-slate-500" />
             </button>
           </div>
 
@@ -142,7 +142,7 @@
             <div class="flex items-start gap-3">
               <button
                 type="button"
-                class="flex h-16 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white/[0.06] transition hover:ring-2 hover:ring-sky-400/50"
+                class="flex h-16 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white/6 transition hover:ring-2 hover:ring-sky-400/50"
                 :title="'Watch ' + v.title"
                 @click="watchVideo(v)"
               >
@@ -154,12 +154,12 @@
                   loading="lazy"
                   @error="($event.target as HTMLImageElement).style.display='none'"
                 />
-                <i v-else aria-hidden="true" class="pi pi-video text-base text-slate-500" />
+<i v-else aria-hidden="true" class="pi pi-play-circle text-base text-slate-500" />
               </button>
               <div class="min-w-0 flex-1">
                 <p class="truncate font-semibold text-white">{{ v.title }}</p>
                 <div class="mt-1 flex flex-wrap items-center gap-2">
-                  <span class="rounded-full px-2 py-0.5 text-[10px] font-bold" :class="v.type === 'official_mv' ? 'bg-[#1db954]/15 text-[#1db954]' : 'bg-blue-500/15 text-blue-400'">
+                  <span class="rounded-full px-2 py-0.5 text-[10px] font-bold" :class="v.type === 'official_mv' ? 'bg-spotify/15 text-spotify' : 'bg-blue-500/15 text-blue-400'">
                     {{ v.type === 'official_mv' ? 'MV' : 'Edit' }}
                   </span>
                   <span class="rounded-full px-2 py-0.5 text-[10px] font-bold" :class="statusClass(v.status)">
@@ -184,7 +184,7 @@
             <p class="truncate font-medium text-white">{{ v.title }}</p>
           </div>
           <div class="hidden md:block">
-            <span class="rounded-full px-2 py-0.5 text-[10px] font-bold" :class="v.type === 'official_mv' ? 'bg-[#1db954]/15 text-[#1db954]' : 'bg-blue-500/15 text-blue-400'">
+            <span class="rounded-full px-2 py-0.5 text-[10px] font-bold" :class="v.type === 'official_mv' ? 'bg-spotify/15 text-spotify' : 'bg-blue-500/15 text-blue-400'">
               {{ v.type === 'official_mv' ? 'MV' : 'Edit' }}
             </span>
           </div>
@@ -218,7 +218,7 @@
               text
               rounded
               size="small"
-              class="!text-sky-400/60 hover:!text-sky-400"
+              class="text-sky-400/60! hover:text-sky-400!"
               v-tooltip.top="'Watch'"
               @click="watchVideo(v)"
             />
@@ -227,7 +227,7 @@
               text
               rounded
               size="small"
-              class="!text-sky-400/60 hover:!text-sky-400"
+              class="text-sky-400/60! hover:text-sky-400!"
               v-tooltip.top="'Comments'"
               @click="openComments(v)"
             />
@@ -236,7 +236,7 @@
               text
               rounded
               size="small"
-              class="!text-slate-400 hover:!text-white"
+              class="text-slate-400! hover:text-white!"
               v-tooltip.top="'Edit'"
               @click="openEdit(v)"
             />
@@ -245,7 +245,7 @@
               text
               rounded
               size="small"
-              class="!text-red-400/60 hover:!text-red-400"
+              class="text-red-400/60! hover:text-red-400!"
               v-tooltip.top="'Delete'"
               @click="confirmDelete(v)"
             />
@@ -256,7 +256,7 @@
               text
               rounded
               size="small"
-              class="!text-emerald-400/60 hover:!text-emerald-400 md:!hidden"
+              class="text-emerald-400/60! hover:text-emerald-400! md:hidden!"
               v-tooltip.top="'Approve'"
               :loading="saving"
               @click="handleToggleApprove(v)"
@@ -266,13 +266,13 @@
       </div>
 
       <!-- Load more -->
-      <div v-if="hasMore" class="flex justify-center border-t border-white/[0.06] px-5 py-4">
+      <div v-if="hasMore" class="flex justify-center border-t border-white/6 px-5 py-4">
         <Button
           label="Load More"
           icon="pi pi-chevron-down"
           text
           size="small"
-          class="!text-slate-400 hover:!text-white"
+          class="text-slate-400! hover:text-white!"
           :loading="loading"
           @click="loadMore"
         />
@@ -285,11 +285,11 @@
       :header="'Edit Video'"
       :modal="true"
       :dismissable-mask="true"
-      class="!w-full !max-w-lg"
+      class="w-full! max-w-lg!"
     >
       <div v-if="editingVideo" class="space-y-4">
         <div class="flex items-center gap-3">
-          <div class="flex h-16 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white/[0.06]">
+          <div class="flex h-16 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white/6">
             <img
               v-if="editingVideo.thumbnail_url || editingVideo.thumbnail_path"
               :src="(editingVideo.thumbnail_url || editingVideo.thumbnail_path) ?? undefined"
@@ -297,7 +297,7 @@
               class="h-full w-full object-cover"
               loading="lazy"
             />
-            <i v-else aria-hidden="true" class="pi pi-video text-base text-slate-500" />
+            <i v-else aria-hidden="true" class="pi pi-play-circle text-base text-slate-500" />
           </div>
           <div class="min-w-0">
             <p class="truncate font-semibold text-white">{{ editingVideo.title }}</p>
@@ -310,7 +310,7 @@
             <label class="mb-1 block text-xs font-semibold text-slate-400">Title</label>
             <InputText
               v-model="editForm.title"
-              class="!w-full !rounded-lg !border-white/[0.08] !bg-white/[0.03] !text-sm !text-white"
+              class="w-full! rounded-lg! border-white/8! bg-white/3! text-sm! text-white!"
               placeholder="Video title"
             />
           </div>
@@ -319,7 +319,7 @@
             <label class="mb-1 block text-xs font-semibold text-slate-400">Description</label>
             <Textarea
               v-model="editForm.description"
-              class="!w-full !rounded-lg !border-white/[0.08] !bg-white/[0.03] !text-sm !text-white"
+              class="w-full! rounded-lg! border-white/8! bg-white/3! text-sm! text-white!"
               rows="3"
               placeholder="Video description"
             />
@@ -333,7 +333,7 @@
                 :options="typeOptions"
                 option-label="label"
                 option-value="value"
-                class="!w-full"
+                class="w-full!"
               />
             </div>
 
@@ -344,7 +344,7 @@
                 :options="statusOptions"
                 option-label="label"
                 option-value="value"
-                class="!w-full"
+                class="w-full!"
               />
             </div>
           </div>
@@ -368,14 +368,14 @@
             label="Cancel"
             text
             size="small"
-            class="!text-slate-400"
+            class="text-slate-400!"
             @click="editDialogVisible = false"
           />
           <Button
             label="Save"
             icon="pi pi-check"
             size="small"
-            class="!rounded-xl !bg-emerald-500 !px-4 !text-black hover:!bg-emerald-400"
+            class="rounded-xl! bg-emerald-500! px-4! text-black! hover:bg-emerald-400!"
             :loading="saving"
             @click="handleSaveEdit"
           />
@@ -399,14 +399,14 @@
       :header="commentsVideo ? `Comments — ${commentsVideo.title}` : 'Comments'"
       :modal="true"
       :dismissable-mask="true"
-      class="!w-full !max-w-xl"
+      class="w-full! max-w-xl!"
     >
       <div v-if="loadingComments" class="space-y-4 py-4">
         <div v-for="i in 4" :key="i" class="flex animate-pulse gap-3">
-          <div class="h-8 w-8 shrink-0 rounded-full bg-white/[0.06]" />
+          <div class="h-8 w-8 shrink-0 rounded-full bg-white/6" />
           <div class="flex-1 space-y-2">
-            <div class="h-3 w-24 rounded bg-white/[0.06]" />
-            <div class="h-4 w-3/4 rounded bg-white/[0.04]" />
+            <div class="h-3 w-24 rounded bg-white/6" />
+            <div class="h-4 w-3/4 rounded bg-white/4" />
           </div>
         </div>
       </div>
@@ -418,12 +418,12 @@
         <div
           v-for="cm in commentItems"
           :key="cm.id"
-          class="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition hover:bg-white/[0.04]"
+          class="rounded-xl border border-white/6 bg-white/2 p-4 transition hover:bg-white/4"
         >
           <!-- Header -->
           <div class="flex items-start justify-between gap-2">
             <div class="flex items-center gap-2">
-              <div class="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.06] text-[10px] font-bold text-slate-500">
+              <div class="flex h-7 w-7 items-center justify-center rounded-full bg-white/6 text-[10px] font-bold text-slate-500">
                 {{ cm.author_name.charAt(0).toUpperCase() }}
               </div>
               <div>
@@ -437,7 +437,7 @@
                 text
                 rounded
                 size="small"
-                class="!text-slate-500 hover:!text-white !w-7 !h-7"
+                class="text-slate-500! hover:text-white! w-7! h-7!"
                 v-tooltip.top="'Edit'"
                 @click="startEditComment(cm)"
               />
@@ -446,7 +446,7 @@
                 text
                 rounded
                 size="small"
-                class="!text-red-400/50 hover:!text-red-400 !w-7 !h-7"
+                class="text-red-400/50! hover:text-red-400! w-7! h-7!"
                 v-tooltip.top="'Delete'"
                 :loading="deletingCommentId === cm.id"
                 @click="handleDeleteComment(cm.id)"
@@ -457,7 +457,7 @@
           <div v-if="editingCommentId === cm.id" class="mt-3">
             <Textarea
               v-model="editingCommentContent"
-              class="!w-full !rounded-lg !border-white/[0.08] !bg-white/[0.03] !text-sm !text-white"
+              class="w-full! rounded-lg! border-white/8! bg-white/3! text-sm! text-white!"
               rows="2"
               maxlength="1000"
             />
@@ -466,16 +466,16 @@
                 label="Cancel"
                 text
                 size="small"
-                class="!text-slate-400 !text-xs"
+                class="text-slate-400! text-xs!"
                 @click="editingCommentId = null"
               />
               <Button
                 label="Save"
                 icon="pi pi-check"
                 size="small"
-                class="!rounded-lg !bg-emerald-500 !px-3 !text-black hover:!bg-emerald-400 !text-xs"
+                class="rounded-lg! bg-emerald-500! px-3! text-black! hover:bg-emerald-400! text-xs!"
                 :loading="savingComment"
-                :disabled="!editingCommentContent.trim()"
+                :disabled="editingCommentContent.trim!()"
                 @click="handleSaveComment(cm.id)"
               />
             </div>
@@ -495,12 +495,6 @@ import { useAdminVideos } from '@/composables/admin'
 import { useVideoApi } from '@/services/api/video'
 import type { VideoItem } from '@/services/api/video/types'
 import { AdminSectionHeader, AdminEmptyState, AdminDeleteConfirm } from '@/components/admin'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
-import Dialog from 'primevue/dialog'
-import Select from 'primevue/select'
-import ToggleSwitch from 'primevue/toggleswitch'
 import { formatCount } from '@/utils/number'
 
 const router = useRouter()
@@ -522,7 +516,7 @@ const {
 const searchQuery = ref('')
 
 const filteredVideos = computed(() => {
-  if (!searchQuery.value) return videos.value
+  if (searchQuery.value!) return videos.value
   const q = searchQuery.value.toLowerCase()
   return videos.value.filter((v) => v.title.toLowerCase().includes(q))
 })
@@ -562,7 +556,7 @@ function openEdit(v: VideoItem) {
 }
 
 async function handleSaveEdit() {
-  if (!editingVideo.value) return
+  if (editingVideo.value!) return
   try {
     await updateVideo(String(editingVideo.value.id), {
       title: editForm.title,
@@ -589,7 +583,7 @@ function confirmDelete(v: VideoItem) {
 }
 
 async function handleDelete() {
-  if (!deleteTarget.value) return
+  if (deleteTarget.value!) return
   try {
     await deleteVideo(String(deleteTarget.value.id))
     deleteDialogVisible.value = false
@@ -667,12 +661,12 @@ function startEditComment(cm: AdminCommentItem) {
 }
 
 async function handleSaveComment(commentId: string) {
-  if (!editingCommentContent.value.trim()) return
+  if (editingCommentContent.value.trim!()) return
   savingComment.value = true
   try {
     await videoApi.adminUpdateComment(commentId, { content: editingCommentContent.value.trim() })
     const idx = commentItems.value.findIndex((c) => c.id === commentId)
-    if (idx !== -1) commentItems.value[idx]!.content = editingCommentContent.value.trim()
+    if (idx !== -1) commentItems.value[idx].content! = editingCommentContent.value.trim()
     editingCommentId.value = null
     toast.add({ severity: 'success', summary: 'Comment updated', life: 3000 })
   } catch {

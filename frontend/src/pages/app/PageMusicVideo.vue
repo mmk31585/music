@@ -2,19 +2,19 @@
   <div class="min-h-screen">
     <!-- ═══ LOADING ═══ -->
     <div v-if="loading" class="mx-auto max-w-6xl px-4 pt-4 md:px-6 md:pt-8">
-      <div class="mx-auto aspect-video max-w-5xl animate-pulse rounded-2xl bg-white/[0.03]" />
+      <div class="mx-auto aspect-video max-w-5xl animate-pulse rounded-2xl bg-white/3" />
       <div class="mt-6 flex flex-col gap-6 lg:flex-row">
         <div class="flex-1 space-y-4">
-          <div class="h-8 w-3/4 animate-pulse rounded-lg bg-white/[0.06]" />
-          <div class="h-4 w-1/3 animate-pulse rounded bg-white/[0.04]" />
+          <div class="h-8 w-3/4 animate-pulse rounded-lg bg-white/6" />
+          <div class="h-4 w-1/3 animate-pulse rounded bg-white/4" />
         </div>
         <div class="w-full lg:w-80">
           <div class="grid grid-cols-2 gap-3">
             <div v-for="i in 4" :key="i" class="animate-pulse">
-              <div class="aspect-video w-full rounded-xl bg-white/[0.04]" />
+              <div class="aspect-video w-full rounded-xl bg-white/4" />
               <div class="mt-2 space-y-1.5 px-1">
-                <div class="h-3 w-3/4 rounded bg-white/[0.06]" />
-                <div class="h-2.5 w-1/2 rounded bg-white/[0.04]" />
+                <div class="h-3 w-3/4 rounded bg-white/6" />
+                <div class="h-2.5 w-1/2 rounded bg-white/4" />
               </div>
             </div>
           </div>
@@ -25,13 +25,13 @@
     <!-- ═══ ERROR ═══ -->
     <div v-else-if="error" class="flex flex-col items-center justify-center px-4 py-32 text-center">
       <div class="mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-amber-500/20 bg-amber-500/5">
-        <i class="pi pi-video text-3xl text-amber-400/60" />
+        <i class="pi pi-play-circle text-3xl text-amber-400/60" />
       </div>
       <h2 class="mb-2 text-2xl font-black text-white/60">Video not found</h2>
       <p class="mb-8 text-sm text-white/30">This music video doesn't exist or is still being processed.</p>
       <div class="flex gap-3">
         <button
-          class="rounded-xl border border-white/[0.08] bg-white/[0.04] px-5 py-2.5 text-sm font-semibold text-white/60 transition hover:bg-white/[0.08] hover:text-white"
+          class="rounded-xl border border-white/8 bg-white/4 px-5 py-2.5 text-sm font-semibold text-white/60 transition hover:bg-white/8 hover:text-white"
           @click="goBack"
         >
           <i class="pi pi-arrow-right ml-2" />
@@ -55,7 +55,7 @@
         <div
           ref="playerContainerRef"
           class="group relative w-full overflow-hidden bg-black md:rounded-2xl"
-          :class="isFullscreen ? 'fixed inset-0 z-50 !rounded-none' : 'aspect-video'"
+          :class="isFullscreen ? 'fixed inset-0 z-50 rounded-none!' : 'aspect-video'"
           @mousemove="showControls"
           @mouseleave="startHideTimer"
         >
@@ -64,7 +64,7 @@
           :src="videoSrc"
           :poster="videoPoster"
           class="h-full w-full cursor-pointer object-contain"
-          :class="{ 'cursor-pointer': !isPlaying }"
+          :class="{ 'cursor-pointer': isPlaying! }"
           :playsinline="true"
           preload="metadata"
           @timeupdate="onTimeUpdate"
@@ -86,7 +86,7 @@
             @click="togglePlay"
           >
             <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/5 text-white shadow-2xl backdrop-blur-2xl transition-all hover:scale-110 hover:bg-white/10 md:h-24 md:w-24">
-              <i class="pi pi-play-fill ml-1 text-4xl md:text-5xl" />
+              <i class="pi pi-play ml-1 text-4xl md:text-5xl" />
             </div>
           </div>
         </Transition>
@@ -127,13 +127,13 @@
         <Transition name="fade">
           <div
             v-if="(controlsVisible || !isPlaying) && !videoError"
-            class="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/10 to-transparent"
+            class="absolute inset-0 flex flex-col justify-end bg-linear-to-t from-black/90 via-black/10 to-transparent"
           >
             <div class="px-4 pb-1">
               <div class="group relative cursor-pointer py-2" @click="seekTo">
                 <div class="h-1 overflow-hidden rounded-full bg-white/15 transition-all group-hover:h-1.5">
                   <div
-                    class="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all"
+                    class="h-full rounded-full bg-linear-to-r from-amber-400 to-amber-500 transition-all"
                     :style="{ width: progressPercent + '%' }"
                   />
                 </div>
@@ -145,9 +145,9 @@
                 @click="togglePlay"
                 aria-label="Play / Pause"
               >
-                <i :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" class="text-lg" />
+                <i :class="isPlaying ? 'pi pi-pause' : 'pi pi-play'" class="text-lg" />
               </button>
-              <span class="min-w-[4.5rem] text-xs font-medium text-white/60 tabular-nums">
+              <span class="min-w-18 text-xs font-medium text-white/60 tabular-nums">
                 {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
               </span>
               <div class="hidden items-center gap-1.5 sm:flex">
@@ -176,7 +176,7 @@
                 @click="toggleFullscreen"
                 :aria-label="isFullscreen ? 'Exit fullscreen' : 'Fullscreen'"
               >
-                <i :class="isFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'" class="text-sm" />
+                <i :class="isFullscreen ? 'pi pi-arrow-down' : 'pi pi-expand'" class="text-sm" />
               </button>
             </div>
           </div>
@@ -212,7 +212,7 @@
               </p>
               <div class="mt-3 flex items-center gap-2">
                 <button
-                  class="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-white/40 hover:border-white/10 hover:bg-white/[0.06] hover:text-white/70 transition"
+                  class="flex items-center gap-2 rounded-lg border border-white/6 bg-white/3 px-3 py-1.5 text-xs font-semibold text-white/40 hover:border-white/10 hover:bg-white/6 hover:text-white/70 transition"
                   @click="shareVideo"
                 >
                   <i class="pi pi-share-alt" /> Share
@@ -220,18 +220,18 @@
                 <RouterLink
                   v-if="video.track_id"
                   :to="`/track/${video.track_id}`"
-                  class="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-white/40 hover:border-white/10 hover:bg-white/[0.06] hover:text-white/70 transition"
+                  class="flex items-center gap-2 rounded-lg border border-white/6 bg-white/3 px-3 py-1.5 text-xs font-semibold text-white/40 hover:border-white/10 hover:bg-white/6 hover:text-white/70 transition"
                 >
-                  <i class="pi pi-music" /> View Track
+                  <i class="pi pi-headphones" /> View Track
                 </RouterLink>
               </div>
             </div>
 
             <!-- Track Card (compact) -->
-            <div v-if="trackInfo" class="flex items-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+            <div v-if="trackInfo" class="flex items-center gap-4 rounded-2xl border border-white/6 bg-white/2 p-4">
               <div class="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-white/10 shadow-lg">
                 <img v-if="trackInfo.cover_url" :src="trackInfo.cover_url" :alt="trackInfo.title" class="h-full w-full object-cover" />
-                <div v-else class="flex h-full items-center justify-center"><i class="pi pi-music text-lg text-slate-500" /></div>
+                <div v-else class="flex h-full items-center justify-center"><i class="pi pi-headphones text-lg text-slate-500" /></div>
               </div>
               <div class="min-w-0 flex-1">
                 <p class="text-[10px] font-bold tracking-wider text-white/30 uppercase">Track</p>
@@ -244,7 +244,7 @@
                 :title="isTrackPlaying ? 'Now Playing' : 'Play Track'"
                 @click="playTrack"
               >
-                <i :class="isTrackPlaying ? 'pi pi-check' : 'pi pi-play-fill'" class="ml-0.5 text-sm" />
+                <i :class="isTrackPlaying ? 'pi pi-check' : 'pi pi-play'" class="ml-0.5 text-sm" />
               </button>
             </div>
 
@@ -257,15 +257,15 @@
                 <textarea
                   v-model="commentContent"
                   placeholder="Write a comment…"
-                  class="w-full resize-none rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-sm text-white/80 placeholder:text-white/20 outline-none focus:border-white/20 focus:bg-white/[0.06]"
+                  class="w-full resize-none rounded-xl border border-white/6 bg-white/3 px-4 py-3 text-sm text-white/80 placeholder:text-white/20 outline-hidden focus:border-white/20 focus:bg-white/6"
                   rows="2"
                   maxlength="1000"
                   @keydown.ctrl.enter="postComment"
                 />
                 <div class="mt-1.5 flex items-center justify-between">
                   <span class="text-[10px] text-white/20">{{ commentContent.length }}/1000</span>
-                  <Button label="Post" size="small" :loading="submittingComment" :disabled="!commentContent.trim() || submittingComment"
-                    class="!rounded-xl !bg-white/10 !text-white hover:!bg-white/20 !text-xs !py-1.5 !px-4" @click="postComment" />
+                  <Button label="Post" size="small" :loading="submittingComment" :disabled="commentContent.trim!() || submittingComment"
+                    class="rounded-xl! bg-white/10! text-white! hover:bg-white/20! text-xs! py-1.5! px-4!" @click="postComment" />
                 </div>
               </div>
               <p v-else class="mb-4 text-sm text-white/30">
@@ -273,13 +273,13 @@
               </p>
               <div v-if="loadingComments" class="space-y-3">
                 <div v-for="i in 3" :key="i" class="flex animate-pulse gap-3">
-                  <div class="h-8 w-8 rounded-full bg-white/[0.06]" />
-                  <div class="flex-1 space-y-2"><div class="h-3 w-24 rounded bg-white/[0.06]" /><div class="h-4 w-3/4 rounded bg-white/[0.04]" /></div>
+                  <div class="h-8 w-8 rounded-full bg-white/6" />
+                  <div class="flex-1 space-y-2"><div class="h-3 w-24 rounded bg-white/6" /><div class="h-4 w-3/4 rounded bg-white/4" /></div>
                 </div>
               </div>
               <div v-else-if="comments.length" class="space-y-4">
                 <div v-for="cm in comments" :key="cm.id" class="flex gap-3">
-                  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-xs font-bold text-white/40">{{ cm.author.charAt(0).toUpperCase() }}</div>
+                  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/6 text-xs font-bold text-white/40">{{ cm.author.charAt(0).toUpperCase() }}</div>
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2"><span class="text-xs font-semibold text-white/70">{{ cm.author }}</span><span class="text-[10px] text-white/20">{{ timeAgo(cm.created_at) }}</span></div>
                     <p class="mt-0.5 text-sm leading-relaxed text-white/60 break-words">{{ cm.content }}</p>
@@ -299,7 +299,7 @@
               <div
                 v-for="rel in relatedVideos"
                 :key="String(rel.id)"
-                class="group flex cursor-pointer gap-3 rounded-xl p-2 transition hover:bg-white/[0.04]"
+                class="group flex cursor-pointer gap-3 rounded-xl p-2 transition hover:bg-white/4"
                 @click="openVideo(rel)"
               >
                 <div class="aspect-video w-40 shrink-0 overflow-hidden rounded-lg bg-white/10">
@@ -310,7 +310,7 @@
                     class="h-full w-full object-cover transition-transform group-hover:scale-[1.03]"
                     loading="lazy"
                   />
-                  <div v-else class="flex h-full items-center justify-center"><i class="pi pi-video text-slate-500" /></div>
+                  <div v-else class="flex h-full items-center justify-center"><i class="pi pi-play-circle text-slate-500" /></div>
                 </div>
                 <div class="min-w-0 flex-1">
                   <p class="line-clamp-2 text-sm font-medium leading-snug text-white/90">{{ rel.title }}</p>
@@ -319,7 +319,7 @@
               </div>
             </div>
             <div v-if="!relatedVideos.length" class="py-8 text-center text-sm text-white/20">
-              <i class="pi pi-video mb-2 block text-xl text-white/10" />No related videos
+              <i class="pi pi-play-circle mb-2 block text-xl text-white/10" />No related videos
             </div>
           </div>
         </div>
@@ -339,7 +339,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
-import Button from 'primevue/button'
 import { useRequest } from '@/composables/useRequest'
 import { useVideoApi } from '@/services/api/video'
 import { useTracksApi } from '@/services/api/catalog/tracks'
@@ -374,7 +373,7 @@ const trackInfo = ref<Pick<Track, 'id' | 'title' | 'artist_name' | 'cover_url' |
 const loadingTrack = ref(false)
 
 const isTrackPlaying = computed(() => {
-  if (!trackInfo.value) return false
+  if (trackInfo.value!) return false
   return String(player.currentTrack.value?.id) === String(trackInfo.value.id) && player.isPlaying.value
 })
 
@@ -405,21 +404,21 @@ let controlsTimer: ReturnType<typeof setTimeout> | null = null
 let hideTimer: ReturnType<typeof setTimeout> | null = null
 
 const duration = computed(() => (video.value ? video.value.duration_ms / 1000 : 0))
-const progressPercent = computed(() => { if (!duration.value) return 0; return (currentTime.value / duration.value) * 100 })
+const progressPercent = computed(() => { if (duration.value!) return 0; return (currentTime.value / duration.value) * 100 })
 const volumePercent = computed(() => volume.value * 100)
 
 const videoSrc = computed(() => {
-  if (!video.value) return undefined
+  if (video.value!) return undefined
   if (video.value.final_video_url) return video.value.final_video_url
   return `/api/v1/videos/${video.value.id}/stream`
 })
 
 const videoPoster = computed(() => {
-  if (!video.value) return undefined
+  if (video.value!) return undefined
   return video.value.thumbnail_url || video.value.thumbnail_path || video.value.track_cover_url || (trackInfo.value?.cover_url || undefined) || undefined
 })
 
-function formatTime(s: number): string { if (!s || !isFinite(s)) return '0:00'; return `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, '0')}` }
+function formatTime(s: number): string { if (s! || isFinite!(s)) return '0:00'; return `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, '0')}` }
 function timeAgo(d: string): string { const diff = Math.floor((Date.now() - new Date(d).getTime()) / 1000); if (diff < 60) return 'just now'; if (diff < 3600) return `${Math.floor(diff / 60)}m ago`; if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`; return `${Math.floor(diff / 86400)}d ago` }
 
 async function fetchVideo() {
@@ -443,7 +442,7 @@ async function fetchTrackInfo(trackId: string) {
 
 async function fetchRelated() {
   const tid = video.value?.track_id || video.value?.track?.id
-  if (!tid) return
+  if (tid!) return
   try {
     const res = await useRequest<{ items: VideoItem[] }>(`/tracks/${tid}/videos`, { method: 'GET' })
     relatedVideos.value = (res?.items || []).filter(v => String(v.id) !== videoId.value)
@@ -451,17 +450,17 @@ async function fetchRelated() {
 }
 
 function togglePlay() {
-  if (videoError.value) return; const el = videoRef.value; if (!el) return
+  if (videoError.value) return; const el = videoRef.value; if (el!) return
   el.paused ? el.play().catch(() => {}) : el.pause()
 }
 function onPlay() { isPlaying.value = true; startHideTimer() }
 function onPause() { isPlaying.value = false; cancelHideTimer(); controlsVisible.value = true }
 function onVideoError() { videoError.value = true; isPlaying.value = false; buffering.value = false }
 function retryVideo() { videoError.value = false; buffering.value = true; videoRef.value?.load() }
-function toggleMute() { const el = videoRef.value; if (!el) return; el.muted = !el.muted; isMuted.value = el.muted }
-function seekTo(e: MouseEvent) { const el = videoRef.value; if (!el || !duration.value) return; const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); el.currentTime = ((e.clientX - r.left) / r.width) * duration.value }
-function seekVolume(e: MouseEvent) { const el = videoRef.value; if (!el) return; const pct = Math.max(0, Math.min(1, (e.clientX - (e.currentTarget as HTMLElement).getBoundingClientRect().left) / (e.currentTarget as HTMLElement).offsetWidth)); volume.value = pct; el.volume = pct; if (pct > 0 && el.muted) { el.muted = false; isMuted.value = false } }
-function toggleFullscreen() { const c = playerContainerRef.value; if (!c) return; !document.fullscreenElement ? c.requestFullscreen().catch(() => {}) : document.exitFullscreen().catch(() => {}) }
+function toggleMute() { const el = videoRef.value; if (el!) return; el.muted = el.muted!; isMuted.value = el.muted }
+function seekTo(e: MouseEvent) { const el = videoRef.value; if (el! || duration.value!) return; const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); el.currentTime = ((e.clientX - r.left) / r.width) * duration.value }
+function seekVolume(e: MouseEvent) { const el = videoRef.value; if (el!) return; const pct = Math.max(0, Math.min(1, (e.clientX - (e.currentTarget as HTMLElement).getBoundingClientRect().left) / (e.currentTarget as HTMLElement).offsetWidth)); volume.value = pct; el.volume = pct; if (pct > 0 && el.muted) { el.muted = false; isMuted.value = false } }
+function toggleFullscreen() { const c = playerContainerRef.value; if (c!) return; document.fullscreenElement! ? c.requestFullscreen().catch(() => {}) : document.exitFullscreen().catch(() => {}) }
 function onTimeUpdate() { const el = videoRef.value; if (el) currentTime.value = el.currentTime }
 function onLoaded() { buffering.value = false; videoError.value = false; const el = videoRef.value; if (el) el.volume = volume.value }
 function onEnded() { isPlaying.value = false; controlsVisible.value = true }
@@ -470,27 +469,27 @@ function startHideTimer() { cancelHideTimer(); controlsTimer = setTimeout(() => 
 function cancelHideTimer() { if (controlsTimer) { clearTimeout(controlsTimer); controlsTimer = null } }
 
 async function toggleLike() {
-  if (!video.value) return; const prev = isLiked.value; isLiked.value = !isLiked.value
+  if (video.value!) return; const prev = isLiked.value; isLiked.value = isLiked.value!
   try { isLiked.value ? await videoApi.likeVideo(String(video.value.id)) : await videoApi.unlikeVideo(String(video.value.id)) }
   catch { isLiked.value = prev; toast.add({ severity: 'error', summary: 'Failed to update like', life: 3000 }) }
 }
 function playTrack() { const tid = trackInfo.value?.id || video.value?.track_id || video.value?.track?.id; if (tid) player.playTrackById(String(tid)) }
-function shareVideo() { if (!video.value) return; copyLink({ id: String(video.value.id), title: video.value.title, type: 'video' }) }
+function shareVideo() { if (video.value!) return; copyLink({ id: String(video.value.id), title: video.value.title, type: 'video' }) }
 function openVideo(rel: VideoItem) { if (String(rel.id) === videoId.value) return; router.push(`/music-video/${rel.id}`) }
 function goBack() { router.back() }
 
 async function fetchComments() {
-  if (!video.value?.id) return; loadingComments.value = true
+  if (video.value!?.id) return; loadingComments.value = true
   try { const r = await useRequest<{ items: CommentItem[]; total: number }>(`/videos/${video.value.id}/comments?limit=20&offset=0`, { method: 'GET' }); comments.value = r?.items || []; commentsTotal.value = r?.total || 0 }
   catch { comments.value = [] } finally { loadingComments.value = false }
 }
 async function postComment() {
-  if (!video.value?.id || !commentContent.value.trim()) return; submittingComment.value = true
+  if (video.value!?.id || commentContent.value.trim!()) return; submittingComment.value = true
   try { await useRequest(`/videos/${video.value.id}/comments`, { method: 'POST', data: { content: commentContent.value.trim() } }, { silent: true }); commentContent.value = ''; toast.add({ severity: 'success', summary: 'Comment posted', life: 3000 }); fetchComments() }
   catch { toast.add({ severity: 'error', summary: 'Failed to post comment', life: 3000 }) } finally { submittingComment.value = false }
 }
 
-function onFullscreenChange() { isFullscreen.value = !!document.fullscreenElement }
+function onFullscreenChange() { isFullscreen.value = document.fullscreenElement!! }
 function onKeydown(e: KeyboardEvent) {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
   switch (e.key) {

@@ -5,7 +5,7 @@
       <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
         <SkeletonLoader v-for="i in 4" :key="i" variant="card" />
       </div>
-      <SkeletonLoader variant="card" class="h-[300px]" />
+      <SkeletonLoader variant="card" class="h-75" />
     </div>
 
     <!-- Not a creator -->
@@ -15,7 +15,7 @@
       <p class="max-w-md text-sm text-slate-400">
         Upload tracks and build your audience to unlock creator analytics.
       </p>
-      <RouterLink to="/" class="text-sm font-medium text-[#1db954] underline underline-offset-2"
+      <RouterLink to="/" class="text-sm font-medium text-spotify underline underline-offset-2"
         >Browse music</RouterLink
       >
     </div>
@@ -23,15 +23,15 @@
     <!-- Creator dashboard -->
     <template v-else>
       <!-- Header -->
-      <div class="relative mb-8 overflow-hidden rounded-[2rem] p-8 md:p-10">
+      <div class="relative mb-8 overflow-hidden rounded-2xl p-8 md:p-10">
         <div
-          class="absolute inset-0 bg-gradient-to-br from-[#1db954]/8 via-transparent to-transparent"
+          class="absolute inset-0 bg-linear-to-br from-spotify/8 via-transparent to-transparent"
         />
         <div
           class="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <p class="text-xs font-bold tracking-[0.25em] text-[#1db954] uppercase">Studio</p>
+            <p class="text-xs font-bold tracking-[0.25em] text-spotify uppercase">Studio</p>
             <h1 class="mt-2 text-3xl font-black text-white md:text-4xl">Creator Studio</h1>
             <p class="mt-1 text-sm text-white/40">
               Analytics, earnings, audience, and content management
@@ -40,7 +40,7 @@
           <div class="flex items-center gap-3">
             <RouterLink
               to="/admin/media"
-              class="inline-flex items-center gap-2 rounded-full bg-[#1db954] px-6 py-2.5 text-sm font-bold text-black transition hover:scale-105 hover:bg-[#1ed760]"
+              class="inline-flex items-center gap-2 rounded-full bg-spotify px-6 py-2.5 text-sm font-bold text-black transition hover:scale-105 hover:bg-spotify-hover"
             >
               <i aria-hidden="true" class="pi pi-upload text-xs" /> Upload
             </RouterLink>
@@ -48,7 +48,7 @@
               type="button"
               :disabled="refreshing"
               @click="refreshStats"
-              class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-5 py-2.5 text-sm font-medium text-white backdrop-blur transition hover:bg-white/[0.10] disabled:opacity-50"
+              class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/4 px-5 py-2.5 text-sm font-medium text-white backdrop-blur-xs transition hover:bg-white/10 disabled:opacity-50"
             >
               <i aria-hidden="true" :class="refreshing ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'" />
               {{ refreshing ? 'Refreshing...' : 'Refresh' }}
@@ -58,7 +58,7 @@
       </div>
 
       <!-- Tabs -->
-      <div class="flex gap-1 rounded-xl bg-white/[0.04] p-1">
+      <div class="flex gap-1 rounded-xl bg-white/4 p-1">
         <button
           v-for="tab in tabs"
           :key="tab.key"
@@ -97,7 +97,7 @@
         <!-- Daily bar chart -->
         <section>
           <h3 class="mb-3 text-lg font-bold text-white">Daily Plays</h3>
-          <div class="rounded-2xl bg-white/[0.04] p-6">
+          <div class="rounded-2xl bg-white/4 p-6">
             <div
               v-if="dailyStats.length === 0"
               class="flex flex-col items-center gap-3 py-16 text-center"
@@ -112,9 +112,9 @@
                 class="flex items-center gap-3"
               >
                 <span class="w-24 shrink-0 text-xs text-slate-400">{{ formatDate(String(day.date)) }}</span>
-                <div class="h-6 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                <div class="h-6 flex-1 overflow-hidden rounded-full bg-white/6">
                   <div
-                    class="h-full rounded-full bg-gradient-to-r from-[#1db954] to-[#1ed760] transition-all duration-500"
+                    class="h-full rounded-full bg-linear-to-r from-spotify to-spotify-hover transition-all duration-500"
                     :style="{ width: barWidth(Number(day.plays)) + '%' }"
                   />
                 </div>
@@ -138,7 +138,7 @@
               v-for="track in trackStats.slice(0, 10)"
               :key="track.track_id"
               @click="playTrack(track)"
-              class="group flex cursor-pointer items-center gap-4 rounded-xl bg-white/[0.03] px-4 py-3 transition hover:bg-white/[0.06]"
+              class="group flex cursor-pointer items-center gap-4 rounded-xl bg-white/3 px-4 py-3 transition hover:bg-white/6"
             >
               <div
                 class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-xs text-white/30"
@@ -205,7 +205,7 @@
 
         <section>
           <h3 class="mb-3 text-lg font-bold text-white">Revenue Breakdown</h3>
-          <div class="rounded-2xl bg-white/[0.04] p-6">
+          <div class="rounded-2xl bg-white/4 p-6">
             <div class="space-y-3">
               <div
                 v-for="item in revenueBreakdown"
@@ -213,7 +213,7 @@
                 class="flex items-center gap-3"
               >
                 <span class="w-32 shrink-0 text-xs text-slate-400">{{ item.label }}</span>
-                <div class="h-6 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                <div class="h-6 flex-1 overflow-hidden rounded-full bg-white/6">
                   <div
                     class="h-full rounded-full transition-all duration-500"
                     :class="item.color"
@@ -238,7 +238,7 @@
             <div
               v-for="p in payouts"
               :key="p.id"
-              class="flex items-center justify-between rounded-xl bg-white/[0.03] px-4 py-3"
+              class="flex items-center justify-between rounded-xl bg-white/3 px-4 py-3"
             >
               <div>
                 <p class="text-sm font-medium text-white">${{ formatNumber(p.amount) }}</p>
@@ -274,7 +274,7 @@
             :value="audience.overview?.new_listeners_7d || 0"
             icon="pi pi-user-plus"
           />
-          <div class="rounded-2xl bg-white/[0.04] p-5">
+          <div class="rounded-2xl bg-white/4 p-5">
             <p class="text-2xl font-black text-white">{{ audienceRepeatRate }}%</p>
             <p class="mt-1 text-xs font-medium text-white/40">Repeat Rate</p>
           </div>
@@ -293,7 +293,7 @@
             <div
               v-for="(l, i) in audience.top_listeners?.slice(0, 10)"
               :key="l.user_id"
-              class="flex items-center gap-3 rounded-xl bg-white/[0.03] px-4 py-3"
+              class="flex items-center gap-3 rounded-xl bg-white/3 px-4 py-3"
             >
               <span class="w-6 text-xs font-bold text-white/20">#{{ i + 1 }}</span>
               <div class="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-white/10">
@@ -332,7 +332,7 @@
             <div
               v-for="g in audience.geographics?.slice(0, 10)"
               :key="g.country + g.city"
-              class="flex items-center gap-3 rounded-xl bg-white/[0.03] px-4 py-3"
+              class="flex items-center gap-3 rounded-xl bg-white/3 px-4 py-3"
             >
               <span class="text-lg">{{ countryFlag(g.country) }}</span>
               <div class="min-w-0 flex-1">
@@ -359,7 +359,7 @@
             <div
               v-for="track in contentData.tracks"
               :key="track.track_id"
-              class="group flex items-center gap-3 rounded-xl bg-white/[0.03] px-4 py-3 transition hover:bg-white/[0.06]"
+              class="group flex items-center gap-3 rounded-xl bg-white/3 px-4 py-3 transition hover:bg-white/6"
             >
               <div class="min-w-0 flex-1">
                 <p class="text-sm font-medium text-white">{{ track.title }}</p>
@@ -387,7 +387,7 @@
             <div
               v-for="album in contentData.albums"
               :key="album.id"
-              class="rounded-xl bg-white/[0.03] p-4 transition hover:bg-white/[0.06]"
+              class="rounded-xl bg-white/3 p-4 transition hover:bg-white/6"
             >
               <div class="mb-2 h-24 w-full overflow-hidden rounded-lg bg-white/10">
                 <img
@@ -415,7 +415,7 @@
     <Teleport to="body">
       <div
         v-if="showTrackModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs"
         @click.self="showTrackModal = false"
       >
         <div class="glass-strong mx-4 w-full max-w-lg rounded-2xl p-8">
@@ -426,7 +426,7 @@
               <input
                 v-model="editForm.title"
                 aria-label="Track title"
-                class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-white/20"
+                class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-hidden focus:border-white/20"
               />
             </div>
             <div>
@@ -434,7 +434,7 @@
               <input
                 v-model="editForm.persian_title"
                 aria-label="Persian title"
-                class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-white/20"
+                class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-hidden focus:border-white/20"
               />
             </div>
             <div>
@@ -443,7 +443,7 @@
                 v-model="editForm.lyrics"
                 rows="4"
                 aria-label="Lyrics"
-                class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-white/20"
+                class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-hidden focus:border-white/20"
               />
             </div>
             <label class="flex items-center gap-3">
@@ -463,7 +463,7 @@
               Cancel
             </button>
             <button
-              class="flex-1 rounded-xl bg-[#1db954] py-3 text-sm font-bold text-black hover:bg-[#1db954]/90"
+              class="flex-1 rounded-xl bg-spotify py-3 text-sm font-bold text-black hover:bg-spotify/90"
               @click="saveTrack"
             >
               Save
@@ -540,14 +540,14 @@ const contentData = reactive<CreatorContentData>({ tracks: [], albums: [], playl
 const editForm = reactive({ title: '', persian_title: '', lyrics: '', explicit: false })
 
 const audienceRepeatRate = computed(() => {
-  if (!audience.overview) return '0'
+  if (audience.overview!) return '0'
   return (audience.overview.repeat_rate * 100).toFixed(1)
 })
 
 const revenueBreakdown = computed(() => [
-  { label: 'Streams', value: earnings.stream_revenue, color: 'bg-[#1db954]' },
-  { label: 'Tips', value: earnings.tip_revenue, color: 'bg-[#e91e63]' },
-  { label: 'Subscriptions', value: earnings.subscription_revenue, color: 'bg-[#60a5fa]' },
+  { label: 'Streams', value: earnings.stream_revenue, color: 'bg-spotify' },
+  { label: 'Tips', value: earnings.tip_revenue, color: 'bg-pink-600' },
+  { label: 'Subscriptions', value: earnings.subscription_revenue, color: 'bg-aurora-blue' },
 ])
 
 function revenuePercent(value: number): number {
@@ -631,7 +631,7 @@ function playTrack(track: Record<string, unknown>) {
 }
 
 async function saveTrack() {
-  if (!editTrack.value) return
+  if (editTrack.value!) return
   try {
     await creatorApi.updateTrack(editTrack.value.track_id, {
       title: editForm.title,
@@ -651,7 +651,7 @@ function barWidth(plays: number) {
 }
 
 function formatDate(dateStr: string) {
-  if (!dateStr) return ''
+  if (dateStr!) return ''
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 

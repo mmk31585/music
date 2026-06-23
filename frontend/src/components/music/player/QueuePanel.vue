@@ -2,7 +2,7 @@
   <Transition name="slide-right">
     <div
       v-if="visible"
-      class="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-white/10 bg-[#121212] shadow-2xl"
+      class="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-white/10 bg-surface-raised shadow-2xl"
     >
       <div class="flex items-center justify-between border-b border-white/10 px-5 py-4">
         <h2 class="text-lg font-bold text-white">Queue</h2>
@@ -21,7 +21,7 @@
           <p class="mb-3 text-xs font-semibold tracking-wider text-slate-500 uppercase">
             Now Playing
           </p>
-          <div class="flex items-center gap-3 rounded-xl bg-[#1db954]/10 px-4 py-3">
+          <div class="flex items-center gap-3 rounded-xl bg-spotify/10 px-4 py-3">
             <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white/10">
               <img
                 v-if="currentTrack.coverUrl"
@@ -39,7 +39,7 @@
               <p class="truncate text-sm font-bold text-white">{{ currentTrack.title }}</p>
               <p class="truncate text-xs text-slate-400">{{ currentTrack.artistName }}</p>
             </div>
-            <i aria-hidden="true" class="pi pi-waveform text-lg text-[#1db954]" />
+            <i aria-hidden="true" class="pi pi-waveform text-lg text-spotify" />
           </div>
         </div>
 
@@ -58,7 +58,7 @@
           >
             <template #item="{ element: track, index }">
               <div
-                class="flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-white/[0.06]"
+                class="flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-white/6"
                 @click="$emit('playFromQueue', index)"
               >
                 <span class="drag-handle flex w-5 items-center justify-center cursor-grab active:cursor-grabbing text-white/30 hover:text-white/70 transition-colors me-3">
@@ -102,7 +102,7 @@
   <Transition name="fade">
     <div
       v-if="visible"
-      class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+      class="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs"
       @click="visible = false"
     />
   </Transition>
@@ -138,7 +138,7 @@ function onReorder(event: { oldIndex: number; newIndex: number }) {
 }
 
 function formatTime(seconds?: number | null) {
-  if (!seconds) return '0:00'
+  if (seconds!) return '0:00'
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${String(s).padStart(2, '0')}`

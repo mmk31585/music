@@ -16,7 +16,7 @@
       <!-- Back button -->
       <button
         type="button"
-        class="mb-6 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-white/50 transition hover:bg-white/[0.06] hover:text-white"
+        class="mb-6 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-white/50 transition hover:bg-white/6 hover:text-white"
         @click="goBack"
       >
         <i aria-hidden="true" class="pi pi-arrow-left text-xs" />
@@ -26,7 +26,7 @@
       <!-- Loading -->
       <div v-if="loading" class="space-y-6">
         <div class="flex flex-col gap-10 md:flex-row">
-          <SkeletonLoader variant="card" class="h-[340px] w-[340px] shrink-0" />
+          <SkeletonLoader variant="card" class="h-85 w-85 shrink-0" />
           <div class="flex-1 space-y-4">
             <SkeletonLoader variant="lines" :lines="1" class="max-w-sm" />
             <SkeletonLoader variant="lines" :lines="1" class="max-w-xs" />
@@ -44,12 +44,12 @@
 
       <!-- Error -->
       <div v-else-if="error" class="flex flex-col items-center gap-4 py-24 text-center">
-        <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.04]">
+        <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/4">
           <i aria-hidden="true" class="pi pi-exclamation-circle text-3xl text-slate-500" />
         </div>
         <h2 class="text-xl font-bold text-white">Track not found</h2>
         <p class="text-sm text-slate-400">This track may have been removed or the link is invalid.</p>
-        <RouterLink to="/" class="mt-2 text-sm font-medium text-[#1db954] underline underline-offset-2">
+        <RouterLink to="/" class="mt-2 text-sm font-medium text-spotify underline underline-offset-2">
           Go home
         </RouterLink>
       </div>
@@ -63,7 +63,7 @@
           <!-- Left: Cover Art -->
           <div class="group shrink-0">
             <div
-              class="relative h-[300px] w-[300px] overflow-hidden rounded-2xl bg-white/[0.06] shadow-2xl ring-1 ring-white/10 transition-all duration-500 md:h-[340px] md:w-[340px]"
+              class="relative h-75 w-75 overflow-hidden rounded-2xl bg-white/6 shadow-2xl ring-1 ring-white/10 transition-all duration-500 md:h-85 md:w-85"
               :style="coverGlowStyle"
             >
               <img
@@ -83,12 +83,12 @@
                 v-if="isPlaying"
                 class="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[1px]"
               >
-                <div class="flex items-end gap-[3px]">
-                  <span class="now-playing-bar h-5 w-[3px] rounded-full bg-white" />
-                  <span class="now-playing-bar h-8 w-[3px] rounded-full bg-white" style="animation-delay: 0.15s" />
-                  <span class="now-playing-bar h-6 w-[3px] rounded-full bg-white" style="animation-delay: 0.3s" />
-                  <span class="now-playing-bar h-4 w-[3px] rounded-full bg-white" style="animation-delay: 0.45s" />
-                  <span class="now-playing-bar h-7 w-[3px] rounded-full bg-white" style="animation-delay: 0.2s" />
+                <div class="flex items-end gap-0.75">
+                  <span class="now-playing-bar h-5 w-0.75 rounded-full bg-white" />
+                  <span class="now-playing-bar h-8 w-0.75 rounded-full bg-white" style="animation-delay: 0.15s" />
+                  <span class="now-playing-bar h-6 w-0.75 rounded-full bg-white" style="animation-delay: 0.3s" />
+                  <span class="now-playing-bar h-4 w-0.75 rounded-full bg-white" style="animation-delay: 0.45s" />
+                  <span class="now-playing-bar h-7 w-0.75 rounded-full bg-white" style="animation-delay: 0.2s" />
                 </div>
               </div>
 
@@ -96,7 +96,7 @@
               <RouterLink
                 v-if="isAdmin"
                 :to="`/admin/catalog/tracks/${trackId}`"
-                class="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/70 group-hover:opacity-100"
+                class="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white opacity-0 backdrop-blur-xs transition-opacity hover:bg-black/70 group-hover:opacity-100"
                 title="Edit track in admin"
                 @click.stop
               >
@@ -105,7 +105,7 @@
             </div>
             <!-- Sleeve frame accent -->
             <div
-              class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/[0.04]"
+              class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/4"
               aria-hidden="true"
             />
           </div>
@@ -138,7 +138,7 @@
               <template v-for="(a, i) in trackArtists" :key="String(a.artistId || i)">
                 <RouterLink
                   :to="`/artist/${a.artistId}`"
-                  class="inline-flex items-center gap-1.5 font-bold text-white underline underline-offset-4 decoration-white/20 transition hover:text-[#1db954] hover:decoration-[#1db954]"
+                  class="inline-flex items-center gap-1.5 font-bold text-white underline underline-offset-4 decoration-white/20 transition hover:text-spotify hover:decoration-[#1db954]"
                 >
                   {{ a.name }}
                 </RouterLink>
@@ -166,7 +166,7 @@
               <span
                 v-for="g in genreList"
                 :key="g.id"
-                class="rounded-full border border-white/10 bg-white/[0.06] px-3 py-0.5 text-xs font-medium text-slate-300 transition hover:border-[#1db954]/30 hover:text-white"
+                class="rounded-full border border-white/10 bg-white/6 px-3 py-0.5 text-xs font-medium text-slate-300 transition hover:border-spotify/30 hover:text-white"
               >
                 {{ g.name }}
               </span>
@@ -191,7 +191,7 @@
               <button
                 type="button"
                 aria-label="Toggle play"
-                class="relative flex h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-2xl transition-all hover:scale-105 hover:bg-[#1db954] hover:text-white active:scale-95 md:h-16 md:w-16"
+                class="relative flex h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-2xl transition-all hover:scale-105 hover:bg-spotify hover:text-white active:scale-95 md:h-16 md:w-16"
                 @click="togglePlay"
               >
                 <i
@@ -212,7 +212,7 @@
 
             <!-- Progress bar -->
             <div class="mt-5 flex w-full max-w-md items-center gap-3">
-              <span class="min-w-[2.5rem] text-right text-xs font-medium text-slate-500 tabular-nums">
+              <span class="min-w-10 text-right text-xs font-medium text-slate-500 tabular-nums">
                 {{ formatTime(player.currentTime.value) }}
               </span>
               <input
@@ -226,7 +226,7 @@
                 :value="player.progressPercent.value"
                 @input="onSeek"
               />
-              <span class="min-w-[2.5rem] text-xs font-medium text-slate-500 tabular-nums">
+              <span class="min-w-10 text-xs font-medium text-slate-500 tabular-nums">
                 {{ formatTime(player.duration.value || track.duration_seconds || 0) }}
               </span>
             </div>
@@ -235,7 +235,7 @@
             <div class="mt-6 flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                class="glow-green inline-flex items-center gap-2.5 rounded-full bg-[#1DB954] px-7 py-2.5 text-sm font-bold text-black transition hover:scale-105 hover:bg-[#1ed760]"
+                class="glow-green inline-flex items-center gap-2.5 rounded-full bg-spotify px-7 py-2.5 text-sm font-bold text-black transition hover:scale-105 hover:bg-spotify-hover"
                 @click="togglePlay"
               >
                 <i aria-hidden="true" :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" />
@@ -244,8 +244,8 @@
 
               <button
                 type="button"
-                class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-5 py-2.5 text-sm font-bold transition"
-                :class="isLiked ? 'border-[#1db954]/30 text-[#1db954]' : 'text-white/80 hover:border-white/30 hover:bg-white/[0.08] hover:text-white'"
+                class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/4 px-5 py-2.5 text-sm font-bold transition"
+                :class="isLiked ? 'border-spotify/30 text-spotify' : 'text-white/80 hover:border-white/30 hover:bg-white/8 hover:text-white'"
                 @click="toggleLike"
               >
                 <i aria-hidden="true" :class="isLiked ? 'pi pi-heart-fill' : 'pi pi-heart'" />
@@ -254,7 +254,7 @@
 
               <button
                 type="button"
-                class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/[0.08] hover:text-white"
+                class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/3 px-5 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/8 hover:text-white"
                 @click="showAddToPlaylist = true"
               >
                 <i aria-hidden="true" class="pi pi-plus" />
@@ -263,7 +263,7 @@
 
               <button
                 type="button"
-                class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/[0.08] hover:text-white"
+                class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/3 px-5 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/8 hover:text-white"
                 @click="shareTrack"
               >
                 <i aria-hidden="true" class="pi pi-share-alt" />
@@ -283,7 +283,7 @@
               <!-- Create edit (always shown) -->
               <button
                 type="button"
-                class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/[0.08] hover:text-white"
+                class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/3 px-5 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/8 hover:text-white"
                 @click="goToCreateEdit"
               >
                 <i aria-hidden="true" class="pi pi-video text-sm" />
@@ -296,7 +296,7 @@
               <button
                 type="button"
                 class="flex items-center gap-2 text-sm font-medium transition"
-                :class="player.shuffleMode ? 'text-[#1db954]' : 'text-slate-400 hover:text-white'"
+                :class="player.shuffleMode ? 'text-spotify' : 'text-slate-400 hover:text-white'"
                 @click="player.toggleShuffle"
               >
                 <i class="pi pi-sort-alt text-lg" />
@@ -306,13 +306,13 @@
               <button
                 type="button"
                 class="relative flex items-center gap-2 text-sm font-medium transition"
-                :class="player.repeatMode !== 'off' ? 'text-[#1db954]' : 'text-slate-400 hover:text-white'"
+                :class="player.repeatMode !== 'off' ? 'text-spotify' : 'text-slate-400 hover:text-white'"
                 @click="player.toggleRepeat"
               >
                 <i aria-hidden="true" class="pi pi-refresh text-lg" />
                 <span
                   v-if="player.repeatMode === 'one'"
-                  class="absolute -top-1 -right-3 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#1db954] text-[8px] font-bold text-black"
+                  class="absolute -top-1 -right-3 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-spotify text-[8px] font-bold text-black"
                 >1</span>
                 Repeat
               </button>
@@ -333,13 +333,13 @@
         <!-- MUSIC VISUALIZER                       -->
         <!-- ════════════════════════════════════════ -->
         <section class="mx-auto mt-16 w-full max-w-2xl">
-          <div class="relative h-28 overflow-hidden rounded-2xl border border-white/[0.04] bg-white/[0.02] backdrop-blur-sm">
-            <div class="flex h-full items-end justify-center gap-[2px] px-4 pb-3">
+          <div class="relative h-28 overflow-hidden rounded-2xl border border-white/4 bg-white/2 backdrop-blur-xs">
+            <div class="flex h-full items-end justify-center gap-0.5 px-4 pb-3">
               <div
                 v-for="i in 96"
                 :key="i"
                 class="visualizer-bar w-[2.5px] rounded-t-full"
-                :class="isPlaying ? 'bg-white/20' : 'bg-white/[0.04]'"
+                :class="isPlaying ? 'bg-white/20' : 'bg-white/4'"
                 :style="{
                   height: isPlaying ? `${getBarHeight(i)}%` : '8%',
                   animationDelay: isPlaying ? `${i * 0.025}s` : '0s',
@@ -353,7 +353,7 @@
               @click="togglePlay"
             >
               <div
-                class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954]/90 text-black shadow-xl backdrop-blur-sm transition-transform hover:scale-110"
+                class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify/90 text-black shadow-xl backdrop-blur-xs transition-transform hover:scale-110"
               >
                 <i aria-hidden="true" :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" class="text-lg" />
               </div>
@@ -367,15 +367,15 @@
         <section v-if="trackVideos.length > 0" class="mt-16">
           <div class="relative mb-6">
             <div class="absolute inset-0 flex items-center">
-              <div class="w-full border-t border-white/[0.06]" />
+              <div class="w-full border-t border-white/6" />
             </div>
             <div class="relative flex justify-between items-center">
-              <span class="bg-[#0A0A0F] px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
+              <span class="bg-surface-base px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
                 Music Videos
               </span>
               <RouterLink
                 to="/videos"
-                class="bg-[#0A0A0F] px-4 text-xs font-medium text-[#1db954] transition hover:text-[#1ed760]"
+                class="bg-surface-base px-4 text-xs font-medium text-spotify transition hover:text-spotify-hover"
               >
                 Browse all &rarr;
               </RouterLink>
@@ -388,12 +388,12 @@
               :key="String(v.id)"
               role="button"
               tabindex="0"
-              class="group w-[45vw] shrink-0 snap-start cursor-pointer overflow-hidden rounded-xl bg-white/5 transition-all duration-150 hover:bg-white/[0.08] hover:shadow-lg hover:shadow-black/20 sm:w-auto sm:shrink"
+              class="group w-[45vw] shrink-0 snap-start cursor-pointer overflow-hidden rounded-xl bg-white/5 transition-all duration-150 hover:bg-white/8 hover:shadow-lg hover:shadow-black/20 sm:w-auto sm:shrink"
               @click="openVideo(v)"
               @keydown.enter="openVideo(v)"
               @keydown.space.prevent="openVideo(v)"
             >
-              <div class="relative aspect-[9/16] w-full overflow-hidden">
+              <div class="relative aspect-9/16 w-full overflow-hidden">
                 <img
                   v-if="v.thumbnail_url || v.thumbnail_path || v.track_cover_url"
                   :src="(v.thumbnail_url || v.thumbnail_path || v.track_cover_url) ?? undefined"
@@ -402,17 +402,17 @@
                   loading="lazy"
                   @error="($event.target as HTMLImageElement).style.display='none'"
                 />
-                <div v-else class="flex h-full items-center justify-center bg-white/[0.03]">
+                <div v-else class="flex h-full items-center justify-center bg-white/3">
                   <i aria-hidden="true" class="pi pi-video text-2xl text-slate-500" />
                 </div>
 
                 <!-- Overlay gradient -->
-                <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                <div class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent" />
 
                 <!-- Type badge -->
                 <div
-                  class="absolute top-2 right-2 rounded-full px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm"
-                  :class="v.type === 'official_mv' ? 'bg-[#1db954]/20 text-[#1db954]' : 'bg-blue-500/20 text-blue-400'"
+                  class="absolute top-2 right-2 rounded-full px-2 py-0.5 text-[10px] font-bold backdrop-blur-xs"
+                  :class="v.type === 'official_mv' ? 'bg-spotify/20 text-spotify' : 'bg-blue-500/20 text-blue-400'"
                 >
                   {{ v.type === 'official_mv' ? 'MV' : 'Edit' }}
                 </div>
@@ -429,7 +429,7 @@
                       {{ formatCount(v.like_count) }}
                     </span>
                   </div>
-                  <div class="flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+                  <div class="flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white opacity-0 backdrop-blur-xs transition-opacity group-hover:opacity-100">
                     <i aria-hidden="true" class="pi pi-play-fill text-xs" />
                   </div>
                 </div>
@@ -450,10 +450,10 @@
         <section class="mt-16">
           <div class="relative mb-6">
             <div class="absolute inset-0 flex items-center">
-              <div class="w-full border-t border-white/[0.06]" />
+              <div class="w-full border-t border-white/6" />
             </div>
             <div class="relative flex justify-center">
-              <span class="bg-[#0A0A0F] px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
+              <span class="bg-surface-base px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
                 Lyrics
               </span>
             </div>
@@ -465,7 +465,7 @@
               v-if="lyrics && lyrics.content"
               type="button"
               class="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold transition hover:bg-white/15"
-              :class="karaokeActive ? 'bg-[#1db954]/15 text-[#1db954]' : 'text-white/60'"
+              :class="karaokeActive ? 'bg-spotify/15 text-spotify' : 'text-white/60'"
               @click="karaokeActive = !karaokeActive"
             >
               <i aria-hidden="true" class="pi pi-mic text-[10px]" />
@@ -475,7 +475,7 @@
 
           <div
             v-if="karaokeActive && lyrics?.content"
-            class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl"
+            class="overflow-hidden rounded-2xl border border-white/6 bg-white/3 backdrop-blur-xl"
             style="height: 400px"
           >
             <KaraokeLyrics
@@ -490,9 +490,9 @@
           </div>
           <div
             v-else
-            class="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 backdrop-blur-xl"
+            class="rounded-2xl border border-white/6 bg-white/3 p-6 backdrop-blur-xl"
           >
-            <LyricsDisplay :lyrics="lyrics" :loading="loading" :error="!lyrics && !loading" />
+            <LyricsDisplay :lyrics="lyrics" :loading="loading" :error="lyrics! && loading!" />
           </div>
         </section>
 
@@ -502,10 +502,10 @@
         <section v-if="trackArtists.length > 0 || trackCredits.length > 0" class="mt-16">
           <div class="relative mb-8">
             <div class="absolute inset-0 flex items-center">
-              <div class="w-full border-t border-white/[0.06]" />
+              <div class="w-full border-t border-white/6" />
             </div>
             <div class="relative flex justify-center">
-              <span class="bg-[#0A0A0F] px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
+              <span class="bg-surface-base px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
                 Credits
               </span>
             </div>
@@ -515,10 +515,10 @@
             <div
               v-for="(a, i) in trackArtists"
               :key="String(a.artistId || i)"
-              class="group flex items-center gap-4 rounded-2xl border border-white/[0.04] bg-white/[0.02] px-5 py-4 transition hover:border-white/[0.08] hover:bg-white/[0.04]"
+              class="group flex items-center gap-4 rounded-2xl border border-white/4 bg-white/2 px-5 py-4 transition hover:border-white/8 hover:bg-white/4"
             >
               <div
-                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white/[0.08] to-white/[0.02] text-sm font-bold text-white/70 ring-1 ring-white/[0.04]"
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-white/8 to-white/2 text-sm font-bold text-white/70 ring-1 ring-white/4"
               >
                 {{ String(a.name).charAt(0).toUpperCase() }}
               </div>
@@ -526,7 +526,7 @@
                 <div class="flex items-center gap-2">
                   <RouterLink
                     :to="`/artist/${a.artistId}`"
-                    class="block truncate text-sm font-semibold text-white transition group-hover:text-[#1db954]"
+                    class="block truncate text-sm font-semibold text-white transition group-hover:text-spotify"
                   >
                     {{ a.name }}
                   </RouterLink>
@@ -545,10 +545,10 @@
             <div
               v-for="c in trackCredits"
               :key="String(c.id)"
-              class="group flex items-center gap-4 rounded-2xl border border-white/[0.04] bg-white/[0.02] px-5 py-4 transition hover:border-white/[0.08] hover:bg-white/[0.04]"
+              class="group flex items-center gap-4 rounded-2xl border border-white/4 bg-white/2 px-5 py-4 transition hover:border-white/8 hover:bg-white/4"
             >
               <div
-                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white/[0.08] to-white/[0.02] text-sm font-bold text-white/70 ring-1 ring-white/[0.04]"
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-white/8 to-white/2 text-sm font-bold text-white/70 ring-1 ring-white/4"
               >
                 {{ String(c.artistName).charAt(0).toUpperCase() }}
               </div>
@@ -566,10 +566,10 @@
         <section v-if="similarTracks.length" class="mt-16" aria-live="polite">
           <div class="relative mb-8">
             <div class="absolute inset-0 flex items-center">
-              <div class="w-full border-t border-white/[0.06]" />
+              <div class="w-full border-t border-white/6" />
             </div>
             <div class="relative flex justify-center">
-              <span class="bg-[#0A0A0F] px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
+              <span class="bg-surface-base px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
                 You might like
               </span>
             </div>
@@ -578,14 +578,14 @@
             <div
               v-for="(st, index) in similarTracks"
               :key="st.id"
-              class="group grid grid-cols-[48px_1fr_auto] items-center gap-4 rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-white/[0.08]"
+              class="group grid grid-cols-[48px_1fr_auto] items-center gap-4 rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-white/8"
             >
               <!-- Play button -->
               <button
                 type="button"
                 aria-label="Play track"
-                class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white/10 text-white transition-all duration-200 hover:scale-105 hover:bg-[#1db954] hover:text-black"
-                :class="{ 'bg-[#1db954] text-black': isCurrentSimilarTrack(st) }"
+                class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white/10 text-white transition-all duration-200 hover:scale-105 hover:bg-spotify hover:text-black"
+                :class="{ 'bg-spotify text-black': isCurrentSimilarTrack(st) }"
                 @click="playSimilar(st, index)"
               >
                 <img
@@ -598,7 +598,7 @@
                 />
                 <span class="relative z-10 flex items-center justify-center">
                   <template v-if="isCurrentSimilarTrack(st) && player.isPlaying.value">
-                    <span class="flex h-4 items-end gap-[2px]" aria-label="Playing">
+                    <span class="flex h-4 items-end gap-0.5" aria-label="Playing">
                       <span class="similar-eq-bar h-2" />
                       <span class="similar-eq-bar animation-delay-150 h-4" />
                       <span class="similar-eq-bar animation-delay-300 h-3" />
@@ -612,7 +612,7 @@
                 <RouterLink
                   :to="`/track/${st.id}`"
                   class="truncate text-sm font-semibold transition hover:underline"
-                  :class="isCurrentSimilarTrack(st) ? 'text-[#1db954]' : 'text-white'"
+                  :class="isCurrentSimilarTrack(st) ? 'text-spotify' : 'text-white'"
                   @click.stop
                 >
                   {{ st.title }}
@@ -695,7 +695,7 @@ const { palette } = useAlbumColors(coverUrl)
 const accentColor = computed(() => palette.value.vibrant || '#1db954')
 
 const ambientBg = computed(() => {
-  if (!coverUrl.value) return { background: '#0A0A0F' }
+  if (coverUrl.value!) return { background: '#0A0A0F' }
   const c = accentColor.value
   return {
     background: `
@@ -707,7 +707,7 @@ const ambientBg = computed(() => {
 })
 
 const coverGlowStyle = computed(() => {
-  if (!coverUrl.value) return {}
+  if (coverUrl.value!) return {}
   const c = accentColor.value
   return {
     boxShadow: `0 0 40px ${c}40, 0 0 80px ${c}20, 0 0 120px ${c}10`,
@@ -799,7 +799,7 @@ function shareTrack() {
 
 // ── Formatters ──
 function formatTime(seconds?: number | null) {
-  if (!seconds) return '0:00'
+  if (!seconds && seconds !== 0) return '0:00'
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${String(s).padStart(2, '0')}`

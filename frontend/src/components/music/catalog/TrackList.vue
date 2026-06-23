@@ -1,5 +1,5 @@
 <template>
-  <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+  <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
     <TrackRow
       v-for="(track, index) in tracks"
       :key="String(track.id)"

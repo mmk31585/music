@@ -32,7 +32,7 @@ vi.mock('@/services/player', () => {
     off: vi.fn(),
   }
   return {
-    PlayerEngine: vi.fn().mockImplementation(() => mockEngine),
+    PlayerEngine: vi.fn(function () { return mockEngine }),
     ShuffleMode: { Off: 'off', Queue: 'queue', Catalog: 'catalog', Similar: 'similar' },
     RepeatMode: { Off: 'off', One: 'one', All: 'all' },
   }
@@ -102,52 +102,41 @@ describe('usePlayerStore', () => {
 
   it('computes progressPercent correctly', () => {
     const store = usePlayerStore()
-    // @ts-expect-error - setting internal ref for testing
     store.currentTime = 60
-    // @ts-expect-error - setting internal ref for testing
     store.duration = 240
     expect(store.progressPercent).toBe(25)
   })
 
   it('progressPercent is 0 when duration is 0', () => {
     const store = usePlayerStore()
-    // @ts-expect-error - setting internal ref for testing
     store.currentTime = 50
-    // @ts-expect-error - setting internal ref for testing
     store.duration = 0
     expect(store.progressPercent).toBe(0)
   })
 
   it('hasNext is true when shuffle is on', () => {
     const store = usePlayerStore()
-    // @ts-expect-error - setting internal ref for testing
     store.shuffleMode = 'queue'
     expect(store.hasNext).toBe(true)
   })
 
   it('hasNext is false when shuffle is off and queue is empty', () => {
     const store = usePlayerStore()
-    // @ts-expect-error - setting internal ref for testing
     store.shuffleMode = 'off'
-    // @ts-expect-error - setting internal ref for testing
     store.queue = []
-    // @ts-expect-error - setting internal ref for testing
     store.currentTrack = null
     expect(store.hasNext).toBe(false)
   })
 
   it('hasPrevious is true when shuffle is on', () => {
     const store = usePlayerStore()
-    // @ts-expect-error - setting internal ref for testing
     store.shuffleMode = 'queue'
     expect(store.hasPrevious).toBe(true)
   })
 
   it('hasPrevious is true when currentTime > 0 and shuffle off', () => {
     const store = usePlayerStore()
-    // @ts-expect-error - setting internal ref for testing
     store.shuffleMode = 'off'
-    // @ts-expect-error - setting internal ref for testing
     store.currentTime = 10
     expect(store.hasPrevious).toBe(true)
   })

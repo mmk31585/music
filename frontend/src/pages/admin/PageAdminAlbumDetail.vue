@@ -12,11 +12,11 @@
 
     <div v-if="loading" class="space-y-6">
       <div class="flex items-start gap-6">
-        <div class="aspect-square w-48 animate-pulse rounded-2xl bg-white/[0.06]" />
+        <div class="aspect-square w-48 animate-pulse rounded-2xl bg-white/6" />
         <div class="flex-1 space-y-3">
-          <div class="h-8 w-56 animate-pulse rounded bg-white/[0.06]" />
-          <div class="h-4 w-40 animate-pulse rounded bg-white/[0.04]" />
-          <div class="h-4 w-64 animate-pulse rounded bg-white/[0.04]" />
+          <div class="h-8 w-56 animate-pulse rounded bg-white/6" />
+          <div class="h-4 w-40 animate-pulse rounded bg-white/4" />
+          <div class="h-4 w-64 animate-pulse rounded bg-white/4" />
         </div>
       </div>
     </div>
@@ -36,7 +36,7 @@
     <template v-else-if="album">
       <div class="flex flex-col gap-6 lg:flex-row lg:items-start">
         <div class="shrink-0">
-          <div class="relative aspect-square w-48 overflow-hidden rounded-2xl bg-white/[0.06] shadow-lg lg:w-56">
+          <div class="relative aspect-square w-48 overflow-hidden rounded-2xl bg-white/6 shadow-lg lg:w-56">
             <img
               v-if="album.cover_url"
               :src="album.cover_url"
@@ -78,7 +78,7 @@
               size="small"
               severity="info"
               :loading="enriching"
-              class="!rounded-xl !bg-amber-500/10 !text-amber-400 hover:!bg-amber-500/20"
+              class="rounded-xl! bg-amber-500/10! text-amber-400! hover:bg-amber-500/20!"
               @click="handleEnrich"
             />
             <Button
@@ -93,7 +93,7 @@
               icon="pi pi-trash"
               size="small"
               severity="danger"
-              class="!text-red-400"
+              class="text-red-400!"
               @click="openDeleteConfirm"
             />
           </div>
@@ -103,7 +103,7 @@
       <div class="mt-10">
         <h2 class="mb-4 text-lg font-semibold text-white">Tracks</h2>
         <div v-if="loadingTracks" class="space-y-3">
-          <div v-for="i in 5" :key="i" class="h-12 animate-pulse rounded-lg bg-white/[0.04]" />
+          <div v-for="i in 5" :key="i" class="h-12 animate-pulse rounded-lg bg-white/4" />
         </div>
         <AdminEmptyState
           v-else-if="albumTracks.length === 0"
@@ -112,16 +112,16 @@
           description="This album has no tracks yet."
           compact
         />
-        <div v-else class="overflow-hidden rounded-xl border border-white/[0.06]">
+        <div v-else class="overflow-hidden rounded-xl border border-white/6">
           <div
             v-for="(track, i) in albumTracks"
             :key="track.id"
-            class="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-white/[0.02]"
-            :class="i < albumTracks.length - 1 ? 'border-b border-white/[0.04]' : ''"
+            class="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-white/2"
+            :class="i < albumTracks.length - 1 ? 'border-b border-white/4' : ''"
           >
             <button
               type="button"
-              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-all hover:bg-[#1db954]/20 hover:text-[#1db954] disabled:opacity-30"
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-all hover:bg-spotify/20 hover:text-spotify disabled:opacity-30"
               :disabled="loadingTrackId === String(track.id)"
               :aria-label="'Play ' + track.title"
               :title="isTrackPlaying(track) ? 'Now playing' : 'Play track'"
@@ -178,7 +178,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import Button from 'primevue/button'
 import { useToast } from 'primevue/usetoast'
 import AdminEmptyState from '@/components/admin/AdminEmptyState.vue'
 import AlbumFormDialog from '@/components/admin/AlbumFormDialog.vue'
@@ -282,7 +281,7 @@ function openDeleteConfirm() {
 }
 
 async function handleEnrich() {
-  if (!album.value) return
+  if (album.value!) return
   enriching.value = true
   try {
     await albumsApi.adminEnrichAlbum(album.value.id)
@@ -296,7 +295,7 @@ async function handleEnrich() {
 }
 
 async function handleEditSubmit(payload: AlbumFormPayload) {
-  if (!album.value) return
+  if (album.value!) return
   saving.value = true
   try {
     const updated = await albumsApi.adminUpdateAlbum(album.value.id, payload)
@@ -311,7 +310,7 @@ async function handleEditSubmit(payload: AlbumFormPayload) {
 }
 
 async function handleDelete() {
-  if (!album.value) return
+  if (album.value!) return
   deleting.value = true
   try {
     await albumsApi.adminDeleteAlbum(album.value.id)

@@ -20,9 +20,7 @@ export const appRoutes: RouteRecordRaw[] = [
       },
       {
         path: 'discover',
-        name: 'discover',
-        component: () => import('@/pages/app/PageDiscover.vue'),
-        meta: { title: 'Discover' },
+        redirect: '/search',
       },
       {
         path: 'recommendations',

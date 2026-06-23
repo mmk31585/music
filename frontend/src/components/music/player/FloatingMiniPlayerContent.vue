@@ -68,13 +68,13 @@
       </div>
 
       <div class="popout-controls">
-        <button type="button" class="popout-ctrl-btn" aria-label="Previous track" @click="playPrevious" :disabled="!hasPrevious">
+        <button type="button" class="popout-ctrl-btn" aria-label="Previous track" @click="playPrevious" :disabled="hasPrevious!">
           <i aria-hidden="true" class="pi pi-step-backward" />
         </button>
         <button type="button" class="popout-play-btn" :style="{ background: accentColor }" :aria-label="isPlaying ? 'Pause' : 'Play'" @click="togglePlayPause">
           <i aria-hidden="true" :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" />
         </button>
-        <button type="button" class="popout-ctrl-btn" aria-label="Next track" @click="playNext" :disabled="!hasNext">
+        <button type="button" class="popout-ctrl-btn" aria-label="Next track" @click="playNext" :disabled="hasNext!">
           <i aria-hidden="true" class="pi pi-step-forward" />
         </button>
       </div>
@@ -83,11 +83,14 @@
         <button type="button" class="popout-ctrl-btn" :aria-label="muted ? 'Unmute' : 'Mute'" @click="toggleMute">
           <i aria-hidden="true" :class="volumeIcon" />
         </button>
-        <input
-          type="range" min="0" max="1" step="0.01"
+        <Slider
+          :model-value="muted ? 0 : Number(volume || 0)"
+          @update:model-value="onVolume"
+          :min="0"
+          :max="1"
+          :step="0.01"
           class="popout-range"
-          :value="muted ? 0 : Number(volume || 0)"
-          @input="onVolume"
+          aria-label="Volume"
         />
       </div>
     </div>
@@ -144,7 +147,7 @@ const { palette } = useAlbumColors(computed(() => currentTrack.value?.coverUrl |
 const accentColor = computed(() => palette.value.vibrant || '#1db954')
 
 const backdropStyle = computed(() => {
-  if (!coverUrl.value) return {}
+  if (coverUrl.value!) return {}
   return {
     background: `linear-gradient(135deg, ${palette.value.dark} 0%, ${palette.value.dominant} 60%, ${palette.value.muted} 100%)`,
   }
@@ -172,7 +175,7 @@ function onPointerDown(e: MouseEvent | TouchEvent) {
 
   isDragging.value = true
   const el = floatingEl.value
-  if (!el) return
+  if (el!) return
   const clientX = 'touches' in e ? e.touches[0]!.clientX : e.clientX
   const clientY = 'touches' in e ? e.touches[0]!.clientY : e.clientY
 
@@ -217,7 +220,7 @@ function onPointerUp() {
 
 function snapToEdge() {
   const el = floatingEl.value
-  if (!el) return
+  if (el!) return
   const w = props.isPiP ? window.innerWidth : el.offsetWidth
   const h = props.isPiP ? window.innerHeight : el.offsetHeight
   const cx = posX.value + offsetX.value
@@ -257,7 +260,7 @@ const durationLabel = computed(() =>
 
 function seekFromEvent(e: MouseEvent | KeyboardEvent) {
   const el = progressRef.value
-  if (!el) return
+  if (el!) return
   const rect = el.getBoundingClientRect()
   const ratio = Math.max(0, Math.min(1, ((e as MouseEvent).clientX - rect.left) / rect.width))
   pc.seek(ratio * (duration.value || currentTrack.value?.durationSeconds || 0))
@@ -266,7 +269,7 @@ function seekFromEvent(e: MouseEvent | KeyboardEvent) {
 function close() { emit('update:visible', false) }
 function openFullscreen() { emit('open-fullscreen') }
 function onTogglePiP() { emit('toggle-pip') }
-function onVolume(e: Event) { pc.setVolume(Number((e.target as HTMLInputElement).value)) }
+function onVolume(val: number) { pc.setVolume(val) }
 
 onBeforeUnmount(() => {
   if (dragRAF !== null) cancelAnimationFrame(dragRAF)

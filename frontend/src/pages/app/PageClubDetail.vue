@@ -10,17 +10,17 @@
 
     <SkeletonLoader v-if="loading" variant="card" class="h-64" />
 
-    <div v-else-if="error" class="rounded-2xl bg-white/[0.03] p-12 text-center">
+    <div v-else-if="error" class="rounded-2xl bg-white/3 p-12 text-center">
       <p class="text-sm text-white/40">{{ error }}</p>
     </div>
 
     <template v-else-if="detail">
       <!-- Cover Hero -->
       <div
-        class="relative mb-8 overflow-hidden rounded-[2rem] border border-white/[0.06]"
+        class="relative mb-8 overflow-hidden rounded-2xl border border-white/6"
         :style="coverBg"
       >
-        <div class="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/70 to-transparent" />
+        <div class="absolute inset-0 bg-linear-to-t from-surface-base via-surface-base/70 to-transparent" />
         <div class="relative z-10 flex flex-col gap-6 p-8 pt-48">
           <div>
             <div class="flex items-center gap-3">
@@ -41,7 +41,7 @@
           <div class="flex flex-wrap items-center gap-3">
             <button
               v-if="!detail.is_member"
-              class="inline-flex items-center gap-2 rounded-xl bg-[#1db954] px-6 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760]"
+              class="inline-flex items-center gap-2 rounded-xl bg-spotify px-6 py-2.5 text-sm font-bold text-black transition hover:bg-spotify-hover"
               @click="handleJoin"
             >
               عضو شدم ✓
@@ -69,7 +69,7 @@
         <!-- Main content -->
         <div class="space-y-8 lg:col-span-2">
           <!-- About -->
-          <section class="rounded-2xl bg-white/[0.03] p-6">
+          <section class="rounded-2xl bg-white/3 p-6">
             <h2 class="mb-3 text-sm font-bold uppercase tracking-wider text-white/30">درباره</h2>
             <p class="text-sm leading-relaxed text-white/60">
               {{ detail.club.description || 'هنوز توضیحی ثبت نشده.' }}
@@ -77,14 +77,14 @@
           </section>
 
           <!-- Shared Playlist -->
-          <section class="rounded-2xl bg-white/[0.03] p-6">
+          <section class="rounded-2xl bg-white/3 p-6">
             <div class="mb-4 flex items-center justify-between">
               <h2 class="text-sm font-bold uppercase tracking-wider text-white/30">
                 پلی‌لیست مشترک
               </h2>
               <button
                 v-if="detail.is_member && playlistId"
-                class="inline-flex items-center gap-1.5 rounded-lg bg-[#1db954]/10 px-3 py-1.5 text-xs font-semibold text-[#1db954] transition hover:bg-[#1db954]/20"
+                class="inline-flex items-center gap-1.5 rounded-lg bg-spotify/10 px-3 py-1.5 text-xs font-semibold text-spotify transition hover:bg-spotify/20"
                 @click="showTrackPicker = true"
               >
                 افزودن آهنگ
@@ -98,7 +98,7 @@
               v-else
               class="flex flex-col items-center gap-3 py-12 text-center"
             >
-              <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
+              <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/4">
                 <i aria-hidden="true" class="pi pi-music text-xl text-slate-500" />
               </div>
               <p class="text-sm text-white/40">هنوز آهنگی به پلی‌لیست اضافه نشده.</p>
@@ -106,7 +106,7 @@
           </section>
 
           <!-- Members -->
-          <section class="rounded-2xl bg-white/[0.03] p-6">
+          <section class="rounded-2xl bg-white/3 p-6">
             <h2 class="mb-4 text-sm font-bold uppercase tracking-wider text-white/30">
               اعضا ({{ detail.members.length }})
             </h2>
@@ -117,7 +117,7 @@
                 class="group relative"
               >
                 <div
-                  class="flex h-10 w-10 items-center justify-center rounded-full bg-[#1db954]/20 text-xs font-bold text-[#1db954] transition hover:bg-[#1db954]/30"
+                  class="flex h-10 w-10 items-center justify-center rounded-full bg-spotify/20 text-xs font-bold text-spotify transition hover:bg-spotify/30"
                   :title="m.user_id"
                 >
                   {{ initials(m.user_id) }}
@@ -134,14 +134,14 @@
           </section>
 
           <!-- Discussions (Phase 6) -->
-          <section class="rounded-2xl bg-white/[0.03] p-6">
+          <section class="rounded-2xl bg-white/3 p-6">
             <div class="mb-4 flex items-center justify-between">
               <h2 class="text-sm font-bold uppercase tracking-wider text-white/30">
                 بحث و گفتگو
               </h2>
               <button
                 v-if="detail.is_member"
-                class="inline-flex items-center gap-1.5 rounded-lg bg-[#1db954]/10 px-3 py-1.5 text-xs font-semibold text-[#1db954] transition hover:bg-[#1db954]/20"
+                class="inline-flex items-center gap-1.5 rounded-lg bg-spotify/10 px-3 py-1.5 text-xs font-semibold text-spotify transition hover:bg-spotify/20"
                 @click="showCreateDiscussion = true"
               >
                 بحث جدید
@@ -179,7 +179,7 @@
 
         <!-- Sidebar -->
         <div class="space-y-6">
-          <div class="rounded-2xl bg-white/[0.03] p-6">
+          <div class="rounded-2xl bg-white/3 p-6">
             <h3 class="mb-3 text-xs font-bold uppercase tracking-wider text-white/30">اطلاعات</h3>
             <div class="space-y-3 text-sm">
               <div class="flex justify-between">
@@ -216,7 +216,7 @@
     <Teleport to="body">
       <div
         v-if="showLeaveConfirm"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs"
         @click.self="showLeaveConfirm = false"
       >
         <div class="glass-strong mx-4 w-full max-w-sm rounded-2xl p-8 text-center">
@@ -307,7 +307,7 @@ const mappedTracks = computed(() => playlistTracks.value.map(t => ({
 })))
 
 const coverBg = computed(() => {
-  if (!detail.value?.club.cover_url) {
+  if (detail.value!?.club.cover_url) {
     return { background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)' }
   }
   return {
@@ -326,7 +326,7 @@ const overflowCount = computed(() => {
 })
 
 function initials(userId: string): string {
-  if (!userId) return '?'
+  if (userId!) return '?'
   return userId.charAt(0).toUpperCase()
 }
 
@@ -431,7 +431,7 @@ async function handleLaunchParty() {
 async function handleAddTrack(track: Track) {
   try {
     const pid = playlistId.value
-    if (!pid) return
+    if (pid!) return
     toast.info('Adding track...')
     await playlistApi.addTrack(pid, { track_id: String(track.id) })
     showTrackPicker.value = false

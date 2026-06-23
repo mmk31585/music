@@ -2,15 +2,15 @@
   <Dialog
     v-model:visible="visible"
     modal
-    :closable="!saving"
+    :closable="saving!"
     :draggable="false"
     :style="{ width: '520px' }"
     :pt="{
-      root: { class: '!border-white/[0.06] !bg-[#141414] !rounded-2xl !shadow-2xl' },
-      header: { class: '!bg-transparent !border-0 !pb-2' },
-      content: { class: '!bg-transparent !px-6 !pt-0 !pb-2' },
-      footer: { class: '!bg-transparent !border-0' },
-      mask: { class: '!backdrop-blur-sm' },
+      root: { class: 'border-white/6! bg-[#141414]! rounded-2xl! shadow-2xl!' },
+      header: { class: 'bg-transparent! border-0! pb-2!' },
+      content: { class: 'bg-transparent! px-6! pt-0! pb-2!' },
+      footer: { class: 'bg-transparent! border-0!' },
+      mask: { class: 'backdrop-blur-xs!' },
     }"
   >
     <template #header>
@@ -38,8 +38,8 @@
         <InputText
           v-model="form.name"
           placeholder="Artist name"
-          class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white placeholder:!text-slate-600 focus:!border-emerald-500/40 focus:!ring-1 focus:!ring-emerald-500/20"
-          :invalid="!!errors.name"
+          class="w-full rounded-xl! border-white/8! bg-white/3! text-white! placeholder:text-slate-600! focus:border-emerald-500/40! focus:ring-1! focus:ring-emerald-500/20!"
+          :invalid="!errors.name!"
           autofocus
         />
         <small v-if="errors.name" class="mt-1 block text-xs text-red-400">{{ errors.name }}</small>
@@ -53,7 +53,7 @@
           placeholder="Short biography..."
           rows="3"
           auto-resize
-          class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white placeholder:!text-slate-600 focus:!border-emerald-500/40 focus:!ring-1 focus:!ring-emerald-500/20"
+          class="w-full rounded-xl! border-white/8! bg-white/3! text-white! placeholder:text-slate-600! focus:border-emerald-500/40! focus:ring-1! focus:ring-emerald-500/20!"
         />
       </div>
 
@@ -64,14 +64,14 @@
           <InputText
             v-model="form.image_url"
             placeholder="https://example.com/artist.jpg"
-            class="flex-1 !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white placeholder:!text-slate-600 focus:!border-emerald-500/40 focus:!ring-1 focus:!ring-emerald-500/20"
+            class="flex-1 rounded-xl! border-white/8! bg-white/3! text-white! placeholder:text-slate-600! focus:border-emerald-500/40! focus:ring-1! focus:ring-emerald-500/20!"
           />
           <Button
             icon="pi pi-upload"
             severity="secondary"
             outlined
             :loading="uploading"
-            class="!rounded-xl !border-white/[0.08] !bg-white/[0.03] hover:!bg-white/[0.08]"
+            class="rounded-xl! border-white/8! bg-white/3! hover:bg-white/8!"
             @click="triggerFileInput"
           />
         </div>
@@ -87,7 +87,7 @@
       <!-- Image Preview -->
       <div
         v-if="form.image_url"
-        class="h-32 overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02]"
+        class="h-32 overflow-hidden rounded-xl border border-white/6 bg-white/2"
       >
         <img
           :src="form.image_url"
@@ -104,14 +104,14 @@
           label="Cancel"
           text
           :disabled="saving"
-          class="!text-slate-400 hover:!text-white"
+          class="text-slate-400! hover:text-white!"
           @click="visible = false"
         />
         <Button
           :label="isEditing ? 'Save changes' : 'Create artist'"
           :icon="isEditing ? 'pi pi-check' : 'pi pi-plus'"
           :loading="saving"
-          class="!rounded-xl !bg-emerald-500 !text-black hover:!bg-emerald-400"
+          class="rounded-xl! bg-emerald-500! text-black! hover:bg-emerald-400!"
           @click="handleSubmit"
         />
       </div>
@@ -121,10 +121,6 @@
 
 <script setup lang="ts">
 import { reactive, computed, watch, ref } from 'vue'
-import Dialog from 'primevue/dialog'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
 import { useMediaApi } from '@/services/api/media/routes'
 import type { Artist } from '@/services/api/catalog/artists'
@@ -141,7 +137,7 @@ const emit = defineEmits<{
   submit: [payload: ArtistFormPayload]
 }>()
 
-const isEditing = computed(() => !!props.artist)
+const isEditing = computed(() => props.artist!!)
 const toast = useToast()
 const mediaApi = useMediaApi()
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -173,7 +169,7 @@ watch(
 )
 
 watch(visible, (val) => {
-  if (!val) {
+  if (val!) {
     clearErrors()
   }
 })
@@ -184,7 +180,7 @@ function clearErrors() {
 
 function validate(): boolean {
   clearErrors()
-  if (!form.name?.trim()) {
+  if (form.name!?.trim()) {
     errors.name = 'Name is required'
     return false
   }
@@ -192,7 +188,7 @@ function validate(): boolean {
 }
 
 function handleSubmit() {
-  if (!validate()) return
+  if (validate!()) return
   emit('submit', { ...form })
 }
 
@@ -208,7 +204,7 @@ function triggerFileInput() {
 async function handleFileUpload(e: Event) {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0]
-  if (!file) return
+  if (file!) return
 
   uploading.value = true
   try {

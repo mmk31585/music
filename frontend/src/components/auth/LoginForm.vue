@@ -1,10 +1,10 @@
 <template>
   <div
-    class="auth-card w-full animate-reveal rounded-2xl border border-white/[0.06] bg-black/40 p-8 shadow-2xl backdrop-blur-xl"
+    class="auth-card w-full animate-reveal rounded-2xl border border-white/6 bg-black/40 p-8 shadow-2xl backdrop-blur-xl"
   >
     <div class="mb-8 text-center">
-      <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-[#1db954]/10">
-        <i class="pi pi-headphones text-2xl text-[#1db954]" />
+      <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-spotify/10">
+        <i class="pi pi-headphones text-2xl text-spotify" />
       </div>
       <h1 class="font-display text-2xl font-bold text-white tracking-tight">Welcome back</h1>
       <p class="mt-1.5 text-sm text-white/40">Log in to continue your music journey</p>
@@ -13,7 +13,7 @@
     <form class="space-y-5" @submit.prevent="onSubmit">
       <!-- Email -->
       <div class="group">
-        <label for="login-email" class="mb-1.5 block text-sm font-medium text-white/60 group-focus-within:text-[#1db954] transition-colors duration-200">
+        <label for="login-email" class="mb-1.5 block text-sm font-medium text-white/60 group-focus-within:text-spotify transition-colors duration-200">
           Email
         </label>
         <span class="relative block">
@@ -37,7 +37,7 @@
 
       <!-- Password -->
       <div class="group">
-        <label for="login-password" class="mb-1.5 block text-sm font-medium text-white/60 group-focus-within:text-[#1db954] transition-colors duration-200">
+        <label for="login-password" class="mb-1.5 block text-sm font-medium text-white/60 group-focus-within:text-spotify transition-colors duration-200">
           Password
         </label>
         <span class="relative block">
@@ -80,13 +80,13 @@
         icon="pi pi-arrow-right"
         icon-pos="right"
         :loading="loading"
-        class="auth-btn w-full border-0 bg-[#1db954] text-black font-semibold hover:bg-[#1ed760] transition-all duration-200"
+        class="auth-btn w-full border-0 bg-spotify text-black font-semibold hover:bg-spotify-hover transition-all duration-200"
       />
 
       <!-- Divider -->
       <div class="relative my-6">
         <div class="absolute inset-0 flex items-center">
-          <div class="w-full border-t border-white/[0.06]" />
+          <div class="w-full border-t border-white/6" />
         </div>
         <div class="relative flex justify-center text-xs">
           <span class="bg-black/40 px-3 text-white/30">or</span>
@@ -96,7 +96,7 @@
       <!-- Guest link -->
       <RouterLink
         to="/"
-        class="flex items-center justify-center gap-2 rounded-xl border border-white/[0.08] px-4 py-2.5 text-sm text-white/50 transition-all duration-200 hover:border-white/20 hover:text-white/80 hover:bg-white/[0.03]"
+        class="flex items-center justify-center gap-2 rounded-xl border border-white/8 px-4 py-2.5 text-sm text-white/50 transition-all duration-200 hover:border-white/20 hover:text-white/80 hover:bg-white/3"
       >
         <i class="pi pi-user text-xs" />
         Continue as guest
@@ -105,7 +105,7 @@
       <!-- Switch to register -->
       <p class="text-center text-sm text-white/40">
         Don't have an account?
-        <RouterLink to="/auth/register" class="font-medium text-[#1db954] transition-colors duration-200 hover:text-[#1ed760]">
+        <RouterLink to="/auth/register" class="font-medium text-spotify transition-colors duration-200 hover:text-spotify-hover">
           Create one
         </RouterLink>
       </p>
@@ -114,9 +114,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
 import { useLoginForm } from '@/composables/auth/useLoginForm.ts'
 
 const { form, errors, apiError, loading, onSubmit } = useLoginForm()

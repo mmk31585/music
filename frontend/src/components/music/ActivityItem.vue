@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex items-start gap-3 rounded-xl p-3 transition hover:bg-white/[0.04] focus-within:ring-2 focus-within:ring-[#1db954]"
+    class="flex items-start gap-3 rounded-xl p-3 transition hover:bg-white/4 focus-within:ring-2 focus-within:ring-spotify"
     role="article"
     :aria-label="`Activity: ${item.userName} ${item.action}`"
   >
@@ -38,7 +38,7 @@
           <RouterLink
             v-if="item.targetUrl"
             :to="item.targetUrl"
-            class="font-medium text-[#1db954] hover:underline focus-visible:outline-2 focus-visible:outline-[#1db954]"
+            class="font-medium text-spotify hover:underline focus-visible:outline-2 focus-visible:outline-[#1db954]"
           >
             {{ item.targetName }}
           </RouterLink>
@@ -52,7 +52,7 @@
     <button
       v-if="item.actionType === 'party'"
       aria-label="Join party"
-      class="shrink-0 rounded-lg bg-[#1db954]/10 px-3 py-1.5 text-[10px] font-semibold text-[#1db954] transition hover:bg-[#1db954]/20 focus-visible:outline-2 focus-visible:outline-[#1db954]"
+      class="shrink-0 rounded-lg bg-spotify/10 px-3 py-1.5 text-[10px] font-semibold text-spotify transition hover:bg-spotify/20 focus-visible:outline-2 focus-visible:outline-[#1db954]"
       @click="$emit('action', item)"
     >
       Join
@@ -94,7 +94,7 @@ defineEmits<{
 
 const displayTimeAgo = computed(() => {
   if (props.item.timeAgo) return props.item.timeAgo
-  if (!props.item.createdAt) return ''
+  if (props.item.createdAt!) return ''
   const d = new Date(props.item.createdAt)
   const now = Date.now()
   const diff = now - d.getTime()

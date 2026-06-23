@@ -12,11 +12,11 @@
 
     <div v-if="loading" class="space-y-6">
       <div class="flex items-start gap-6">
-        <div class="h-40 w-40 animate-pulse rounded-2xl bg-white/[0.06]" />
+        <div class="h-40 w-40 animate-pulse rounded-2xl bg-white/6" />
         <div class="flex-1 space-y-3">
-          <div class="h-8 w-48 animate-pulse rounded bg-white/[0.06]" />
-          <div class="h-4 w-72 animate-pulse rounded bg-white/[0.04]" />
-          <div class="h-20 w-full animate-pulse rounded bg-white/[0.04]" />
+          <div class="h-8 w-48 animate-pulse rounded bg-white/6" />
+          <div class="h-4 w-72 animate-pulse rounded bg-white/4" />
+          <div class="h-20 w-full animate-pulse rounded bg-white/4" />
         </div>
       </div>
     </div>
@@ -36,7 +36,7 @@
     <template v-else-if="artist">
       <div class="flex flex-col gap-6 lg:flex-row lg:items-start">
         <div class="shrink-0">
-          <div class="relative h-40 w-40 overflow-hidden rounded-2xl bg-white/[0.06] shadow-lg lg:h-56 lg:w-56">
+          <div class="relative h-40 w-40 overflow-hidden rounded-2xl bg-white/6 shadow-lg lg:h-56 lg:w-56">
             <img
               v-if="artist.image_url"
               :src="artist.image_url"
@@ -60,7 +60,7 @@
             {{ formatListeners(artist.monthly_listeners) }} monthly listeners
           </div>
 
-          <div v-if="artist.bio" class="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+          <div v-if="artist.bio" class="mt-4 rounded-xl border border-white/6 bg-white/2 p-4">
             <p class="text-xs font-medium text-slate-400">Biography</p>
             <p class="mt-2 text-sm leading-relaxed text-slate-300">{{ artist.bio }}</p>
           </div>
@@ -72,7 +72,7 @@
               size="small"
               severity="info"
               :loading="enriching"
-              class="!rounded-xl !bg-amber-500/10 !text-amber-400 hover:!bg-amber-500/20"
+              class="rounded-xl! bg-amber-500/10! text-amber-400! hover:bg-amber-500/20!"
               @click="handleEnrich"
             />
             <Button
@@ -87,7 +87,7 @@
               icon="pi pi-trash"
               size="small"
               severity="danger"
-              class="!text-red-400"
+              class="text-red-400!"
               @click="openDeleteConfirm"
             />
           </div>
@@ -98,8 +98,8 @@
         <h2 class="mb-4 text-lg font-semibold text-white">Albums</h2>
         <div v-if="loadingAlbums" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           <div v-for="i in 5" :key="i" class="space-y-3">
-            <div class="aspect-square animate-pulse rounded-xl bg-white/[0.06]" />
-            <div class="h-4 w-3/4 animate-pulse rounded bg-white/[0.06]" />
+            <div class="aspect-square animate-pulse rounded-xl bg-white/6" />
+            <div class="h-4 w-3/4 animate-pulse rounded bg-white/6" />
           </div>
         </div>
         <AdminEmptyState
@@ -116,7 +116,7 @@
             class="group cursor-pointer"
             @click="router.push({ name: 'admin.album.detail', params: { id: album.id } })"
           >
-            <div class="relative aspect-square overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.04]">
+            <div class="relative aspect-square overflow-hidden rounded-xl border border-white/6 bg-white/4">
               <img
                 v-if="album.cover_url"
                 :src="album.cover_url"
@@ -136,7 +136,7 @@
       <div class="mt-10">
         <h2 class="mb-4 text-lg font-semibold text-white">Tracks</h2>
         <div v-if="loadingTracks" class="space-y-3">
-          <div v-for="i in 5" :key="i" class="h-12 animate-pulse rounded-lg bg-white/[0.04]" />
+          <div v-for="i in 5" :key="i" class="h-12 animate-pulse rounded-lg bg-white/4" />
         </div>
         <AdminEmptyState
           v-else-if="tracks.length === 0"
@@ -145,16 +145,16 @@
           description="This artist has no tracks yet."
           compact
         />
-        <div v-else class="overflow-hidden rounded-xl border border-white/[0.06]">
+        <div v-else class="overflow-hidden rounded-xl border border-white/6">
           <div
             v-for="(track, i) in tracks"
             :key="track.id"
-            class="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-white/[0.02]"
-            :class="i < tracks.length - 1 ? 'border-b border-white/[0.04]' : ''"
+            class="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-white/2"
+            :class="i < tracks.length - 1 ? 'border-b border-white/4' : ''"
           >
             <button
               type="button"
-              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-all hover:bg-[#1db954]/20 hover:text-[#1db954] disabled:opacity-30"
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-all hover:bg-spotify/20 hover:text-spotify disabled:opacity-30"
               :disabled="loadingTrackId === String(track.id)"
               :aria-label="'Play ' + track.title"
               :title="isTrackPlaying(track) ? 'Now playing' : 'Play track'"
@@ -210,7 +210,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import Button from 'primevue/button'
 import { useToast } from 'primevue/usetoast'
 import AdminEmptyState from '@/components/admin/AdminEmptyState.vue'
 import ArtistFormDialog from '@/components/admin/ArtistFormDialog.vue'
@@ -312,7 +311,7 @@ function openDeleteConfirm() {
 }
 
 async function handleEnrich() {
-  if (!artist.value) return
+  if (artist.value!) return
   enriching.value = true
   try {
     await artistsApi.adminEnrichArtist(artist.value.id)
@@ -326,7 +325,7 @@ async function handleEnrich() {
 }
 
 async function handleEditSubmit(payload: ArtistFormPayload) {
-  if (!artist.value) return
+  if (artist.value!) return
   saving.value = true
   try {
     const updated = await artistsApi.adminUpdateArtist(artist.value.id, payload)
@@ -341,7 +340,7 @@ async function handleEditSubmit(payload: ArtistFormPayload) {
 }
 
 async function handleDelete() {
-  if (!artist.value) return
+  if (artist.value!) return
   deleting.value = true
   try {
     await artistsApi.adminDeleteArtist(artist.value.id)

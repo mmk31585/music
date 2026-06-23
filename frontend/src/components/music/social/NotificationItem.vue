@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex items-start gap-4 rounded-xl px-4 py-3 transition hover:bg-white/[0.04]"
+    class="flex items-start gap-4 rounded-xl px-4 py-3 transition hover:bg-white/4"
     :class="{ 'opacity-50': notification.isRead }"
   >
     <div
@@ -52,7 +52,7 @@ const toast = useToast()
 
 const iconMap: Record<string, { icon: string; bg: string }> = {
   welcome: { icon: 'pi pi-star', bg: 'bg-amber-500/20 text-amber-400' },
-  subscription_purchased: { icon: 'pi pi-crown', bg: 'bg-[#1db954]/20 text-[#1db954]' },
+  subscription_purchased: { icon: 'pi pi-crown', bg: 'bg-spotify/20 text-spotify' },
   playlist_created: { icon: 'pi pi-list', bg: 'bg-blue-500/20 text-blue-400' },
   artist_published_track: { icon: 'pi pi-discord', bg: 'bg-purple-500/20 text-purple-400' },
   playlist_shared: { icon: 'pi pi-share-alt', bg: 'bg-sky-500/20 text-sky-400' },
@@ -67,7 +67,7 @@ const iconBgClass = computed(
 
 const timeAgo = computed(() => {
   const ts = props.notification.createdAt
-  if (!ts) return ''
+  if (ts!) return ''
   const diff = Date.now() - new Date(ts).getTime()
   const mins = Math.floor(diff / 60000)
   if (mins < 1) return 'Just now'

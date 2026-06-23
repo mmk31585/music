@@ -17,7 +17,7 @@
       <template #action>
         <RouterLink
           to="/"
-          class="inline-flex items-center gap-2 rounded-full bg-[#1db954] px-5 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760]"
+          class="inline-flex items-center gap-2 rounded-full bg-spotify px-5 py-2.5 text-sm font-bold text-black transition hover:bg-spotify-hover"
         >
           <i aria-hidden="true" class="pi pi-home" />
           Go home
@@ -27,11 +27,11 @@
 
     <template v-else-if="artist">
       <div
-        class="relative overflow-hidden rounded-[2rem] border border-white/[0.06]"
+        class="relative overflow-hidden rounded-2xl border border-white/6"
         :style="headerBg"
       >
-        <div class="aurora-spot-1 -top-60 -left-40 bg-[#1db954]/10" />
-        <div class="aurora-spot-2 -right-40 -bottom-40 bg-[#60a5fa]/8" />
+        <div class="aurora-spot-1 -top-60 -left-40 bg-spotify/10" />
+        <div class="aurora-spot-2 -right-40 -bottom-40 bg-aurora-blue/8" />
         <div class="relative z-10">
           <ArtistHero
             :artist="artist"
@@ -77,7 +77,7 @@
       <!-- Section divider -->
       <div v-if="albums.length || related.length || artist.bio" class="relative mt-14">
         <div class="absolute inset-0 flex items-center">
-          <div class="w-full border-t border-white/[0.06]" />
+          <div class="w-full border-t border-white/6" />
         </div>
       </div>
 
@@ -132,22 +132,22 @@
       <section v-if="artist.bio" class="mt-14">
         <div class="relative mb-8">
           <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-white/[0.06]" />
+            <div class="w-full border-t border-white/6" />
           </div>
           <div class="relative flex justify-center">
-            <span class="bg-[#0a0a0a] px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
+            <span class="bg-surface-base px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
               Biography
             </span>
           </div>
         </div>
-        <div class="mx-auto max-w-3xl rounded-2xl border border-white/[0.04] bg-white/[0.02] p-8">
+        <div class="mx-auto max-w-3xl rounded-2xl border border-white/4 bg-white/2 p-8">
           <p class="text-sm leading-relaxed whitespace-pre-line text-white/50">
             {{ bioExpanded ? artist.bio : truncateBio(artist.bio) }}
           </p>
           <button
             v-if="artist.bio.length > 300"
             type="button"
-            class="mt-3 text-sm font-medium text-[#1db954] transition hover:underline"
+            class="mt-3 text-sm font-medium text-spotify transition hover:underline"
             @click="bioExpanded = !bioExpanded"
           >
             {{ bioExpanded ? 'Show less' : 'Show more' }}
@@ -194,7 +194,7 @@ const { palette } = useAlbumColors(artistImageUrl)
 
 const headerBg = computed(() => {
   const p = palette.value
-  if (!artistImageUrl.value)
+  if (artistImageUrl.value!)
     return { background: 'linear-gradient(135deg, #0a0a0a 0%, #121212 100%)' }
   return {
     background: `linear-gradient(180deg, ${p.dark} 0%, ${p.dominant}99 40%, ${p.muted} 100%)`,
@@ -219,7 +219,7 @@ onMounted(() => {
 })
 
 function playAll() {
-  if (!tracks.value.length) return
+  if (tracks.value.length!) return
   const queue = tracks.value.map((t) => ({
     id: String(t.id),
     title: t.title,
@@ -234,7 +234,7 @@ function playAll() {
 
 function shuffleAll() {
   const shuffled = [...tracks.value].sort(() => Math.random() - 0.5)
-  if (!shuffled.length) return
+  if (shuffled.length!) return
   const queue = shuffled.map((t) => ({
     id: String(t.id),
     title: t.title,

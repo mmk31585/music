@@ -9,7 +9,7 @@
     </div>
 
     <!-- Tabs -->
-    <div class="flex items-center gap-1 rounded-xl bg-white/[0.04] p-1">
+    <div class="flex items-center gap-1 rounded-xl bg-white/4 p-1">
       <button
         v-for="tab in tabs"
         :key="tab.key"
@@ -17,7 +17,7 @@
         class="spring flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all"
         :class="
           activeTab === tab.key
-            ? 'bg-white/10 text-white shadow-sm'
+            ? 'bg-white/10 text-white shadow-xs'
             : 'text-white/40 hover:text-white/60'
         "
         @click="activeTab = tab.key; loadTab(tab.key)"
@@ -47,7 +47,7 @@
         <p class="text-sm text-white/25">No contributions yet</p>
         <button
           type="button"
-          class="text-xs text-[#1db954] transition-colors hover:text-[#1ed760]"
+          class="text-xs text-spotify transition-colors hover:text-spotify-hover"
           @click="activeTab = 'submit'"
         >
           Make your first contribution
@@ -58,7 +58,7 @@
         <div
           v-for="c in myContributions"
           :key="c.id"
-          class="contribution-card glass-strong spring rounded-2xl p-5 transition-all hover:bg-white/[0.06]"
+          class="contribution-card glass-strong spring rounded-2xl p-5 transition-all hover:bg-white/6"
         >
           <div class="flex items-start justify-between gap-4">
             <div class="min-w-0 flex-1">
@@ -87,7 +87,7 @@
               <div class="mt-2 flex items-center gap-3 text-[10px] text-white/20">
                 <span>v{{ c.version }}</span>
                 <span>{{ formatDate(c.created_at) }}</span>
-                <span v-if="c.xp_awarded > 0" class="text-[#1db954]">+{{ c.xp_awarded }} XP</span>
+                <span v-if="c.xp_awarded > 0" class="text-spotify">+{{ c.xp_awarded }} XP</span>
               </div>
             </div>
 
@@ -104,7 +104,7 @@
           </div>
 
           <!-- Expanded history -->
-          <div v-if="expandedContribution === c.id" class="mt-4 border-t border-white/[0.06] pt-4">
+          <div v-if="expandedContribution === c.id" class="mt-4 border-t border-white/6 pt-4">
             <ContributionHistory :items="historyItems" :loading="loadingHistory" />
           </div>
         </div>
@@ -172,7 +172,7 @@
             </router-link>
             <span
               v-if="c.ai_verdict"
-              class="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-white/30"
+              class="rounded-sm bg-white/5 px-1.5 py-0.5 text-[10px] text-white/30"
               >AI: {{ c.ai_verdict }} ({{ ((c.ai_confidence ?? 0) * 100).toFixed(0) }}%)</span
             >
           </div>
@@ -199,7 +199,7 @@
             <button
               type="button"
               :disabled="reviewingId === c.id"
-              class="spring rounded-lg bg-[#1db954]/10 px-4 py-2 text-xs font-medium text-[#1db954] transition-all hover:bg-[#1db954]/20 disabled:opacity-40"
+              class="spring rounded-lg bg-spotify/10 px-4 py-2 text-xs font-medium text-spotify transition-all hover:bg-spotify/20 disabled:opacity-40"
               @click="reviewContribution(c.id, 'approve')"
             >
               <i aria-hidden="true" v-if="reviewingId === c.id" class="pi pi-spin pi-spinner mr-1" />
@@ -349,12 +349,12 @@ function onSubmitted() {
 
 function typeBadgeClass(type: string) {
   const classes: Record<string, string> = {
-    lyrics: 'bg-[#1db954]/10 text-[#1db954]',
-    translation: 'bg-[#60a5fa]/10 text-[#60a5fa]',
-    credits: 'bg-[#a855f7]/10 text-[#a855f7]',
-    metadata: 'bg-[#f59e0b]/10 text-[#f59e0b]',
-    album_art: 'bg-[#f472b6]/10 text-[#f472b6]',
-    bio: 'bg-[#34d399]/10 text-[#34d399]',
+    lyrics: 'bg-spotify/10 text-spotify',
+    translation: 'bg-aurora-blue/10 text-aurora-blue',
+    credits: 'bg-aurora-purple/10 text-aurora-purple',
+    metadata: 'bg-amber-500/10 text-amber-500',
+    album_art: 'bg-aurora-pink/10 text-aurora-pink',
+    bio: 'bg-emerald-400/10 text-emerald-400',
   }
   return classes[type] || 'bg-white/5 text-white/40'
 }
@@ -362,13 +362,13 @@ function typeBadgeClass(type: string) {
 function statusBadgeClass(status: string) {
   switch (status) {
     case 'approved':
-      return 'bg-[#1db954]/10 text-[#1db954]'
+      return 'bg-spotify/10 text-spotify'
     case 'rejected':
       return 'bg-red-500/10 text-red-400'
     case 'pending':
-      return 'bg-[#f59e0b]/10 text-[#f59e0b]'
+      return 'bg-amber-500/10 text-amber-500'
     case 'needs_review':
-      return 'bg-[#60a5fa]/10 text-[#60a5fa]'
+      return 'bg-aurora-blue/10 text-aurora-blue'
     default:
       return 'bg-white/5 text-white/40'
   }

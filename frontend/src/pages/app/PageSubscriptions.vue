@@ -11,7 +11,7 @@
     <template v-else>
       <!-- Header -->
       <div class="mb-8">
-        <p class="text-xs font-bold tracking-[0.25em] text-[#1db954] uppercase">Subscription</p>
+        <p class="text-xs font-bold tracking-[0.25em] text-spotify uppercase">Subscription</p>
         <h1 class="mt-2 text-3xl font-black text-white">Plans &amp; Pricing</h1>
         <p class="mt-1 text-sm text-white/40">Choose the plan that fits your listening habits</p>
       </div>
@@ -19,7 +19,7 @@
       <!-- Current subscription banner -->
       <div
         v-if="currentSub && currentSub.plan"
-        class="mb-8 overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-r from-[#1db954]/5 to-transparent p-5"
+        class="mb-8 overflow-hidden rounded-2xl border border-white/6 bg-linear-to-r from-spotify/5 to-transparent p-5"
       >
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -55,13 +55,13 @@
         <div
           v-for="plan in plans"
           :key="plan.id"
-          class="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 transition hover:bg-white/[0.05]"
-          :class="{ 'border-[#1db954]/30 bg-[#1db954]/[0.03]': isCurrentPlan(plan) }"
+          class="group relative overflow-hidden rounded-2xl border border-white/6 bg-white/3 p-6 transition hover:bg-white/5"
+          :class="{ 'border-spotify/30 bg-spotify/3': isCurrentPlan(plan) }"
         >
           <!-- Premium badge -->
           <div
             v-if="plan.isPremium"
-            class="absolute top-3 right-3 rounded-full bg-gradient-to-r from-amber-400 to-[#1db954] px-2.5 py-0.5 text-[10px] font-bold text-black"
+            class="absolute top-3 right-3 rounded-full bg-linear-to-r from-amber-400 to-spotify px-2.5 py-0.5 text-[10px] font-bold text-black"
           >
             Premium
           </div>
@@ -79,7 +79,7 @@
               :key="feat"
               class="flex items-center gap-2 text-xs text-white/60"
             >
-              <i aria-hidden="true" class="pi pi-check text-[10px] text-[#1db954]" /> {{ formatFeature(feat) }}
+              <i aria-hidden="true" class="pi pi-check text-[10px] text-spotify" /> {{ formatFeature(feat) }}
             </li>
           </ul>
 
@@ -90,7 +90,7 @@
                 ? 'cursor-default bg-white/5 text-white/40'
                 : plan.priceCents === 0
                   ? 'bg-white/10 text-white hover:bg-white/20'
-                  : 'bg-[#1db954] text-black hover:bg-[#1ed760]'
+                  : 'bg-spotify text-black hover:bg-spotify-hover'
             "
             :disabled="isCurrentPlan(plan)"
             @click="selectPlan(plan)"
@@ -113,7 +113,7 @@
           <div
             v-for="p in payments"
             :key="p.id"
-            class="flex items-center justify-between rounded-xl bg-white/[0.03] px-4 py-3 transition hover:bg-white/[0.05]"
+            class="flex items-center justify-between rounded-xl bg-white/3 px-4 py-3 transition hover:bg-white/5"
           >
             <div>
               <p class="text-sm font-medium text-white">${{ (p.amountCents / 100).toFixed(2) }}</p>
@@ -140,11 +140,11 @@
     <Teleport to="body">
       <div
         v-if="showCheckout"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs"
         @click.self="showCheckout = false"
       >
         <div class="glass-strong mx-4 w-full max-w-md rounded-2xl p-8 text-center">
-          <i aria-hidden="true" class="pi pi-external-link text-4xl text-[#1db954]" />
+          <i aria-hidden="true" class="pi pi-external-link text-4xl text-spotify" />
           <h3 class="mt-4 text-xl font-bold text-white">Redirecting to Payment</h3>
           <p class="mt-2 text-sm text-white/40">
             You'll be redirected to the payment gateway to complete your subscription.
@@ -159,7 +159,7 @@
             <a
               :href="checkoutUrl"
               target="_blank"
-              class="block flex-1 rounded-xl bg-[#1db954] py-3 text-center text-sm font-bold text-black hover:bg-[#1ed760]"
+              class="block flex-1 rounded-xl bg-spotify py-3 text-center text-sm font-bold text-black hover:bg-spotify-hover"
             >
               Proceed to Pay
             </a>

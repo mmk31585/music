@@ -2,7 +2,7 @@
   <div :key="String(route.params.id)" class="mx-auto w-full max-w-6xl px-4 pt-8 pb-36 md:px-8 lg:px-10">
     <button
       type="button"
-      class="mb-6 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-white/50 transition hover:bg-white/[0.06] hover:text-white"
+      class="mb-6 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-white/50 transition hover:bg-white/6 hover:text-white"
       @click="goBack"
     >
       <i aria-hidden="true" class="pi pi-arrow-left text-xs" />
@@ -30,7 +30,7 @@
       <template #action>
         <RouterLink
           to="/"
-          class="inline-flex items-center gap-2 rounded-full bg-[#1db954] px-5 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760]"
+          class="inline-flex items-center gap-2 rounded-full bg-spotify px-5 py-2.5 text-sm font-bold text-black transition hover:bg-spotify-hover"
         >
           <i aria-hidden="true" class="pi pi-home" />
           Go home
@@ -59,7 +59,7 @@
           <!-- Cover art with physical-object treatment -->
           <div class="group relative shrink-0">
             <div
-              class="relative h-[300px] w-[300px] overflow-hidden rounded-2xl bg-white/[0.06] shadow-2xl ring-1 ring-white/10 transition-all duration-500 group-hover:shadow-[0_20px_60px_rgba(0,0,0,0.5)] group-hover:-rotate-1 group-hover:scale-[1.02]"
+              class="relative h-75 w-75 overflow-hidden rounded-2xl bg-white/6 shadow-2xl ring-1 ring-white/10 transition-all duration-500 group-hover:shadow-xl group-hover:-rotate-1 group-hover:scale-[1.02]"
               :style="coverGlowStyle"
             >
               <img
@@ -76,7 +76,7 @@
             </div>
             <!-- Sleeve frame accent -->
             <div
-              class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/[0.04]"
+              class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/4"
               aria-hidden="true"
             />
           </div>
@@ -94,7 +94,7 @@
               <template v-if="artist">
                 <RouterLink
                   :to="`/artist/${artist.id}`"
-                  class="font-bold text-white underline underline-offset-4 decoration-white/20 transition hover:text-[#1db954] hover:decoration-[#1db954]"
+                  class="font-bold text-white underline underline-offset-4 decoration-white/20 transition hover:text-spotify hover:decoration-[#1db954]"
                 >
                   {{ artist.name }}
                 </RouterLink>
@@ -124,7 +124,7 @@
             <div class="mt-8 flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                class="glow-green inline-flex items-center gap-2.5 rounded-full bg-[#1DB954] px-8 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-[#1ed760]"
+                class="glow-green inline-flex items-center gap-2.5 rounded-full bg-spotify px-8 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-spotify-hover"
                 @click="playAll"
               >
                 <i aria-hidden="true" class="pi pi-play-fill" />
@@ -133,7 +133,7 @@
 
               <button
                 type="button"
-                class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-6 py-3 text-sm font-bold text-white/80 transition hover:border-white/30 hover:bg-white/[0.08] hover:text-white"
+                class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/4 px-6 py-3 text-sm font-bold text-white/80 transition hover:border-white/30 hover:bg-white/8 hover:text-white"
                 @click="shuffleAll"
               >
                 <i aria-hidden="true" class="pi pi-sort-alt" />
@@ -142,8 +142,8 @@
 
               <button
                 type="button"
-                class="inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-bold text-white/60 transition hover:bg-white/[0.08] hover:text-white"
-                :class="{ 'border-[#1db954]/30 text-[#1db954]': isLiked }"
+                class="inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/3 px-5 py-3 text-sm font-bold text-white/60 transition hover:bg-white/8 hover:text-white"
+                :class="{ 'border-spotify/30 text-spotify': isLiked }"
                 @click="toggleLike"
               >
                 <i aria-hidden="true" :class="isLiked ? 'pi pi-heart-fill' : 'pi pi-heart'" />
@@ -152,7 +152,7 @@
 
               <button
                 type="button"
-                class="inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-bold text-white/60 transition hover:bg-white/[0.08] hover:text-white"
+                class="inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/3 px-5 py-3 text-sm font-bold text-white/60 transition hover:bg-white/8 hover:text-white"
                 @click="shareAlbum"
               >
                 <i aria-hidden="true" class="pi pi-share-alt" />
@@ -165,10 +165,10 @@
         <!-- Section divider -->
         <div class="relative my-14">
           <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-white/[0.06]" />
+            <div class="w-full border-t border-white/6" />
           </div>
           <div class="relative flex justify-center">
-            <span class="bg-[#06060A] px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
+            <span class="bg-surface-base px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
               Tracklist
             </span>
           </div>
@@ -182,8 +182,8 @@
               :key="String(track.id)"
               role="button"
               tabindex="0"
-              class="group flex cursor-pointer items-center gap-4 rounded-2xl px-4 py-3 transition-all duration-200 hover:bg-white/[0.04]"
-              :class="isCurrentTrack(track) ? 'bg-white/[0.06] ring-1 ring-inset ring-[#1db954]/15' : ''"
+              class="group flex cursor-pointer items-center gap-4 rounded-2xl px-4 py-3 transition-all duration-200 hover:bg-white/4"
+              :class="isCurrentTrack(track) ? 'bg-white/6 ring-1 ring-inset ring-spotify/15' : ''"
               @click="playTrack(track, Number(index))"
               @keydown.enter="playTrack(track, Number(index))"
               @keydown.space.prevent="playTrack(track, Number(index))"
@@ -200,7 +200,7 @@
                 :class="isCurrentTrack(track) ? 'flex!' : ''"
               >
                 <template v-if="isCurrentTrack(track)">
-                  <span class="flex h-4 items-end gap-[2px]">
+                  <span class="flex h-4 items-end gap-0.5">
                     <span class="eq-bar h-2" />
                     <span class="eq-bar animation-delay-150 h-4" />
                     <span class="eq-bar animation-delay-300 h-3" />
@@ -210,7 +210,7 @@
               </span>
 
               <!-- Thumbnail -->
-              <div class="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white/10 ring-1 ring-white/[0.04]">
+              <div class="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white/10 ring-1 ring-white/4">
                 <img
                   v-if="track.cover_url || album.cover_url"
                   :src="track.cover_url ?? album.cover_url ?? undefined"
@@ -228,7 +228,7 @@
               <div class="min-w-0 flex-1">
                 <p
                   class="truncate text-sm font-semibold transition"
-                  :class="isCurrentTrack(track) ? 'text-[#1db954]' : 'text-white'"
+                  :class="isCurrentTrack(track) ? 'text-spotify' : 'text-white'"
                 >
                   {{ track.title }}
                 </p>
@@ -257,10 +257,10 @@
         <section v-if="albumArtists.length > 1" class="mt-14">
           <div class="relative mb-8">
             <div class="absolute inset-0 flex items-center">
-              <div class="w-full border-t border-white/[0.06]" />
+              <div class="w-full border-t border-white/6" />
             </div>
             <div class="relative flex justify-center">
-              <span class="bg-[#06060A] px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
+              <span class="bg-surface-base px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
                 Credits
               </span>
             </div>
@@ -269,10 +269,10 @@
             <div
               v-for="aa in albumArtists"
               :key="aa.id"
-              class="group flex items-center gap-4 rounded-2xl border border-white/[0.04] bg-white/[0.02] px-5 py-4 transition hover:border-white/[0.08] hover:bg-white/[0.04]"
+              class="group flex items-center gap-4 rounded-2xl border border-white/4 bg-white/2 px-5 py-4 transition hover:border-white/8 hover:bg-white/4"
             >
               <div
-                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white/[0.08] to-white/[0.02] text-sm font-bold text-white/70 ring-1 ring-white/[0.04]"
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-white/8 to-white/2 text-sm font-bold text-white/70 ring-1 ring-white/4"
               >
                 {{ aa.name?.charAt(0).toUpperCase() ?? '' }}
               </div>
@@ -280,7 +280,7 @@
                 <RouterLink
                   v-if="aa.role !== 'main' && aa.role !== 'primary'"
                   :to="`/artist/${aa.id}`"
-                  class="block truncate text-sm font-semibold text-white transition group-hover:text-[#1db954]"
+                  class="block truncate text-sm font-semibold text-white transition group-hover:text-spotify"
                 >
                   {{ aa.name }}
                 </RouterLink>
@@ -318,7 +318,7 @@
               class="group block"
             >
               <div
-                class="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-white/[0.06] shadow-lg ring-1 ring-white/10 transition-all duration-300 group-hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] group-hover:-translate-y-1 group-hover:ring-[#1db954]/30"
+                class="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-white/6 shadow-lg ring-1 ring-white/10 transition-all duration-300 group-hover:shadow-lg group-hover:-translate-y-1 group-hover:ring-spotify/30"
               >
                 <img
                   v-if="ra.cover_url"
@@ -335,7 +335,7 @@
                   class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
                 >
                   <div
-                    class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954]/90 text-black shadow-xl backdrop-blur-sm transition-transform group-hover:scale-110"
+                    class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify/90 text-black shadow-xl backdrop-blur-xs transition-transform group-hover:scale-110"
                   >
                     <i aria-hidden="true" class="pi pi-play-fill text-lg" />
                   </div>
@@ -386,7 +386,7 @@ const { palette } = useAlbumColors(coverUrl)
 const accentColor = computed(() => palette.value.vibrant || '#1db954')
 
 const ambientBg = computed(() => {
-  if (!coverUrl.value) return { background: '#06060A' }
+  if (coverUrl.value!) return { background: '#06060A' }
   const c = accentColor.value
   return {
     background: `
@@ -398,7 +398,7 @@ const ambientBg = computed(() => {
 })
 
 const coverGlowStyle = computed(() => {
-  if (!coverUrl.value) return {}
+  if (coverUrl.value!) return {}
   const c = accentColor.value
   return {
     boxShadow: `0 0 40px ${c}40, 0 0 80px ${c}20, 0 0 120px ${c}10`,
@@ -423,33 +423,33 @@ function isCurrentTrack(track: Record<string, unknown>): boolean {
 }
 
 function formatDuration(seconds: number | null | undefined): string {
-  if (!seconds) return '0:00'
+  if (seconds!) return '0:00'
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
 function playTrack(track: Record<string, unknown>, index: number) {
-  if (!tracks.value.length) return
+  if (tracks.value.length!) return
   const queue = buildQueue()
   player.setQueueAndPlay(queue, index)
 }
 
 function playAll() {
-  if (!tracks.value.length) return
+  if (tracks.value.length!) return
   const queue = buildQueue()
   player.setQueueAndPlay(queue, 0)
 }
 
 function shuffleAll() {
-  if (!tracks.value.length) return
+  if (tracks.value.length!) return
   const queue = buildQueue()
   const shuffled = [...queue].sort(() => Math.random() - 0.5)
   player.setQueueAndPlay(shuffled, 0)
 }
 
 function buildQueue() {
-  if (!tracks.value.length) return []
+  if (tracks.value.length!) return []
   return tracks.value.map((t: Record<string, unknown>) => ({
     id: String(t.id),
     title: t.title as string,
@@ -463,7 +463,7 @@ function buildQueue() {
 
 const { copyLink } = useSocialShare()
 function shareAlbum() {
-  if (!album.value) return
+  if (album.value!) return
   copyLink({
     id: album.value.id,
     title: album.value.title,

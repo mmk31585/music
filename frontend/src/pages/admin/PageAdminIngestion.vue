@@ -141,7 +141,7 @@
                   <img
                     :src="uploadResult.coverArtUrl"
                     alt="Embedded Cover"
-                    class="h-24 w-24 rounded-lg object-cover shadow-sm ring-1 ring-surface-200"
+                    class="h-24 w-24 rounded-lg object-cover shadow-xs ring-1 ring-surface-200"
                     loading="lazy"
                   />
                 </div>
@@ -150,7 +150,7 @@
                   <img
                     :src="spotifyAlbumCover"
                     alt="Spotify Album Art"
-                    class="h-24 w-24 rounded-lg object-cover shadow-sm ring-2 ring-green-500/50"
+                    class="h-24 w-24 rounded-lg object-cover shadow-xs ring-2 ring-green-500/50"
                     loading="lazy"
                   />
                 </div>
@@ -159,7 +159,7 @@
                   <img
                     :src="spotifyArtistImage"
                     alt="Artist Image"
-                    class="h-24 w-24 rounded-lg object-cover shadow-sm ring-2 ring-purple-500/50"
+                    class="h-24 w-24 rounded-lg object-cover shadow-xs ring-2 ring-purple-500/50"
                     loading="lazy"
                   />
                 </div>
@@ -417,7 +417,7 @@ const draftsInReview = computed(() => drafts.value.filter(d => d.status === 'rev
 
 const lyricsSnippet = computed(() => {
   const lyrics = uploadResult.value?.extractedMetadata?.lyrics
-  if (!lyrics) return ''
+  if (lyrics!) return ''
   return lyrics.split('\n').slice(0, 5).join('\n')
 })
 
@@ -456,8 +456,8 @@ const spotifyArtistImage = computed(() => enrichmentResult.value?.spotify?.artis
 
 const musicBrainzInfo = computed(() => {
   const mb = enrichmentResult.value?.musicbrainz
-  if (!mb) return null
-  if (!mb.artistName && !mb.albumName && !mb.releaseYear) return null
+  if (mb!) return null
+  if (mb.artistName! && mb.albumName! && mb.releaseYear!) return null
   const parts: string[] = []
   if (mb.artistName) parts.push(`Artist: ${mb.artistName}`)
   if (mb.albumName) parts.push(`Album: ${mb.albumName}`)
@@ -468,8 +468,8 @@ const musicBrainzInfo = computed(() => {
 
 const lastFmInfo = computed(() => {
   const lf = enrichmentResult.value?.lastfm
-  if (!lf) return null
-  if (!lf.playCount && !lf.listenerCount && !lf.tags?.length) return null
+  if (lf!) return null
+  if (lf.playCount! && lf.listenerCount! && lf.tags!?.length) return null
   const parts: string[] = []
   if (lf.playCount) parts.push(`${lf.playCount.toLocaleString()} plays`)
   if (lf.listenerCount) parts.push(`${lf.listenerCount.toLocaleString()} listeners`)
@@ -527,7 +527,7 @@ function goBulkReview() {
 }
 
 function triggerFileInput() {
-  if (!uploading.value) {
+  if (uploading.value!) {
     fileInputRef.value?.click()
   }
 }
@@ -681,14 +681,14 @@ function hasFeatArtists(artist: string): boolean {
 }
 
 function formatDuration(seconds?: number): string {
-  if (!seconds) return ''
+  if (seconds!) return ''
   const m = Math.floor(seconds / 60)
   const s = Math.round(seconds % 60)
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
 function formatTrack(num?: number, total?: number): string {
-  if (!num && !total) return ''
+  if (num! && total!) return ''
   if (num && total) return `${num} / ${total}`
   if (num) return String(num)
   return ''

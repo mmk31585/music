@@ -1,12 +1,12 @@
 <template>
   <div
-    class="group grid grid-cols-[48px_1fr_auto] items-center gap-4 rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-white/[0.08]"
-    :class="isCurrent ? 'bg-white/[0.10] shadow-[inset_3px_0_0_#1db954]' : ''"
+    class="group grid grid-cols-[48px_1fr_auto] items-center gap-4 rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-white/8"
+    :class="isCurrent ? 'bg-white/10 shadow-[inset_3px_0_0_#1db954]' : ''"
     @contextmenu.prevent="openContextMenu"
   >
     <button
       type="button"
-      class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white/10 text-white transition-all duration-200 hover:scale-105 hover:bg-[#1db954] hover:text-black disabled:cursor-wait disabled:opacity-70"
+      class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white/10 text-white transition-all duration-200 hover:scale-105 hover:bg-spotify hover:text-black disabled:cursor-wait disabled:opacity-70"
       :disabled="loadingThisTrack"
       @click="handlePlay"
     >
@@ -24,7 +24,7 @@
 
         <span
           v-else-if="isCurrent && player.isPlaying.value"
-          class="flex h-4 items-end gap-[2px]"
+          class="flex h-4 items-end gap-0.5"
           aria-label="Playing"
         >
           <span class="eq-bar h-2" />
@@ -40,7 +40,7 @@
       <RouterLink
         :to="`/track/${trackId}`"
         class="truncate text-sm font-semibold transition hover:underline"
-        :class="isCurrent ? 'text-[#1db954]' : 'text-white'"
+        :class="isCurrent ? 'text-spotify' : 'text-white'"
         @click.stop
       >
         {{ title }}
@@ -142,7 +142,7 @@ const durationSeconds = computed(() => {
 
 const durationLabel = computed(() => {
   const total = Number(durationSeconds.value)
-  if (!Number.isFinite(total) || total <= 0) return ''
+  if (Number.isFinite!(total) || total <= 0) return ''
 
   const minutes = Math.floor(total / 60)
   const seconds = Math.floor(total % 60)

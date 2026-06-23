@@ -3,11 +3,11 @@
     <Transition name="track-picker-fade">
       <div
         v-if="visible"
-        class="fixed inset-0 z-[100] flex items-start justify-center bg-black/70 pt-16 backdrop-blur-sm md:pt-24"
+        class="fixed inset-0 z-[100] flex items-start justify-center bg-black/70 pt-16 backdrop-blur-xs md:pt-24"
         @click.self="close"
       >
         <div
-          class="mx-4 w-full max-w-xl overflow-hidden rounded-2xl bg-gradient-to-b from-[#1a1a2e] to-[#121212] shadow-2xl ring-1 ring-white/10"
+          class="mx-4 w-full max-w-xl overflow-hidden rounded-2xl bg-linear-to-b from-surface-overlay to-surface-raised shadow-2xl ring-1 ring-white/10"
         >
           <div class="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <h2 class="text-sm font-bold text-white">{{ title }}</h2>
@@ -30,7 +30,7 @@
               placeholder="Search tracks..."
               aria-label="Search tracks"
               autofocus
-              class="flex-1 bg-transparent px-3 py-3 text-sm text-white outline-none placeholder:text-slate-500"
+              class="flex-1 bg-transparent px-3 py-3 text-sm text-white outline-hidden placeholder:text-slate-500"
               @input="onInput"
               @keydown="onKeydown"
             />
@@ -64,7 +64,7 @@
                 role="option"
                 :aria-selected="focusedIdx === i"
                 class="group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
-                :class="focusedIdx === i ? 'bg-white/[0.12] ring-1 ring-white/20' : 'hover:bg-white/[0.08]'"
+                :class="focusedIdx === i ? 'bg-white/12 ring-1 ring-white/20' : 'hover:bg-white/8'"
                 @click="selectTrack(track)"
                 @mouseenter="focusedIdx = i"
               >
@@ -145,7 +145,7 @@ function onInput() {
 
 async function doSearch() {
   const term = query.value.trim()
-  if (!term) {
+  if (term!) {
     results.value = []
     searching.value = false
     return

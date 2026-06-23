@@ -10,7 +10,7 @@
     <div
       v-for="item in uploadTypes"
       :key="item.kind"
-      class="group cursor-pointer rounded-xl border border-white/[0.06] bg-white/[0.03] p-5 transition hover:border-white/[0.12] hover:bg-white/[0.05]"
+      class="group cursor-pointer rounded-xl border border-white/6 bg-white/3 p-5 transition hover:border-white/12 hover:bg-white/5"
       @click="openUpload(item.kind)"
     >
       <div class="flex items-center gap-4">
@@ -29,25 +29,25 @@
     </div>
   </div>
 
-  <div class="mt-6 rounded-xl border border-white/[0.06] bg-white/[0.03] p-5 reveal-fade">
+  <div class="mt-6 rounded-xl border border-white/6 bg-white/3 p-5 reveal-fade">
     <div class="mb-3 flex items-center justify-between">
       <h3 class="text-sm font-bold text-white">All Media ({{ mediaList.length }})</h3>
       <Button
         icon="pi pi-refresh"
         text
         size="small"
-        class="!text-slate-500 hover:!text-white"
+        class="text-slate-500! hover:text-white!"
         @click="fetchMediaList"
       />
     </div>
     <div v-if="loading" class="space-y-2">
-      <div v-for="i in 3" :key="i" class="h-14 animate-pulse rounded-lg bg-white/[0.04]" />
+      <div v-for="i in 3" :key="i" class="h-14 animate-pulse rounded-lg bg-white/4" />
     </div>
     <div v-else-if="mediaList.length" class="space-y-2">
       <div
         v-for="item in mediaList"
         :key="item.id"
-        class="group flex items-center gap-3 rounded-lg bg-white/[0.04] px-4 py-2.5"
+        class="group flex items-center gap-3 rounded-lg bg-white/4 px-4 py-2.5"
       >
         <i
           :class="item.mediaType === 'audio' ? 'pi pi-music text-blue-400' : 'pi pi-image text-green-400'"
@@ -64,7 +64,7 @@
           text
           rounded
           size="small"
-          class="!h-7 !w-7 !text-slate-600 opacity-0 transition hover:!text-white group-hover:opacity-100"
+          class="h-7! w-7! text-slate-600! opacity-0 transition hover:text-white! group-hover:opacity-100"
           @click="openUrl(item.publicUrl)"
           v-tooltip.top="'Open'"
         />
@@ -73,7 +73,7 @@
           text
           rounded
           size="small"
-          class="!h-7 !w-7 !text-slate-600 opacity-0 transition hover:!text-red-400 group-hover:opacity-100"
+          class="h-7! w-7! text-slate-600! opacity-0 transition hover:text-red-400! group-hover:opacity-100"
           @click="confirmDelete(item)"
           v-tooltip.top="'Delete'"
         />
@@ -104,7 +104,6 @@
 // TODO MEDIUM: Media from ingestion flow (uploaded audio/covers) don't appear here — they're in ingestion_drafts, not media table.
 // TODO LOW: No pagination — large media lists may impact performance.
 import { ref, onMounted } from 'vue'
-import Button from 'primevue/button'
 import AdminDeleteConfirm from '@/components/admin/AdminDeleteConfirm.vue'
 import { useToast } from 'primevue/usetoast'
 import { AdminSectionHeader } from '@/components/admin'
@@ -198,7 +197,7 @@ function confirmDelete(item: Media) {
 }
 
 async function handleDelete() {
-  if (!deleteTarget.value) return
+  if (deleteTarget.value!) return
   deleting.value = true
   try {
     await mediaApi.deleteAdminMedia(String(deleteTarget.value.id))
@@ -225,7 +224,7 @@ function formatFileSize(bytes?: number | null): string {
 }
 
 function formatDate(dateStr?: string | null): string {
-  if (!dateStr) return '—'
+  if (dateStr!) return '—'
   return new Date(dateStr).toLocaleDateString()
 }
 </script>

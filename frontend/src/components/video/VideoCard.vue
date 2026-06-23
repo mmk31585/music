@@ -9,7 +9,7 @@
     @keydown.space.prevent="$emit('open')"
   >
     <!-- Thumbnail -->
-    <div class="relative aspect-[9/16] w-full overflow-hidden">
+    <div class="relative aspect-9/16 w-full overflow-hidden">
       <AppImage
         :src="video.thumbnail_url || video.thumbnail_path || video.track_cover_url"
         :alt="video.title"
@@ -19,12 +19,12 @@
       />
 
       <!-- Overlay gradient -->
-      <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+      <div class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent" />
 
       <!-- Status badge (for processing/failed) -->
       <div
         v-if="video.status && video.status !== 'ready'"
-        class="absolute top-2 left-2 z-10 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm"
+        class="absolute top-2 left-2 z-10 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold backdrop-blur-xs"
         :class="statusBadgeClass"
       >
         <i v-if="video.status === 'processing'" class="pi pi-spin pi-spinner text-[10px]" />
@@ -34,7 +34,7 @@
 
       <!-- Type badge -->
       <div
-        class="absolute top-2 right-2 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm"
+        class="absolute top-2 right-2 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold backdrop-blur-xs"
         :class="typeBadgeClass"
       >
         <i aria-hidden="true" :class="typeIcon" class="text-[10px]" />
@@ -55,7 +55,7 @@
         </div>
 
         <div
-          class="flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white opacity-0 backdrop-blur-sm transition-opacity duration-150 group-hover:opacity-100"
+          class="flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white opacity-0 backdrop-blur-xs transition-opacity duration-150 group-hover:opacity-100"
         >
           <i aria-hidden="true" class="pi pi-play-fill text-xs" />
         </div>
@@ -95,12 +95,12 @@ defineEmits<{
 const loaded = ref(false)
 
 const hoverClass = computed(() => {
-  return 'hover:bg-white/[0.08] hover:shadow-lg hover:shadow-black/20'
+  return 'hover:bg-white/8 hover:shadow-lg hover:shadow-black/20'
 })
 
 const typeBadgeClass = computed(() => {
   if (props.video.type === 'official_mv') {
-    return 'bg-[#1db954]/20 text-[#1db954]'
+    return 'bg-spotify/20 text-spotify'
   }
   return 'bg-blue-500/20 text-blue-400'
 })

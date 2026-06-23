@@ -64,7 +64,7 @@ describe('useUserAuthStore', () => {
   it('starts as guest with null values', () => {
     const store = useUserAuthStore()
     expect(store.user).toBeNull()
-    expect(store.state).toBeNull()
+    expect(store.entity).toBeNull()
     expect(store.isAuthenticated).toBe(false)
     expect(store.isGuest).toBe(true)
     expect(store.isAdmin).toBe(false)
@@ -83,7 +83,7 @@ describe('useUserAuthStore', () => {
     const store = useUserAuthStore()
     store.setToken('access-token')
     store.setRefreshToken('refresh-token-xyz')
-    expect(store.state?.refresh_token).toBe('refresh-token-xyz')
+    expect(store.entity?.refresh_token).toBe('refresh-token-xyz')
   })
 
   it('setSession sets user and tokens', () => {
@@ -139,7 +139,7 @@ describe('useUserAuthStore', () => {
     store.$reset()
     expect(store.isAuthenticated).toBe(false)
     expect(store.user).toBeNull()
-    expect(store.state).toBeNull()
+    expect(store.entity).toBeNull()
   })
 
   it('login sets session on success', async () => {

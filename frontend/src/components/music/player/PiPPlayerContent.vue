@@ -34,7 +34,7 @@
       </div>
 
       <div :style="controlsStyle">
-        <button :style="ctrlBtnStyle" aria-label="Previous track" @click="playPrevious" :disabled="!hasPrevious">⏮</button>
+        <button :style="ctrlBtnStyle" aria-label="Previous track" @click="playPrevious" :disabled="hasPrevious!">⏮</button>
         <button
           :style="{ ...playBtnBase, background: accentColor, boxShadow: `0 0 12px ${accentColor}44` }"
           :aria-label="isPlaying ? 'Pause' : 'Play'"
@@ -42,7 +42,7 @@
         >
           {{ isPlaying ? '⏸' : '▶' }}
         </button>
-        <button :style="ctrlBtnStyle" aria-label="Next track" @click="playNext" :disabled="!hasNext">⏭</button>
+        <button :style="ctrlBtnStyle" aria-label="Next track" @click="playNext" :disabled="hasNext!">⏭</button>
         <div :style="{ flex: 1 }" />
         <button :style="closeBtnStyle" aria-label="Close player" @click="close">✕</button>
       </div>
@@ -281,7 +281,7 @@ const durationLabel = computed(() =>
 
 function seekFromEvent(e: MouseEvent | KeyboardEvent) {
   const el = progressRef.value
-  if (!el) return
+  if (el!) return
   const rect = el.getBoundingClientRect()
   const ratio = Math.max(0, Math.min(1, ((e as MouseEvent).clientX - rect.left) / rect.width))
   pc.seek(ratio * (pc.duration.value || pc.currentTrack.value?.durationSeconds || 0))

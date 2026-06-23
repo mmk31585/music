@@ -3,81 +3,81 @@
 
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'پاپ') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'پاپ', 'pop');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'سنتی') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'سنتی', 'traditional');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'موسیقی کلاسیک') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'موسیقی کلاسیک', 'classical');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'راک') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'راک', 'rock');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'هیپ هاپ') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'هیپ هاپ', 'hip-hop');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'رپ') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'رپ', 'rap');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'الکترونیک') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'الکترونیک', 'electronic');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'محلی') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'محلی', 'folk');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'جاز') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'جاز', 'jazz');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'بلوز') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'بلوز', 'blues');
-    END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Pop') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Pop', 'pop');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Traditional') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Traditional', 'traditional');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Classical') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Classical', 'classical');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Rock') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Rock', 'rock');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Hip Hop') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Hip Hop', 'hip-hop');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Rap') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Rap', 'rap');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Electronic') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Electronic', 'electronic');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Folk') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Folk', 'folk');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Jazz') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Jazz', 'jazz');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Blues') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Blues', 'blues');
+END IF;
     IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'R&B') THEN
         INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'R&B', 'rnb');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'سول') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'سول', 'soul');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'متال') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'متال', 'metal');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'تلفیقی') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'تلفیقی', 'fusion');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'رگی') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'رگی', 'reggae');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'لاتین') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'لاتین', 'latin');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'کانتری') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'کانتری', 'country');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'بی کلام') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'بی کلام', 'instrumental');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'لایت') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'لایت', 'lofi');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'آمبینت') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'آمبینت', 'ambient');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'پاپ راک') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'پاپ راک', 'pop-rock');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'ایندی') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'ایندی', 'indie');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'فانک') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'فانک', 'funk');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'دنس') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'دنس', 'dance');
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'نیو ایج') THEN
-        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'نیو ایج', 'new-age');
-    END IF;
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Soul') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Soul', 'soul');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Metal') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Metal', 'metal');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Fusion') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Fusion', 'fusion');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Reggae') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Reggae', 'reggae');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Latin') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Latin', 'latin');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Country') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Country', 'country');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Instrumental') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Instrumental', 'instrumental');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Lo-Fi') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Lo-Fi', 'lofi');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Ambient') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Ambient', 'ambient');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Pop Rock') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Pop Rock', 'pop-rock');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Indie') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Indie', 'indie');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Funk') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Funk', 'funk');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Dance') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Dance', 'dance');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'New Age') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'New Age', 'new-age');
+END IF;
 END $$;
 
 -- +goose StatementEnd

@@ -32,7 +32,7 @@ vi.mock('@/services/player', () => {
     off: vi.fn(),
   }
   return {
-    PlayerEngine: vi.fn().mockImplementation(() => mockEngine),
+    PlayerEngine: vi.fn(function () { return mockEngine }),
     ShuffleMode: { Off: 'off', Queue: 'queue', Catalog: 'catalog', Similar: 'similar' },
     RepeatMode: { Off: 'off', One: 'one', All: 'all' },
   }
@@ -113,12 +113,12 @@ describe('usePlayer', () => {
 
   it('shuffleMode starts as off', () => {
     const player = usePlayer()
-    expect(player.shuffleMode.value).toBe('off')
+    expect(player.shuffleMode).toBe('off')
   })
 
   it('repeatMode starts as off', () => {
     const player = usePlayer()
-    expect(player.repeatMode.value).toBe('off')
+    expect(player.repeatMode).toBe('off')
   })
 
   it('playTrack delegates to store', () => {
@@ -135,6 +135,6 @@ describe('usePlayer', () => {
   it('setShuffleMode updates mode', () => {
     const player = usePlayer()
     player.setShuffleMode('queue')
-    expect(player.shuffleMode.value).toBe('queue')
+    expect(player.shuffleMode).toBe('queue')
   })
 })

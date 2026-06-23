@@ -8,7 +8,7 @@
 
     <!-- Period Toggle -->
     <div
-      class="mt-8 flex justify-center gap-2 rounded-xl bg-white/[0.04] p-1"
+      class="mt-8 flex justify-center gap-2 rounded-xl bg-white/4 p-1"
       role="tablist"
     >
       <button
@@ -42,7 +42,7 @@
       <!-- Big Number Cards -->
       <section class="mt-10 grid gap-5 sm:grid-cols-2">
         <div
-          class="group rounded-3xl border border-white/[0.06] bg-gradient-to-br from-purple-600/20 to-[#0C0C14] p-8 text-center transition hover:-translate-y-0.5 hover:border-purple-500/30"
+          class="group rounded-3xl border border-white/6 bg-linear-to-br from-purple-600/20 to-[#0C0C14] p-8 text-center transition hover:-translate-y-0.5 hover:border-purple-500/30"
         >
           <p class="text-5xl font-black text-white tabular-nums">
             <CountUp :to="stats.total_minutes_listened" />
@@ -51,7 +51,7 @@
         </div>
 
         <div
-          class="group rounded-3xl border border-white/[0.06] bg-gradient-to-br from-pink-600/20 to-[#0C0C14] p-8 text-center transition hover:-translate-y-0.5 hover:border-pink-500/30"
+          class="group rounded-3xl border border-white/6 bg-linear-to-br from-pink-600/20 to-[#0C0C14] p-8 text-center transition hover:-translate-y-0.5 hover:border-pink-500/30"
         >
           <p class="text-5xl font-black text-white tabular-nums">
             <CountUp :to="stats.total_tracks_played" />
@@ -62,7 +62,7 @@
 
       <!-- Streak + Discovery -->
       <section class="mt-6 grid gap-5 sm:grid-cols-2">
-        <div class="rounded-3xl border border-white/[0.06] bg-white/[0.02] p-6">
+        <div class="rounded-3xl border border-white/6 bg-white/2 p-6">
           <div class="flex items-center gap-3">
             <span class="text-3xl">🔥</span>
             <div>
@@ -74,7 +74,7 @@
           </div>
         </div>
 
-        <div class="rounded-3xl border border-white/[0.06] bg-white/[0.02] p-6">
+        <div class="rounded-3xl border border-white/6 bg-white/2 p-6">
           <div class="flex items-center gap-3">
             <span class="text-3xl">🎯</span>
             <div>
@@ -93,11 +93,11 @@
       <!-- Top Tracks -->
       <section v-if="stats.top_tracks.length" class="mt-10">
         <h2 class="mb-5 text-2xl font-black text-white">پرشنیده‌ترین‌های تو</h2>
-        <div class="overflow-hidden rounded-3xl border border-white/10 bg-black/20 p-2 backdrop-blur">
+        <div class="overflow-hidden rounded-3xl border border-white/10 bg-black/20 p-2 backdrop-blur-xs">
           <div
             v-for="(track, i) in stats.top_tracks"
             :key="track.track_id"
-            class="flex items-center gap-4 rounded-2xl px-4 py-3 transition hover:bg-white/[0.04]"
+            class="flex items-center gap-4 rounded-2xl px-4 py-3 transition hover:bg-white/4"
           >
             <span class="w-8 text-center text-sm font-bold text-slate-500">{{ i + 1 }}</span>
             <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-500/20 text-lg text-purple-400">
@@ -115,11 +115,11 @@
       <!-- Top Artists -->
       <section v-if="stats.top_artists.length" class="mt-10">
         <h2 class="mb-5 text-2xl font-black text-white">خواننده‌های محبوبت</h2>
-        <div class="overflow-hidden rounded-3xl border border-white/10 bg-black/20 p-2 backdrop-blur">
+        <div class="overflow-hidden rounded-3xl border border-white/10 bg-black/20 p-2 backdrop-blur-xs">
           <div
             v-for="(artist, i) in stats.top_artists"
             :key="artist.artist_id"
-            class="flex items-center gap-4 rounded-2xl px-4 py-3 transition hover:bg-white/[0.04]"
+            class="flex items-center gap-4 rounded-2xl px-4 py-3 transition hover:bg-white/4"
           >
             <span class="w-8 text-center text-sm font-bold text-slate-500">{{ i + 1 }}</span>
             <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-pink-500/20 text-lg text-pink-400">
@@ -140,7 +140,7 @@
           <div
             v-for="genre in stats.top_genres"
             :key="genre.genre_name"
-            class="rounded-2xl border border-white/[0.06] bg-white/[0.04] px-5 py-4 text-center transition hover:-translate-y-0.5 hover:border-emerald-500/30 hover:bg-emerald-500/10"
+            class="rounded-2xl border border-white/6 bg-white/4 px-5 py-4 text-center transition hover:-translate-y-0.5 hover:border-emerald-500/30 hover:bg-emerald-500/10"
           >
             <p class="text-sm font-bold text-white">{{ genre.genre_name }}</p>
             <p class="mt-1 text-xs text-slate-500">{{ genre.play_count }} plays</p>
@@ -211,7 +211,7 @@ function setPeriod(key: string) {
 }
 
 function shareStats() {
-  if (!stats.value) return
+  if (stats.value!) return
   const s = stats.value
   const text = [
     `🎵 *آمار شنیدن من در ${s.period_label}*`,

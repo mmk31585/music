@@ -3,7 +3,7 @@
     <!-- Back -->
     <button
       type="button"
-      class="mb-6 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-white/50 transition hover:bg-white/[0.06] hover:text-white"
+      class="mb-6 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-white/50 transition hover:bg-white/6 hover:text-white"
       @click="goBack"
     >
       <i aria-hidden="true" class="pi pi-arrow-right text-xs" />
@@ -20,9 +20,9 @@
         <div
           class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition"
           :class="currentStep === s.step
-            ? 'bg-[#1db954] text-black'
+            ? 'bg-spotify text-black'
             : currentStep > s.step
-              ? 'bg-[#1db954]/30 text-[#1db954]'
+              ? 'bg-spotify/30 text-spotify'
               : 'bg-white/10 text-white/40'"
         >
           <i v-if="currentStep > s.step" aria-hidden="true" class="pi pi-check text-[10px]" />
@@ -47,7 +47,7 @@
           v-model="searchQuery"
           type="text"
           placeholder="جستجوی آهنگ..."
-          class="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-10 py-3.5 text-sm text-white outline-none backdrop-blur-sm transition placeholder:text-slate-500 focus:border-[#1db954]/40 focus:bg-white/[0.06]"
+          class="w-full rounded-2xl border border-white/10 bg-white/4 px-10 py-3.5 text-sm text-white outline-hidden backdrop-blur-xs transition placeholder:text-slate-500 focus:border-spotify/40 focus:bg-white/6"
           @input="onSearchInput"
           @keydown="onSearchKeydown"
         />
@@ -78,7 +78,7 @@
             :key="String(track.id)"
             type="button"
             class="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-right transition"
-            :class="focusedIdx === i ? 'bg-white/[0.12] ring-1 ring-white/20' : 'hover:bg-white/[0.06]'"
+            :class="focusedIdx === i ? 'bg-white/12 ring-1 ring-white/20' : 'hover:bg-white/6'"
             @click="selectTrack(track)"
             @mouseenter="focusedIdx = i"
           >
@@ -108,7 +108,7 @@
       <h1 class="text-2xl font-black text-white">ویدیوت رو آپلود کن</h1>
 
       <!-- Selected track info -->
-      <div class="flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+      <div class="flex items-center gap-3 rounded-2xl border border-white/6 bg-white/2 px-4 py-3">
         <div class="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-white/10">
           <img
             v-if="selectedTrack?.cover_url"
@@ -126,7 +126,7 @@
         </div>
         <button
           type="button"
-          class="text-xs font-medium text-[#1db954] transition hover:text-[#1ed760]"
+          class="text-xs font-medium text-spotify transition hover:text-spotify-hover"
           @click="currentStep = 1"
         >
           تغییر
@@ -137,8 +137,8 @@
       <div
         class="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-12 transition"
         :class="videoFile
-          ? 'border-[#1db954]/40 bg-[#1db954]/5'
-          : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'"
+          ? 'border-spotify/40 bg-spotify/5'
+          : 'border-white/10 bg-white/2 hover:border-white/20 hover:bg-white/4'"
         @click="triggerFileInput"
         @dragover.prevent="dragOver = true"
         @dragleave.prevent="dragOver = false"
@@ -152,8 +152,8 @@
           <p class="text-xs text-white/30">MP4, WebM, MOV</p>
         </div>
         <div v-else class="flex flex-col items-center gap-2">
-          <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#1db954]/10">
-            <i aria-hidden="true" class="pi pi-check-circle text-2xl text-[#1db954]" />
+          <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-spotify/10">
+            <i aria-hidden="true" class="pi pi-check-circle text-2xl text-spotify" />
           </div>
           <p class="text-sm font-medium text-white">{{ videoFile.name }}</p>
           <p class="text-xs text-white/40">{{ fmtFileSize(videoFile.size) }}</p>
@@ -196,7 +196,7 @@
               @input="onSeekChange"
             />
           </div>
-          <span class="min-w-[3rem] text-right text-xs font-medium text-white/50 tabular-nums">
+          <span class="min-w-12 text-right text-xs font-medium text-white/50 tabular-nums">
             {{ fmtMs(trackStartMs) }}
           </span>
         </div>
@@ -217,7 +217,7 @@
       <h1 class="text-2xl font-black text-white">جزئیات ادیت</h1>
 
       <!-- Selected track info -->
-      <div class="flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+      <div class="flex items-center gap-3 rounded-2xl border border-white/6 bg-white/2 px-4 py-3">
         <div class="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-white/10">
           <img
             v-if="selectedTrack?.cover_url"
@@ -246,7 +246,7 @@
           type="text"
           maxlength="100"
           placeholder="نام ادیتت رو بنویس..."
-          class="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none backdrop-blur-sm transition placeholder:text-slate-500 focus:border-[#1db954]/40 focus:bg-white/[0.06]"
+          class="w-full rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-white outline-hidden backdrop-blur-xs transition placeholder:text-slate-500 focus:border-spotify/40 focus:bg-white/6"
         />
         <p class="text-left text-[10px] text-white/30">{{ editTitle.length }}/100</p>
       </div>
@@ -259,7 +259,7 @@
           maxlength="300"
           rows="3"
           placeholder="یه توضیح کوتاه..."
-          class="w-full resize-none rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none backdrop-blur-sm transition placeholder:text-slate-500 focus:border-[#1db954]/40 focus:bg-white/[0.06]"
+          class="w-full resize-none rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-white outline-hidden backdrop-blur-xs transition placeholder:text-slate-500 focus:border-spotify/40 focus:bg-white/6"
         />
         <p class="text-left text-[10px] text-white/30">{{ editDescription.length }}/300</p>
       </div>
@@ -267,7 +267,7 @@
       <!-- Publish button -->
       <button
         type="button"
-        class="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1db954] py-3.5 text-sm font-bold text-black transition hover:bg-[#1ed760] disabled:opacity-40"
+        class="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-spotify py-3.5 text-sm font-bold text-black transition hover:bg-spotify-hover disabled:opacity-40"
         :disabled="publishing"
         @click="publish"
       >
@@ -280,15 +280,15 @@
     <Transition name="fade">
       <div
         v-if="processingState"
-        class="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-4 bg-black/80 backdrop-blur-sm"
+        class="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-4 bg-black/80 backdrop-blur-xs"
       >
         <div v-if="processingState === 'processing'" class="flex flex-col items-center gap-4">
-          <i aria-hidden="true" class="pi pi-spin pi-spinner text-3xl text-[#1db954]" />
+          <i aria-hidden="true" class="pi pi-spin pi-spinner text-3xl text-spotify" />
           <p class="text-sm font-medium text-white/70">ویدیوت داره پردازش می‌شه... ممکنه چند دقیقه طول بکشه</p>
         </div>
         <div v-else-if="processingState === 'success'" class="flex flex-col items-center gap-4">
-          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-[#1db954]/20">
-            <i aria-hidden="true" class="pi pi-check-circle text-3xl text-[#1db954]" />
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-spotify/20">
+            <i aria-hidden="true" class="pi pi-check-circle text-3xl text-spotify" />
           </div>
           <p class="text-sm font-bold text-white">ادیت با موفقیت منتشر شد!</p>
           <p class="text-xs text-white/50"> redirecting...</p>
@@ -414,7 +414,7 @@ function onSearchInput() {
 
 async function doSearch() {
   const term = searchQuery.value.trim()
-  if (!term) {
+  if (term!) {
     searchResults.value = []
     searching.value = false
     return
@@ -507,7 +507,7 @@ function onSeekChange(e: Event) {
   // Preview audio from this position
   const audio = audioPreviewRef.value
   if (audio && selectedTrack.value) {
-    const wasPlaying = !audio.paused
+    const wasPlaying = audio.paused!
     audio.currentTime = val / 1000
     if (wasPlaying) audio.play()
   }
@@ -515,13 +515,13 @@ function onSeekChange(e: Event) {
 
 function toggleAudioPreview() {
   const audio = audioPreviewRef.value
-  if (!audio || !selectedTrack.value) return
+  if (audio! || selectedTrack.value!) return
 
   if (isPreviewPlaying.value) {
     audio.pause()
     isPreviewPlaying.value = false
   } else {
-    if (!audio.src) {
+    if (audio.src!) {
       audio.src = selectedTrack.value.audio_url || ''
     }
     audio.currentTime = trackStartMs.value / 1000
@@ -540,7 +540,7 @@ function onAudioTimeUpdate() {
 // ── Step 3: Publish ──────────────────────────────────────────────────
 
 async function publish() {
-  if (!selectedTrack.value || !videoFile.value) return
+  if (selectedTrack.value! || videoFile.value!) return
   publishing.value = true
 
   try {

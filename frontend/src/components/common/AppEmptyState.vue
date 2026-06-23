@@ -3,15 +3,15 @@
     class="flex flex-col items-center gap-3 py-16 text-center"
     :class="[
       bordered ? 'rounded-3xl border border-white/10 bg-black/20 px-6' : '',
-      variant === 'error' ? 'border-red-500/20 bg-red-500/[0.03]' : '',
-      variant === 'offline' ? 'border-amber-500/20 bg-amber-500/[0.03]' : '',
+      variant === 'error' ? 'border-red-500/20 bg-red-500/3' : '',
+      variant === 'offline' ? 'border-amber-500/20 bg-amber-500/3' : '',
     ]"
   >
     <div
       v-if="icon"
       class="flex h-16 w-16 items-center justify-center"
       :class="[
-        bordered ? 'rounded-full bg-white/10' : 'rounded-2xl bg-white/[0.04] ring-1 ring-white/[0.06]',
+        bordered ? 'rounded-full bg-white/10' : 'rounded-2xl bg-white/4 ring-1 ring-white/6',
         variant === 'error' ? 'text-red-400' : '',
         variant === 'offline' ? 'text-amber-400' : '',
       ]"

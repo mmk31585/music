@@ -11,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - /run/media/space/8632457A32456FEB1/postgres_data/data:/var/lib/postgresql/data
+      - musicapp_postgres_data:/var/lib/postgresql/data
     command: ["-c", "unix_socket_directories="]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d musicapp -h localhost"]
@@ -133,3 +133,4 @@ services:
 volumes:
   musicapp_minio_data:
   musicapp_uploads:
+  musicapp_postgres_data:

@@ -19,17 +19,17 @@
   </AdminSectionHeader>
 
   <div class="mt-6 grid gap-6 md:grid-cols-3 reveal-stagger">
-    <div class="rounded-xl border border-white/[0.06] bg-white/[0.03] p-5">
+    <div class="rounded-xl border border-white/6 bg-white/3 p-5">
       <p class="text-xs font-medium tracking-wider text-slate-500 uppercase">Active Plans</p>
       <p class="mt-2 text-3xl font-bold text-white tabular-nums">{{ plans.length }}</p>
     </div>
-    <div class="rounded-xl border border-white/[0.06] bg-white/[0.03] p-5">
+    <div class="rounded-xl border border-white/6 bg-white/3 p-5">
       <p class="text-xs font-medium tracking-wider text-slate-500 uppercase">Your Subscription</p>
       <p class="mt-2 text-3xl font-bold text-white tabular-nums">
         {{ currentSub ? 'Active' : 'None' }}
       </p>
     </div>
-    <div class="rounded-xl border border-white/[0.06] bg-white/[0.03] p-5">
+    <div class="rounded-xl border border-white/6 bg-white/3 p-5">
       <p class="text-xs font-medium tracking-wider text-slate-500 uppercase">Payment History</p>
       <p class="mt-2 text-3xl font-bold text-white tabular-nums">{{ payments.length }}</p>
     </div>
@@ -39,7 +39,7 @@
     <h3 class="mb-4 text-sm font-bold text-white">Available Plans</h3>
     <div
       v-if="plans.length === 0"
-      class="rounded-xl border border-white/[0.06] bg-white/[0.03] p-6 text-center text-sm text-slate-400"
+      class="rounded-xl border border-white/6 bg-white/3 p-6 text-center text-sm text-slate-400"
     >
       No subscription plans available
     </div>
@@ -47,7 +47,7 @@
       <div
         v-for="plan in plans"
         :key="plan.id"
-        class="rounded-xl border border-white/[0.06] bg-white/[0.03] p-5"
+        class="rounded-xl border border-white/6 bg-white/3 p-5"
       >
         <h4 class="text-lg font-bold text-white">{{ plan.name }}</h4>
         <p class="mt-1 text-2xl font-black text-white">
@@ -62,11 +62,11 @@
     <h3 class="mb-4 text-sm font-bold text-white">My Subscription</h3>
     <div
       v-if="!currentSub"
-      class="rounded-xl border border-white/[0.06] bg-white/[0.03] p-6 text-center text-sm text-slate-400"
+      class="rounded-xl border border-white/6 bg-white/3 p-6 text-center text-sm text-slate-400"
     >
       No active subscription
     </div>
-    <div v-else class="rounded-xl border border-white/[0.06] bg-white/[0.03] p-5">
+    <div v-else class="rounded-xl border border-white/6 bg-white/3 p-5">
       <p class="text-sm text-slate-300">
         Plan: <span class="font-medium text-white">{{ currentSub.plan?.name || 'Unknown' }}</span>
       </p>
@@ -84,7 +84,7 @@
     <h3 class="mb-4 text-sm font-bold text-white">Payment History</h3>
     <div
       v-if="payments.length === 0"
-      class="rounded-xl border border-white/[0.06] bg-white/[0.03] p-6 text-center text-sm text-slate-400"
+      class="rounded-xl border border-white/6 bg-white/3 p-6 text-center text-sm text-slate-400"
     >
       No payment history
     </div>
@@ -92,7 +92,7 @@
       <div
         v-for="p in payments"
         :key="p.id"
-        class="flex items-center justify-between rounded-xl bg-white/[0.03] px-4 py-3"
+        class="flex items-center justify-between rounded-xl bg-white/3 px-4 py-3"
       >
         <div>
           <p class="text-sm font-medium text-white">{{ formatCents(p.amountCents) }} {{ p.currency }}</p>

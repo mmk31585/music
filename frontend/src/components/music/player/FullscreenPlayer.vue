@@ -12,7 +12,7 @@
             style="filter: blur(100px) saturate(2)"
           />
         </div>
-        <div class="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-black/70 via-black/30 to-black/90" />
+        <div class="pointer-events-none absolute inset-0 z-[1] bg-linear-to-b from-black/70 via-black/30 to-black/90" />
 
         <!-- ── Top bar ── -->
         <div class="relative z-10 flex shrink-0 items-center justify-between px-4 pt-3 md:px-8 md:pt-5" style="padding-top: max(0.75rem, env(safe-area-inset-top))">
@@ -24,9 +24,9 @@
             <!-- Toggle: lyrics/wave vs queue -->
             <button
               class="flex h-10 w-10 items-center justify-center rounded-full transition-all"
-              :class="rightPanelTab === 'queue' ? 'bg-white/15 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'"
-              :aria-label="rightPanelTab === 'queue' ? 'Show lyrics' : 'Show queue'"
-              @click="rightPanelTab = rightPanelTab === 'queue' ? 'lyrics' : 'queue'"
+              :class="activeTab === 'queue' ? 'bg-white/15 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'"
+              :aria-label="activeTab === 'queue' ? 'Show lyrics' : 'Show queue'"
+              @click="activeTab = activeTab === 'queue' ? 'lyrics' : 'queue'"
             >
               <i aria-hidden="true" class="pi pi-list text-lg" />
             </button>
@@ -41,12 +41,12 @@
           <div class="flex flex-1 gap-8 min-h-0 w-full max-w-7xl mx-auto">
 
             <!-- LEFT: Cover + info + controls (slightly narrower to make room for queue preview) -->
-            <div class="flex flex-col items-center gap-4 shrink-0 w-[380px] lg:w-[420px] justify-center pb-12">
+            <div class="flex flex-col items-center gap-4 shrink-0 w-95 lg:w-105 justify-center pb-12">
 
               <!-- Album art -->
               <div class="relative">
                 <div
-                  class="w-[240px] lg:w-[280px] aspect-square overflow-hidden rounded-3xl shadow-2xl transition-all duration-700"
+                  class="w-60 lg:w-70 aspect-square overflow-hidden rounded-3xl shadow-2xl transition-all duration-700"
                   :class="isPlaying ? 'scale-100 cover-glow' : 'scale-95 opacity-80'"
                 >
                   <img
@@ -57,7 +57,7 @@
                   />
                   <div
                     v-else
-                    class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1db954]/30 to-[#a855f7]/30"
+                    class="flex h-full w-full items-center justify-center bg-linear-to-br from-spotify/30 to-aurora-purple/30"
                   >
                     <i aria-hidden="true" class="pi pi-music text-5xl text-white/30" />
                   </div>
@@ -120,7 +120,7 @@
               <!-- Playback controls -->
               <div class="flex items-center justify-center gap-1 w-full max-w-sm">
                 <div class="flex shrink-0 items-center gap-1">
-                  <button class="flex h-9 w-9 items-center justify-center transition-all hover:scale-110" :class="liked ? 'text-[#f472b6]' : 'text-white/40 hover:text-white'" :aria-label="liked ? 'Unlike' : 'Like'" @click="toggleLike">
+                  <button class="flex h-9 w-9 items-center justify-center transition-all hover:scale-110" :class="liked ? 'text-aurora-pink' : 'text-white/40 hover:text-white'" :aria-label="liked ? 'Unlike' : 'Like'" @click="toggleLike">
                     <i aria-hidden="true" :class="liked ? 'pi pi-heart-fill' : 'pi pi-heart'" class="text-base" />
                   </button>
                   <button class="flex h-9 w-9 items-center justify-center transition-all hover:scale-110 text-white/40 hover:text-white" aria-label="Add to playlist" @click="showAddToPlaylist = true">
@@ -131,36 +131,36 @@
                   <button
                     type="button"
                     class="relative flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 hover:scale-110"
-                    :class="shuffleMode !== 'off' ? 'text-[#a855f7]' : 'text-white/40 hover:text-white'"
+                    :class="shuffleMode !== 'off' ? 'text-aurora-purple' : 'text-white/40 hover:text-white'"
                     :aria-label="shuffleMode === 'queue' ? 'Shuffle queue' : shuffleMode === 'catalog' ? 'Random catalog tracks' : shuffleMode === 'similar' ? 'Similar tracks' : 'Shuffle off'"
                     data-shuffle-btn
                     @click="openShuffleMenu($event)"
                   >
                     <i aria-hidden="true" class="pi pi-sort-alt text-sm" />
-                    <span v-if="shuffleMode !== 'off'" class="absolute -top-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-[#a855f7] text-[7px] font-bold text-white">{{ shuffleMode === 'queue' ? 'Q' : shuffleMode === 'catalog' ? 'R' : 'S' }}</span>
+                    <span v-if="shuffleMode !== 'off'" class="absolute -top-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-aurora-purple text-[7px] font-bold text-white">{{ shuffleMode === 'queue' ? 'Q' : shuffleMode === 'catalog' ? 'R' : 'S' }}</span>
                   </button>
                 </div>
-                <button class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 transition-all duration-200 hover:text-white hover:scale-110 disabled:opacity-20" :disabled="!hasPrevious" aria-label="Previous track" @click="playPrevious">
+                <button class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 transition-all duration-200 hover:text-white hover:scale-110 disabled:opacity-20" :disabled="hasPrevious!" aria-label="Previous track" @click="playPrevious">
                   <i aria-hidden="true" class="pi pi-step-backward text-lg" />
                 </button>
-                <button class="flex h-14 w-14 items-center justify-center rounded-full shadow-2xl transition-all duration-200 active:scale-95 hover:scale-105 disabled:opacity-40" :style="{ background: progressColor }" :disabled="!currentTrack || isLoadingTrack" :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'" @click="togglePlay">
+                <button class="flex h-14 w-14 items-center justify-center rounded-full shadow-2xl transition-all duration-200 active:scale-95 hover:scale-105 disabled:opacity-40" :style="{ background: progressColor }" :disabled="currentTrack! || isLoadingTrack" :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'" @click="togglePlay">
                   <i aria-hidden="true" v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-xl text-white" />
                   <i aria-hidden="true" v-else :class="isPlaying ? 'pi pi-pause' : 'pi pi-play'" class="text-xl ml-1 text-white" />
                 </button>
-                <button class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 transition-all duration-200 hover:text-white hover:scale-110 disabled:opacity-20" :disabled="!hasNext" aria-label="Next track" @click="playNext">
+                <button class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 transition-all duration-200 hover:text-white hover:scale-110 disabled:opacity-20" :disabled="hasNext!" aria-label="Next track" @click="playNext">
                   <i aria-hidden="true" class="pi pi-step-forward text-lg" />
                 </button>
                 <div class="relative">
                   <button
                     type="button"
                     class="relative flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 hover:scale-110"
-                    :class="repeatMode !== 'off' ? 'text-[#f472b6]' : 'text-white/40 hover:text-white'"
+                    :class="repeatMode !== 'off' ? 'text-aurora-pink' : 'text-white/40 hover:text-white'"
                     :aria-label="repeatMode === 'off' ? 'Repeat off' : repeatMode === 'all' ? 'Repeat all' : 'Repeat one'"
                     data-repeat-btn
                     @click="openRepeatMenu($event)"
                   >
                     <i aria-hidden="true" class="pi pi-refresh text-sm" />
-                    <span v-if="repeatMode === 'one'" class="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#f472b6] text-[7px] font-bold text-black">1</span>
+                    <span v-if="repeatMode === 'one'" class="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-aurora-pink text-[7px] font-bold text-black">1</span>
                   </button>
                 </div>
               </div>
@@ -173,7 +173,7 @@
                 <div class="relative flex-1 flex items-center group/vol h-4" dir="ltr">
                   <div class="absolute inset-x-0 h-0.5 rounded-full bg-white/15" />
                   <div class="absolute left-0 h-0.5 rounded-full transition-all" :style="{ width: `${muted ? 0 : Number(volume) * 100}%`, background: progressColor }" />
-                  <input type="range" min="0" max="1" step="0.01" class="absolute inset-0 w-full cursor-pointer opacity-0 z-10"  :value="muted ? 0 : volume" @input="onVolume" />
+                  <Slider :model-value="muted ? 0 : volume" @update:model-value="onVolume" :min="0" :max="1" :step="0.01" class="absolute inset-0 w-full z-10" aria-label="Volume" />
                 </div>
                 <button class="flex h-8 w-8 items-center justify-center text-white/40 transition-colors hover:text-white shrink-0" aria-label="Toggle lyrics" @click="emit('toggle-lyrics')">
                   <i aria-hidden="true" class="pi pi-align-left text-xs" />
@@ -182,37 +182,25 @@
             </div>
 
             <!-- RIGHT: Toggle between Lyrics/Wave and Queue (desktop only) -->
-            <div class="flex-1 min-h-0 flex flex-col md:pl-4">
-              <!-- Panel tab bar -->
-              <div class="flex items-center gap-3 mb-3 shrink-0">
-                <button
-                  class="text-xs font-bold tracking-wider uppercase transition"
-                  :class="rightPanelTab === 'lyrics' ? 'text-white' : 'text-white/30 hover:text-white/60'"
-                  @click="rightPanelTab = 'lyrics'"
-                >
-                  <i aria-hidden="true" class="pi pi-align-left me-1.5 text-[10px]" />
+            <Tabs v-model:value="activeTab" class="flex-1 min-h-0 flex flex-col md:pl-4">
+              <TabList class="flex items-center gap-3 mb-3 shrink-0">
+                <Tab value="lyrics" class="text-xs font-bold tracking-wider uppercase">
+                  <i class="pi pi-align-left me-1.5 text-[10px]" />
                   Lyrics
-                </button>
-                <button
-                  v-if="queuePreview.length > 0"
-                  class="text-xs font-bold tracking-wider uppercase transition"
-                  :class="rightPanelTab === 'queue' ? 'text-white' : 'text-white/30 hover:text-white/60'"
-                  @click="rightPanelTab = 'queue'"
-                >
-                  <i aria-hidden="true" class="pi pi-list me-1.5 text-[10px]" />
+                </Tab>
+                <Tab v-if="queuePreview.length > 0" value="queue" class="text-xs font-bold tracking-wider uppercase">
+                  <i class="pi pi-list me-1.5 text-[10px]" />
                   Up Next
-                </button>
-              </div>
-
-              <div class="flex-1 min-h-0 overflow-hidden relative">
-
-                <!-- ── LYRICS / WAVE tab ── -->
-                <div v-show="rightPanelTab === 'lyrics'" class="h-full">
+                </Tab>
+              </TabList>
+              <TabPanels>
+                <TabPanel value="lyrics">
+                  <!-- ── LYRICS / WAVE tab ── -->
                   <!-- Lyrics loading shimmer -->
                   <div v-if="lyricsLoading" class="flex h-full flex-col items-center justify-center gap-3">
-                    <div class="shimmer h-4 w-48 rounded bg-white/[0.06]" />
-                    <div class="shimmer h-4 w-36 rounded bg-white/[0.04]" />
-                    <div class="shimmer h-4 w-40 rounded bg-white/[0.03]" />
+                    <div class="shimmer h-4 w-48 rounded bg-white/6" />
+                    <div class="shimmer h-4 w-36 rounded bg-white/4" />
+                    <div class="shimmer h-4 w-40 rounded bg-white/3" />
                   </div>
 
                   <!-- Synced lyrics -->
@@ -234,14 +222,13 @@
                     </div>
                     <p class="text-xs text-white/25">No synced lyrics available</p>
                   </div>
-                </div>
-
-                <!-- ── QUEUE tab ── -->
-                <div v-show="rightPanelTab === 'queue'" class="h-full flex flex-col px-1">
+                </TabPanel>
+                <TabPanel value="queue">
+                  <!-- ── QUEUE tab ── -->
                   <div v-if="queuePreview.length > 0" class="flex-1 space-y-1 overflow-y-auto scroll-thin">
                     <div
                       v-for="(track, i) in queuePreview" :key="track.id || i"
-                      class="group flex items-center gap-3 rounded-xl p-2 transition hover:bg-white/[0.06] cursor-pointer"
+                      class="group flex items-center gap-3 rounded-xl p-2 transition hover:bg-white/6 cursor-pointer"
                       @click="playQueueItem(i)"
                     >
                       <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
@@ -257,7 +244,7 @@
                         </div>
                       </div>
                       <div class="min-w-0 flex-1">
-                        <p class="truncate text-sm font-medium text-white group-hover:text-[#1db954] transition-colors">
+                        <p class="truncate text-sm font-medium text-white group-hover:text-spotify transition-colors">
                           {{ track.title }}
                         </p>
                         <p class="truncate text-xs text-white/40">{{ track.artistName }}</p>
@@ -270,10 +257,9 @@
                   <div v-else class="flex h-full items-center justify-center">
                     <p class="text-xs text-white/20">Queue is empty</p>
                   </div>
-                </div>
-
-              </div>
-            </div>
+                </TabPanel>
+              </TabPanels>
+            </Tabs>
 
           </div>
         </div>
@@ -306,7 +292,7 @@
                   :class="isPlaying ? 'scale-100 cover-glow' : 'scale-95 opacity-80'"
                 >
                   <img v-if="currentTrack?.coverUrl" :src="currentTrack?.coverUrl" :alt="currentTrack?.title" class="h-full w-full object-cover" />
-                  <div v-else class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1db954]/30 to-[#a855f7]/30">
+                  <div v-else class="flex h-full w-full items-center justify-center bg-linear-to-br from-spotify/30 to-aurora-purple/30">
                     <i aria-hidden="true" class="pi pi-music text-4xl text-white/30" />
                   </div>
                 </div>
@@ -318,11 +304,11 @@
             <div class="w-full text-center mt-4">
               <div class="flex items-center justify-center gap-2">
                 <div class="min-w-0">
-                  <h2 class="text-base font-bold text-white truncate max-w-[220px]">{{ currentTrack?.title }}</h2>
-                  <p class="text-sm text-white/50 mt-0.5 truncate max-w-[220px]">{{ currentTrack?.artistName }}</p>
+                  <h2 class="text-base font-bold text-white truncate max-w-55">{{ currentTrack?.title }}</h2>
+                  <p class="text-sm text-white/50 mt-0.5 truncate max-w-55">{{ currentTrack?.artistName }}</p>
                 </div>
                 <div class="flex shrink-0 items-center gap-0.5">
-                  <button class="flex h-8 w-8 items-center justify-center transition-all hover:scale-110" :class="liked ? 'text-[#f472b6]' : 'text-white/40 hover:text-white'" :aria-label="liked ? 'Unlike' : 'Like'" @click="toggleLike">
+                  <button class="flex h-8 w-8 items-center justify-center transition-all hover:scale-110" :class="liked ? 'text-aurora-pink' : 'text-white/40 hover:text-white'" :aria-label="liked ? 'Unlike' : 'Like'" @click="toggleLike">
                     <i aria-hidden="true" :class="liked ? 'pi pi-heart-fill' : 'pi pi-heart'" class="text-sm" />
                   </button>
                 </div>
@@ -330,8 +316,8 @@
             </div>
 
             <!-- ── Mobile lyrics (between cover and controls) ── -->
-            <div class="w-full mt-4 px-2 min-h-[60px] flex items-center justify-center">
-              <div v-if="lyricsLoading" class="shimmer h-5 w-56 rounded bg-white/[0.06]" />
+            <div class="w-full mt-4 px-2 min-h-15 flex items-center justify-center">
+              <div v-if="lyricsLoading" class="shimmer h-5 w-56 rounded bg-white/6" />
               <template v-else-if="activeLineText">
                 <div class="transition-all duration-700 ease-out text-center">
                   <p class="text-lg font-bold leading-relaxed transition-all duration-500" :style="{ color: palette.vibrant, textShadow: `0 0 40px ${palette.vibrant}44` }">{{ activeLineText }}</p>
@@ -383,33 +369,33 @@
 
             <!-- Playback controls (mobile) -->
             <div class="flex items-center justify-center gap-2 mt-3">
-              <button data-shuffle-btn class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 transition-all hover:text-white active:scale-90" :class="shuffleMode !== 'off' ? 'text-[#a855f7]' : ''" aria-label="Shuffle" @click="openShuffleMenu($event)">
+              <button data-shuffle-btn class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 transition-all hover:text-white active:scale-90" :class="shuffleMode !== 'off' ? 'text-aurora-purple' : ''" aria-label="Shuffle" @click="openShuffleMenu($event)">
                 <i aria-hidden="true" class="pi pi-sort-alt text-sm" />
               </button>
-              <button class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 transition-all hover:text-white active:scale-90" :disabled="!hasPrevious" aria-label="Previous track" @click="playPrevious">
+              <button class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 transition-all hover:text-white active:scale-90" :disabled="hasPrevious!" aria-label="Previous track" @click="playPrevious">
                 <i aria-hidden="true" class="pi pi-step-backward text-lg" />
               </button>
-              <button class="flex h-12 w-12 items-center justify-center rounded-full shadow-2xl transition-all active:scale-90" :style="{ background: progressColor }" :disabled="!currentTrack || isLoadingTrack" :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'" @click="togglePlay">
+              <button class="flex h-12 w-12 items-center justify-center rounded-full shadow-2xl transition-all active:scale-90" :style="{ background: progressColor }" :disabled="currentTrack! || isLoadingTrack" :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'" @click="togglePlay">
                 <i aria-hidden="true" v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-lg text-white" />
                 <i aria-hidden="true" v-else :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" class="text-lg ml-0.5 text-white" />
               </button>
-              <button class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 transition-all hover:text-white active:scale-90" :disabled="!hasNext" aria-label="Next track" @click="playNext">
+              <button class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 transition-all hover:text-white active:scale-90" :disabled="hasNext!" aria-label="Next track" @click="playNext">
                 <i aria-hidden="true" class="pi pi-step-forward text-lg" />
               </button>
-              <button data-repeat-btn class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 transition-all hover:text-white active:scale-90" :class="repeatMode !== 'off' ? 'text-[#f472b6]' : ''" aria-label="Repeat" @click="openRepeatMenu($event)">
+              <button data-repeat-btn class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 transition-all hover:text-white active:scale-90" :class="repeatMode !== 'off' ? 'text-aurora-pink' : ''" aria-label="Repeat" @click="openRepeatMenu($event)">
                 <i aria-hidden="true" class="pi pi-refresh text-sm" />
               </button>
             </div>
 
             <!-- Volume row -->
-            <div class="flex items-center gap-2 w-full max-w-[240px] mx-auto mt-3 mb-4">
+            <div class="flex items-center gap-2 w-full max-w-60 mx-auto mt-3 mb-4">
               <button class="flex h-7 w-7 items-center justify-center text-white/40 hover:text-white shrink-0" :aria-label="muted ? 'Unmute' : 'Mute'" @click="toggleMute">
                 <i aria-hidden="true" :class="muted ? 'pi pi-volume-off' : 'pi pi-volume-up'" class="text-[10px]" />
               </button>
               <div class="relative flex-1 flex items-center h-3">
                 <div class="absolute inset-x-0 h-0.5 rounded-full bg-white/15" />
                 <div class="absolute left-0 h-0.5 rounded-full" :style="{ width: `${muted ? 0 : Number(volume) * 100}%`, background: progressColor }" />
-                <input type="range" min="0" max="1" step="0.01" class="absolute inset-0 w-full cursor-pointer opacity-0 z-10" :value="muted ? 0 : volume" @input="onVolume" />
+                <Slider :model-value="muted ? 0 : volume" @update:model-value="onVolume" :min="0" :max="1" :step="0.01" class="absolute inset-0 w-full z-10" aria-label="Volume" />
               </div>
             </div>
 
@@ -419,20 +405,20 @@
         <!-- ── Shared shuffle / repeat popups (rendered here, positioned by JS) ── -->
         <div class="relative z-50">
           <Transition name="fade">
-            <div v-if="showShuffleMenu" class="shuffle-menu fixed z-[9999] min-w-[150px] rounded-xl border border-white/10 bg-[#121212] p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl" :style="shuffleMenuPos" style="backdrop-filter: blur(24px);">
-              <button v-for="mode in shuffleModes" :key="mode.value" type="button" class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/[0.08]" :class="shuffleMode === mode.value ? 'text-[#a855f7] bg-white/[0.06]' : 'text-slate-400 hover:text-white'" @click="setShuffleMode(mode.value)">
+            <div v-if="showShuffleMenu" class="shuffle-menu fixed z-[9999] min-w-[150px] rounded-xl border border-white/10 bg-surface-raised p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl" :style="shuffleMenuPos" style="backdrop-filter: blur(24px);">
+              <button v-for="mode in shuffleModes" :key="mode.value" type="button" class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/8" :class="shuffleMode === mode.value ? 'text-aurora-purple bg-white/6' : 'text-slate-400 hover:text-white'" @click="setShuffleMode(mode.value)">
                 <i aria-hidden="true" :class="mode.icon" class="text-sm" />
                 <span class="flex-1 text-left">{{ mode.label }}</span>
-                <span v-if="shuffleMode === mode.value" class="h-2 w-2 rounded-full bg-[#a855f7]" />
+                <span v-if="shuffleMode === mode.value" class="h-2 w-2 rounded-full bg-aurora-purple" />
               </button>
             </div>
           </Transition>
           <Transition name="fade">
-            <div v-if="showRepeatMenu" class="repeat-menu fixed z-[9999] min-w-[130px] rounded-xl border border-white/10 bg-[#121212] p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl" :style="repeatMenuPos" style="backdrop-filter: blur(24px);">
-              <button v-for="mode in repeatModes" :key="mode.value" type="button" class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/[0.08]" :class="repeatMode === mode.value ? 'text-[#f472b6] bg-white/[0.06]' : 'text-slate-400 hover:text-white'" @click="setRepeatMode(mode.value)">
+            <div v-if="showRepeatMenu" class="repeat-menu fixed z-[9999] min-w-[130px] rounded-xl border border-white/10 bg-surface-raised p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl" :style="repeatMenuPos" style="backdrop-filter: blur(24px);">
+              <button v-for="mode in repeatModes" :key="mode.value" type="button" class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/8" :class="repeatMode === mode.value ? 'text-aurora-pink bg-white/6' : 'text-slate-400 hover:text-white'" @click="setRepeatMode(mode.value)">
                 <i aria-hidden="true" :class="mode.icon" class="text-sm" />
                 <span class="flex-1 text-left">{{ mode.label }}</span>
-                <span v-if="repeatMode === mode.value" class="h-2 w-2 rounded-full bg-[#f472b6]" />
+                <span v-if="repeatMode === mode.value" class="h-2 w-2 rounded-full bg-aurora-pink" />
               </button>
             </div>
           </Transition>
@@ -532,7 +518,7 @@ function openShuffleMenu(e: MouseEvent) {
     top: `${rect.top - 8}px`,
     left: `${rect.left + rect.width / 2 - 75}px`,
   }
-  showShuffleMenu.value = !showShuffleMenu.value
+  showShuffleMenu.value = showShuffleMenu.value!
 }
 function openRepeatMenu(e: MouseEvent) {
   const btn = e.currentTarget as HTMLElement
@@ -541,7 +527,7 @@ function openRepeatMenu(e: MouseEvent) {
     top: `${rect.top - 8}px`,
     left: `${rect.left + rect.width / 2 - 65}px`,
   }
-  showRepeatMenu.value = !showRepeatMenu.value
+  showRepeatMenu.value = showRepeatMenu.value!
 }
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick)
@@ -553,13 +539,13 @@ function handleOutsideClick(e: MouseEvent) {
   const target = e.target as HTMLElement
   if (showShuffleMenu.value) {
     const btn = document.querySelector('[data-shuffle-btn]')
-    if (btn && !btn.contains(target) && !target.closest('.shuffle-menu')) {
+    if (btn && btn.contains!(target) && target.closest!('.shuffle-menu')) {
       showShuffleMenu.value = false
     }
   }
   if (showRepeatMenu.value) {
     const btn = document.querySelector('[data-repeat-btn]')
-    if (btn && !btn.contains(target) && !target.closest('.repeat-menu')) {
+    if (btn && btn.contains!(target) && target.closest!('.repeat-menu')) {
       showRepeatMenu.value = false
     }
   }
@@ -571,7 +557,7 @@ const seekHoverPos = ref<number | null>(null)
 
 function onSeekHover(e: MouseEvent) {
   const el = progressRef.value
-  if (!el || !duration.value) return
+  if (el! || duration.value!) return
   const rect = el.getBoundingClientRect()
   const x = e.clientX - rect.left
   const ratio = Math.max(0, Math.min(1, x / rect.width))
@@ -585,7 +571,7 @@ const mobileSeekHoverPos = ref<number | null>(null)
 
 function onSeekHoverMobile(e: MouseEvent) {
   const el = progressRefMobile.value
-  if (!el || !duration.value) return
+  if (el! || duration.value!) return
   const rect = el.getBoundingClientRect()
   const x = e.clientX - rect.left
   const ratio = Math.max(0, Math.min(1, x / rect.width))
@@ -617,7 +603,7 @@ const dynamicBg = computed(() => {
 })
 
 function seekTo(seconds: number) {
-  if (!duration.value) return
+  if (duration.value!) return
   const clamped = Math.max(0, Math.min(seconds, duration.value))
   pc.seek(clamped)
 }
@@ -628,7 +614,7 @@ function getProgressEl() {
 
 function seek(e: MouseEvent | Touch | KeyboardEvent) {
   const el = getProgressEl()
-  if (!el || !duration.value) return
+  if (el! || duration.value!) return
   const rect = el.getBoundingClientRect()
   const clientX = 'clientX' in e ? e.clientX : 0
   const ratio = (clientX - rect.left) / rect.width
@@ -648,14 +634,14 @@ function startDrag() {
 function startTouchDrag(e: TouchEvent) {
   const el = getProgressEl()
   const touch = e.touches[0]
-  if (!touch || !el || !duration.value) return
+  if (touch! || el! || duration.value!) return
   const rect = el.getBoundingClientRect()
   const ratio = (touch.clientX - rect.left) / rect.width
   seekTo(ratio * duration.value)
 
   const move = (ev: TouchEvent) => {
     const t = ev.touches[0]
-    if (!t) return
+    if (t!) return
     const r = (t.clientX - rect.left) / rect.width
     seekTo(r * duration.value)
   }
@@ -668,7 +654,7 @@ function startTouchDrag(e: TouchEvent) {
 }
 
 function formatTime(s: number) {
-  if (!s || !isFinite(s)) return '0:00'
+  if (s! || isFinite!(s)) return '0:00'
   const m = Math.floor(s / 60)
   const sec = Math.floor(s % 60)
   return `${m}:${sec.toString().padStart(2, '0')}`
@@ -682,8 +668,8 @@ function close() {
   isOpen.value = false
 }
 
-function onVolume(e: Event) {
-  setVolume(Number((e.target as HTMLInputElement).value))
+function onVolume(val: number) {
+  setVolume(val)
 }
 
 const rootEl = ref<HTMLElement | null>(null)
@@ -696,14 +682,14 @@ onMounted(async () => {
 onBeforeUnmount(() => {})
 
 // ─── Right panel tab: 'lyrics' | 'queue' ─────────────────────
-const rightPanelTab = ref<'lyrics' | 'queue'>('lyrics')
+const activeTab = ref('lyrics')
 
 // ─── Queue preview (Up Next) ──────────────────────────────────
 const playerStore = usePlayerStore()
 
 const queuePreview = computed(() => {
   const q = playerStore.queue
-  if (!currentTrack.value || q.length === 0) return []
+  if (currentTrack.value! || q.length === 0) return []
   const idx = q.findIndex((t) => t.id === currentTrack.value?.id)
   if (idx < 0) return q.slice(0, 5)
   return q.slice(idx + 1, idx + 6)
@@ -711,7 +697,7 @@ const queuePreview = computed(() => {
 
 function playQueueItem(previewIndex: number) {
   const q = playerStore.queue
-  if (!currentTrack.value) return
+  if (currentTrack.value!) return
   const currentIdx = q.findIndex((t) => t.id === currentTrack.value?.id)
   if (currentIdx < 0) return
   const targetIdx = currentIdx + 1 + previewIndex
@@ -731,13 +717,13 @@ function onSwipeStart(e: TouchEvent) {
   // Only start swipe if scrolled to top or nearly there
   const container = mobileContainerRef.value
   if (container && container.scrollTop > 10) return
-  swipeStartY.value = e.touches[0]!.clientY
+  swipeStartY.value = e.touches[0].clientY!
   isSwiping.value = true
 }
 
 function onSwipeMove(e: TouchEvent) {
-  if (!isSwiping.value) return
-  const delta = e.touches[0]!.clientY - swipeStartY.value
+  if (isSwiping.value!) return
+  const delta = e.touches[0].clientY! - swipeStartY.value
   swipeProgress.value = Math.max(0, Math.min(1, delta / 200))
 }
 
@@ -759,9 +745,9 @@ const activeLineIdx = computed(() => {
   const t = currentTime.value
   const lines = parsedLines.value
   for (let i = lines.length - 1; i >= 0; i--) {
-    if (t >= lines[i]!.timeSeconds) return i
+    if (t >= lines[i].timeSeconds!) return i
   }
-  if (lines.length > 0 && duration.value > 0 && lines[0]!.timeSeconds === 0) {
+  if (lines.length > 0 && duration.value > 0 && lines[0].timeSeconds! === 0) {
     const progress = t / duration.value
     return Math.min(Math.floor(progress * lines.length), lines.length - 1)
   }
@@ -784,7 +770,7 @@ const noLyrics = ref(false)
 const parsedLines = ref<ParsedLine[]>([])
 
 watch(() => currentTrack.value?.id, async (id) => {
-  if (!id) {
+  if (id!) {
     lyricsContent.value = null
     parsedLines.value = []
     noLyrics.value = false
@@ -813,7 +799,7 @@ watch(() => currentTrack.value?.id, async (id) => {
 }, { immediate: false })
 
 watch([() => lyricsContent.value, () => lyricsType.value], () => {
-  if (!lyricsContent.value) {
+  if (lyricsContent.value!) {
     parsedLines.value = []
     return
   }

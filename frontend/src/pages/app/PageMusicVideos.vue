@@ -22,7 +22,7 @@
         class="rounded-full px-4 py-2 text-sm font-bold transition-all"
         :class="activeFilter === f.value
           ? 'bg-white text-black'
-          : 'bg-white/[0.06] text-white/60 hover:bg-white/[0.10] hover:text-white'"
+          : 'bg-white/6 text-white/60 hover:bg-white/10 hover:text-white'"
         @click="activeFilter = f.value; resetVideos()"
       >
         {{ f.label }}
@@ -32,17 +32,17 @@
     <!-- ── Loading state ── -->
     <div v-if="loading && !videos.length && !filteredVideos.length" class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
       <div v-for="i in 10" :key="i" class="animate-pulse">
-        <div class="aspect-[9/16] w-full rounded-2xl bg-white/[0.04]" />
+        <div class="aspect-9/16 w-full rounded-2xl bg-white/4" />
         <div class="mt-2 space-y-1.5 px-1">
-          <div class="h-3 w-3/4 rounded bg-white/[0.06]" />
-          <div class="h-2.5 w-1/2 rounded bg-white/[0.04]" />
+          <div class="h-3 w-3/4 rounded bg-white/6" />
+          <div class="h-2.5 w-1/2 rounded bg-white/4" />
         </div>
       </div>
     </div>
 
     <!-- ── Error state ── -->
     <div v-else-if="error && !videos.length && !filteredVideos.length" class="flex flex-col items-center gap-4 py-24 text-center">
-      <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.04]">
+      <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/4">
         <i aria-hidden="true" class="pi pi-exclamation-circle text-3xl text-slate-500" />
       </div>
       <h2 class="text-xl font-bold text-white">Failed to load videos</h2>
@@ -88,7 +88,7 @@
 
     <!-- ── Empty state (no data OR filter yields nothing) ── -->
     <div v-else class="flex flex-col items-center gap-4 py-24 text-center">
-      <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.04]">
+      <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/4">
         <i aria-hidden="true" class="pi pi-video text-3xl text-slate-500" />
       </div>
       <h2 class="text-xl font-bold text-white">{{ videos.length ? 'No videos match this filter' : 'No videos yet' }}</h2>

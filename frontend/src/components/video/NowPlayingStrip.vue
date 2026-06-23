@@ -2,7 +2,7 @@
   <Transition name="slide-up">
     <div
       v-if="track"
-      class="flex items-center gap-3 rounded-2xl bg-black/70 px-4 py-3 backdrop-blur-sm"
+      class="flex items-center gap-3 rounded-2xl bg-black/70 px-4 py-3 backdrop-blur-xs"
     >
       <!-- Album art -->
       <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl">
@@ -29,7 +29,7 @@
       <!-- Play button -->
       <button
         type="button"
-        class="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-white/10 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-[#1db954] hover:text-black"
+        class="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-white/10 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-spotify hover:text-black"
         @click="$emit('play', track)"
       >
         <i aria-hidden="true" class="pi pi-play-fill text-sm" />

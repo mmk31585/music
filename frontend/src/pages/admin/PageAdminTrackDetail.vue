@@ -12,11 +12,11 @@
 
     <div v-if="loading" class="space-y-6">
       <div class="flex items-start gap-6">
-        <div class="aspect-square w-36 animate-pulse rounded-2xl bg-white/[0.06] lg:w-44" />
+        <div class="aspect-square w-36 animate-pulse rounded-2xl bg-white/6 lg:w-44" />
         <div class="flex-1 space-y-3">
-          <div class="h-8 w-64 animate-pulse rounded bg-white/[0.06]" />
-          <div class="h-4 w-40 animate-pulse rounded bg-white/[0.04]" />
-          <div class="h-4 w-56 animate-pulse rounded bg-white/[0.04]" />
+          <div class="h-8 w-64 animate-pulse rounded bg-white/6" />
+          <div class="h-4 w-40 animate-pulse rounded bg-white/4" />
+          <div class="h-4 w-56 animate-pulse rounded bg-white/4" />
         </div>
       </div>
     </div>
@@ -36,7 +36,7 @@
     <template v-else-if="track">
       <div class="flex flex-col gap-6 lg:flex-row lg:items-start">
         <div class="shrink-0">
-          <div class="relative aspect-square w-36 overflow-hidden rounded-2xl bg-white/[0.06] shadow-lg lg:w-44">
+          <div class="relative aspect-square w-36 overflow-hidden rounded-2xl bg-white/6 shadow-lg lg:w-44">
             <img
               v-if="track.cover_url"
               :src="track.cover_url"
@@ -45,7 +45,7 @@
               @error="($event.target as HTMLImageElement).style.display='none'"
             />
             <div v-else class="flex h-full w-full items-center justify-center">
-              <i aria-hidden="true" class="pi pi-music text-4xl text-slate-600" />
+              <i aria-hidden="true" class="pi pi-headphones text-4xl text-slate-600" />
             </div>
           </div>
 
@@ -102,7 +102,7 @@
               size="small"
               severity="secondary"
               :loading="fetchingLrc"
-              class="!text-teal-400"
+              class="text-teal-400!"
               @click="handleFetchLRC"
             />
             <Button
@@ -111,7 +111,7 @@
               size="small"
               severity="secondary"
               :loading="enriching"
-              class="!text-purple-400"
+              class="text-purple-400!"
               @click="handleEnrichTrack"
             />
             <Button
@@ -119,7 +119,7 @@
               icon="pi pi-trash"
               size="small"
               severity="danger"
-              class="!text-red-400"
+              class="text-red-400!"
               @click="openDeleteConfirm"
             />
           </div>
@@ -135,7 +135,7 @@
             class="group cursor-pointer"
             @click="router.push({ name: 'admin.album.detail', params: { id: alb.id } })"
           >
-            <div class="relative aspect-square overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.04]">
+            <div class="relative aspect-square overflow-hidden rounded-xl border border-white/6 bg-white/4">
               <img
                 v-if="alb.cover_url"
                 :src="alb.cover_url"
@@ -178,7 +178,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import Button from 'primevue/button'
 import { useToast } from 'primevue/usetoast'
 import AdminEmptyState from '@/components/admin/AdminEmptyState.vue'
 import TrackFormDialog from '@/components/admin/TrackFormDialog.vue'
@@ -308,7 +307,7 @@ function openDeleteConfirm() {
 }
 
 async function handleEditSubmit(payload: TrackFormPayload) {
-  if (!track.value) return
+  if (track.value!) return
   saving.value = true
   try {
     // Build artists array from credits/artist_ids/featured_artist_ids
@@ -408,7 +407,7 @@ async function handleEditSubmit(payload: TrackFormPayload) {
 }
 
 async function handleFetchLRC() {
-  if (!track.value) return
+  if (track.value!) return
   fetchingLrc.value = true
   try {
     // Use fetch-or-generate pipeline: LRCLIB first, then AI fallback
@@ -466,7 +465,7 @@ async function handleFetchLRC() {
 }
 
 async function handleEnrichTrack() {
-  if (!track.value) return
+  if (track.value!) return
   enriching.value = true
   try {
     await tracksApi.adminEnrichTrack(track.value.id)
@@ -485,7 +484,7 @@ async function handleEnrichTrack() {
 }
 
 async function handleDelete() {
-  if (!track.value) return
+  if (track.value!) return
   deleting.value = true
   try {
     await tracksApi.adminDeleteTrack(track.value.id)
@@ -499,11 +498,11 @@ async function handleDelete() {
 }
 
 function normalizeCatalogOptions(items: Array<Record<string, unknown>> | undefined | null, _type?: string) {
-  if (!Array.isArray(items)) return []
+  if (Array.isArray!(items)) return []
   return items.map(item => {
     const id = item.id ?? item.artist_id ?? item.album_id ?? item.genre_id
     const name = item.name ?? item.title ?? item.artist_name ?? item.album_title ?? item.genre_name
-    if (id === undefined || id === null || !name) return null
+    if (id === undefined || id === null || name!) return null
     return { id, name, slug: item.slug, image_url: item.image_url ?? item.avatar_url ?? item.cover_url ?? null, avatar_url: item.avatar_url ?? item.image_url ?? null, cover_url: item.cover_url ?? item.image_url ?? null } as CatalogOption
   })
 }

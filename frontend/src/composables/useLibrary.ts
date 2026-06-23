@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { useLibraryApi } from '@/services/api/library'
 import { useToast } from 'primevue/usetoast'
+import { translateMessage } from '@/utils/message-translations'
 import type { LibraryAlbum, LibraryArtist, LibraryTrack } from '@/services/api/library'
 
 export const useLibrary = () => {
@@ -32,7 +33,7 @@ export const useLibrary = () => {
       const e = err as Record<string, any>
       const msg = (e.response as Record<string, any> | undefined)?.data?.message || e?.message || 'Failed to load library.'
       error.value = msg
-      toast.add({ severity: 'error', summary: 'Library Error', detail: msg, life: 5000 })
+      toast.add({ severity: 'error', summary: 'خطا', detail: translateMessage(msg) ?? msg, life: 5000 })
     } finally {
       isLoading.value = false
     }

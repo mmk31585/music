@@ -28,7 +28,7 @@
         </span>
         <i
           v-if="i < steps.length - 1"
-          class="pi pi-chevron-left text-[10px] text-white/[0.08]"
+          class="pi pi-chevron-left text-[10px] text-white/8"
         />
       </div>
     </div>
@@ -43,7 +43,7 @@
         <InputText
           v-model="searchQuery"
           placeholder="Search tracks by title or artist..."
-          class="!h-11 !w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !pr-10 !text-sm !text-white placeholder:!text-slate-600"
+          class="h-11! w-full! rounded-xl! border-white/8! bg-white/3! pr-10! text-sm! text-white! placeholder:text-slate-600!"
           @input="onSearchInput"
         />
         <i
@@ -63,8 +63,8 @@
           type="button"
           class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-right transition"
           :class="selectedTrack?.id === track.id
-            ? 'bg-[#1db954]/10 ring-1 ring-[#1db954]/30'
-            : 'hover:bg-white/[0.06]'"
+            ? 'bg-spotify/10 ring-1 ring-spotify/30'
+            : 'hover:bg-white/6'"
           @click="selectTrack(track)"
         >
           <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
@@ -84,7 +84,7 @@
           </div>
           <i
             v-if="selectedTrack?.id === track.id"
-            class="pi pi-check-circle text-[#1db954] text-lg"
+            class="pi pi-check-circle text-spotify text-lg"
           />
         </button>
 
@@ -100,10 +100,10 @@
       <Transition name="fade-slide">
         <div
           v-if="selectedTrack && selectedTrack.audio_url"
-          class="mt-4 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4"
+          class="mt-4 rounded-2xl border border-white/8 bg-white/3 p-4"
         >
           <div class="mb-2 flex items-center gap-2 text-xs text-white/60">
-            <i class="pi pi-headphones text-[#1db954]" />
+            <i class="pi pi-headphones text-spotify" />
             <span>Audio preview — {{ selectedTrack.title }}</span>
           </div>
           <audio
@@ -134,17 +134,17 @@
         <div
           class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-300"
           :class="uploadedFile
-            ? 'bg-[#1db954]/20'
+            ? 'bg-spotify/20'
             : dragOver
-              ? 'bg-[#1db954]/10 scale-110'
+              ? 'bg-spotify/10 scale-110'
               : 'bg-white/5'"
         >
           <i
             class="text-2xl transition-all duration-300"
             :class="uploadedFile
-              ? 'pi pi-check-circle text-[#1db954]'
+              ? 'pi pi-check-circle text-spotify'
               : dragOver
-                ? 'pi pi-arrow-down text-[#1db954]'
+                ? 'pi pi-arrow-down text-spotify'
                 : 'pi pi-cloud-upload text-slate-400'"
           />
         </div>
@@ -176,9 +176,9 @@
             <span class="text-white/60">Uploading to server...</span>
             <span class="tabular-nums text-white/80">{{ uploadProgress }}%</span>
           </div>
-          <div class="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+          <div class="h-2 overflow-hidden rounded-full bg-white/6">
             <div
-              class="h-full rounded-full bg-[#1db954] transition-all duration-300"
+              class="h-full rounded-full bg-spotify transition-all duration-300"
               :style="{ width: uploadProgress + '%' }"
             />
           </div>
@@ -214,7 +214,7 @@
               :max="300000"
               :step="100"
               class="w-full"
-              input-class="!rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white !w-full"
+              input-class="rounded-xl! border-white/8! bg-white/3! text-white! w-full!"
               placeholder="0"
             />
             <p class="mt-1 text-[10px] text-slate-500">
@@ -231,7 +231,7 @@
               :max="300000"
               :step="100"
               class="w-full"
-              input-class="!rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white !w-full"
+              input-class="rounded-xl! border-white/8! bg-white/3! text-white! w-full!"
               placeholder="0"
             />
             <p class="mt-1 text-[10px] text-slate-500">
@@ -250,8 +250,8 @@
         <Button
           label="Upload Official MV"
           icon="pi pi-cloud-upload"
-          class="!rounded-xl !bg-[#1db954] !px-6 !text-black hover:!bg-[#1db954]/90"
-          :disabled="!selectedTrack || !uploadedFileUrl || submitting"
+          class="rounded-xl! bg-spotify! px-6! text-black! hover:bg-spotify/90!"
+          :disabled="selectedTrack! || uploadedFileUrl! || submitting"
           :loading="submitting"
           @click="submitMV"
         />
@@ -260,7 +260,7 @@
           label="View Video"
           icon="pi pi-external-link"
           severity="secondary"
-          class="!rounded-xl"
+          class="rounded-xl!"
           @click="viewVideo"
         />
         <Button
@@ -268,7 +268,7 @@
           label="Back to Tracks"
           icon="pi pi-arrow-left"
           severity="info"
-          class="!rounded-xl"
+          class="rounded-xl!"
           @click="goToTracks"
         />
       </div>
@@ -297,18 +297,18 @@
     <Transition name="fade-slide">
       <div
         v-if="submittedVideoId && !statusError"
-        class="mt-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03]"
+        class="mt-4 overflow-hidden rounded-2xl border border-white/8 bg-white/3"
       >
-        <div class="flex items-center gap-3 bg-[#1db954]/5 p-4">
-          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1db954]/10">
-            <i class="pi pi-spin pi-spinner text-[#1db954]" />
+        <div class="flex items-center gap-3 bg-spotify/5 p-4">
+          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-spotify/10">
+            <i class="pi pi-spin pi-spinner text-spotify" />
           </div>
           <div>
             <p class="text-sm font-medium text-white/90">Processing your video...</p>
             <p class="mt-0.5 text-xs text-slate-500">This usually takes 1–5 minutes</p>
           </div>
         </div>
-        <div class="border-t border-white/[0.06] px-4 py-3">
+        <div class="border-t border-white/6 px-4 py-3">
           <p class="text-xs text-slate-500">
             The audio from your selected track will be mixed into the video. Processing happens in the background — you can navigate away and come back later.
           </p>
@@ -322,9 +322,6 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
-import InputText from 'primevue/inputtext'
-import InputNumber from 'primevue/inputnumber'
-import Button from 'primevue/button'
 import { useRequest } from '@/composables/useRequest'
 import { useTracksApi } from '@/services/api/catalog/tracks/routes'
 import { AdminSectionHeader } from '@/components/admin'
@@ -358,8 +355,8 @@ const currentStep = computed(() => {
 })
 
 function stepClass(i: number) {
-  if (currentStep.value > i) return 'bg-[#1db954] text-black'
-  if (currentStep.value === i) return 'bg-[#1db954]/20 text-[#1db954] ring-1 ring-[#1db954]/30'
+  if (currentStep.value > i) return 'bg-spotify text-black'
+  if (currentStep.value === i) return 'bg-spotify/20 text-spotify ring-1 ring-spotify/30'
   return 'bg-white/10 text-white/40'
 }
 
@@ -377,7 +374,7 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null
 function onSearchInput() {
   if (searchTimer) clearTimeout(searchTimer)
   const q = searchQuery.value.trim()
-  if (!q) {
+  if (q!) {
     searchResults.value = []
     return
   }
@@ -420,9 +417,9 @@ const uploadProgress = ref(0)
 const dragOver = ref(false)
 
 const dropZoneClass = computed(() => {
-  if (uploadedFile) return 'border-[#1db954]/30 bg-[#1db954]/[0.02]'
-  if (dragOver.value) return 'border-[#1db954]/50 bg-[#1db954]/[0.04] scale-[1.01]'
-  return 'border-white/[0.08] hover:border-[#1db954]/30 hover:bg-white/[0.02]'
+  if (uploadedFile) return 'border-spotify/30 bg-spotify/2'
+  if (dragOver.value) return 'border-spotify/50 bg-spotify/4 scale-[1.01]'
+  return 'border-white/8 hover:border-spotify/30 hover:bg-white/2'
 })
 
 function triggerFileInput() {
@@ -484,7 +481,7 @@ const statusMessage = ref('')
 const statusError = ref(false)
 
 async function submitMV() {
-  if (!selectedTrack.value || !uploadedFileUrl.value) return
+  if (selectedTrack.value! || uploadedFileUrl.value!) return
   submitting.value = true
   statusMessage.value = ''
   statusError.value = false

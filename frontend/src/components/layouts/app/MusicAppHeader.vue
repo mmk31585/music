@@ -22,7 +22,7 @@
         </button>
 
         <div>
-          <p class="text-xs font-semibold tracking-[0.25em] text-[#1db954] uppercase">Music</p>
+          <p class="text-xs font-semibold tracking-[0.25em] text-spotify uppercase">Music</p>
           <h1 class="text-lg font-black text-white md:text-xl">
             {{ pageTitle }}
           </h1>
@@ -58,7 +58,7 @@
             <i aria-hidden="true" class="pi pi-bell" />
             <span
               v-if="unreadCount > 0"
-              class="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#1db954] px-1 text-[10px] font-bold text-black"
+              class="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-spotify px-1 text-[10px] font-bold text-black"
             >
               {{ unreadCount > 99 ? '99+' : unreadCount }}
             </span>
@@ -72,8 +72,8 @@
               aria-label="User menu"
               aria-haspopup="true"
               :aria-expanded="showUserMenu"
-              class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[#1db954] text-sm font-bold text-black ring-2 ring-transparent transition-all duration-200 hover:bg-[#1ed760] hover:ring-[#1db954]/30 focus-visible:ring-[#1db954]/50"
-              :class="{ 'ring-[#1db954]/40': showUserMenu }"
+              class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-spotify text-sm font-bold text-black ring-2 ring-transparent transition-all duration-200 hover:bg-spotify-hover hover:ring-spotify/30 focus-visible:ring-spotify/50"
+              :class="{ 'ring-spotify/40': showUserMenu }"
               @click="toggleUserMenu"
             >
               <img
@@ -90,14 +90,14 @@
             <Transition name="user-menu">
               <div
                 v-if="showUserMenu"
-                class="absolute right-0 top-full z-50 mt-3 w-64 origin-top-right overflow-hidden rounded-2xl border border-white/[0.08] bg-[#1a1a2e]/95 shadow-2xl shadow-black/40 backdrop-blur-2xl"
+                class="absolute left-0 top-full z-50 mt-3 w-64 origin-top-right overflow-hidden rounded-2xl border border-white/8 bg-[#1a1a2e]/95 shadow-2xl shadow-black/40 backdrop-blur-2xl"
                 @click.stop
               >
                 <!-- User info header -->
-                <div class="border-b border-white/[0.06] px-4 py-4">
+                <div class="border-b border-white/6 px-4 py-4">
                   <div class="flex items-center gap-3">
                     <div
-                      class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1db954] text-sm font-bold text-black"
+                      class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-spotify text-sm font-bold text-black"
                     >
                       <img
                         v-if="user?.avatarUrl"
@@ -118,7 +118,7 @@
                     class="mt-2 flex items-center gap-1.5"
                   >
                     <span
-                      class="rounded-full bg-[#1db954]/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[#1db954]"
+                      class="rounded-full bg-spotify/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-spotify"
                     >{{ user.role }}</span>
                   </div>
                 </div>
@@ -129,7 +129,7 @@
                     v-for="item in menuItems"
                     :key="item.to"
                     :to="item.to"
-                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 transition hover:bg-white/[0.06] hover:text-white"
+                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 transition hover:bg-white/6 hover:text-white"
                     @click="closeUserMenu"
                   >
                     <span
@@ -141,7 +141,7 @@
                     <span>{{ item.label }}</span>
                     <span
                       v-if="item.badge"
-                      class="ml-auto rounded-full bg-[#1db954]/15 px-2 py-0.5 text-[10px] font-bold text-[#1db954]"
+                      class="ml-auto rounded-full bg-spotify/15 px-2 py-0.5 text-[10px] font-bold text-spotify"
                     >
                       {{ item.badge }}
                     </span>
@@ -149,7 +149,7 @@
                 </div>
 
                 <!-- Divider + Logout -->
-                <div class="border-t border-white/[0.06] py-1.5">
+                <div class="border-t border-white/6 py-1.5">
                   <button
                     type="button"
                     class="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-400/70 transition hover:bg-red-500/10 hover:text-red-400"
@@ -172,14 +172,14 @@
         <template v-else>
           <RouterLink
             to="/auth/login"
-            class="rounded-full bg-[#1db954] px-5 py-2 text-sm font-bold text-black transition hover:bg-[#1ed760]"
+            class="rounded-full bg-spotify px-5 py-2 text-sm font-bold text-black transition hover:bg-spotify-hover"
           >
             Log in
           </RouterLink>
 
           <RouterLink
             to="/auth/register"
-            class="hidden rounded-full border border-white/15 px-5 py-2 text-sm font-bold text-white transition hover:bg-white/[0.08] md:inline-flex"
+            class="hidden rounded-full border border-white/15 px-5 py-2 text-sm font-bold text-white transition hover:bg-white/8 md:inline-flex"
           >
             Sign up
           </RouterLink>
@@ -232,19 +232,19 @@ const menuItems = computed<Array<{ label: string; icon: string; iconBg: string; 
     {
       label: 'Profile',
       icon: 'pi pi-user',
-      iconBg: 'bg-white/[0.06] text-white/60',
+      iconBg: 'bg-white/6 text-white/60',
       to: '/profile',
     },
     {
       label: 'Settings',
       icon: 'pi pi-cog',
-      iconBg: 'bg-white/[0.06] text-white/60',
+      iconBg: 'bg-white/6 text-white/60',
       to: '/settings',
     },
     {
       label: 'Listening Stats',
       icon: 'pi pi-chart-bar',
-      iconBg: 'bg-white/[0.06] text-white/60',
+      iconBg: 'bg-white/6 text-white/60',
       to: '/stats',
     },
   ]
@@ -263,7 +263,7 @@ const menuItems = computed<Array<{ label: string; icon: string; iconBg: string; 
 })
 
 function toggleUserMenu() {
-  showUserMenu.value = !showUserMenu.value
+  showUserMenu.value = showUserMenu.value!
 }
 
 function closeUserMenu() {
@@ -286,7 +286,7 @@ function onClickOutside(e: MouseEvent) {
   if (
     showUserMenu.value &&
     userMenuContainer.value &&
-    !userMenuContainer.value.contains(e.target as Node)
+    userMenuContainer.value.contains!(e.target as Node)
   ) {
     closeUserMenu()
   }
@@ -307,7 +307,7 @@ onMounted(() => {
   document.addEventListener('click', onClickOutside)
   document.addEventListener('keydown', onKeyDown)
 
-  if (!headerRef.value) return
+  if (headerRef.value!) return
   const sentinel = document.createElement('div')
   sentinel.style.position = 'absolute'
   sentinel.style.top = '0'
@@ -319,7 +319,7 @@ onMounted(() => {
 
   scrollObserver = new IntersectionObserver(
     ([entry]) => {
-      isScrolled.value = !entry!.isIntersecting
+      isScrolled.value = entry!.isIntersecting!
     },
     { threshold: 0 },
   )

@@ -3,7 +3,7 @@
     <button
       type="button"
       @click="openDialog"
-      class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/60 backdrop-blur transition hover:border-[#e91e63]/30 hover:bg-[#e91e63]/10 hover:text-[#e91e63]"
+      class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/4 px-4 py-2 text-sm font-medium text-white/60 backdrop-blur-xs transition hover:border-pink-600/30 hover:bg-pink-600/10 hover:text-pink-600"
     >
       <i aria-hidden="true" class="pi pi-heart text-xs" />
       Tip
@@ -12,7 +12,7 @@
     <Teleport to="body">
       <div
         v-if="visible"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs"
         @click.self="visible = false"
       >
         <div class="glass-strong mx-4 w-full max-w-sm rounded-2xl p-6">
@@ -33,7 +33,7 @@
                   class="rounded-xl py-2 text-sm font-medium transition"
                   :class="
                     selectedAmount === a
-                      ? 'bg-[#1db954] text-black'
+                      ? 'bg-spotify text-black'
                       : 'bg-white/5 text-white/60 hover:bg-white/10'
                   "
                   @click="selectedAmount = a"
@@ -46,7 +46,7 @@
                   v-model.number="customAmount"
                   placeholder="Custom"
                   aria-label="Custom tip amount"
-                  class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-white/20"
+                  class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-hidden focus:border-white/20"
                   type="number"
                   min="1000"
                   step="1000"
@@ -62,13 +62,13 @@
                 rows="2"
                 placeholder="Say something nice..."
                 aria-label="Tip message"
-                class="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-white/20"
+                class="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-hidden focus:border-white/20"
               />
             </div>
 
             <button
               @click="sendTip"
-              class="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#e91e63] to-[#ff6b9d] py-3 text-sm font-bold text-white transition hover:scale-[1.02] disabled:opacity-50"
+              class="flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-pink-600 to-pink-300 py-3 text-sm font-bold text-white transition hover:scale-[1.02] disabled:opacity-50"
               :disabled="sending"
             >
               <i aria-hidden="true" v-if="sending" class="pi pi-spin pi-spinner" />
@@ -82,7 +82,7 @@
           </div>
 
           <div v-else class="py-8 text-center">
-            <i aria-hidden="true" class="pi pi-check-circle text-4xl text-[#1db954]" />
+            <i aria-hidden="true" class="pi pi-check-circle text-4xl text-spotify" />
             <p class="mt-3 text-lg font-bold text-white">Tip Sent!</p>
             <p class="mt-1 text-sm text-white/40">Thank you for supporting the artist.</p>
             <button

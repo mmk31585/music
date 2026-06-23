@@ -1,11 +1,11 @@
 <template>
   <aside
-    class="fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-white/10 bg-[#0a0a0a] transition-all duration-300 lg:static lg:h-screen"
-    :class="collapsed ? 'w-[68px]' : 'w-72'"
+    class="fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-white/10 bg-surface-base transition-all duration-300 lg:static lg:h-screen"
+    :class="collapsed ? 'w-17' : 'w-72'"
   >
     <!-- Brand -->
     <div class="flex shrink-0 items-center gap-3" :class="collapsed ? 'justify-center px-2 pt-5 pb-4' : 'px-4 pt-5 pb-4'">
-      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-[#1db954] to-[#169c46] font-bold text-black text-sm shadow-lg shadow-[#1db954]/20">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-spotify to-primary-600 font-bold text-black text-sm shadow-lg shadow-spotify/20">
         <i aria-hidden="true" class="pi pi-shield text-sm" />
       </div>
       <div v-if="!collapsed" class="overflow-hidden">
@@ -145,7 +145,7 @@ function navItemClass(item: NavItem): string {
     'flex items-center gap-3 rounded-xl px-3 py-2.5 transition',
     props.collapsed && 'justify-center',
     active
-      ? 'bg-[#1db954]/15 text-[#1db954]'
+      ? 'bg-spotify/15 text-spotify'
       : 'text-slate-400 hover:bg-white/5 hover:text-white',
   ].filter(Boolean).join(' ')
 }

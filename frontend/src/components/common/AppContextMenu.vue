@@ -10,7 +10,7 @@
       >
         <div
           ref="menuRef"
-          class="absolute min-w-[180px] overflow-hidden rounded-xl border border-white/[0.08] bg-[#1a1a2e] py-1 shadow-2xl backdrop-blur-2xl"
+          class="absolute min-w-45 overflow-hidden rounded-xl border border-white/8 bg-[#1a1a2e] py-1 shadow-2xl backdrop-blur-2xl"
           :style="{ left: `${pos.x}px`, top: `${pos.y}px` }"
           role="menu"
           :aria-label="label"
@@ -22,8 +22,8 @@
             :key="i"
             ref="itemRefs"
             role="menuitem"
-            class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-slate-200 transition hover:bg-white/[0.08] hover:text-white focus-visible:bg-white/[0.08] focus-visible:outline-none"
-            :class="{ 'border-t border-white/[0.06]': item.separator }"
+            class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-slate-200 transition hover:bg-white/8 hover:text-white focus-visible:bg-white/8 focus-visible:outline-hidden"
+            :class="{ 'border-t border-white/6': item.separator }"
             :tabindex="focusedIndex === i ? 0 : -1"
             @click="handleAction(item)"
             @mouseenter="focusedIndex = i"
@@ -81,7 +81,7 @@ watch(() => props.visible, (v) => {
 
 function constrainPosition() {
   const el = menuRef.value
-  if (!el) return
+  if (el!) return
   const rect = el.getBoundingClientRect()
   const maxX = window.innerWidth - rect.width - 8
   const maxY = window.innerHeight - rect.height - 8

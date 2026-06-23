@@ -1,6 +1,6 @@
 <template>
   <header
-    class="sticky top-0 z-20 border-b border-white/10 bg-black/60 px-4 py-4 backdrop-blur md:px-6"
+    class="sticky top-0 z-20 border-b border-white/10 bg-black/60 px-4 py-4 backdrop-blur-xs md:px-6"
   >
     <div class="flex items-center justify-between gap-4">
       <div class="flex items-center gap-3">
@@ -13,7 +13,7 @@
         </div>
       </div>
 
-      <InputText v-model="query" placeholder="Search tracks, artists, albums..." aria-label="Search" class="hidden rounded-full bg-white/10 px-4 py-2 text-sm text-slate-300 transition hover:bg-white/15 md:block !border-0 !outline-none" />
+      <InputText v-model="query" placeholder="Search tracks, artists, albums..." aria-label="Search" class="hidden rounded-full bg-white/10 px-4 py-2 text-sm text-slate-300 transition hover:bg-white/15 md:block border-0! outline-hidden!" />
     </div>
   </header>
 </template>

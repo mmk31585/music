@@ -8,11 +8,11 @@
       <div
         v-for="d in discussions"
         :key="d.id"
-        class="rounded-xl border border-white/5 bg-white/[0.02] p-4 transition hover:border-white/10"
+        class="rounded-xl border border-white/5 bg-white/2 p-4 transition hover:border-white/10"
       >
         <div class="flex items-start gap-3">
           <div
-            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1db954]/20 text-xs font-bold text-[#1db954]"
+            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-spotify/20 text-xs font-bold text-spotify"
           >
             {{ displayName(d.author_id)?.charAt(0).toUpperCase() || '?' }}
           </div>
@@ -84,16 +84,16 @@
                   type="text"
                   placeholder="پاسخ خودت رو بنویس..."
                   aria-label="پاسخ"
-                  class="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white placeholder-white/20 outline-none focus:border-white/20"
+                  class="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white placeholder-white/20 outline-hidden focus:border-white/20"
                   dir="rtl"
                   @keydown.enter="submitReply(d.id)"
                 />
                 <button
-                  class="inline-flex items-center gap-1 rounded-lg bg-[#1db954]/10 px-3 py-2 text-xs font-medium text-[#1db954] transition hover:bg-[#1db954]/20 disabled:opacity-40"
-                  :disabled="!replyInputs[d.id]?.trim() || repliesLoading[d.id]"
+                  class="inline-flex items-center gap-1 rounded-lg bg-spotify/10 px-3 py-2 text-xs font-medium text-spotify transition hover:bg-spotify/20 disabled:opacity-40"
+                  :disabled="replyInputs[d.id]!?.trim() || repliesLoading[d.id]"
                   @click="submitReply(d.id)"
                 >
-                  <span v-if="repliesLoading[d.id]" class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#1db954] border-t-transparent" />
+                  <span v-if="repliesLoading[d.id]" class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-spotify border-t-transparent" />
                   ارسال
                 </button>
               </div>
@@ -150,7 +150,7 @@ async function toggleReplies(discussionId: string) {
     return
   }
   openReplies[discussionId] = true
-  if (!loadedReplies[discussionId]) {
+  if (loadedReplies[discussionId]!) {
     await loadReplies(discussionId)
   }
 }
@@ -172,7 +172,7 @@ async function loadReplies(discussionId: string) {
 
 async function submitReply(discussionId: string) {
   const text = replyInputs[discussionId]?.trim()
-  if (!text || repliesLoading[discussionId]) return
+  if (text! || repliesLoading[discussionId]) return
   repliesLoading[discussionId] = true
   replyError[discussionId] = ''
   try {
@@ -233,7 +233,7 @@ watch(() => props.discussions, (list) => {
 }, { immediate: true })
 
 function formatTime(dateStr: string): string {
-  if (!dateStr) return ''
+  if (dateStr!) return ''
   const d = new Date(dateStr)
   const now = new Date()
   const diff = now.getTime() - d.getTime()

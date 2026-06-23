@@ -12,14 +12,14 @@
           size="small"
           severity="secondary"
           :loading="enrichingAll"
-          class="!text-purple-400 !rounded-xl"
+          class="text-purple-400! rounded-xl!"
           @click="handleEnrichAll"
         />
         <Button
           label="Add track"
           icon="pi pi-plus"
           size="small"
-          class="!rounded-xl !bg-emerald-500 !px-4 !text-black hover:!bg-emerald-400"
+          class="rounded-xl! bg-emerald-500! px-4! text-black! hover:bg-emerald-400!"
           @click="openCreate"
         />
       </template>
@@ -37,7 +37,7 @@
           v-model="searchQuery"
           placeholder="Search tracks, artists, albums, genres..."
           aria-label="Search tracks"
-          class="!h-9 !w-full !rounded-lg !border-white/[0.08] !bg-white/[0.03] !text-sm !text-white placeholder:!text-slate-600 sm:!w-80"
+          class="h-9! w-full! rounded-lg! border-white/8! bg-white/3! text-sm! text-white! placeholder:text-slate-600! sm:w-80!"
         />
       </div>
 
@@ -47,22 +47,22 @@
           text
           rounded
           size="small"
-          class="!text-slate-400"
+          class="text-slate-400!"
           v-tooltip.top="viewMode === 'table' ? 'Switch to cards' : 'Switch to table'"
           @click="viewMode = viewMode === 'table' ? 'card' : 'table'"
         />
       </div>
     </div>
 
-    <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
-      <div v-if="loading" class="divide-y divide-white/[0.04]">
+    <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
+      <div v-if="loading" class="divide-y divide-white/4">
         <div v-for="i in 6" :key="i" class="flex items-center gap-4 px-5 py-4">
-          <div class="h-10 w-10 animate-pulse rounded-lg bg-white/[0.06]" />
+          <div class="h-10 w-10 animate-pulse rounded-lg bg-white/6" />
           <div class="flex-1 space-y-2">
-            <div class="h-4 w-40 animate-pulse rounded bg-white/[0.06]" />
-            <div class="h-3 w-56 animate-pulse rounded bg-white/[0.04]" />
+            <div class="h-4 w-40 animate-pulse rounded bg-white/6" />
+            <div class="h-3 w-56 animate-pulse rounded bg-white/4" />
           </div>
-          <div class="h-4 w-12 animate-pulse rounded bg-white/[0.04]" />
+          <div class="h-4 w-12 animate-pulse rounded bg-white/4" />
         </div>
       </div>
 
@@ -77,7 +77,7 @@
             label="Add track"
             icon="pi pi-plus"
             size="small"
-            class="!rounded-xl !bg-emerald-500 !px-4 !text-black hover:!bg-emerald-400"
+            class="rounded-xl! bg-emerald-500! px-4! text-black! hover:bg-emerald-400!"
             @click="openCreate"
           />
         </template>
@@ -92,10 +92,10 @@
 
       <template v-else-if="viewMode === 'table'">
         <div class="overflow-x-auto">
-          <table class="w-full min-w-[900px]">
+          <table class="w-full min-w-225">
             <thead>
               <tr
-                class="border-b border-white/[0.06] text-left text-xs tracking-wider text-slate-500 uppercase"
+                class="border-b border-white/6 text-left text-xs tracking-wider text-slate-500 uppercase"
               >
                 <th class="px-5 py-3 font-medium">
                   <i aria-hidden="true" class="pi pi-play text-xs" />
@@ -111,16 +111,16 @@
               </tr>
             </thead>
 
-            <tbody class="divide-y divide-white/[0.04]">
+            <tbody class="divide-y divide-white/4">
               <tr
                 v-for="(track, index) in filteredTracks"
                 :key="track.id"
-                class="group transition-colors hover:bg-white/[0.02]"
+                class="group transition-colors hover:bg-white/2"
               >
                 <td class="px-5 py-3.5">
                   <button
                     type="button"
-                    class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-all hover:bg-[#1db954]/20 hover:text-[#1db954] disabled:opacity-30"
+                    class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-all hover:bg-spotify/20 hover:text-spotify disabled:opacity-30"
                     :disabled="isTrackLoading(track)"
                     :aria-label="'Play ' + track.title"
                     :title="isTrackPlaying(track) ? 'Now playing' : 'Play track'"
@@ -142,7 +142,7 @@
 
                 <td class="px-5 py-3.5">
                   <div class="flex min-w-0 items-center gap-3">
-                    <div class="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-white/[0.04]">
+                    <div class="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-white/4">
                       <img
                         v-if="getTrackCoverUrl(track)"
                         :src="getTrackCoverUrl(track)"
@@ -152,7 +152,7 @@
                       />
 
                       <div v-else class="flex h-full w-full items-center justify-center">
-                        <i aria-hidden="true" class="pi pi-music text-xs text-slate-700" />
+                        <i aria-hidden="true" class="pi pi-headphones text-xs text-slate-700" />
                       </div>
                     </div>
 
@@ -164,7 +164,7 @@
                       <div class="mt-1 flex flex-wrap items-center gap-1.5">
                         <span
                           v-if="isExplicit(track)"
-                          class="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-slate-300"
+                          class="rounded-sm bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-slate-300"
                         >
                           E
                         </span>
@@ -203,14 +203,14 @@
                     <span
                       v-for="genre in getTrackGenreNames(track).slice(0, 3)"
                       :key="genre"
-                      class="rounded-full border border-white/[0.06] bg-white/[0.03] px-2 py-0.5 text-xs text-slate-400"
+                      class="rounded-full border border-white/6 bg-white/3 px-2 py-0.5 text-xs text-slate-400"
                     >
                       {{ genre }}
                     </span>
 
                     <span
                       v-if="getTrackGenreNames(track).length > 3"
-                      class="rounded-full border border-white/[0.06] bg-white/[0.03] px-2 py-0.5 text-xs text-slate-500"
+                      class="rounded-full border border-white/6 bg-white/3 px-2 py-0.5 text-xs text-slate-500"
                     >
                       +{{ getTrackGenreNames(track).length - 3 }}
                     </span>
@@ -237,7 +237,7 @@
                       text
                       rounded
                       size="small"
-                      class="!h-7 !w-7 !text-slate-400 hover:!text-emerald-400"
+                      class="h-7! w-7! text-slate-400! hover:text-emerald-400!"
                       @click="openEdit(track)"
                     />
 
@@ -246,7 +246,7 @@
                       text
                       rounded
                       size="small"
-                      class="!h-7 !w-7 !text-slate-400 hover:!text-red-400"
+                      class="h-7! w-7! text-slate-400! hover:text-red-400!"
                       @click="openDeleteConfirm(track)"
                     />
                   </div>
@@ -260,7 +260,7 @@
       <div v-else class="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         <div v-for="track in filteredTracks" :key="track.id" class="group">
           <div
-            class="relative aspect-square overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.04]"
+            class="relative aspect-square overflow-hidden rounded-xl border border-white/6 bg-white/4"
           >
             <img
               v-if="getTrackCoverUrl(track)"
@@ -271,13 +271,13 @@
             />
 
             <div v-else class="flex h-full w-full items-center justify-center">
-              <i aria-hidden="true" class="pi pi-music text-3xl text-slate-700" />
+              <i aria-hidden="true" class="pi pi-headphones text-3xl text-slate-700" />
             </div>
 
             <div class="absolute top-2 left-2 flex flex-wrap gap-1">
               <span
                 v-if="isExplicit(track)"
-                class="rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm"
+                class="rounded-sm bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-xs"
               >
                 E
               </span>
@@ -288,7 +288,7 @@
             >
               <button
                 type="button"
-                class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954] text-black shadow-xl transition-all hover:scale-110 active:scale-90 disabled:opacity-40"
+                class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify text-black shadow-xl transition-all hover:scale-110 active:scale-90 disabled:opacity-40"
                 :disabled="isTrackLoading(track)"
                 aria-label="Play track"
                 @click="handlePlayTrack(track)"
@@ -314,7 +314,7 @@
                 icon="pi pi-pencil"
                 rounded
                 size="small"
-                class="!h-7 !w-7 !bg-white/20 !text-white !backdrop-blur-sm hover:!bg-white/30"
+                class="h-7! w-7! bg-white/20! text-white! backdrop-blur-xs! hover:bg-white/30!"
                 @click="openEdit(track)"
               />
 
@@ -322,7 +322,7 @@
                 icon="pi pi-trash"
                 rounded
                 size="small"
-                class="!h-7 !w-7 !bg-white/20 !text-white !backdrop-blur-sm hover:!bg-red-500/60"
+                class="h-7! w-7! bg-white/20! text-white! backdrop-blur-xs! hover:bg-red-500/60!"
                 @click="openDeleteConfirm(track)"
               />
             </div>
@@ -353,14 +353,14 @@
               <span
                 v-for="genre in getTrackGenreNames(track).slice(0, 2)"
                 :key="genre"
-                class="rounded-full bg-white/[0.04] px-2 py-0.5 text-[10px] text-slate-500"
+                class="rounded-full bg-white/4 px-2 py-0.5 text-[10px] text-slate-500"
               >
                 {{ genre }}
               </span>
 
               <span
                 v-if="getTrackGenreNames(track).length > 2"
-                class="rounded-full bg-white/[0.04] px-2 py-0.5 text-[10px] text-slate-600"
+                class="rounded-full bg-white/4 px-2 py-0.5 text-[10px] text-slate-600"
               >
                 +{{ getTrackGenreNames(track).length - 2 }}
               </span>
@@ -394,8 +394,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
 import { useToast } from 'primevue/usetoast'
 
 import AdminSectionHeader from '@/components/admin/AdminSectionHeader.vue'
@@ -492,8 +490,8 @@ function isTrackLoading(track: Track): boolean {
 }
 
 function getTrackPlayButtonIcon(track: Track): string {
-  if (isTrackPlaying(track) && player.isPlaying.value) return 'pi pi-pause-fill'
-  return 'pi pi-play-fill'
+  if (isTrackPlaying(track) && player.isPlaying.value) return 'pi pi-pause'
+  return 'pi pi-play'
 }
 
 const artistOptions = computed(() => {
@@ -511,7 +509,7 @@ const genreOptions = computed(() => {
 const filteredTracks = computed(() => {
   const q = normalizeSearch(searchQuery.value)
 
-  if (!q) return tracks.value
+  if (q!) return tracks.value
 
   return tracks.value.filter((track) => {
     return getTrackSearchText(track).includes(q)
@@ -596,7 +594,7 @@ async function handleSubmit(payload: TrackFormPayload) {
 }
 
 async function handleDelete() {
-  if (!deleteTarget.value) return
+  if (deleteTarget.value!) return
 
   try {
     await deleteTrack(deleteTarget.value.id)
@@ -649,7 +647,7 @@ function normalizeCatalogOptions(
   items: Array<Record<string, any>> | undefined | null,
   _type?: string,
 ) {
-  if (!Array.isArray(items)) return []
+  if (Array.isArray!(items)) return []
 
   return items
     .map((item) => {
@@ -658,7 +656,7 @@ function normalizeCatalogOptions(
       const name =
         item.name ?? item.title ?? item.artist_name ?? item.album_title ?? item.genre_name
 
-      if (id === undefined || id === null || !name) return null
+      if (id === undefined || id === null || name!) return null
 
       const opt: CatalogOption = {
         id,
@@ -813,7 +811,7 @@ function getTrackArtistDisplay(track: Track) {
   const primary = getTrackPrimaryArtistDisplay(track)
   const featured = getTrackFeaturedArtistDisplay(track)
 
-  if (!featured) return primary
+  if (featured!) return primary
 
   return `${primary} feat. ${featured}`
 }
@@ -838,7 +836,7 @@ function getTrackGenreNames(track: Track) {
 function getTrackCreditNames(track: Track) {
   const t = track as AnyTrack
 
-  if (!Array.isArray(t.credits)) return []
+  if (Array.isArray!(t.credits)) return []
 
   return uniqStrings(
     compactStrings(

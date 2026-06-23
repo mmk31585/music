@@ -6,7 +6,7 @@
     :style="{ maxWidth: '480px', width: '92vw' }"
     :pt="{
       root: 'border-none',
-      mask: 'backdrop-blur-sm',
+      mask: 'backdrop-blur-xs',
       header: 'border-b border-white/5 p-0',
       title: 'text-white text-sm font-bold',
       content: 'p-0',
@@ -19,7 +19,7 @@
 
     <div class="flex flex-col">
       <!-- Cover art header -->
-      <div class="relative h-48 w-full overflow-hidden bg-white/[0.04]">
+      <div class="relative h-48 w-full overflow-hidden bg-white/4">
         <img
           v-if="coverUrl"
           :src="coverUrl"
@@ -32,7 +32,7 @@
         </div>
 
         <!-- Dark gradient overlay for text readability -->
-        <div class="absolute inset-0 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F]/60 to-transparent" />
+        <div class="absolute inset-0 bg-linear-to-t from-surface-base via-surface-base/60 to-transparent" />
 
         <!-- Track info overlaying cover -->
         <div class="absolute bottom-4 left-5 right-5">
@@ -77,21 +77,21 @@
           <span
             v-for="g in genres"
             :key="g.id ?? g.name"
-            class="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-0.5 text-[11px] font-medium text-slate-300"
+            class="rounded-full border border-white/10 bg-white/6 px-2.5 py-0.5 text-[11px] font-medium text-slate-300"
           >
             {{ g.name || g.id || '' }}
           </span>
         </div>
 
         <!-- Divider -->
-        <div class="border-t border-white/[0.06]" />
+        <div class="border-t border-white/6" />
 
         <!-- Action buttons -->
         <div class="flex flex-wrap gap-2">
           <button
             type="button"
-            class="glow-green inline-flex items-center gap-2 rounded-full bg-[#1DB954] px-5 py-2 text-sm font-bold text-black transition hover:bg-[#1ed760]"
-            :class="{ '!bg-white/20 !text-white !shadow-none': isCurrentTrack }"
+            class="glow-green inline-flex items-center gap-2 rounded-full bg-spotify px-5 py-2 text-sm font-bold text-black transition hover:bg-spotify-hover"
+            :class="{ 'bg-white/20! text-white! shadow-none!': isCurrentTrack }"
             @click="handlePlay"
           >
             <i aria-hidden="true" :class="isCurrentTrack && player.isPlaying.value ? 'pi pi-pause-fill' : 'pi pi-play-fill'" />
@@ -100,7 +100,7 @@
 
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white/80 transition hover:border-white/30 hover:bg-white/[0.08] hover:text-white"
+            class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/4 px-4 py-2 text-sm font-bold text-white/80 transition hover:border-white/30 hover:bg-white/8 hover:text-white"
             @click="addToQueue"
           >
             <i aria-hidden="true" class="pi pi-list text-xs" />
@@ -109,8 +109,8 @@
 
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-bold transition"
-            :class="liked ? 'border-[#1db954]/30 text-[#1db954]' : 'text-white/60 hover:bg-white/[0.08] hover:text-white'"
+            class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/3 px-4 py-2 text-sm font-bold transition"
+            :class="liked ? 'border-spotify/30 text-spotify' : 'text-white/60 hover:bg-white/8 hover:text-white'"
             @click="emit('toggle-like')"
           >
             <i aria-hidden="true" :class="liked ? 'pi pi-heart-fill' : 'pi pi-heart'" />
@@ -119,7 +119,7 @@
 
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-bold text-white/60 transition hover:bg-white/[0.08] hover:text-white"
+            class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/3 px-4 py-2 text-sm font-bold text-white/60 transition hover:bg-white/8 hover:text-white"
             @click="shareTrack"
           >
             <i aria-hidden="true" class="pi pi-share-alt" />
@@ -155,7 +155,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import Dialog from 'primevue/dialog'
 import { usePlayer } from '@/composables/player'
 import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
 import { useSocialShare } from '@/composables/social'
@@ -235,14 +234,14 @@ function shareTrack() {
 }
 
 function formatDuration(seconds?: number | null): string {
-  if (!seconds) return '0:00'
+  if (seconds!) return '0:00'
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
 function formatCount(count?: number | null): string {
-  if (!count) return '0'
+  if (count!) return '0'
   if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
   if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`
   return String(count)

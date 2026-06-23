@@ -9,8 +9,8 @@
           v-for="option in contributionTypes"
           :key="option.value"
           type="button"
-          class="spring flex flex-col items-center gap-2 rounded-xl border border-white/[0.06] p-4 text-center transition-all hover:border-white/20 hover:bg-white/[0.04]"
-          :class="{ '!border-[#1db954] !bg-[#1db954]/10': selectedType === option.value }"
+          class="spring flex flex-col items-center gap-2 rounded-xl border border-white/6 p-4 text-center transition-all hover:border-white/20 hover:bg-white/4"
+          :class="{ 'border-spotify! bg-spotify/10!': selectedType === option.value }"
           @click="selectedType = option.value; step = 2"
         >
           <i aria-hidden="true" :class="option.icon" class="text-xl" :style="{ color: option.color }" />
@@ -40,10 +40,10 @@
           v-for="t in targetOptions"
           :key="t.value"
           type="button"
-          class="spring rounded-lg border border-white/[0.06] px-3 py-2 text-xs font-medium transition-all"
+          class="spring rounded-lg border border-white/6 px-3 py-2 text-xs font-medium transition-all"
           :class="
             form.target_type === t.value
-              ? '!border-[#1db954] !bg-[#1db954]/10 !text-[#1db954]'
+              ? 'border-spotify! bg-spotify/10! text-spotify!'
               : 'text-white/40 hover:border-white/20 hover:text-white/60'
           "
           @click="form.target_type = t.value"
@@ -57,7 +57,7 @@
         type="text"
         placeholder="Target ID (UUID)"
         aria-label="Target ID"
-        class="w-full rounded-xl bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 ring-1 ring-white/[0.06] transition-all outline-none focus:ring-[#1db954]/50"
+        class="w-full rounded-xl bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 ring-1 ring-white/6 transition-all outline-hidden focus:ring-spotify/50"
       />
 
       <div v-if="selectedType === 'lyrics' || selectedType === 'translation'">
@@ -66,7 +66,7 @@
           type="text"
           placeholder="Language code (e.g., fa, en, ar)"
           aria-label="Language code"
-          class="w-full rounded-xl bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 ring-1 ring-white/[0.06] transition-all outline-none focus:ring-[#1db954]/50"
+          class="w-full rounded-xl bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 ring-1 ring-white/6 transition-all outline-hidden focus:ring-spotify/50"
         />
       </div>
 
@@ -77,7 +77,7 @@
         placeholder="Paste your contribution content here...
 For lyrics: paste the full lyrics text
 For LRC format: [00:00.00]Line 1&#10;[00:05.00]Line 2"
-        class="w-full resize-y rounded-xl bg-white/5 px-4 py-3 font-mono text-sm text-white placeholder-white/20 ring-1 ring-white/[0.06] transition-all outline-none focus:ring-[#1db954]/50"
+        class="w-full resize-y rounded-xl bg-white/5 px-4 py-3 font-mono text-sm text-white placeholder-white/20 ring-1 ring-white/6 transition-all outline-hidden focus:ring-spotify/50"
       />
 
       <input
@@ -85,7 +85,7 @@ For LRC format: [00:00.00]Line 1&#10;[00:05.00]Line 2"
         type="text"
         placeholder="Brief summary of your change (optional)"
         aria-label="Summary"
-        class="w-full rounded-xl bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 ring-1 ring-white/[0.06] transition-all outline-none focus:ring-[#1db954]/50"
+        class="w-full rounded-xl bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 ring-1 ring-white/6 transition-all outline-hidden focus:ring-spotify/50"
       />
 
       <div class="flex items-center gap-2">
@@ -93,7 +93,7 @@ For LRC format: [00:00.00]Line 1&#10;[00:05.00]Line 2"
           id="is-minor"
           v-model="form.is_minor"
           type="checkbox"
-          class="rounded border-white/20 bg-white/5 text-[#1db954] focus:ring-[#1db954]"
+          class="rounded-sm border-white/20 bg-white/5 text-spotify focus:ring-spotify"
         />
         <label for="is-minor" class="text-xs text-white/40">This is a minor edit</label>
       </div>
@@ -108,8 +108,8 @@ For LRC format: [00:00.00]Line 1&#10;[00:05.00]Line 2"
         </button>
         <button
           type="button"
-          :disabled="!canSubmit || submitting"
-          class="spring flex-1 rounded-xl bg-[#1db954] py-3 text-sm font-bold text-black transition-all hover:bg-[#1ed760] disabled:opacity-40"
+          :disabled="canSubmit! || submitting"
+          class="spring flex-1 rounded-xl bg-spotify py-3 text-sm font-bold text-black transition-all hover:bg-spotify-hover disabled:opacity-40"
           @click="submit"
         >
           <i aria-hidden="true" v-if="submitting" class="pi pi-spin pi-spinner mr-2" />
@@ -118,7 +118,7 @@ For LRC format: [00:00.00]Line 1&#10;[00:05.00]Line 2"
       </div>
 
       <p v-if="error" class="text-xs text-red-400">{{ error }}</p>
-      <p v-if="success" class="text-xs text-[#1db954]">Submitted! Status: {{ successStatus }}</p>
+      <p v-if="success" class="text-xs text-spotify">Submitted! Status: {{ successStatus }}</p>
     </div>
   </div>
 </template>
@@ -200,7 +200,7 @@ function reset() {
 }
 
 async function submit() {
-  if (!canSubmit.value || !selectedType.value) return
+  if (canSubmit.value! || selectedType.value!) return
   submitting.value = true
   error.value = ''
   success.value = false

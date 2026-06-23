@@ -1,7 +1,7 @@
 <template>
   <button
     type="button"
-    class="group relative flex h-24 w-full cursor-pointer items-end overflow-hidden rounded-2xl p-4 text-right transition-all duration-200 ease-spring hover:scale-[1.03] hover:brightness-110 focus-visible:ring-2 focus-visible:ring-[#1db954] focus-visible:ring-offset-2 focus-visible:outline-none md:h-28"
+    class="group relative flex h-24 w-full cursor-pointer items-end overflow-hidden rounded-2xl p-4 text-right transition-all duration-200 ease-spring hover:scale-[1.03] hover:brightness-110 focus-visible:ring-2 focus-visible:ring-spotify focus-visible:ring-offset-2 focus-visible:outline-hidden md:h-28"
     :style="{ background: gradient }"
     @click="$emit('click', moodId)"
   >

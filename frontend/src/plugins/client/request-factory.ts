@@ -10,6 +10,7 @@ import {
 import { type AxiosError, type AxiosInstance, type AxiosRequestConfig } from 'axios'
 import type { ZodError, ZodSafeParseResult } from 'zod'
 import z from 'zod'
+import { translateMessage } from '@/utils/message-translations'
 
 /**
  * Build a request wrapper that uses the supplied Axios instance
@@ -320,10 +321,11 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
             payload.message &&
             response.status !== ResponseStatuses.HTTP_NO_CONTENT
           ) {
+            const translated = translateMessage(payload.message) || payload.message
             if (payload.type) {
-              if (toast?.[payload.type]) toast?.[payload.type]!(payload.message)
-              else if (window) alert(payload.message)
-              else console.info(payload.message)
+              if (toast?.[payload.type]) toast?.[payload.type]!(translated)
+              else if (window) alert(translated)
+              else console.info(translated)
             }
           }
 
@@ -356,18 +358,14 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
               if (typeof onCriticalError === 'function')
                 onCriticalError(errPayload.message as string)
 
-              const defaultMsg = 'خطا در ارتباط با سرور و دریافت اطلاعات!'
               if (!silent) {
-                if (errPayload.type && errPayload.message) {
-                  if (toast?.[errPayload.type])
-                    toast?.[errPayload.type]!(errPayload.message || defaultMsg)
-                  else if (window) alert(errPayload.message || defaultMsg)
-                  else console.error(errPayload.message || defaultMsg)
-                } else {
-                  if (toast?.['error']) toast?.['error'](defaultMsg)
-                  else if (window) alert(defaultMsg)
-                  else console.error(defaultMsg)
-                }
+                const translated = errPayload.message
+                  ? (translateMessage(errPayload.message) || errPayload.message)
+                  : 'خطا در ارتباط با سرور و دریافت اطلاعات!'
+                const severity = errPayload.type ?? 'error'
+                if (toast?.[severity]) toast[severity]!(translated)
+                else if (window) alert(translated)
+                else console.error(translated)
               }
             }
             reject(errPayload)
@@ -385,14 +383,15 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
           }
 
           if (!silent && continueDefault && errPayload.message) {
+            const translated = translateMessage(errPayload.message) || errPayload.message
             if (errPayload.type) {
-              if (toast[errPayload.type]) toast[errPayload.type]!(errPayload.message)
-              else if (window) alert(errPayload.message)
-              else console.error(errPayload.message)
+              if (toast[errPayload.type]) toast[errPayload.type]!(translated)
+              else if (window) alert(translated)
+              else console.error(translated)
             } else {
-              if (toast?.['error']) toast?.['error'](errPayload.message)
-              else if (window) alert(errPayload.message)
-              else console.error(errPayload.message)
+              if (toast?.['error']) toast?.['error'](translated)
+              else if (window) alert(translated)
+              else console.error(translated)
             }
           }
 

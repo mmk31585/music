@@ -3,14 +3,14 @@
     <Transition name="modal">
       <div
         v-if="visible"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs"
         @click.self="emit('close')"
         role="dialog"
         aria-modal="true"
         :aria-label="`Create ${entityType}`"
       >
         <div
-          class="mx-4 w-full max-w-md rounded-2xl bg-[#121212] p-6 shadow-2xl ring-1 ring-white/10
+          class="mx-4 w-full max-w-md rounded-2xl bg-surface-raised p-6 shadow-2xl ring-1 ring-white/10
                  motion-safe:animate-modal-in"
         >
           <!-- Step indicator -->
@@ -19,7 +19,7 @@
               v-for="step in 3"
               :key="step"
               class="h-1 flex-1 rounded-full transition-colors duration-300"
-              :class="step <= createStep ? 'bg-[#1db954]' : 'bg-white/10'"
+              :class="step <= createStep ? 'bg-spotify' : 'bg-white/10'"
             />
           </div>
 
@@ -34,7 +34,7 @@
               type="text"
               :placeholder="entityType === 'club' ? 'Club name' : 'Party name'"
               aria-label="Name"
-              class="mt-4 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 outline-none transition focus:border-white/20 focus:bg-white/[0.08]"
+              class="mt-4 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 outline-hidden transition focus:border-white/20 focus:bg-white/8"
               dir="auto"
             />
           </template>
@@ -48,10 +48,10 @@
               placeholder="What's this about?"
               rows="3"
               aria-label="Description"
-              class="mt-4 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 outline-none transition focus:border-white/20 focus:bg-white/[0.08]"
+              class="mt-4 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 outline-hidden transition focus:border-white/20 focus:bg-white/8"
               dir="auto"
             />
-            <label class="mt-4 flex items-center gap-3 cursor-pointer rounded-xl bg-white/[0.04] p-3 transition hover:bg-white/[0.06]">
+            <label class="mt-4 flex items-center gap-3 cursor-pointer rounded-xl bg-white/4 p-3 transition hover:bg-white/6">
               <input
                 v-model="form.isPublic"
                 type="checkbox"
@@ -67,12 +67,12 @@
           <!-- Step 3: Review -->
           <template v-if="createStep === 3">
             <div class="flex flex-col items-center gap-4 py-4 text-center">
-              <div class="flex h-16 w-16 items-center justify-center rounded-full bg-[#1db954]/10">
-                <i aria-hidden="true" :class="entityIcon" class="text-2xl text-[#1db954]" />
+              <div class="flex h-16 w-16 items-center justify-center rounded-full bg-spotify/10">
+                <i aria-hidden="true" :class="entityIcon" class="text-2xl text-spotify" />
               </div>
               <h2 class="text-lg font-bold text-white">Almost there!</h2>
               <p class="text-sm text-white/40">Review and launch your {{ entityType }}</p>
-              <div class="w-full rounded-xl bg-white/[0.04] p-4 text-start">
+              <div class="w-full rounded-xl bg-white/4 p-4 text-start">
                 <p class="text-xs text-white/30">Name</p>
                 <p class="text-sm font-medium text-white">{{ form.name }}</p>
                 <p v-if="form.description" class="mt-3 text-xs text-white/30">Description</p>
@@ -109,8 +109,8 @@
             <!-- Next / Create -->
             <template v-if="createStep < 3">
               <button
-                :disabled="createStep === 1 && !form.name.trim()"
-                class="flex-1 rounded-xl bg-[#1db954] py-3 text-sm font-bold text-black transition hover:bg-[#1ed760] disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-white"
+                :disabled="createStep === 1 && form.name.trim!()"
+                class="flex-1 rounded-xl bg-spotify py-3 text-sm font-bold text-black transition hover:bg-spotify-hover disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-white"
                 @click="createStep++"
               >
                 Next
@@ -119,7 +119,7 @@
             <template v-else>
               <button
                 :disabled="creating"
-                class="flex-1 rounded-xl bg-[#1db954] py-3 text-sm font-bold text-black transition hover:bg-[#1ed760] disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-white"
+                class="flex-1 rounded-xl bg-spotify py-3 text-sm font-bold text-black transition hover:bg-spotify-hover disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-white"
                 @click="handleCreate"
               >
                 <span v-if="creating" class="inline-flex items-center gap-2">
@@ -182,7 +182,7 @@ function reset() {
 }
 
 async function handleCreate() {
-  if (!form.name.trim() || creating.value) return
+  if (form.name.trim!() || creating.value) return
   creating.value = true
   try {
     let result: { id?: string } | undefined

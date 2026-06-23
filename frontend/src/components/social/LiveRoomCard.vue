@@ -1,7 +1,7 @@
 <template>
   <div
-    class="group rounded-2xl bg-white/[0.06] p-5 ring-1 ring-white/[0.10] transition-all duration-300
-           hover:bg-white/[0.08] hover:ring-white/[0.15] focus-within:ring-2 focus-within:ring-[#1db954]"
+    class="group rounded-2xl bg-white/6 p-5 ring-1 ring-white/10 transition-all duration-300
+           hover:bg-white/8 hover:ring-white/15 focus-within:ring-2 focus-within:ring-spotify"
     role="article"
     :aria-label="`Live room: ${room.title}`"
   >
@@ -26,13 +26,13 @@
         <div
           v-for="(avatar, i) in roomAvatars.slice(0, 4)"
           :key="i"
-          class="h-6 w-6 overflow-hidden rounded-full border-2 border-[#0A0A0A] transition group-hover:border-white/20"
+          class="h-6 w-6 overflow-hidden rounded-full border-2 border-surface-base transition group-hover:border-white/20"
         >
           <img :src="avatar" alt="" class="h-full w-full object-cover" />
         </div>
         <div
           v-if="(room.listener_count || 0) > 4"
-          class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#0A0A0A] bg-white/10 text-[8px] font-bold text-white/50"
+          class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-surface-base bg-white/10 text-[8px] font-bold text-white/50"
         >
           +{{ (room.listener_count || 0) - 4 }}
         </div>
@@ -67,7 +67,7 @@
       <button
         aria-label="Share room"
         class="flex h-9 w-9 items-center justify-center rounded-lg text-white/30 transition
-               hover:bg-white/[0.06] hover:text-white/60 focus-visible:outline-2 focus-visible:outline-[#1db954]"
+               hover:bg-white/6 hover:text-white/60 focus-visible:outline-2 focus-visible:outline-[#1db954]"
         @click="$emit('share', room.id)"
       >
         <i aria-hidden="true" class="pi pi-share-alt text-sm" />

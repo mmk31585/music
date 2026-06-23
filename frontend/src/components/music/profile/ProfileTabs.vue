@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex gap-1 rounded-xl bg-white/[0.04] p-1 overflow-x-auto scrollbar-none"
+    class="flex gap-1 rounded-xl bg-white/4 p-1 overflow-x-auto scrollbar-none"
     role="tablist"
     :aria-label="ariaLabel"
   >

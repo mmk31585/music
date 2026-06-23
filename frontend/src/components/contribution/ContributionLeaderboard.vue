@@ -27,7 +27,7 @@
       <div
         v-for="(c, idx) in contributors"
         :key="c.user_id"
-        class="group spring flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-white/[0.04]"
+        class="group spring flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-white/4"
       >
         <!-- Rank badge -->
         <div
@@ -35,10 +35,10 @@
           :class="rankClass(idx)"
         >
           <template v-if="idx === 0">
-            <i aria-hidden="true" class="pi pi-star-fill text-sm text-[#f59e0b]" />
+            <i aria-hidden="true" class="pi pi-star-fill text-sm text-amber-500" />
           </template>
           <template v-else-if="idx === 1">
-            <i aria-hidden="true" class="pi pi-star-fill text-sm text-[#94a3b8]" />
+            <i aria-hidden="true" class="pi pi-star-fill text-sm text-slate-400" />
           </template>
           <template v-else-if="idx === 2">
             <i aria-hidden="true" class="pi pi-star-fill text-sm text-[#cd7f32]" />
@@ -79,7 +79,7 @@
 
         <!-- XP -->
         <div class="text-right">
-          <p class="text-sm font-bold text-[#1db954]">{{ c.xp_earned.toLocaleString() }}</p>
+          <p class="text-sm font-bold text-spotify">{{ c.xp_earned.toLocaleString() }}</p>
           <p class="text-[10px] text-white/20">XP</p>
         </div>
       </div>
@@ -97,8 +97,8 @@ defineProps<{
 }>()
 
 function rankClass(idx: number) {
-  if (idx === 0) return 'bg-[#f59e0b]/15'
-  if (idx === 1) return 'bg-[#94a3b8]/15'
+  if (idx === 0) return 'bg-amber-500/15'
+  if (idx === 1) return 'bg-slate-400/15'
   if (idx === 2) return 'bg-[#cd7f32]/15'
   return 'bg-white/5 text-white/30'
 }

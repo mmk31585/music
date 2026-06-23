@@ -7,11 +7,11 @@
 
     <template v-else>
       <div class="mb-8">
-        <p class="text-xs font-bold tracking-[0.25em] text-[#1db954] uppercase">Settings</p>
+        <p class="text-xs font-bold tracking-[0.25em] text-spotify uppercase">Settings</p>
         <h1 class="mt-1 text-3xl font-black text-white">Account Settings</h1>
       </div>
 
-      <div class="mb-8 flex gap-1 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-1">
+      <div class="mb-8 flex gap-1 rounded-2xl border border-white/6 bg-white/3 p-1">
       <button
         v-for="tab in tabs"
         :key="tab.key"
@@ -40,7 +40,7 @@
           <button
             type="button"
             aria-label="Edit avatar"
-            class="absolute -right-1 -bottom-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-black bg-[#1db954] text-[10px] text-black transition hover:bg-[#1ed760]"
+            class="absolute -right-1 -bottom-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-black bg-spotify text-[10px] text-black transition hover:bg-spotify-hover"
             @click="triggerAvatarUpload"
           >
             <i aria-hidden="true" class="pi pi-pencil" />
@@ -68,7 +68,7 @@
             v-model="form.displayName"
             type="text"
             aria-label="Display name"
-            class="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white transition outline-none placeholder:text-slate-600 focus:border-[#1db954]/50 focus:bg-white/[0.06]"
+            class="w-full rounded-xl border border-white/8 bg-white/4 px-4 py-2.5 text-sm text-white transition outline-hidden placeholder:text-slate-600 focus:border-spotify/50 focus:bg-white/6"
             placeholder="Your display name"
           />
         </div>
@@ -80,7 +80,7 @@
             v-model="form.username"
             type="text"
             aria-label="Username"
-            class="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white transition outline-none placeholder:text-slate-600 focus:border-[#1db954]/50 focus:bg-white/[0.06]"
+            class="w-full rounded-xl border border-white/8 bg-white/4 px-4 py-2.5 text-sm text-white transition outline-hidden placeholder:text-slate-600 focus:border-spotify/50 focus:bg-white/6"
             placeholder="username"
           />
         </div>
@@ -92,7 +92,7 @@
             v-model="form.bio"
             rows="3"
             aria-label="Bio"
-            class="w-full resize-none rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white transition outline-none placeholder:text-slate-600 focus:border-[#1db954]/50 focus:bg-white/[0.06]"
+            class="w-full resize-none rounded-xl border border-white/8 bg-white/4 px-4 py-2.5 text-sm text-white transition outline-hidden placeholder:text-slate-600 focus:border-spotify/50 focus:bg-white/6"
             placeholder="Tell us about yourself"
           />
         </div>
@@ -104,7 +104,7 @@
             v-model="form.location"
             type="text"
             aria-label="Location"
-            class="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white transition outline-none placeholder:text-slate-600 focus:border-[#1db954]/50 focus:bg-white/[0.06]"
+            class="w-full rounded-xl border border-white/8 bg-white/4 px-4 py-2.5 text-sm text-white transition outline-hidden placeholder:text-slate-600 focus:border-spotify/50 focus:bg-white/6"
             placeholder="Tehran, Iran"
           />
         </div>
@@ -116,7 +116,7 @@
             v-model="form.website"
             type="url"
             aria-label="Website"
-            class="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white transition outline-none placeholder:text-slate-600 focus:border-[#1db954]/50 focus:bg-white/[0.06]"
+            class="w-full rounded-xl border border-white/8 bg-white/4 px-4 py-2.5 text-sm text-white transition outline-hidden placeholder:text-slate-600 focus:border-spotify/50 focus:bg-white/6"
             placeholder="https://example.com"
           />
         </div>
@@ -126,7 +126,7 @@
         <button
           type="button"
           :disabled="saving"
-          class="rounded-full bg-[#1db954] px-6 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760] disabled:opacity-50"
+          class="rounded-full bg-spotify px-6 py-2.5 text-sm font-bold text-black transition hover:bg-spotify-hover disabled:opacity-50"
           @click="saveProfile"
         >
           {{ saving ? 'Saving...' : 'Save changes' }}
@@ -134,7 +134,7 @@
         <p
           v-if="saveMessage"
           class="text-sm"
-          :class="saveError ? 'text-red-400' : 'text-[#1db954]'"
+          :class="saveError ? 'text-red-400' : 'text-spotify'"
           :role="saveError ? 'alert' : undefined"
           aria-live="polite"
         >
@@ -151,7 +151,7 @@
         <p class="text-xs text-slate-500">Email cannot be changed at this time.</p>
       </div>
 
-      <div class="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
+      <div class="rounded-2xl border border-white/6 bg-white/2 p-6">
         <h3 class="mb-4 text-lg font-bold text-white">Change Password</h3>
         <div class="space-y-4">
           <div>
@@ -163,7 +163,7 @@
               v-model="passwordForm.currentPassword"
               type="password"
               aria-label="Current Password"
-              class="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white transition outline-none placeholder:text-slate-600 focus:border-[#1db954]/50 focus:bg-white/[0.06]"
+              class="w-full rounded-xl border border-white/8 bg-white/4 px-4 py-2.5 text-sm text-white transition outline-hidden placeholder:text-slate-600 focus:border-spotify/50 focus:bg-white/6"
             />
           </div>
           <div>
@@ -175,7 +175,7 @@
               v-model="passwordForm.newPassword"
               type="password"
               aria-label="New Password"
-              class="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white transition outline-none placeholder:text-slate-600 focus:border-[#1db954]/50 focus:bg-white/[0.06]"
+              class="w-full rounded-xl border border-white/8 bg-white/4 px-4 py-2.5 text-sm text-white transition outline-hidden placeholder:text-slate-600 focus:border-spotify/50 focus:bg-white/6"
             />
           </div>
           <button
@@ -189,7 +189,7 @@
           <p
             v-if="passwordMessage"
             class="text-sm"
-            :class="passwordError ? 'text-red-400' : 'text-[#1db954]'"
+            :class="passwordError ? 'text-red-400' : 'text-spotify'"
             :role="passwordError ? 'alert' : undefined"
             aria-live="polite"
           >
@@ -198,7 +198,7 @@
         </div>
       </div>
 
-      <div class="rounded-2xl border border-red-500/20 bg-red-500/[0.03] p-6">
+      <div class="rounded-2xl border border-red-500/20 bg-red-500/3 p-6">
         <h3 class="mb-2 text-lg font-bold text-red-400">Delete Account</h3>
         <p class="mb-4 text-sm text-slate-400">
           Permanently delete your account and all associated data. This action cannot be undone.
@@ -215,7 +215,7 @@
 
     <!-- Preferences Tab -->
     <div v-show="activeTab === 'preferences'" class="space-y-6">
-      <div class="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
+      <div class="rounded-2xl border border-white/6 bg-white/2 p-6">
         <h3 class="mb-4 text-lg font-bold text-white">Display</h3>
         <div class="space-y-4">
           <div class="flex items-center justify-between">
@@ -257,7 +257,7 @@
         </div>
       </div>
 
-      <div class="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
+      <div class="rounded-2xl border border-white/6 bg-white/2 p-6">
         <h3 class="mb-4 text-lg font-bold text-white">Notifications</h3>
         <div class="space-y-4">
           <div class="flex items-center justify-between">
@@ -292,12 +292,12 @@
       <button
         type="button"
         :disabled="prefSaving"
-        class="rounded-full bg-[#1db954] px-6 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760] disabled:opacity-50"
+        class="rounded-full bg-spotify px-6 py-2.5 text-sm font-bold text-black transition hover:bg-spotify-hover disabled:opacity-50"
         @click="savePreferences"
       >
         {{ prefSaving ? 'Saving...' : 'Save Preferences' }}
       </button>
-      <p v-if="prefMessage" class="text-sm text-[#1db954]" aria-live="polite">{{ prefMessage }}</p>
+      <p v-if="prefMessage" class="text-sm text-spotify" aria-live="polite">{{ prefMessage }}</p>
     </div>
   </template>
   </div>
@@ -389,7 +389,7 @@ function triggerAvatarUpload() {
 
 function handleAvatar(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
-  if (!file) return
+  if (file!) return
   previewAvatar.value = URL.createObjectURL(file)
   toast.add({ severity: 'info', summary: 'Avatar upload coming soon', life: 2000 })
 }
@@ -423,7 +423,7 @@ async function saveProfile() {
 }
 
 async function savePassword() {
-  if (!passwordForm.currentPassword || !passwordForm.newPassword) {
+  if (passwordForm.currentPassword! || passwordForm.newPassword!) {
     passwordMessage.value = 'Both fields are required'
     passwordError.value = true
     return

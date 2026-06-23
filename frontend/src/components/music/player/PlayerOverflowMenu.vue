@@ -5,7 +5,7 @@
       ref="menuRef"
       role="menu"
       aria-label="Player options"
-      class="glass-strong absolute bottom-full right-0 mb-2 min-w-[260px] origin-bottom-right rounded-2xl p-2 shadow-2xl"
+      class="glass-strong absolute bottom-full right-0 mb-2 min-w-65 origin-bottom-right rounded-2xl p-2 shadow-2xl"
       @keydown="onKeydown"
       tabindex="-1"
     >
@@ -13,7 +13,7 @@
       <button
         type="button"
         role="menuitem"
-        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
+        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-spotify"
         @click="cycleQuality"
       >
         <i aria-hidden="true" class="pi pi-waveform text-base text-white/40" />
@@ -25,12 +25,12 @@
       <button
         type="button"
         role="menuitem"
-        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
+        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-spotify"
         @click="showSleepPicker = !showSleepPicker"
       >
         <i aria-hidden="true" class="pi pi-clock text-base text-white/40" />
         <span class="flex-1 text-left">Sleep Timer</span>
-        <span class="text-xs font-medium" :class="sleepTimerMinutes > 0 ? 'text-[#1db954]' : 'text-white/40'">
+        <span class="text-xs font-medium" :class="sleepTimerMinutes > 0 ? 'text-spotify' : 'text-white/40'">
           {{ sleepTimerMinutes > 0 ? `${sleepTimerMinutes}m` : 'Off' }}
         </span>
       </button>
@@ -45,7 +45,7 @@
           :key="opt.value"
           type="button"
           class="rounded-lg px-2.5 py-1 text-xs font-medium transition"
-          :class="sleepTimerMinutes === opt.value ? 'bg-[#1db954] text-black' : 'bg-white/10 text-white/50 hover:bg-white/20 hover:text-white/80'"
+          :class="sleepTimerMinutes === opt.value ? 'bg-spotify text-black' : 'bg-white/10 text-white/50 hover:bg-white/20 hover:text-white/80'"
           @click.stop="setTimer(opt.value)"
         >
           {{ opt.label }}
@@ -57,15 +57,14 @@
         <i aria-hidden="true" class="pi pi-arrows-alt text-base text-white/40" />
         <span class="flex-1 text-left">Crossfade</span>
         <span class="text-xs font-medium text-white/40 tabular-nums">{{ crossfadeDuration }}s</span>
-        <input
-          type="range"
-          min="0"
-          max="12"
-          step="1"
+        <Slider
+          :model-value="crossfadeDuration"
+          @update:model-value="onCrossfadeChange"
+          :min="0"
+          :max="12"
+          :step="1"
+          class="w-16"
           aria-label="Crossfade duration"
-          class="w-16 h-1 cursor-pointer appearance-none rounded-full bg-white/10 accent-[#1db954]"
-          :value="crossfadeDuration"
-          @input="onCrossfadeChange"
         />
       </div>
 
@@ -73,7 +72,7 @@
       <button
         type="button"
         role="menuitem"
-        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
+        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-spotify"
         @click="onTogglePiP"
       >
         <i aria-hidden="true" class="pi pi-window-maximize text-base text-white/40" />
@@ -86,10 +85,10 @@
       <button
         type="button"
         role="menuitem"
-        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
+        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-spotify"
         @click="toggleLike"
       >
-        <i aria-hidden="true" :class="liked ? 'pi pi-heart-fill text-[#1db954]' : 'pi pi-heart text-white/40'" class="text-base" />
+        <i aria-hidden="true" :class="liked ? 'pi pi-heart-fill text-spotify' : 'pi pi-heart text-white/40'" class="text-base" />
         <span>{{ liked ? 'Saved to Library' : 'Save to Library' }}</span>
       </button>
 
@@ -97,7 +96,7 @@
       <button
         type="button"
         role="menuitem"
-        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
+        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-spotify"
         @click="onAddToPlaylist"
       >
         <i aria-hidden="true" class="pi pi-plus-circle text-base text-white/40" />
@@ -108,7 +107,7 @@
       <button
         type="button"
         role="menuitem"
-        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
+        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-spotify"
         @click="onShare"
       >
         <i aria-hidden="true" class="pi pi-share-alt text-base text-white/40" />
@@ -121,7 +120,7 @@
       <button
         type="button"
         role="menuitem"
-        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-[#1db954]"
+        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-spotify"
         @click="onTrackInfo"
       >
         <i aria-hidden="true" class="pi pi-info-circle text-base text-white/40" />
@@ -171,8 +170,7 @@ function setTimer(minutes: number) {
   showSleepPicker.value = false
 }
 
-function onCrossfadeChange(e: Event) {
-  const val = parseInt((e.target as HTMLInputElement).value) || 0
+function onCrossfadeChange(val: number) {
   usePlayer().crossfadeDuration = val
 }
 
@@ -192,7 +190,7 @@ function cycleQuality() {
 }
 
 function toggleLike() {
-  liked.value = !liked.value
+  liked.value = liked.value!
 }
 
 function onTogglePiP() {
@@ -230,7 +228,7 @@ function onKeydown(e: KeyboardEvent) {
     return
   }
   const items = menuRef.value?.querySelectorAll('[role="menuitem"]')
-  if (!items?.length) return
+  if (items!?.length) return
   const currentIndex = Array.from(items).indexOf(document.activeElement as HTMLElement)
   if (e.key === 'ArrowDown') {
     e.preventDefault()
@@ -244,7 +242,7 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 function onClickOutside(e: MouseEvent) {
-  if (menuRef.value && !menuRef.value.contains(e.target as Node)) {
+  if (menuRef.value && menuRef.value.contains!(e.target as Node)) {
     closeMenu()
   }
 }

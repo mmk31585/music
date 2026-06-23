@@ -11,7 +11,7 @@
       v-if="showScroll && !isAtStart"
       type="button"
       aria-label="Scroll left"
-      class="absolute top-1/2 -left-3 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/80 text-white shadow-lg backdrop-blur transition hover:bg-black/90"
+      class="absolute top-1/2 -left-3 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/80 text-white shadow-lg backdrop-blur-xs transition hover:bg-black/90"
       @click="scroll(-300)"
     >
       <i aria-hidden="true" class="pi pi-chevron-left text-sm" />
@@ -20,7 +20,7 @@
       v-if="showScroll && !isAtEnd"
       type="button"
       aria-label="Scroll right"
-      class="absolute top-1/2 -right-3 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/80 text-white shadow-lg backdrop-blur transition hover:bg-black/90"
+      class="absolute top-1/2 -right-3 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/80 text-white shadow-lg backdrop-blur-xs transition hover:bg-black/90"
       @click="scroll(300)"
     >
       <i aria-hidden="true" class="pi pi-chevron-right text-sm" />
@@ -39,7 +39,7 @@ const isAtStart = ref(true)
 const isAtEnd = ref(false)
 
 function checkScroll() {
-  if (!carouselRef.value) return
+  if (carouselRef.value!) return
   isAtStart.value = carouselRef.value.scrollLeft <= 10
   isAtEnd.value =
     carouselRef.value.scrollLeft >= carouselRef.value.scrollWidth - carouselRef.value.clientWidth - 10
@@ -50,7 +50,7 @@ function scroll(amount: number) {
 }
 
 function scrollTo(dir: 'next' | 'prev') {
-  if (!carouselRef.value) return
+  if (carouselRef.value!) return
   const amount = dir === 'next' ? carouselRef.value.clientWidth : -carouselRef.value.clientWidth
   carouselRef.value.scrollBy({ left: amount, behavior: 'smooth' })
 }

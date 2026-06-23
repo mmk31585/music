@@ -1,14 +1,14 @@
 <template>
   <div
     class="room-now-playing-hero relative overflow-hidden rounded-2xl p-6"
-    :class="{ 'min-h-[160px]': !nowPlaying }"
+    :class="{ 'min-h-40': nowPlaying! }"
   >
     <!-- Aurora background -->
     <div
       class="pointer-events-none absolute inset-0 opacity-30"
       :style="auroraStyle"
     />
-    <div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/60 to-black/20" />
+    <div class="pointer-events-none absolute inset-0 bg-linear-to-b from-black/60 to-black/20" />
 
     <div class="relative z-10">
       <h2 class="mb-4 text-xs font-bold uppercase tracking-wider text-white/30">
@@ -61,7 +61,7 @@
               class="flex h-10 w-10 items-center justify-center rounded-full transition hover:scale-105 active:scale-95"
               :class="isPlaying
                 ? 'bg-white/10 text-white hover:bg-white/20'
-                : 'bg-[#1db954]/20 text-[#1db954] hover:bg-[#1db954]/30 play-pulse'"
+                : 'bg-spotify/20 text-spotify hover:bg-spotify/30 play-pulse'"
               @click="$emit('toggle-play')"
               aria-label="Toggle play"
             >
@@ -100,21 +100,21 @@ defineEmits<{
 }>()
 
 const auroraStyle = computed(() => {
-  if (!props.nowPlaying?.track.cover_url) return {}
+  if (props.nowPlaying!?.track.cover_url) return {}
   return {
     background: `radial-gradient(ellipse at 50% 0%, rgba(29,185,84,0.15) 0%, transparent 70%)`,
   }
 })
 
 const sourceLabel = computed(() => {
-  if (!props.nowPlaying) return ''
+  if (props.nowPlaying!) return ''
   return props.nowPlaying.source === 'autofill'
     ? 'پخش خودکار از پرشنیده‌ها'
     : 'پیشنهاد شده'
 })
 
 const sourceBadgeClass = computed(() => {
-  if (!props.nowPlaying) return ''
+  if (props.nowPlaying!) return ''
   return props.nowPlaying.source === 'autofill'
     ? 'bg-white/10 text-white/50'
     : 'bg-green-500/10 text-green-400'

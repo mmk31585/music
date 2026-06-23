@@ -3,10 +3,10 @@
     <Transition name="fade">
       <div
         v-if="visible"
-        class="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        class="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-xs"
         @click.self="visible = false"
       >
-        <div class="mx-4 w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#141414] p-6 shadow-2xl">
+        <div class="mx-4 w-full max-w-md rounded-2xl border border-white/8 bg-[#141414] p-6 shadow-2xl">
           <div class="mb-6 flex items-center justify-between">
             <h2 class="text-lg font-bold text-white">Keyboard Shortcuts</h2>
             <button
@@ -23,14 +23,14 @@
             <div
               v-for="shortcut in shortcuts"
               :key="shortcut.label"
-              class="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-white/[0.04]"
+              class="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-white/4"
             >
               <span class="text-sm text-slate-300">{{ shortcut.label }}</span>
               <kbd class="flex items-center gap-1">
                 <span
                   v-for="(key, i) in shortcut.keys"
                   :key="i"
-                  class="inline-flex items-center rounded-md border border-white/[0.10] bg-white/[0.06] px-2 py-0.5 text-xs font-medium text-slate-300"
+                  class="inline-flex items-center rounded-md border border-white/10 bg-white/6 px-2 py-0.5 text-xs font-medium text-slate-300"
                 >
                   {{ key }}
                 </span>
@@ -38,7 +38,7 @@
             </div>
           </div>
 
-          <p class="mt-4 text-center text-xs text-slate-600">Press <kbd class="rounded bg-white/[0.06] px-1.5 py-0.5 text-xs text-slate-400">?</kbd> to toggle this panel</p>
+          <p class="mt-4 text-center text-xs text-slate-600">Press <kbd class="rounded-sm bg-white/6 px-1.5 py-0.5 text-xs text-slate-400">?</kbd> to toggle this panel</p>
         </div>
       </div>
     </Transition>

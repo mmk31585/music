@@ -198,7 +198,7 @@
                 :key="aIdx"
                 class="overflow-hidden rounded-xl border transition-all duration-200"
                 :class="aIdx === 0
-                  ? 'border-emerald-500/30 bg-emerald-500/[0.04]'
+                  ? 'border-emerald-500/30 bg-emerald-500/4'
                   : 'border-surface-700 bg-surface-800/50'"
               >
                 <!-- Card header -->
@@ -267,7 +267,7 @@
                 </div>
 
                 <!-- Card body -->
-                <div class="border-t border-white/[0.04] px-5 py-4">
+                <div class="border-t border-white/4 px-5 py-4">
                   <!-- Artist image picker -->
                   <div class="mb-4">
                     <p class="mb-2 text-xs font-medium text-surface-500">
@@ -281,7 +281,7 @@
                         <img
                           :src="enrichment.spotify.artistImageUrl"
                           alt="Spotify"
-                          class="h-16 w-16 cursor-pointer rounded-lg object-cover shadow-sm ring-2 transition-all hover:opacity-80"
+                          class="h-16 w-16 cursor-pointer rounded-lg object-cover shadow-xs ring-2 transition-all hover:opacity-80"
                           :class="artist.imageUrl === enrichment.spotify.artistImageUrl ? 'ring-green-500' : 'ring-transparent'"
                           @click="artist.imageUrl = enrichment.spotify.artistImageUrl"
                           @error="($event.target as HTMLImageElement).style.display='none'"
@@ -294,7 +294,7 @@
                         <img
                           :src="enrichment.lastfm.artistImageUrl"
                           alt="Last.fm"
-                          class="h-16 w-16 cursor-pointer rounded-lg object-cover shadow-sm ring-2 transition-all hover:opacity-80"
+                          class="h-16 w-16 cursor-pointer rounded-lg object-cover shadow-xs ring-2 transition-all hover:opacity-80"
                           :class="artist.imageUrl === enrichment.lastfm.artistImageUrl ? 'ring-green-500' : 'ring-transparent'"
                           @click="artist.imageUrl = enrichment.lastfm.artistImageUrl"
                           @error="($event.target as HTMLImageElement).style.display='none'"
@@ -307,7 +307,7 @@
                         <img
                           :src="enrichment.ml.artistImageUrl"
                           alt="ML"
-                          class="h-16 w-16 cursor-pointer rounded-lg object-cover shadow-sm ring-2 transition-all hover:opacity-80"
+                          class="h-16 w-16 cursor-pointer rounded-lg object-cover shadow-xs ring-2 transition-all hover:opacity-80"
                           :class="artist.imageUrl === enrichment.ml.artistImageUrl ? 'ring-green-500' : 'ring-transparent'"
                           @click="artist.imageUrl = enrichment.ml.artistImageUrl"
                           @error="($event.target as HTMLImageElement).style.display='none'"
@@ -320,7 +320,7 @@
                         <img
                           :src="artist.imageUrl"
                           alt="Selected"
-                          class="h-16 w-16 rounded-lg object-cover shadow-sm ring-2 ring-green-500"
+                          class="h-16 w-16 rounded-lg object-cover shadow-xs ring-2 ring-green-500"
                           @error="($event.target as HTMLImageElement).style.display='none'"
                         />
                       </div>
@@ -396,7 +396,7 @@
                       <label class="mb-1 block text-xs font-medium text-surface-500">
                         Name
                         <template v-if="aIdx === 0 && findSuggestion('artist')">
-                          <Badge :value="sourceLabel(findSuggestion('artist')!.source)" :severity="sourceSeverity(findSuggestion('artist')!.source)" size="small" />
+                          <Badge :value="sourceLabel(findSuggestion('artist').source!)" :severity="sourceSeverity(findSuggestion('artist').source!)" size="small" />
                         </template>
                       </label>
                       <InputText
@@ -626,13 +626,13 @@
                     Title
                     <template v-if="findSuggestion('album')">
                       <Badge
-                        :value="sourceLabel(findSuggestion('album')!.source)"
-                        :severity="sourceSeverity(findSuggestion('album')!.source)"
+                        :value="sourceLabel(findSuggestion('album').source!)"
+                        :severity="sourceSeverity(findSuggestion('album').source!)"
                         size="small"
                       />
                       <Badge
-                        :value="findSuggestion('album')!.confidence"
-                        :severity="confidenceSeverity(findSuggestion('album')!.confidence)"
+                        :value="findSuggestion('album').confidence!"
+                        :severity="confidenceSeverity(findSuggestion('album').confidence!)"
                         size="small"
                       />
                     </template>
@@ -649,13 +649,13 @@
                     Release Year
                     <template v-if="findSuggestion('year')">
                       <Badge
-                        :value="sourceLabel(findSuggestion('year')!.source)"
-                        :severity="sourceSeverity(findSuggestion('year')!.source)"
+                        :value="sourceLabel(findSuggestion('year').source!)"
+                        :severity="sourceSeverity(findSuggestion('year').source!)"
                         size="small"
                       />
                       <Badge
-                        :value="findSuggestion('year')!.confidence"
-                        :severity="confidenceSeverity(findSuggestion('year')!.confidence)"
+                        :value="findSuggestion('year').confidence!"
+                        :severity="confidenceSeverity(findSuggestion('year').confidence!)"
                         size="small"
                       />
                     </template>
@@ -826,13 +826,13 @@
                     Title
                     <template v-if="findSuggestion('title')">
                       <Badge
-                        :value="sourceLabel(findSuggestion('title')!.source)"
-                        :severity="sourceSeverity(findSuggestion('title')!.source)"
+                        :value="sourceLabel(findSuggestion('title').source!)"
+                        :severity="sourceSeverity(findSuggestion('title').source!)"
                         size="small"
                       />
                       <Badge
-                        :value="findSuggestion('title')!.confidence"
-                        :severity="confidenceSeverity(findSuggestion('title')!.confidence)"
+                        :value="findSuggestion('title').confidence!"
+                        :severity="confidenceSeverity(findSuggestion('title').confidence!)"
                         size="small"
                       />
                     </template>
@@ -892,14 +892,14 @@
                   <div class="flex items-center gap-2">
                     <Badge
                       v-if="findSuggestion('lyrics_type')"
-                      :value="findSuggestion('lyrics_type')!.value === 'lrc' ? 'Synced' : 'Plain'"
-                      :severity="findSuggestion('lyrics_type')!.value === 'lrc' ? 'success' : 'info'"
+                      :value="findSuggestion('lyrics_type').value! === 'lrc' ? 'Synced' : 'Plain'"
+                      :severity="findSuggestion('lyrics_type').value! === 'lrc' ? 'success' : 'info'"
                       size="small"
                     />
                     <Badge
                       v-if="findSuggestion('lyrics')"
-                      :value="sourceLabel(findSuggestion('lyrics')!.source)"
-                      :severity="sourceSeverity(findSuggestion('lyrics')!.source)"
+                      :value="sourceLabel(findSuggestion('lyrics').source!)"
+                      :severity="sourceSeverity(findSuggestion('lyrics').source!)"
                       size="small"
                     />
                     <Button
@@ -948,7 +948,7 @@
                   dir="auto"
                   :auto-resize="true"
                   class="w-full font-mono text-xs leading-relaxed"
-                  :class="{ 'min-h-64': lyricsExpanded, 'min-h-24': !lyricsExpanded }"
+                  :class="{ 'min-h-64': lyricsExpanded, 'min-h-24': lyricsExpanded! }"
                   placeholder="Lyrics..."
                 />
               </div>
@@ -967,7 +967,7 @@
                   <InputText
                     v-model="finalMetadata.track.spotifyPreviewUrl"
                     class="w-full font-mono text-xs text-surface-400"
-                    :disabled="!enrichment?.spotify?.previewUrl"
+                    :disabled="enrichment!?.spotify?.previewUrl"
                     :placeholder="enrichment?.spotify?.previewUrl || 'Not available'"
                   />
                 </div>
@@ -1031,7 +1031,7 @@
                   v-if="finalMetadata.album.coverUrl"
                   :src="finalMetadata.album.coverUrl"
                   alt=""
-                  class="mb-2 h-24 w-24 rounded-lg object-cover shadow-sm"
+                  class="mb-2 h-24 w-24 rounded-lg object-cover shadow-xs"
                   @error="($event.target as HTMLImageElement).style.display='none'"
                 />
                 <div class="space-y-1 text-xs">
@@ -1048,7 +1048,7 @@
                   v-if="finalMetadata.track.coverUrl"
                   :src="finalMetadata.track.coverUrl"
                   alt=""
-                  class="mb-2 h-24 w-24 rounded-lg object-cover shadow-sm"
+                  class="mb-2 h-24 w-24 rounded-lg object-cover shadow-xs"
                   @error="($event.target as HTMLImageElement).style.display='none'"
                 />
                 <div class="space-y-1 text-xs">
@@ -1083,7 +1083,7 @@
             label="Next"
             icon="pi pi-chevron-right"
             icon-pos="right"
-            :disabled="!canProceed"
+            :disabled="canProceed!"
             @click="step++"
           />
           <Button
@@ -1091,7 +1091,7 @@
             label="Publish to Catalog"
             icon="pi pi-check"
             :loading="publishing"
-            :disabled="!isValid"
+            :disabled="isValid!"
             @click="publish"
           />
           <Button
@@ -1226,7 +1226,7 @@ watch(audioLyrics, () => {
 
 function rebuildParsedLyrics() {
   const text = audioLyrics.value
-  if (!text) {
+  if (text!) {
     parsedLyrics = []
     return
   }
@@ -1234,7 +1234,7 @@ function rebuildParsedLyrics() {
 }
 
 function toggleAudio() {
-  if (!audioPreview.value) return
+  if (audioPreview.value!) return
   if (audioPlaying.value) {
     audioPreview.value.pause()
   } else {
@@ -1243,13 +1243,13 @@ function toggleAudio() {
 }
 
 function seekAudio(seconds: number) {
-  if (!audioPreview.value) return
+  if (audioPreview.value!) return
   audioPreview.value.currentTime = seconds
   audioCurrentTime.value = seconds
 }
 
 function seekAudioFromBar(e: MouseEvent) {
-  if (!audioPreview.value || !audioDuration.value) return
+  if (audioPreview.value! || audioDuration.value!) return
   const bar = e.currentTarget as HTMLElement
   const rect = bar.getBoundingClientRect()
   const ratio = (e.clientX - rect.left) / rect.width
@@ -1257,13 +1257,13 @@ function seekAudioFromBar(e: MouseEvent) {
 }
 
 function onAudioTime() {
-  if (!audioPreview.value) return
+  if (audioPreview.value!) return
   audioCurrentTime.value = audioPreview.value.currentTime
   animFrameId = requestAnimationFrame(onAudioTime)
 }
 
 function onAudioLoaded() {
-  if (!audioPreview.value) return
+  if (audioPreview.value!) return
   audioDuration.value = audioPreview.value.duration
 }
 
@@ -1285,7 +1285,7 @@ function onAudioPause() {
 const activeLyricLine = computed(() => {
   const t = audioCurrentTime.value
   for (let i = parsedLyrics.length - 1; i >= 0; i--) {
-    if (t >= parsedLyrics[i]!.timeSeconds) return i
+    if (t >= parsedLyrics[i].timeSeconds!) return i
   }
   return -1
 })
@@ -1295,14 +1295,14 @@ let lyricsScrollTimer: ReturnType<typeof setTimeout> | null = null
 watch(activeLyricLine, (idx) => {
   if (lyricsScrollTimer) clearTimeout(lyricsScrollTimer)
   lyricsScrollTimer = setTimeout(() => {
-    if (idx < 0 || !syncedLyricsContainer.value) return
+    if (idx < 0 || syncedLyricsContainer.value!) return
     const target = syncedLyricLineRefs.value[idx]
     target?.scrollIntoView({ block: 'center', behavior: 'smooth' })
   }, 80)
 })
 
 function formatAudioTime(seconds: number): string {
-  if (!seconds || !Number.isFinite(seconds)) return '0:00'
+  if (seconds! || Number.isFinite!(seconds)) return '0:00'
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${s.toString().padStart(2, '0')}`
@@ -1395,12 +1395,12 @@ function stepIconClass(i: number): string {
 }
 
 function truncateBio(bio: string): string {
-  if (!bio) return ''
+  if (bio!) return ''
   return bio.length > 300 ? bio.slice(0, 300) + '...' : bio
 }
 
 function formatDuration(seconds?: number): string {
-  if (!seconds) return ''
+  if (seconds!) return ''
   const m = Math.floor(seconds / 60)
   const s = Math.round(seconds % 60)
   return `${m}:${s.toString().padStart(2, '0')}`
@@ -1409,7 +1409,7 @@ function formatDuration(seconds?: number): string {
 function selectExistingArtist(a: ArtistSearchResult, index: number = 0) {
   selectedArtistId.value = a.id
   const artist = finalMetadata.artists[index]
-  if (!artist) return
+  if (artist!) return
   artist.existingId = a.id
   artist.name = a.name
   artist.country = a.country || ''
@@ -1450,11 +1450,11 @@ function moveFeaturedArtist(fromIndex: number, direction: -1 | 1) {
 
 /** Parse "feat." / "ft." patterns from a raw artist string */
 function parseFeatArtists(rawArtist: string): string[] {
-  if (!rawArtist) return []
+  if (rawArtist!) return []
   // Split on common feat/ft patterns
   const parts = rawArtist.split(/\s+(?:feat\.|ft\.|featuring|Feat\.|Ft\.|Featuring)\s+/i)
   const mainArtist = parts[0]?.trim()
-  if (!mainArtist) return []
+  if (mainArtist!) return []
   const result = [mainArtist]
   if (parts.length > 1) {
     // Split the feat part further by ",", "&", "and"
@@ -1521,7 +1521,7 @@ async function loadDraft() {
   error.value = null
   try {
     const detail = await ingestionApi.getDraftDetail(draftId)
-    if (!detail) {
+    if (detail!) {
       error.value = 'Draft not found.'
       return
     }
@@ -1651,8 +1651,8 @@ function prefillForm(detail: DraftDetailResponse) {
   // Apply imageUrl to featured artists from enrichment if available
   const featImage = sugMap.get('artist_image_url') || spot?.artistImageUrl || lfm?.artistImageUrl || ''
   for (let i = 1; i < finalMetadata.artists.length; i++) {
-    if (!finalMetadata.artists[i]!.imageUrl) {
-      finalMetadata.artists[i]!.imageUrl = featImage
+    if (finalMetadata.artists[i]!.imageUrl!) {
+      finalMetadata.artists[i].imageUrl! = featImage
     }
   }
 
@@ -1676,7 +1676,7 @@ function prefillForm(detail: DraftDetailResponse) {
 
 function goBack() {
   if (hasUnsavedChanges.value) {
-    if (!window.confirm('You have unsaved changes. Are you sure you want to leave?')) return
+    if (window.confirm!('You have unsaved changes. Are you sure you want to leave?')) return
   }
   router.push({ name: 'admin.ingestion' })
 }
@@ -1684,7 +1684,7 @@ function goBack() {
 async function uploadArtistImage(e: Event, index: number = 0) {
   const target = e.target as HTMLInputElement
   const file = target.files?.[0]
-  if (!file) return
+  if (file!) return
   try {
     const res = await ingestionApi.uploadDraftImage(draftId, 'artist', file)
     if (res?.url) {
@@ -1704,7 +1704,7 @@ async function uploadArtistImage(e: Event, index: number = 0) {
 async function uploadAlbumCover(e: Event) {
   const target = e.target as HTMLInputElement
   const file = target.files?.[0]
-  if (!file) return
+  if (file!) return
   try {
     const res = await ingestionApi.uploadDraftImage(draftId, 'album', file)
     if (res?.url) {
@@ -1763,12 +1763,12 @@ function handleKeydown(e: KeyboardEvent) {
   const tag = (e.target as HTMLElement)?.tagName
   const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
   if (e.key === 'Escape') {
-    if (!isInput && step.value > 0) {
+    if (isInput! && step.value > 0) {
       e.preventDefault()
       step.value--
     }
   } else if (e.key === 'Enter') {
-    if (!isInput) {
+    if (isInput!) {
       e.preventDefault()
       if (step.value < 3 && canProceed.value) {
         step.value++

@@ -12,11 +12,11 @@
         <!-- HERO — Your Library                      -->
         <!-- ════════════════════════════════════════ -->
         <section
-          class="relative overflow-hidden rounded-[2.5rem] border border-white/[0.06] bg-gradient-to-br from-[#1db954]/10 via-[#0C0C14] to-black/60 p-8 backdrop-blur-2xl md:p-12"
+          class="relative overflow-hidden rounded-3xl border border-white/6 bg-linear-to-br from-spotify/10 via-[#0C0C14] to-black/60 p-8 backdrop-blur-2xl md:p-12"
         >
-          <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-[2.5rem]">
-            <div class="absolute -top-1/2 -right-1/4 h-80 w-80 rounded-full bg-[#1db954]/8 blur-[120px]" />
-            <div class="absolute -bottom-1/2 -left-1/4 h-64 w-64 rounded-full bg-[#a855f7]/8 blur-[100px]" />
+          <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
+            <div class="absolute -top-1/2 -right-1/4 h-80 w-80 rounded-full bg-spotify/8 blur-[120px]" />
+            <div class="absolute -bottom-1/2 -left-1/4 h-64 w-64 rounded-full bg-aurora-purple/8 blur-[100px]" />
           </div>
           <div class="relative">
             <p class="text-[10px] font-bold tracking-[0.35em] text-white/30 uppercase">Your collection</p>
@@ -26,16 +26,16 @@
             </p>
             <!-- Quick stats -->
             <div v-if="!loading" class="mt-5 flex flex-wrap items-center gap-3">
-              <div class="flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.04] px-3 py-1.5 text-xs text-white/50">
+              <div class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/50">
                 <i aria-hidden="true" class="pi pi-heart text-[10px]" /> {{ likedTracks.length }} tracks
               </div>
-              <div class="flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.04] px-3 py-1.5 text-xs text-white/50">
+              <div class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/50">
                 <i aria-hidden="true" class="pi pi-images text-[10px]" /> {{ likedAlbums.length }} albums
               </div>
-              <div class="flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.04] px-3 py-1.5 text-xs text-white/50">
+              <div class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/50">
                 <i aria-hidden="true" class="pi pi-users text-[10px]" /> {{ followedArtists.length }} artists
               </div>
-              <div class="flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.04] px-3 py-1.5 text-xs text-white/50">
+              <div class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/50">
                 <i aria-hidden="true" class="pi pi-list text-[10px]" /> {{ playlists.length }} playlists
               </div>
             </div>
@@ -56,16 +56,16 @@
               class="group relative flex shrink-0 items-center gap-2 rounded-full border px-5 py-2.5 text-xs font-bold transition-all duration-300"
               :class="
                 activeTab === tab.id
-                  ? 'border-[#1db954]/40 bg-[#1db954]/15 text-white shadow-lg shadow-[#1db954]/5'
-                  : 'border-white/[0.06] bg-white/[0.03] text-white/50 hover:border-white/[0.12] hover:bg-white/[0.06] hover:text-white'
+                  ? 'border-spotify/40 bg-spotify/15 text-white shadow-lg shadow-spotify/5'
+                  : 'border-white/6 bg-white/3 text-white/50 hover:border-white/12 hover:bg-white/6 hover:text-white'
               "
               @click="activeTab = tab.id"
             >
               <i aria-hidden="true" :class="tab.icon" class="text-sm" />
               {{ tab.label }}
               <span
-                class="flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold"
-                :class="activeTab === tab.id ? 'bg-[#1db954]/20 text-[#1db954]' : 'bg-white/[0.06] text-white/30'"
+                class="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold"
+                :class="activeTab === tab.id ? 'bg-spotify/20 text-spotify' : 'bg-white/6 text-white/30'"
               >
                 {{ tab.count }}
               </span>
@@ -97,14 +97,14 @@
                   v-model="trackFilter"
                   type="text"
                   placeholder="Filter tracks..."
-                  class="w-48 rounded-full border border-white/[0.06] bg-white/[0.03] py-2 pl-9 pr-4 text-xs text-white outline-none transition placeholder:text-white/20 focus:border-[#1db954]/30 focus:bg-white/[0.06]"
+                  class="w-48 rounded-full border border-white/6 bg-white/3 py-2 pl-9 pr-4 text-xs text-white outline-hidden transition placeholder:text-white/20 focus:border-spotify/30 focus:bg-white/6"
                 />
               </div>
             </div>
 
             <div
               v-if="filteredTracks.length"
-              class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm"
+              class="overflow-hidden rounded-2xl border border-white/6 bg-white/2 backdrop-blur-xs"
             >
               <TrackRow
                 v-for="(item, index) in filteredTracks"
@@ -116,9 +116,9 @@
             </div>
             <div
               v-else
-              class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/[0.06] bg-white/[0.02] px-6 py-16 text-center"
+              class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-16 text-center"
             >
-              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.04]">
+              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/4">
                 <i aria-hidden="true" class="pi pi-heart text-xl text-white/20" />
               </div>
               <h3 class="text-base font-bold text-white">No liked tracks yet</h3>
@@ -145,7 +145,7 @@
                 :to="`/album/${album.album_id}`"
                 class="group"
               >
-                <div class="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-white/5 shadow-lg ring-1 ring-white/[0.06] transition-all duration-300 group-hover:scale-[1.02] group-hover:ring-[#1db954]/30">
+                <div class="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-white/5 shadow-lg ring-1 ring-white/6 transition-all duration-300 group-hover:scale-[1.02] group-hover:ring-spotify/30">
                   <img
                     v-if="album.cover_url"
                     :src="album.cover_url"
@@ -157,8 +157,8 @@
                   <div v-else class="flex h-full items-center justify-center">
                     <i aria-hidden="true" class="pi pi-images text-3xl text-white/20" />
                   </div>
-                  <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-sm transition group-hover:opacity-100">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954]/90 text-black shadow-xl">
+                  <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-xs transition group-hover:opacity-100">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify/90 text-black shadow-xl">
                       <i aria-hidden="true" class="pi pi-play-fill text-lg" />
                     </div>
                   </div>
@@ -169,9 +169,9 @@
             </div>
             <div
               v-else
-              class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/[0.06] bg-white/[0.02] px-6 py-16 text-center"
+              class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-16 text-center"
             >
-              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.04]">
+              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/4">
                 <i aria-hidden="true" class="pi pi-images text-xl text-white/20" />
               </div>
               <h3 class="text-base font-bold text-white">No saved albums</h3>
@@ -196,7 +196,7 @@
                 :to="`/artist/${artist.artist_id}`"
                 class="group block text-center"
               >
-                <div class="mx-auto mb-3 h-36 w-36 overflow-hidden rounded-full bg-white/[0.04] ring-1 ring-white/[0.06] transition-all duration-300 group-hover:ring-[#1db954]/30">
+                <div class="mx-auto mb-3 h-36 w-36 overflow-hidden rounded-full bg-white/4 ring-1 ring-white/6 transition-all duration-300 group-hover:ring-spotify/30">
                   <img
                     v-if="artist.cover_url"
                     :src="artist.cover_url"
@@ -215,9 +215,9 @@
             </div>
             <div
               v-else
-              class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/[0.06] bg-white/[0.02] px-6 py-16 text-center"
+              class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-16 text-center"
             >
-              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.04]">
+              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/4">
                 <i aria-hidden="true" class="pi pi-users text-xl text-white/20" />
               </div>
               <h3 class="text-base font-bold text-white">No followed artists</h3>
@@ -231,7 +231,7 @@
               <h2 class="text-lg font-bold text-white">My Playlists</h2>
               <button
                 type="button"
-                class="inline-flex items-center gap-2 rounded-full bg-[#1db954] px-5 py-2.5 text-xs font-bold text-black transition hover:bg-[#1ed760] hover:scale-105"
+                class="inline-flex items-center gap-2 rounded-full bg-spotify px-5 py-2.5 text-xs font-bold text-black transition hover:bg-spotify-hover hover:scale-105"
                 @click="showCreate = true"
               >
                 <i aria-hidden="true" class="pi pi-plus text-[10px]" />
@@ -247,9 +247,9 @@
                 v-for="playlist in playlists"
                 :key="playlist.id"
                 :to="`/playlist/${playlist.id}`"
-                class="group rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/[0.06] hover:border-white/[0.12]"
+                class="group rounded-2xl border border-white/6 bg-white/2 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/6 hover:border-white/12"
               >
-                <div class="relative mb-3 aspect-square overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/[0.06]">
+                <div class="relative mb-3 aspect-square overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/6">
                   <img
                     v-if="playlist.cover_url"
                     :src="playlist.cover_url"
@@ -264,8 +264,8 @@
                     :track-count="playlist.track_count"
                     class="h-full w-full"
                   />
-                  <div class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 backdrop-blur-sm transition group-hover:opacity-100">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954]/90 text-black shadow-xl">
+                  <div class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 backdrop-blur-xs transition group-hover:opacity-100">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify/90 text-black shadow-xl">
                       <i aria-hidden="true" class="pi pi-play-fill text-lg" />
                     </div>
                   </div>
@@ -276,16 +276,16 @@
             </div>
             <div
               v-else
-              class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/[0.06] bg-white/[0.02] px-6 py-16 text-center"
+              class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-16 text-center"
             >
-              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.04]">
+              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/4">
                 <i aria-hidden="true" class="pi pi-list text-xl text-white/20" />
               </div>
               <h3 class="text-base font-bold text-white">No playlists yet</h3>
               <p class="text-sm text-white/40">Create your first playlist to start organizing your music.</p>
               <button
                 type="button"
-                class="mt-2 rounded-full bg-[#1db954] px-6 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760]"
+                class="mt-2 rounded-full bg-spotify px-6 py-2.5 text-sm font-bold text-black transition hover:bg-spotify-hover"
                 @click="showCreate = true"
               >
                 <i aria-hidden="true" class="pi pi-plus mr-1 text-xs" />
@@ -303,7 +303,7 @@
 
             <div
               v-if="recentTracks.length"
-              class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm"
+              class="overflow-hidden rounded-2xl border border-white/6 bg-white/2 backdrop-blur-xs"
             >
               <TrackRow
                 v-for="(item, index) in recentTracks"
@@ -315,16 +315,16 @@
             </div>
             <div
               v-else
-              class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/[0.06] bg-white/[0.02] px-6 py-16 text-center"
+              class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-16 text-center"
             >
-              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.04]">
+              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/4">
                 <i aria-hidden="true" class="pi pi-history text-xl text-white/20" />
               </div>
               <h3 class="text-base font-bold text-white">No history yet</h3>
               <p class="text-sm text-white/40">Start playing tracks and your history will appear here.</p>
               <RouterLink
                 to="/discover"
-                class="mt-2 inline-flex rounded-full bg-[#1db954] px-6 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760]"
+                class="mt-2 inline-flex rounded-full bg-spotify px-6 py-2.5 text-sm font-bold text-black transition hover:bg-spotify-hover"
               >
                 Discover music
               </RouterLink>
@@ -344,7 +344,7 @@
       :style="{ maxWidth: '440px', width: '90vw' }"
       :pt="{
         root: 'border-none',
-        mask: 'backdrop-blur-sm bg-black/60',
+        mask: 'backdrop-blur-xs bg-black/60',
         header: 'border-b border-white/5',
         title: 'text-white text-sm font-bold',
         content: 'p-0',
@@ -352,7 +352,7 @@
     >
       <template #header>
         <div class="flex items-center gap-2 px-1">
-          <i aria-hidden="true" class="pi pi-plus text-sm text-[#1db954]" />
+          <i aria-hidden="true" class="pi pi-plus text-sm text-spotify" />
           <span>Create Playlist</span>
         </div>
       </template>
@@ -391,7 +391,7 @@
             label="Create"
             severity="success"
             class="text-sm"
-            :disabled="!newName.trim() || creating"
+            :disabled="newName.trim!() || creating"
             :loading="creating"
             @click="handleCreate"
           />
@@ -405,11 +405,6 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
-import Checkbox from 'primevue/checkbox'
-import Button from 'primevue/button'
 import { TrackRow, PlaylistCoverGrid } from '@/components/music'
 import { useLibraryApi } from '@/services/api/library'
 import { usePlaylistsApi } from '@/services/api/playlist'
@@ -487,7 +482,7 @@ async function fetchAll() {
 
 // ── Create playlist ──
 async function handleCreate() {
-  if (!newName.value.trim() || creating.value) return
+  if (newName.value.trim!() || creating.value) return
   creating.value = true
   try {
     const result = await playlistsApi.createPlaylist({

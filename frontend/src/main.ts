@@ -10,7 +10,6 @@ import LayoutEmpty from './components/layouts/LayoutEmpty.vue'
 import PrimeVue from 'primevue/config'
 import { AppPreset, primeLocale } from '@/utils'
 import ToastService from 'primevue/toastservice'
-import ConfirmationService from 'primevue/confirmationservice'
 import { Buffer } from 'buffer'
   ;(globalThis as Record<string, any>).Buffer = Buffer
 
@@ -41,7 +40,6 @@ void (async () => {
       },
     })
     .use(ToastService)
-    .use(ConfirmationService)
 
   app.component('layout-empty', LayoutEmpty)
   app.mount('#app')

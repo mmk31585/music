@@ -1,7 +1,7 @@
 <template>
   <div class="mx-auto w-full max-w-7xl px-4 pt-6 pb-32 md:px-6 lg:px-8">
     <section
-      class="rounded-[2rem] bg-gradient-to-br from-[#1db954] via-[#137d39] to-[#101010] p-8 text-white"
+      class="rounded-2xl bg-linear-to-br from-spotify via-primary-700 to-surface-base p-8 text-white"
     >
       <p class="text-sm font-bold tracking-[0.35em] text-white/70 uppercase">Made for you</p>
 
@@ -17,7 +17,7 @@
         v-for="card in cards"
         :key="card.to"
         :to="card.to"
-        class="group rounded-3xl border border-white/10 bg-white/[0.05] p-6 transition hover:-translate-y-1 hover:bg-white/[0.08]"
+        class="group rounded-3xl border border-white/10 bg-white/5 p-6 transition hover:-translate-y-1 hover:bg-white/8"
       >
         <div
           class="flex h-14 w-14 items-center justify-center rounded-2xl text-2xl"
@@ -39,7 +39,7 @@
     <section class="mt-10 rounded-3xl border border-white/10 bg-black/20 p-6">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm font-semibold text-[#1db954]">Quick picks</p>
+          <p class="text-sm font-semibold text-spotify">Quick picks</p>
           <h2 class="mt-1 text-2xl font-black text-white">Start exploring</h2>
         </div>
 
@@ -61,7 +61,7 @@ const cards = [
     description: 'The most played tracks across the catalog.',
     to: '/recommendations/popular',
     icon: 'pi pi-chart-line',
-    iconClass: 'bg-[#1db954]/20 text-[#1db954]',
+    iconClass: 'bg-spotify/20 text-spotify',
   },
   {
     title: 'Best Tracks',

@@ -2,7 +2,7 @@
   <div class="mx-auto w-full max-w-7xl px-4 pt-6 pb-32 md:px-6 lg:px-8">
     <!-- Discover Weekly Header -->
     <section
-      class="rounded-[2rem] bg-gradient-to-br from-pink-600 via-purple-700 to-[#101010] p-8 text-white md:p-12"
+      class="rounded-2xl bg-linear-to-br from-pink-600 via-purple-700 to-surface-base p-8 text-white md:p-12"
     >
       <p class="text-sm font-bold tracking-[0.35em] text-white/70 uppercase">Discover Weekly</p>
       <h1 class="mt-3 text-4xl font-black md:text-6xl">کشف هفتگی شما</h1>
@@ -15,7 +15,7 @@
 
       <button
         v-if="tracks.length > 0"
-        class="mt-6 inline-flex items-center gap-2 rounded-full bg-[#1db954] px-8 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-[#1ed760]"
+        class="mt-6 inline-flex items-center gap-2 rounded-full bg-spotify px-8 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-spotify-hover"
         @click="playAll"
       >
         <i aria-hidden="true" class="pi pi-play-fill" />
@@ -29,9 +29,9 @@
       class="mt-10 grid gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
     >
       <div v-for="i in 15" :key="i" class="space-y-3">
-        <div class="aspect-square animate-pulse rounded-2xl bg-white/[0.06]" />
-        <div class="h-4 w-3/4 animate-pulse rounded bg-white/[0.06]" />
-        <div class="h-3 w-1/2 animate-pulse rounded bg-white/[0.06]" />
+        <div class="aspect-square animate-pulse rounded-2xl bg-white/6" />
+        <div class="h-4 w-3/4 animate-pulse rounded bg-white/6" />
+        <div class="h-3 w-1/2 animate-pulse rounded bg-white/6" />
       </div>
     </div>
 
@@ -49,7 +49,7 @@
       </p>
       <RouterLink
         to="/recommendations/popular"
-        class="rounded-full bg-[#1db954] px-5 py-2 text-sm font-bold text-black transition hover:bg-[#1ed760]"
+        class="rounded-full bg-spotify px-5 py-2 text-sm font-bold text-black transition hover:bg-spotify-hover"
       >
         Explore popular tracks
       </RouterLink>
@@ -115,7 +115,7 @@
               </div>
             </div>
             <div
-              class="absolute top-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold text-pink-400 opacity-0 backdrop-blur transition group-hover:opacity-100"
+              class="absolute top-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold text-pink-400 opacity-0 backdrop-blur-xs transition group-hover:opacity-100"
               :title="track.genre ? `چون شبیه آهنگ‌های ${track.genre} است` : undefined"
             >
               <i aria-hidden="true" class="pi pi-question-circle mr-1" />
@@ -152,7 +152,7 @@ const tracks = ref<RecommendationTrack[]>([])
 const playlistMeta = ref<DiscoverWeeklyPlaylistMeta | null>(null)
 
 const weekLabel = computed(() => {
-  if (!playlistMeta.value?.week_of) return ''
+  if (playlistMeta.value!?.week_of) return ''
   const d = new Date(playlistMeta.value.week_of)
   const end = new Date(d)
   end.setDate(end.getDate() + 6)

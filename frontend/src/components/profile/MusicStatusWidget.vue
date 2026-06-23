@@ -1,6 +1,6 @@
 <template>
   <div
-    class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm"
+    class="overflow-hidden rounded-2xl border border-white/6 bg-white/2 backdrop-blur-xs"
     dir="rtl"
   >
     <!-- Header -->
@@ -9,10 +9,10 @@
         <span class="relative flex h-2 w-2">
           <span
             v-if="isPlayingAny"
-            class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#1db954] opacity-75"
+            class="absolute inline-flex h-full w-full animate-ping rounded-full bg-spotify opacity-75"
           />
           <span
-            :class="isPlayingAny ? 'bg-[#1db954]' : 'bg-slate-500'"
+            :class="isPlayingAny ? 'bg-spotify' : 'bg-slate-500'"
             class="relative inline-flex h-2 w-2 rounded-full"
           />
         </span>
@@ -30,7 +30,7 @@
       </div>
 
       <!-- Playing track (owner or visible visitor) -->
-      <div v-else-if="currentTrackData" class="flex items-center gap-3 rounded-xl px-3 py-3 backdrop-blur-sm">
+      <div v-else-if="currentTrackData" class="flex items-center gap-3 rounded-xl px-3 py-3 backdrop-blur-xs">
         <!-- Album art -->
         <div class="h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-white/10">
           <img
@@ -58,7 +58,7 @@
         <button
           v-if="!isOwnProfile"
           type="button"
-          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-[#1db954] hover:text-black"
+          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-xs transition hover:bg-spotify hover:text-black"
           @click="playTrack"
           aria-label="Play track"
         >
@@ -76,7 +76,7 @@
             type="button"
             class="rounded-full px-2.5 py-1 text-[10px] font-bold transition"
             :class="privacy === opt.value
-              ? 'bg-[#1db954]/20 text-[#1db954]'
+              ? 'bg-spotify/20 text-spotify'
               : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/70'"
             @click="setPrivacy(opt.value)"
           >
@@ -146,7 +146,7 @@ onMounted(() => {
 watch(
   () => playerStore.currentTrack,
   (track) => {
-    if (!props.isOwnProfile) return
+    if (props.isOwnProfile!) return
     if (track) {
       isPlayingAny.value = true
       setFromPlayerTrack(track)
@@ -204,7 +204,7 @@ async function setPrivacy(value: PrivacyLevel) {
   // setting just affects the next play.  Sending track_id: '' would
   // incorrectly nil out the current status on the server.
   const track = playerStore.currentTrack
-  if (!track) return
+  if (track!) return
 
   try {
     await videoApi.updateMusicStatus({ track_id: track.id })

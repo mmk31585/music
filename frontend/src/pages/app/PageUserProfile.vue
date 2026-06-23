@@ -10,13 +10,13 @@
 
     <!-- Error -->
     <div v-else-if="error" class="flex flex-col items-center gap-4 py-24 text-center">
-      <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/[0.04]">
+      <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/4">
         <i aria-hidden="true" class="pi pi-exclamation-circle text-4xl text-slate-500" />
       </div>
       <h2 class="text-xl font-bold text-white">Failed to load profile</h2>
       <p class="text-sm text-white/40">Something went wrong. Try again?</p>
       <button
-        class="rounded-full bg-[#1db954] px-6 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760]"
+        class="rounded-full bg-spotify px-6 py-2.5 text-sm font-bold text-black transition hover:bg-spotify-hover"
         @click="fetchProfile"
       >
         Try again
@@ -88,7 +88,7 @@
           <!-- View toggle + count -->
           <div class="mb-4 flex items-center justify-between">
             <p class="text-xs text-white/30 tabular-nums">{{ likedTracks.length }} tracks</p>
-            <div class="flex gap-1 rounded-lg bg-white/[0.04] p-0.5">
+            <div class="flex gap-1 rounded-lg bg-white/4 p-0.5">
               <button
                 aria-label="Mosaic view"
                 class="rounded-md p-1.5 transition"
@@ -112,9 +112,9 @@
           <div v-if="likedTracks.length > 0 && trackViewMode === 'mosaic'" class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             <div
               v-for="track in likedTracks" :key="track.id || track.track_id"
-              class="group relative overflow-hidden rounded-2xl bg-white/[0.04] ring-1 ring-white/[0.06]
-                     transition-all duration-300 hover:ring-[#1db954]/30 hover:bg-white/[0.06]
-                     focus-within:ring-[#1db954]"
+              class="group relative overflow-hidden rounded-2xl bg-white/4 ring-1 ring-white/6
+                     transition-all duration-300 hover:ring-spotify/30 hover:bg-white/6
+                     focus-within:ring-spotify"
             >
               <!-- Cover art -->
               <div class="aspect-square overflow-hidden">
@@ -125,7 +125,7 @@
                   loading="lazy"
                   class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />
-                <div v-else class="flex h-full items-center justify-center bg-gradient-to-br from-white/[0.04] to-white/[0.02]">
+                <div v-else class="flex h-full items-center justify-center bg-linear-to-br from-white/4 to-white/2">
                   <i aria-hidden="true" class="pi pi-music text-2xl text-white/20" />
                 </div>
               </div>
@@ -134,7 +134,7 @@
               <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200">
                 <button
                   aria-label="Play"
-                  class="flex h-10 w-10 items-center justify-center rounded-full bg-[#1db954] text-black shadow-lg transition hover:scale-110 active:scale-95 focus-visible:outline-2 focus-visible:outline-white"
+                  class="flex h-10 w-10 items-center justify-center rounded-full bg-spotify text-black shadow-lg transition hover:scale-110 active:scale-95 focus-visible:outline-2 focus-visible:outline-white"
                   @click="playLikedTrack(track)"
                 >
                   <i aria-hidden="true" class="pi pi-play-fill text-sm ms-0.5" />
@@ -150,7 +150,7 @@
               <!-- Visibility badge (own profile) -->
               <div v-if="isOwnProfile" class="absolute top-2 start-2">
                 <span
-                  class="flex h-6 w-6 items-center justify-center rounded-full backdrop-blur-sm text-[10px]"
+                  class="flex h-6 w-6 items-center justify-center rounded-full backdrop-blur-xs text-[10px]"
                   :class="isTrackPublic(track) ? 'bg-black/30 text-white/60' : 'bg-amber-500/30 text-amber-300'"
                   :title="isTrackPublic(track) ? 'Public' : 'Private'"
                 >
@@ -164,7 +164,7 @@
           <div v-else-if="likedTracks.length > 0 && trackViewMode === 'list'" class="space-y-1">
             <div
               v-for="(track, i) in likedTracks" :key="track.id || track.track_id || i"
-              class="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-white/[0.04] focus-within:bg-white/[0.04]"
+              class="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-white/4 focus-within:bg-white/4"
             >
               <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
                 <img
@@ -203,7 +203,7 @@
 
           <!-- Empty state -->
           <div v-else class="flex flex-col items-center gap-4 py-20 text-center">
-            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/[0.04]">
+            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/4">
               <i aria-hidden="true" class="pi pi-heart text-3xl text-white/10" />
             </div>
             <div>
@@ -215,7 +215,7 @@
               </p>
             </div>
             <RouterLink v-if="isOwnProfile" to="/"
-              class="rounded-full bg-[#1db954] px-6 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760]"
+              class="rounded-full bg-spotify px-6 py-2.5 text-sm font-bold text-black transition hover:bg-spotify-hover"
             >
               <i aria-hidden="true" class="pi pi-compass text-xs me-1.5" />
               Discover music
@@ -229,7 +229,7 @@
             <AlbumCard v-for="album in likedAlbums" :key="album.id || album.album_id" :album="album" />
           </div>
           <div v-else class="flex flex-col items-center gap-4 py-20 text-center">
-            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/[0.04]">
+            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/4">
               <i aria-hidden="true" class="pi pi-compact-disc text-3xl text-white/10" />
             </div>
             <p class="text-base font-semibold text-white/40">No liked albums yet</p>
@@ -247,7 +247,7 @@
             />
           </div>
           <div v-else class="flex flex-col items-center gap-4 py-20 text-center">
-            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/[0.04]">
+            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/4">
               <i aria-hidden="true" class="pi pi-video text-3xl text-white/10" />
             </div>
             <div>
@@ -256,7 +256,7 @@
               </p>
             </div>
             <RouterLink v-if="isOwnProfile" to="/create-edit"
-              class="rounded-full bg-[#1db954] px-5 py-2 text-xs font-bold text-black transition hover:bg-[#1ed760]"
+              class="rounded-full bg-spotify px-5 py-2 text-xs font-bold text-black transition hover:bg-spotify-hover"
             >
               <i aria-hidden="true" class="pi pi-plus text-xs me-1" />
               Create edit
@@ -278,7 +278,7 @@
               v-for="f in followers"
               :key="f.follower_id"
               :to="`/profile/${f.follower_id}`"
-              class="flex flex-col items-center gap-3 rounded-2xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06] transition-all duration-200 hover:bg-white/[0.08] hover:ring-white/[0.12] focus-visible:outline-2 focus-visible:outline-[#1db954]"
+              class="flex flex-col items-center gap-3 rounded-2xl bg-white/4 p-5 ring-1 ring-white/6 transition-all duration-200 hover:bg-white/8 hover:ring-white/12 focus-visible:outline-2 focus-visible:outline-[#1db954]"
             >
               <div class="h-16 w-16 overflow-hidden rounded-full ring-2 ring-white/10">
                 <img
@@ -288,18 +288,18 @@
                   class="h-full w-full object-cover"
                   loading="lazy"
                 />
-                <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-white/[0.08] to-white/[0.02] text-lg font-bold text-white/50">
+                <div class="flex h-full w-full items-center justify-center bg-linear-to-br from-white/8 to-white/2 text-lg font-bold text-white/50">
                   {{ (f.follower_name || f.follower_id).charAt(0).toUpperCase() }}
                 </div>
               </div>
               <div class="text-center">
-                <p class="truncate text-sm font-semibold text-white max-w-[100px]">{{ f.follower_name || f.follower_id }}</p>
+                <p class="truncate text-sm font-semibold text-white max-w-25">{{ f.follower_name || f.follower_id }}</p>
                 <p class="text-[10px] text-white/30">Follows you</p>
               </div>
             </RouterLink>
           </div>
           <div v-else class="flex flex-col items-center gap-4 py-20 text-center">
-            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/[0.04]">
+            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/4">
               <i aria-hidden="true" class="pi pi-users text-3xl text-white/10" />
             </div>
             <p class="text-base font-semibold text-white/40">No followers yet</p>
@@ -314,7 +314,7 @@
               v-for="f in following"
               :key="f.followed_id"
               :to="`/profile/${f.followed_id}`"
-              class="flex flex-col items-center gap-3 rounded-2xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06] transition-all duration-200 hover:bg-white/[0.08] hover:ring-white/[0.12] focus-visible:outline-2 focus-visible:outline-[#1db954]"
+              class="flex flex-col items-center gap-3 rounded-2xl bg-white/4 p-5 ring-1 ring-white/6 transition-all duration-200 hover:bg-white/8 hover:ring-white/12 focus-visible:outline-2 focus-visible:outline-[#1db954]"
             >
               <div class="h-16 w-16 overflow-hidden rounded-full ring-2 ring-white/10">
                 <img
@@ -324,18 +324,18 @@
                   class="h-full w-full object-cover"
                   loading="lazy"
                 />
-                <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-white/[0.08] to-white/[0.02] text-lg font-bold text-white/50">
+                <div class="flex h-full w-full items-center justify-center bg-linear-to-br from-white/8 to-white/2 text-lg font-bold text-white/50">
                   {{ (f.followed_name || f.followed_id).charAt(0).toUpperCase() }}
                 </div>
               </div>
               <div class="text-center">
-                <p class="truncate text-sm font-semibold text-white max-w-[100px]">{{ f.followed_name || f.followed_id }}</p>
+                <p class="truncate text-sm font-semibold text-white max-w-25">{{ f.followed_name || f.followed_id }}</p>
                 <p class="text-[10px] text-white/30">Following</p>
               </div>
             </RouterLink>
           </div>
           <div v-else class="flex flex-col items-center gap-4 py-20 text-center">
-            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/[0.04]">
+            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/4">
               <i aria-hidden="true" class="pi pi-user-plus text-3xl text-white/10" />
             </div>
             <p class="text-base font-semibold text-white/40">Not following anyone yet</p>
@@ -381,7 +381,7 @@ const videoApi = useVideoApi()
 
 const userId = route.params.id as string | undefined
 const targetUserId = userId || String(auth.user?.id || '')
-const isOwnProfile = !userId || userId === String(auth.user?.id)
+const isOwnProfile = userId! || userId === String(auth.user?.id)
 
 const loading = ref(false)
 const error = ref<any>(null)
@@ -546,7 +546,7 @@ async function fetchProfile() {
 
     if (profile) profileData.value = profile
 
-    if (!isOwnProfile) {
+    if (isOwnProfile!) {
       const f = await socialApi.isFollowing(targetUserId).catch(() => null)
       if (f) isFollowing.value = (f as any).is_following
     }
@@ -560,7 +560,7 @@ async function fetchProfile() {
 // ── Actions ──
 
 async function toggleFollow() {
-  if (!userId) return
+  if (userId!) return
   try {
     if (isFollowing.value) {
       await socialApi.unfollow(userId)

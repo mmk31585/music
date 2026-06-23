@@ -1,7 +1,7 @@
 <template>
   <div
-    class="group rounded-2xl bg-white/[0.06] p-5 ring-1 ring-white/[0.10] transition-all duration-300
-           hover:bg-white/[0.08] hover:ring-white/[0.15] focus-within:ring-2 focus-within:ring-[#1db954]"
+    class="group rounded-2xl bg-white/6 p-5 ring-1 ring-white/10 transition-all duration-300
+           hover:bg-white/8 hover:ring-white/15 focus-within:ring-2 focus-within:ring-spotify"
     role="article"
     :aria-label="`Party: ${party.title}`"
   >
@@ -34,7 +34,7 @@
           alt=""
           class="h-full w-full object-cover"
         />
-        <div v-else class="flex h-full w-full items-center justify-center bg-white/[0.04]">
+        <div v-else class="flex h-full w-full items-center justify-center bg-white/4">
           <i aria-hidden="true" class="pi pi-music text-sm text-white/20" />
         </div>
       </div>
@@ -46,13 +46,13 @@
         <div
           v-for="(avatar, i) in partyAvatars.slice(0, 4)"
           :key="i"
-          class="h-6 w-6 overflow-hidden rounded-full border-2 border-[#0A0A0A] transition group-hover:border-white/20"
+          class="h-6 w-6 overflow-hidden rounded-full border-2 border-surface-base transition group-hover:border-white/20"
         >
           <img :src="avatar" alt="" class="h-full w-full object-cover" />
         </div>
         <div
           v-if="(party.participant_count || 0) > 4"
-          class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#0A0A0A] bg-white/10 text-[8px] font-bold text-white/50"
+          class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-surface-base bg-white/10 text-[8px] font-bold text-white/50"
         >
           +{{ (party.participant_count || 0) - 4 }}
         </div>
@@ -69,8 +69,8 @@
     <div class="mt-3 flex items-center gap-2">
       <button
         aria-label="Join party"
-        class="flex-1 rounded-lg bg-[#1db954]/10 py-2.5 text-xs font-bold text-[#1db954] transition
-               hover:bg-[#1db954]/20 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-[#1db954]"
+        class="flex-1 rounded-lg bg-spotify/10 py-2.5 text-xs font-bold text-spotify transition
+               hover:bg-spotify/20 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-[#1db954]"
         @click="$emit('join', party.id)"
       >
         <span class="flex items-center justify-center gap-1.5">
@@ -81,7 +81,7 @@
       <button
         aria-label="Share party"
         class="flex h-9 w-9 items-center justify-center rounded-lg text-white/30 transition
-               hover:bg-white/[0.06] hover:text-white/60 focus-visible:outline-2 focus-visible:outline-[#1db954]"
+               hover:bg-white/6 hover:text-white/60 focus-visible:outline-2 focus-visible:outline-[#1db954]"
         @click="$emit('share', party.id)"
       >
         <i aria-hidden="true" class="pi pi-share-alt text-sm" />

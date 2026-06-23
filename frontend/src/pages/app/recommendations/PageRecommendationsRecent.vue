@@ -1,7 +1,7 @@
 <template>
   <div class="mx-auto w-full max-w-7xl px-4 pt-6 pb-32 md:px-6 lg:px-8">
     <section
-      class="rounded-[2rem] bg-gradient-to-br from-sky-400 via-blue-800 to-[#101010] p-8 text-white"
+      class="rounded-2xl bg-linear-to-br from-sky-400 via-blue-800 to-surface-base p-8 text-white"
     >
       <p class="text-sm font-bold tracking-[0.35em] text-white/70 uppercase">Fresh</p>
       <h1 class="mt-3 text-4xl font-black md:text-6xl">Recently Added</h1>
@@ -10,7 +10,7 @@
 
     <section class="mt-10">
       <div v-if="loading" class="space-y-3">
-        <div v-for="i in 10" :key="i" class="h-[68px] animate-pulse rounded-2xl bg-white/[0.06]" />
+        <div v-for="i in 10" :key="i" class="h-17 animate-pulse rounded-2xl bg-white/6" />
       </div>
 
       <div
@@ -28,12 +28,12 @@
 
       <div
         v-else
-        class="overflow-hidden rounded-3xl border border-white/10 bg-black/20 p-2 backdrop-blur"
+        class="overflow-hidden rounded-3xl border border-white/10 bg-black/20 p-2 backdrop-blur-xs"
       >
         <div
           v-for="(track, index) in items"
           :key="track.id"
-          class="flex items-center gap-4 rounded-2xl px-4 py-3 transition hover:bg-white/[0.04]"
+          class="flex items-center gap-4 rounded-2xl px-4 py-3 transition hover:bg-white/4"
         >
           <span class="w-8 text-center text-sm font-bold text-slate-500">{{ index + 1 }}</span>
 
@@ -52,7 +52,7 @@
 
           <span
             v-if="track.album_title"
-            class="hidden max-w-[160px] truncate text-sm text-slate-500 md:block"
+            class="hidden max-w-40 truncate text-sm text-slate-500 md:block"
           >
             {{ track.album_title }}
           </span>

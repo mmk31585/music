@@ -23,7 +23,7 @@
       </div>
     </div>
 
-    <div class="mt-6 h-px bg-gradient-to-r from-white/10 via-white/5 to-transparent" />
+    <div class="mt-6 h-px bg-linear-to-r from-white/10 via-white/5 to-transparent" />
   </header>
 </template>
 

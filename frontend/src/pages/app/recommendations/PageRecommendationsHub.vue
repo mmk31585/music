@@ -13,15 +13,15 @@
       <section class="relative overflow-hidden px-4 pt-8 md:px-6 lg:px-8">
         <div class="mx-auto max-w-7xl">
           <div
-            class="relative rounded-[2.5rem] border border-white/[0.06] bg-gradient-to-br from-[#1db954]/10 via-[#a855f7]/5 to-black/40 p-8 backdrop-blur-2xl md:p-14"
+            class="relative rounded-3xl border border-white/6 bg-linear-to-br from-spotify/10 via-aurora-purple/5 to-black/40 p-8 backdrop-blur-2xl md:p-14"
           >
             <!-- Aurora overlay -->
-            <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-[2.5rem]">
+            <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
               <div
-                class="absolute -top-1/2 -right-1/4 h-96 w-96 rounded-full bg-[#1db954]/10 blur-[120px] animate-aurora-drift"
+                class="absolute -top-1/2 -right-1/4 h-96 w-96 rounded-full bg-spotify/10 blur-[120px] animate-aurora-drift"
               />
               <div
-                class="absolute -bottom-1/2 -left-1/4 h-80 w-80 rounded-full bg-[#a855f7]/10 blur-[100px] animate-aurora-drift-2"
+                class="absolute -bottom-1/2 -left-1/4 h-80 w-80 rounded-full bg-aurora-purple/10 blur-[100px] animate-aurora-drift-2"
               />
             </div>
 
@@ -29,7 +29,7 @@
               <!-- AI Eyebrow -->
               <div class="mb-4 flex items-center gap-2">
                 <span
-                  class="inline-flex items-center gap-1.5 rounded-full border border-[#1db954]/20 bg-[#1db954]/10 px-3 py-1 text-[10px] font-bold tracking-[0.2em] text-[#1db954] uppercase"
+                  class="inline-flex items-center gap-1.5 rounded-full border border-spotify/20 bg-spotify/10 px-3 py-1 text-[10px] font-bold tracking-[0.2em] text-spotify uppercase"
                 >
                   <i aria-hidden="true" class="pi pi-sparkles text-[10px]" />
                   AI-Powered
@@ -41,7 +41,7 @@
 
               <!-- Headline -->
               <h1
-                class="text-gradient from-white via-[#1db954] to-[#a855f7] bg-clip-text text-5xl font-black leading-tight text-transparent md:text-7xl"
+                class="text-gradient from-white via-spotify to-aurora-purple bg-clip-text text-5xl font-black leading-tight text-transparent md:text-7xl"
               >
                 Your Music Mind
               </h1>
@@ -54,7 +54,7 @@
                   this month across
                   <strong class="text-white">{{ listeningStats.unique_artists_count }} artists</strong>.
                   Your discovery score is
-                  <strong class="text-[#1db954]">{{ discoveryScore }}</strong>.
+                  <strong class="text-spotify">{{ discoveryScore }}</strong>.
                   <template v-if="dominantMoodLabel">
                     We're sensing a <strong class="text-white">{{ dominantMoodLabel }}</strong> vibe today.
                   </template>
@@ -68,27 +68,27 @@
               <div class="mt-6 flex flex-wrap items-center gap-3">
                 <div
                   v-if="!loadingStats && listeningStats"
-                  class="flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.04] px-3 py-1.5 text-xs text-white/60"
+                  class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/60"
                 >
                   <i aria-hidden="true" class="pi pi-clock text-[10px]" />
                   {{ listeningStats.total_minutes_listened }} min
                 </div>
                 <div
                   v-if="!loadingStats && listeningStats"
-                  class="flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.04] px-3 py-1.5 text-xs text-white/60"
+                  class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/60"
                 >
                   <i aria-hidden="true" class="pi pi-users text-[10px]" />
                   {{ listeningStats.unique_artists_count }} artists
                 </div>
                 <div
                   v-if="!loadingStats && listeningStats"
-                  class="flex items-center gap-1.5 rounded-full border border-[#1db954]/20 bg-[#1db954]/10 px-3 py-1.5 text-xs text-[#1db954]"
+                  class="flex items-center gap-1.5 rounded-full border border-spotify/20 bg-spotify/10 px-3 py-1.5 text-xs text-spotify"
                 >
                   <i aria-hidden="true" class="pi pi-chart-line text-[10px]" />
                   {{ discoveryScore }} discovery
                 </div>
                 <div
-                  class="flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.04] px-3 py-1.5 text-xs text-white/60"
+                  class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/60"
                 >
                   <i aria-hidden="true" class="pi pi-star text-[10px]" />
                   {{ forYouTracks.length + popularTracks.length }} recommendations
@@ -106,7 +106,7 @@
         <div class="mx-auto max-w-7xl">
           <div class="mb-4 flex items-center justify-between">
             <div>
-              <p class="text-[10px] font-bold tracking-[0.25em] text-[#1db954] uppercase">
+              <p class="text-[10px] font-bold tracking-[0.25em] text-spotify uppercase">
                 Instant Mood Match
               </p>
               <h2 class="mt-1 text-lg font-black text-white">How are you feeling?</h2>
@@ -132,8 +132,8 @@
               class="reveal-up group relative flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-bold transition-all duration-300"
               :class="[
                 selectedMood === mood.value
-                  ? 'border-[#1db954]/40 bg-[#1db954]/15 text-white shadow-lg shadow-[#1db954]/10'
-                  : 'border-white/[0.06] bg-white/[0.03] text-white/60 hover:border-white/[0.12] hover:bg-white/[0.06] hover:text-white',
+                  ? 'border-spotify/40 bg-spotify/15 text-white shadow-lg shadow-spotify/10'
+                  : 'border-white/6 bg-white/3 text-white/60 hover:border-white/12 hover:bg-white/6 hover:text-white',
               ]"
               :style="{ transitionDelay: `${moodOptions.indexOf(mood) * 50}ms` }"
               @click="handleMoodPick(mood.value)"
@@ -149,7 +149,7 @@
               </span>
               <span
                 v-if="selectedMood === mood.value"
-                class="flex h-4 w-4 items-center justify-center rounded-full bg-[#1db954] text-[8px] text-black"
+                class="flex h-4 w-4 items-center justify-center rounded-full bg-spotify text-[8px] text-black"
               >
                 <i aria-hidden="true" class="pi pi-check" />
               </span>
@@ -157,17 +157,17 @@
           </div>
 
           <!-- Inline AI Mood Results -->
-          <div v-if="loadingMoodPlaylist" class="mt-4 flex items-center gap-3 rounded-2xl bg-white/[0.02] px-6 py-4">
-            <i aria-hidden="true" class="pi pi-spin pi-spinner text-[#1db954]" />
+          <div v-if="loadingMoodPlaylist" class="mt-4 flex items-center gap-3 rounded-2xl bg-white/2 px-6 py-4">
+            <i aria-hidden="true" class="pi pi-spin pi-spinner text-spotify" />
             <span class="text-sm text-white/60">AI is curating tracks for your mood...</span>
           </div>
           <div
             v-else-if="moodPlaylist && moodPlaylist.tracks.length"
-            class="mt-4 overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]"
+            class="mt-4 overflow-hidden rounded-2xl border border-white/6 bg-white/2"
           >
             <div class="flex items-center justify-between px-4 py-3">
               <div class="flex items-center gap-2">
-                <i aria-hidden="true" class="pi pi-sparkles text-xs text-[#1db954]" />
+                <i aria-hidden="true" class="pi pi-sparkles text-xs text-spotify" />
                 <span class="text-xs font-bold text-white">{{ moodPlaylist.name }}</span>
               </div>
               <button
@@ -178,13 +178,13 @@
                 Dismiss
               </button>
             </div>
-            <div class="border-t border-white/[0.06]">
+            <div class="border-t border-white/6">
               <div
                 v-for="(track, index) in moodPlaylist.tracks.slice(0, 5)"
                 :key="track.id"
                 role="button"
                 tabindex="0"
-                class="group flex cursor-pointer items-center gap-3 px-4 py-2 transition hover:bg-white/[0.04]"
+                class="group flex cursor-pointer items-center gap-3 px-4 py-2 transition hover:bg-white/4"
                 @click="playTrack(track, index)"
                 @keydown.enter="playTrack(track, index)"
               >
@@ -216,7 +216,7 @@
               </div>
               <div
                 v-if="moodPlaylist.tracks.length > 5"
-                class="border-t border-white/[0.04] px-4 py-2 text-center"
+                class="border-t border-white/4 px-4 py-2 text-center"
               >
                 <RouterLink
                   to="/ai/mood-explorer"
@@ -239,17 +239,17 @@
             v-for="card in categoryCards"
             :key="card.to"
             :to="card.to"
-            class="group relative overflow-hidden rounded-2xl border border-white/[0.06] p-6 transition-all duration-500 hover:-translate-y-1 hover:border-white/[0.12]"
+            class="group relative overflow-hidden rounded-2xl border border-white/6 p-6 transition-all duration-500 hover:-translate-y-1 hover:border-white/12"
           >
             <!-- Hover gradient overlay -->
             <div
-              class="pointer-events-none absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+              class="pointer-events-none absolute inset-0 bg-linear-to-br opacity-0 transition-opacity duration-500 group-hover:opacity-100"
               :class="card.gradient"
             />
             <!-- Card content -->
             <div class="relative">
               <div
-                class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl text-lg backdrop-blur-sm"
+                class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl text-lg backdrop-blur-xs"
                 :class="card.iconBg"
               >
                 <i aria-hidden="true" :class="card.icon" class="relative z-10" />
@@ -261,7 +261,7 @@
             </div>
             <!-- Arrow indicator -->
             <div
-              class="absolute right-5 bottom-5 flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.06] text-xs text-white/30 transition-all duration-300 group-hover:border-white/[0.15] group-hover:text-white/70"
+              class="absolute right-5 bottom-5 flex h-8 w-8 items-center justify-center rounded-full border border-white/6 text-xs text-white/30 transition-all duration-300 group-hover:border-white/15 group-hover:text-white/70"
             >
               <i aria-hidden="true" class="pi pi-arrow-right" />
             </div>
@@ -276,7 +276,7 @@
         <div class="mx-auto max-w-7xl">
           <div class="mb-5 flex items-end justify-between">
             <div>
-              <p class="text-[10px] font-bold tracking-[0.25em] text-[#1db954] uppercase">
+              <p class="text-[10px] font-bold tracking-[0.25em] text-spotify uppercase">
                 AI Curated
               </p>
               <h2 class="mt-1 text-2xl font-black text-white">Made for You</h2>
@@ -311,7 +311,7 @@
               @keydown.enter="playTrack(track, idx)"
             >
               <div
-                class="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-white/5 shadow-lg ring-1 ring-white/[0.06] transition-all duration-500 group-hover:scale-[1.02] group-hover:ring-[#1db954]/30"
+                class="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-white/5 shadow-lg ring-1 ring-white/6 transition-all duration-500 group-hover:scale-[1.02] group-hover:ring-spotify/30"
               >
                 <img
                   v-if="track.cover_url"
@@ -326,10 +326,10 @@
                 </div>
                 <!-- Play overlay -->
                 <div
-                  class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-sm transition-all duration-300 group-hover:opacity-100"
+                  class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-xs transition-all duration-300 group-hover:opacity-100"
                 >
                   <div
-                    class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954]/90 text-black shadow-xl shadow-[#1db954]/20 transition-transform duration-300 group-hover:scale-105"
+                    class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify/90 text-black shadow-xl shadow-spotify/20 transition-transform duration-300 group-hover:scale-105"
                   >
                     <i aria-hidden="true" class="pi pi-play-fill text-lg" />
                   </div>
@@ -337,7 +337,7 @@
                 <!-- AI Reason Chip -->
                 <div
                   v-if="track.genre"
-                  class="absolute top-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[9px] font-medium text-white/70 backdrop-blur-sm"
+                  class="absolute top-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[9px] font-medium text-white/70 backdrop-blur-xs"
                 >
                   {{ track.genre }}
                 </div>
@@ -359,7 +359,7 @@
         <div class="mx-auto max-w-7xl">
           <div class="mb-5 flex items-end justify-between">
             <div>
-              <p class="text-[10px] font-bold tracking-[0.25em] text-[#a855f7] uppercase">
+              <p class="text-[10px] font-bold tracking-[0.25em] text-aurora-purple uppercase">
                 AI Similarity
               </p>
               <h2 class="mt-1 text-2xl font-black text-white">Because you listened to...</h2>
@@ -378,7 +378,7 @@
               @keydown.enter="playTrack(track, idx)"
             >
               <div
-                class="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-white/5 shadow-lg ring-1 ring-white/[0.06] transition-all duration-500 group-hover:scale-[1.02] group-hover:ring-[#a855f7]/30"
+                class="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-white/5 shadow-lg ring-1 ring-white/6 transition-all duration-500 group-hover:scale-[1.02] group-hover:ring-aurora-purple/30"
               >
                 <img
                   v-if="track.cover_url"
@@ -392,16 +392,16 @@
                   <i aria-hidden="true" class="pi pi-music text-2xl text-white/20" />
                 </div>
                 <div
-                  class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-sm transition-all duration-300 group-hover:opacity-100"
+                  class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-xs transition-all duration-300 group-hover:opacity-100"
                 >
                   <div
-                    class="flex h-12 w-12 items-center justify-center rounded-full bg-[#a855f7]/90 text-white shadow-xl shadow-[#a855f7]/20 transition-transform duration-300 group-hover:scale-105"
+                    class="flex h-12 w-12 items-center justify-center rounded-full bg-aurora-purple/90 text-white shadow-xl shadow-aurora-purple/20 transition-transform duration-300 group-hover:scale-105"
                   >
                     <i aria-hidden="true" class="pi pi-play-fill text-lg" />
                   </div>
                 </div>
                 <div
-                  class="absolute top-2 left-2 rounded-full bg-[#a855f7]/30 px-2 py-0.5 text-[9px] font-medium text-white/80 backdrop-blur-sm"
+                  class="absolute top-2 left-2 rounded-full bg-aurora-purple/30 px-2 py-0.5 text-[9px] font-medium text-white/80 backdrop-blur-xs"
                 >
                   <i aria-hidden="true" class="pi pi-bolt mr-0.5 text-[8px]" />
                   Similar
@@ -423,14 +423,14 @@
       >
         <div class="mx-auto max-w-7xl">
           <div
-            class="relative overflow-hidden rounded-[2rem] border border-white/[0.06] bg-gradient-to-br from-[#a855f7]/10 via-[#1db954]/5 to-black/40 p-8 backdrop-blur-2xl md:p-10"
+            class="relative overflow-hidden rounded-2xl border border-white/6 bg-linear-to-br from-aurora-purple/10 via-spotify/5 to-black/40 p-8 backdrop-blur-2xl md:p-10"
           >
-            <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-[2rem]">
+            <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
               <div
-                class="absolute -top-1/3 -left-1/4 h-64 w-64 rounded-full bg-[#a855f7]/10 blur-[100px]"
+                class="absolute -top-1/3 -left-1/4 h-64 w-64 rounded-full bg-aurora-purple/10 blur-[100px]"
               />
               <div
-                class="absolute -bottom-1/3 -right-1/4 h-64 w-64 rounded-full bg-[#1db954]/10 blur-[100px]"
+                class="absolute -bottom-1/3 -right-1/4 h-64 w-64 rounded-full bg-spotify/10 blur-[100px]"
               />
             </div>
 
@@ -438,7 +438,7 @@
               <div class="flex-1">
                 <div class="mb-3 flex items-center gap-2">
                   <span
-                    class="inline-flex items-center gap-1.5 rounded-full border border-[#a855f7]/20 bg-[#a855f7]/10 px-3 py-1 text-[10px] font-bold tracking-[0.2em] text-[#a855f7] uppercase"
+                    class="inline-flex items-center gap-1.5 rounded-full border border-aurora-purple/20 bg-aurora-purple/10 px-3 py-1 text-[10px] font-bold tracking-[0.2em] text-aurora-purple uppercase"
                   >
                     <i aria-hidden="true" class="pi pi-calendar text-[10px]" />
                     Weekly
@@ -474,7 +474,7 @@
                   @keydown.enter="playTrack(track, idx)"
                 >
                   <div
-                    class="relative mb-2 aspect-square overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/[0.06] transition-all duration-300 group-hover:ring-[#a855f7]/30"
+                    class="relative mb-2 aspect-square overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/6 transition-all duration-300 group-hover:ring-aurora-purple/30"
                   >
                     <img
                       v-if="track.cover_url"
@@ -491,7 +491,7 @@
                       class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100"
                     >
                       <div
-                        class="flex h-10 w-10 items-center justify-center rounded-full bg-[#a855f7]/80 text-white"
+                        class="flex h-10 w-10 items-center justify-center rounded-full bg-aurora-purple/80 text-white"
                       >
                         <i aria-hidden="true" class="pi pi-play-fill text-sm" />
                       </div>
@@ -526,17 +526,17 @@
           </div>
 
           <div v-if="loadingPopular" class="space-y-2">
-            <div v-for="i in 5" :key="i" class="shimmer h-[64px] rounded-2xl" />
+            <div v-for="i in 5" :key="i" class="shimmer h-16 rounded-2xl" />
           </div>
           <div
             v-else-if="popularTracks.length === 0"
-            class="rounded-2xl border border-dashed border-white/[0.06] px-6 py-12 text-center"
+            class="rounded-2xl border border-dashed border-white/6 px-6 py-12 text-center"
           >
             <p class="text-sm text-white/40">No popular tracks yet.</p>
           </div>
           <div
             v-else
-            class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm"
+            class="overflow-hidden rounded-2xl border border-white/6 bg-white/2 backdrop-blur-xs"
           >
             <div
               v-for="(track, index) in popularTracks"
@@ -544,7 +544,7 @@
               role="button"
               tabindex="0"
               :style="{ animationDelay: `${index * 60}ms` }"
-              class="group flex cursor-pointer items-center gap-4 px-4 py-3 transition hover:bg-white/[0.04]"
+              class="group flex cursor-pointer items-center gap-4 px-4 py-3 transition hover:bg-white/4"
               @click="playTrack(track, index)"
               @keydown.enter="playTrack(track, index)"
             >
@@ -559,7 +559,7 @@
 
               <!-- Cover -->
               <div
-                class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/[0.06]"
+                class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/6"
               >
                 <img
                   v-if="track.cover_url"
@@ -585,7 +585,7 @@
               <!-- Genre badge -->
               <span
                 v-if="track.genre"
-                class="hidden rounded-full bg-white/[0.06] px-2.5 py-1 text-[10px] font-medium text-white/40 md:block"
+                class="hidden rounded-full bg-white/6 px-2.5 py-1 text-[10px] font-medium text-white/40 md:block"
               >
                 {{ track.genre }}
               </span>
@@ -694,8 +694,8 @@ const categoryCards = [
     description: 'The most played tracks trending across the catalog right now.',
     to: '/recommendations/popular',
     icon: 'pi pi-chart-line',
-    iconBg: 'bg-[#1db954]/20 text-[#1db954]',
-    gradient: 'from-[#1db954]/10 via-emerald-500/5 to-transparent',
+    iconBg: 'bg-spotify/20 text-spotify',
+    gradient: 'from-spotify/10 via-emerald-500/5 to-transparent',
   },
   {
     title: 'Best Tracks',

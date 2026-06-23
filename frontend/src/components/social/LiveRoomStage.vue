@@ -1,6 +1,6 @@
 <template>
   <!-- Glass border at 0.10 for 3:1 non-text contrast (WCAG 1.4.11) -->
-  <div class="rounded-2xl bg-white/[0.06] p-6 ring-1 ring-white/[0.10]">
+  <div class="rounded-2xl bg-white/6 p-6 ring-1 ring-white/10">
     <h2 class="mb-4 text-xs font-bold uppercase tracking-wider text-white/30">Stage</h2>
 
     <div class="flex flex-col items-center gap-6">
@@ -8,7 +8,7 @@
       <div class="flex flex-col items-center gap-2">
         <div
           class="relative h-20 w-20 overflow-hidden rounded-full ring-2"
-          :class="stageState.host?.user_id ? 'ring-[#1db954]' : 'ring-white/10'"
+          :class="stageState.host?.user_id ? 'ring-spotify' : 'ring-white/10'"
         >
           <img
             v-if="stageState.host?.avatar_url"
@@ -26,7 +26,7 @@
           <!-- Speaking pulse ring (stub) -->
           <div
             v-if="speakingUserIds.has(stageState.host?.user_id ?? '')"
-            class="absolute inset-0 animate-pulse rounded-full ring-2 ring-[#1db954] ring-offset-2 ring-offset-transparent"
+            class="absolute inset-0 animate-pulse rounded-full ring-2 ring-spotify ring-offset-2 ring-offset-transparent"
           />
         </div>
         <p class="text-sm font-semibold text-white">{{ stageState.host?.username || 'Host' }}</p>
@@ -47,7 +47,7 @@
         >
           <div
             class="relative h-16 w-16 overflow-hidden rounded-full ring-2"
-            :class="speakingUserIds.has(speaker.user_id) ? 'ring-[#1db954]' : 'ring-white/10'"
+            :class="speakingUserIds.has(speaker.user_id) ? 'ring-spotify' : 'ring-white/10'"
           >
             <img
               v-if="speaker?.avatar_url"
@@ -70,7 +70,7 @@
             <!-- Speaking pulse ring (stub — TODO: wire to real audio levels) -->
             <div
               v-if="speakingUserIds.has(speaker.user_id)"
-              class="absolute inset-0 animate-pulse rounded-full ring-2 ring-[#1db954] ring-offset-2 ring-offset-transparent"
+              class="absolute inset-0 animate-pulse rounded-full ring-2 ring-spotify ring-offset-2 ring-offset-transparent"
               role="status"
               aria-label="Currently speaking"
             />

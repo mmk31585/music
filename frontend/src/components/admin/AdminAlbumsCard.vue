@@ -10,7 +10,7 @@
         <InputText
           v-model="searchQuery"
           placeholder="Search albums..."
-          class="!h-9 !w-56 !rounded-lg !border-white/[0.08] !bg-white/[0.03] !text-sm !text-white placeholder:!text-slate-600"
+          class="h-9! w-56! rounded-lg! border-white/8! bg-white/3! text-sm! text-white! placeholder:text-slate-600!"
         />
       </div>
 
@@ -18,19 +18,19 @@
         label="Add album"
         icon="pi pi-plus"
         size="small"
-        class="!rounded-xl !bg-emerald-500 !px-4 !text-black hover:!bg-emerald-400"
+        class="rounded-xl! bg-emerald-500! px-4! text-black! hover:bg-emerald-400!"
         @click="openCreate"
       />
     </div>
 
     <!-- Content -->
-    <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+    <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
       <!-- Loading -->
       <div v-if="loading" class="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3 lg:grid-cols-4">
         <div v-for="i in 8" :key="i" class="space-y-3">
-          <div class="aspect-square animate-pulse rounded-xl bg-white/[0.06]" />
-          <div class="h-4 w-3/4 animate-pulse rounded bg-white/[0.06]" />
-          <div class="h-3 w-1/2 animate-pulse rounded bg-white/[0.04]" />
+          <div class="aspect-square animate-pulse rounded-xl bg-white/6" />
+          <div class="h-4 w-3/4 animate-pulse rounded bg-white/6" />
+          <div class="h-3 w-1/2 animate-pulse rounded bg-white/4" />
         </div>
       </div>
 
@@ -46,7 +46,7 @@
             label="Add album"
             icon="pi pi-plus"
             size="small"
-            class="!rounded-xl !bg-emerald-500 !px-4 !text-black hover:!bg-emerald-400"
+            class="rounded-xl! bg-emerald-500! px-4! text-black! hover:bg-emerald-400!"
             @click="openCreate"
           />
         </template>
@@ -68,7 +68,7 @@
         >
           <!-- Cover -->
           <div
-            class="relative aspect-square overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.04]"
+            class="relative aspect-square overflow-hidden rounded-xl border border-white/6 bg-white/4"
           >
             <img
               v-if="album.cover_url"
@@ -86,13 +86,13 @@
 
             <!-- Overlay actions -->
             <div
-              class="absolute inset-0 flex items-end justify-end gap-1 bg-gradient-to-t from-black/60 via-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100"
+              class="absolute inset-0 flex items-end justify-end gap-1 bg-linear-to-t from-black/60 via-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100"
             >
               <Button
                 icon="pi pi-eye"
                 rounded
                 size="small"
-                class="!h-8 !w-8 !bg-white/20 !text-white !backdrop-blur-sm hover:!bg-white/30"
+                class="h-8! w-8! bg-white/20! text-white! backdrop-blur-xs! hover:bg-white/30!"
                 @click="router.push({ name: 'admin.album.detail', params: { id: album.id } })"
               />
               <Button
@@ -100,7 +100,7 @@
                 rounded
                 size="small"
                 :loading="enrichingId === album.id"
-                class="!h-8 !w-8 !bg-white/20 !text-white !backdrop-blur-sm hover:!bg-amber-500/60"
+                class="h-8! w-8! bg-white/20! text-white! backdrop-blur-xs! hover:bg-amber-500/60!"
                 v-tooltip.top="'Fetch cover'"
                 @click="handleEnrich(album)"
               />
@@ -108,14 +108,14 @@
                 icon="pi pi-pencil"
                 rounded
                 size="small"
-                class="!h-8 !w-8 !bg-white/20 !text-white !backdrop-blur-sm hover:!bg-white/30"
+                class="h-8! w-8! bg-white/20! text-white! backdrop-blur-xs! hover:bg-white/30!"
                 @click="openEdit(album)"
               />
               <Button
                 icon="pi pi-trash"
                 rounded
                 size="small"
-                class="!h-8 !w-8 !bg-white/20 !text-white !backdrop-blur-sm hover:!bg-red-500/60"
+                class="h-8! w-8! bg-white/20! text-white! backdrop-blur-xs! hover:bg-red-500/60!"
                 @click="openDeleteConfirm(album)"
               />
             </div>
@@ -154,8 +154,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
 import { useToast } from 'primevue/usetoast'
 import AdminEmptyState from './AdminEmptyState.vue'
 import AlbumFormDialog from './AlbumFormDialog.vue'
@@ -187,7 +185,7 @@ const enrichingId = ref<string | number | null>(null)
 
 const filteredAlbums = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
-  if (!q) return albums.value
+  if (q!) return albums.value
   return albums.value.filter(
     (a) =>
       a.title.toLowerCase().includes(q) ||
@@ -241,7 +239,7 @@ async function handleSubmit(payload: AlbumFormPayload) {
 }
 
 async function handleDelete() {
-  if (!deleteTarget.value) return
+  if (deleteTarget.value!) return
   try {
     await deleteAlbum(deleteTarget.value.id)
     toast.add({ severity: 'success', summary: 'Album deleted', life: 2500 })

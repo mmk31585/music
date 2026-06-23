@@ -54,8 +54,14 @@ export const useAlbumsApi = () => {
         method: 'POST',
         data: {
           title: payload.title,
+          artists: payload.artists?.map((a) => ({
+            artistId: a.artistId,
+            role: a.role ?? 'primary',
+            position: a.position ?? 0,
+          })) ?? [],
           coverUrl: payload.coverUrl ?? null,
-          artistId: payload.artistId ?? null,
+          releaseDate: payload.releaseDate ?? null,
+          albumType: payload.albumType ?? null,
         },
       },
       {
@@ -77,8 +83,14 @@ export const useAlbumsApi = () => {
         method: 'PATCH',
         data: {
           title: payload.title,
+          artists: payload.artists?.map((a) => ({
+            artistId: a.artistId,
+            role: a.role ?? 'primary',
+            position: a.position ?? 0,
+          })) ?? [],
           coverUrl: payload.coverUrl ?? null,
-          artistId: payload.artistId ?? null,
+          releaseDate: payload.releaseDate ?? null,
+          albumType: payload.albumType ?? null,
         },
       },
       {

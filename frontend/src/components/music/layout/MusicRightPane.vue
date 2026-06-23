@@ -1,7 +1,7 @@
 <template>
   <aside
     class="hidden h-screen shrink-0 border-r border-white/10 bg-black/20 backdrop-blur-2xl xl:flex xl:flex-col transition-all duration-300 ease-out z-30"
-    :class="collapsed ? 'w-14 items-center' : 'w-[22rem]'"
+    :class="collapsed ? 'w-14 items-center' : 'w-88'"
     style="backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);"
   >
     <div class="flex h-full flex-col overflow-hidden" :class="collapsed ? 'items-center' : ''">
@@ -10,15 +10,15 @@
         <button
           type="button"
           class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition hover:bg-white/10"
-          :class="currentTrack ? 'bg-[#1db954]/20' : 'bg-white/5'"
+          :class="currentTrack ? 'bg-spotify/20' : 'bg-white/5'"
           :title="collapsed ? 'Show now playing panel' : 'Hide now playing panel'"
           @click="toggleCollapsed"
         >
-          <i aria-hidden="true" :class="[collapsed ? 'pi pi-chevron-left' : 'pi pi-chevron-right', currentTrack ? 'text-[#1db954]' : 'text-slate-500', 'pi text-xs']" />
+          <i aria-hidden="true" :class="[collapsed ? 'pi pi-chevron-left' : 'pi pi-chevron-right', currentTrack ? 'text-spotify' : 'text-slate-500', 'pi text-xs']" />
         </button>
         <template v-if="!collapsed">
-          <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-[#1db954]/20">
-            <i aria-hidden="true" class="pi pi-waveform text-[10px] text-[#1db954]" />
+          <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-spotify/20">
+            <i aria-hidden="true" class="pi pi-waveform text-[10px] text-spotify" />
           </div>
           <h2 class="text-xs font-bold tracking-[0.2em] text-slate-400 uppercase">Now Playing</h2>
         </template>
@@ -26,11 +26,11 @@
           <div v-if="currentTrack" class="flex flex-col items-center gap-2">
             <div class="h-10 w-10 overflow-hidden rounded-xl ring-1 ring-white/10">
               <img v-if="currentTrack.coverUrl" :src="currentTrack.coverUrl" :alt="currentTrack.title" class="h-full w-full object-cover" />
-              <div v-else class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1db954]/30 to-[#a855f7]/30">
+              <div v-else class="flex h-full w-full items-center justify-center bg-linear-to-br from-spotify/30 to-aurora-purple/30">
                 <i aria-hidden="true" class="pi pi-headphones text-sm text-slate-500" />
               </div>
             </div>
-            <span v-if="isPlaying" class="h-1.5 w-1.5 rounded-full bg-[#1db954] animate-pulse" />
+            <span v-if="isPlaying" class="h-1.5 w-1.5 rounded-full bg-spotify animate-pulse" />
           </div>
         </template>
       </div>
@@ -39,7 +39,7 @@
       <template v-if="!collapsed">
       <div class="pane-scroll flex-1 space-y-3 overflow-y-auto p-4 pb-32 scroll-smooth" style="scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent;">
         <!-- ─── Now Playing Card ─── -->
-        <div v-if="currentTrack" class="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06]">
+        <div v-if="currentTrack" class="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/4 transition-all duration-300 hover:border-white/20 hover:bg-white/6">
           <!-- Background blur -->
           <div v-if="currentTrack.coverUrl" class="pointer-events-none absolute inset-0 scale-110" aria-hidden="true">
             <img
@@ -65,14 +65,14 @@
                     class="h-full w-full object-cover"
                     loading="lazy"
                   />
-                  <div v-else class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1db954]/30 to-[#a855f7]/30">
+                  <div v-else class="flex h-full w-full items-center justify-center bg-linear-to-br from-spotify/30 to-aurora-purple/30">
                     <i aria-hidden="true" class="pi pi-headphones text-xl text-slate-500" />
                   </div>
                 </div>
                 <!-- Now Playing Badge -->
                 <div
                   v-if="isPlaying"
-                  class="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#1db954] shadow-lg"
+                  class="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-spotify shadow-lg"
                 >
                   <i aria-hidden="true" class="pi pi-waveform text-xs text-black" />
                 </div>
@@ -110,7 +110,7 @@
             <div class="mt-4">
               <div role="button" tabindex="0" class="group relative h-1 cursor-pointer rounded-full transition-all hover:h-1.5" :class="isPlaying ? 'bg-white/15' : 'bg-white/10'" @click="onSeekClick" @keydown.enter="onSeekClick" @keydown.space.prevent="onSeekClick">
                 <!-- Base glow -->
-                <div v-if="isPlaying" class="absolute inset-0 rounded-full opacity-20 blur-sm transition-opacity" :style="{ background: progressColor }" />
+                <div v-if="isPlaying" class="absolute inset-0 rounded-full opacity-20 blur-xs transition-opacity" :style="{ background: progressColor }" />
                 <!-- Fill -->
                 <div class="relative h-full rounded-full" :style="{ width: `${progressPercent}%`, background: progressColor, boxShadow: progressGlow }" />
               </div>
@@ -127,7 +127,7 @@
                 aria-label="Shuffle"
                 class="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white"
                 @click="toggleShuffle"
-                :class="shuffleMode !== 'off' ? 'text-[#a855f7]' : ''"
+                :class="shuffleMode !== 'off' ? 'text-aurora-purple' : ''"
               >
                 <i aria-hidden="true" class="pi pi-sort-alt text-sm" />
               </button>
@@ -135,7 +135,7 @@
                 type="button"
                 aria-label="Previous track"
                 class="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white disabled:opacity-30"
-                :disabled="!hasPrevious"
+                :disabled="hasPrevious!"
                 @click="playPrevious"
               >
                 <i aria-hidden="true" class="pi pi-step-backward text-sm" />
@@ -144,7 +144,7 @@
                 type="button"
                 aria-label="Play or pause"
                 class="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-black shadow-lg transition hover:bg-white active:scale-95 disabled:opacity-40"
-                :disabled="!currentTrack"
+                :disabled="currentTrack!"
                 @click="togglePlayPause"
               >
                 <i aria-hidden="true" v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-sm" />
@@ -154,7 +154,7 @@
                 type="button"
                 aria-label="Next track"
                 class="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white disabled:opacity-30"
-                :disabled="!hasNext"
+                :disabled="hasNext!"
                 @click="playNext"
               >
                 <i aria-hidden="true" class="pi pi-step-forward text-sm" />
@@ -163,7 +163,7 @@
                 type="button"
                 aria-label="Repeat"
                 class="flex h-9 w-9 items-center justify-center rounded-full transition"
-                :class="repeatMode !== 'off' ? 'text-[#f472b6]' : 'text-slate-400 hover:bg-white/10 hover:text-white'"
+                :class="repeatMode !== 'off' ? 'text-aurora-pink' : 'text-slate-400 hover:bg-white/10 hover:text-white'"
                 @click="toggleRepeat"
               >
                 <i aria-hidden="true" class="pi pi-refresh text-sm" />
@@ -173,7 +173,7 @@
         </div>
 
         <!-- Empty Now Playing -->
-        <div v-else class="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-6 py-12 text-center">
+        <div v-else class="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-white/10 bg-white/2 px-6 py-12 text-center">
           <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
             <i aria-hidden="true" class="pi pi-music text-2xl text-slate-500" />
           </div>
@@ -184,29 +184,29 @@
         </div>
 
         <!-- ─── Queue Section ─── -->
-        <div v-if="queue.length > 0" class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
+        <div v-if="queue.length > 0" class="overflow-hidden rounded-2xl border border-white/10 bg-white/4">
           <div class="flex items-center justify-between border-b border-white/5 px-4 py-3">
             <h3 class="flex items-center gap-2 text-xs font-bold tracking-[0.15em] text-slate-500 uppercase">
               <i aria-hidden="true" class="pi pi-list text-[10px]" />
               Up Next
-              <span class="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white/10 px-1.5 text-[9px] font-bold text-slate-400">{{ queue.length }}</span>
+              <span class="flex h-4 min-w-4 items-center justify-center rounded-full bg-white/10 px-1.5 text-[9px] font-bold text-slate-400">{{ queue.length }}</span>
             </h3>
             <button
               type="button"
-              class="text-[10px] font-bold text-[#1db954] transition hover:text-[#1ed760]"
+              class="text-[10px] font-bold text-spotify transition hover:text-spotify-hover"
               @click="clearQueue"
             >
               Clear
             </button>
           </div>
 
-          <div class="divide-y divide-white/[0.03]">
+          <div class="divide-y divide-white/3">
             <div
               v-for="(track, idx) in visibleQueue"
               :key="track.id"
               role="button"
               tabindex="0"
-              class="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition hover:bg-white/[0.04]"
+              class="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition hover:bg-white/4"
               @click="playFromQueue(idx)"
               @keydown.enter="playFromQueue(idx)"
               @keydown.space.prevent="playFromQueue(idx)"
@@ -236,7 +236,7 @@
           <button
             v-if="queue.length > maxVisibleQueue"
             type="button"
-            class="flex w-full items-center justify-center gap-1.5 border-t border-white/[0.03] px-4 py-2.5 text-[11px] font-bold text-slate-400 transition hover:bg-white/[0.04] hover:text-white"
+            class="flex w-full items-center justify-center gap-1.5 border-t border-white/3 px-4 py-2.5 text-[11px] font-bold text-slate-400 transition hover:bg-white/4 hover:text-white"
             @click="showAllQueue = !showAllQueue"
           >
             <i aria-hidden="true" :class="showAllQueue ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" class="text-[10px]" />
@@ -245,7 +245,7 @@
         </div>
 
         <!-- ─── Suggestions Section ─── -->
-        <div v-if="suggestions.length > 0" class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
+        <div v-if="suggestions.length > 0" class="overflow-hidden rounded-2xl border border-white/10 bg-white/4">
           <div class="flex items-center justify-between border-b border-white/5 px-4 py-3">
             <h3 class="flex items-center gap-2 text-xs font-bold tracking-[0.15em] text-slate-500 uppercase">
               <i aria-hidden="true" class="pi pi-star text-[10px]" />
@@ -253,13 +253,13 @@
             </h3>
           </div>
 
-          <div class="divide-y divide-white/[0.03]">
+          <div class="divide-y divide-white/3">
             <div
               v-for="track in suggestions"
               :key="track.id"
               role="button"
               tabindex="0"
-              class="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition hover:bg-white/[0.04]"
+              class="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition hover:bg-white/4"
               @click="playSuggestion(track)"
               @keydown.enter="playSuggestion(track)"
               @keydown.space.prevent="playSuggestion(track)"
@@ -284,7 +284,7 @@
               <button
                 type="button"
                 aria-label="Play suggestion"
-                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-white/10 hover:text-[#1db954]"
+                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-white/10 hover:text-spotify"
                 @click.stop="playSuggestion(track)"
               >
                 <i aria-hidden="true" class="pi pi-play text-xs" />
@@ -322,7 +322,7 @@
                   min="0"
                   max="1"
                   step="0.01"
-                  class="player-range h-1 w-full cursor-pointer appearance-none rounded-full bg-white/10 outline-none"
+                  class="player-range h-1 w-full cursor-pointer appearance-none rounded-full bg-white/10 outline-hidden"
                   :value="muted ? 0 : volume"
                   @input="onVolume"
                 />
@@ -344,21 +344,14 @@ import { useAlbumColors } from '@/composables/useAlbumColors'
 import { useRecommendationsApi } from '@/services/api/recommendation'
 import { queueManager } from '@/services/player/queue-manager'
 import { onImgError } from '@/utils/helpers'
-import type { PlaybackTrack } from '@/services/api/player'
 import type { RecommendationTrack } from '@/services/api/recommendation/types'
-
-const emit = defineEmits<{
-  'close': []
-  'toggle-fullscreen': []
-  'toggle-queue-overlay': []
-}>()
 
 const playerStore = usePlayerStore()
 const pc = usePlayerControls()
 
 const collapsed = ref(localStorage.getItem('rightpane-collapsed') === 'true')
 function toggleCollapsed() {
-  collapsed.value = !collapsed.value
+  collapsed.value = collapsed.value!
   localStorage.setItem('rightpane-collapsed', String(collapsed.value))
   window.dispatchEvent(new CustomEvent('rightpane-collapse', { detail: collapsed.value }))
 }
@@ -469,7 +462,7 @@ function onVolume(e: Event) {
 }
 
 function formatTime(seconds?: number | null) {
-  if (!seconds || !isFinite(seconds)) return '0:00'
+  if (seconds! || isFinite!(seconds)) return '0:00'
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${String(s).padStart(2, '0')}`

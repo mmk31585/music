@@ -13,7 +13,7 @@
 
         <!-- Drag handle (44px min touch target for WCAG 2.5.8) -->
         <div
-          class="absolute top-0 left-1/2 z-20 flex w-full -translate-x-1/2 flex-col items-center justify-center min-h-[44px] gap-1"
+          class="absolute top-0 left-1/2 z-20 flex w-full -translate-x-1/2 flex-col items-center justify-center min-h-11 gap-1"
           @touchstart.prevent="onDragStart"
           @mousedown.prevent="onDragStart"
         >
@@ -61,7 +61,7 @@
           <div class="mt-3 flex items-center gap-3">
             <button
               type="button"
-              class="spring flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-all active:scale-95 min-h-[44px]"
+              class="spring flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-all active:scale-95 min-h-11"
               :class="liked ? '' : 'text-white/40 hover:bg-white/5'"
               :style="liked ? { color: accentColor, backgroundColor: `${accentColor}15` } : {}"
               @click="liked = !liked"
@@ -109,14 +109,14 @@
               <span class="text-[8px] font-medium">Shuffle</span>
               <span
                 v-if="shuffleMode !== 'off'"
-                class="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#a855f7] text-[8px] font-bold text-white"
+                class="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-aurora-purple text-[8px] font-bold text-white"
               >{{ shuffleMode === 'queue' ? 'Q' : shuffleMode === 'catalog' ? 'R' : 'S' }}</span>
             </button>
 
             <button
               type="button"
               class="text-white/50 transition-all hover:text-white active:scale-90 disabled:opacity-30"
-              :disabled="!hasPrevious"
+              :disabled="hasPrevious!"
               aria-label="Previous track"
               @click="playPrevious"
             >
@@ -135,8 +135,8 @@
                     }
                   : { '--accent-hover': accentColor }
               "
-              :class="!isPlaying ? 'hover:bg-[var(--accent-hover,#1db954)]' : ''"
-              :disabled="!currentTrack"
+              :class="isPlaying! ? 'hover:bg-[var(--accent-hover,#1db954)]' : ''"
+              :disabled="currentTrack!"
               :aria-label="isPlaying ? 'Pause' : 'Play'"
               @click="togglePlayPause"
             >
@@ -156,7 +156,7 @@
             <button
               type="button"
               class="text-white/50 transition-all hover:text-white active:scale-90 disabled:opacity-30"
-              :disabled="!hasNext"
+              :disabled="hasNext!"
               aria-label="Next track"
               @click="playNext"
             >
@@ -188,15 +188,14 @@
               >
                 <i aria-hidden="true" :class="volumeIcon" class="text-base" />
               </button>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                class="sheet-range w-20"
-                :style="volumeStyle"
-                :value="muted ? 0 : Number(volume || 0)"
-                @input="onVolume"
+              <Slider
+                :model-value="muted ? 0 : Number(volume || 0)"
+                @update:model-value="onVolume"
+                :min="0"
+                :max="1"
+                :step="0.01"
+                class="w-20"
+                aria-label="Volume"
               />
             </div>
 
@@ -295,7 +294,7 @@ const accentColor = computed(() => palette.value.vibrant || '#1db954')
 
 const bgGradient = computed(() => {
   const p = palette.value
-  if (!coverUrl.value) return 'linear-gradient(135deg, #0a0a0a 0%, #121212 100%)'
+  if (coverUrl.value!) return 'linear-gradient(135deg, #0a0a0a 0%, #121212 100%)'
   return `linear-gradient(180deg, ${p.dark} 0%, ${p.dominant}88 40%, ${p.muted} 100%)`
 })
 
@@ -324,9 +323,9 @@ let cleanupListeners: (() => void) | null = null
 function onDragStart(e: TouchEvent | MouseEvent) {
   cleanupListeners?.()
   isDragging.value = true
-  const startY = 'touches' in e ? e.touches[0]!.clientY : e.clientY
+  const startY = 'touches' in e ? e.touches[0].clientY! : e.clientY
   const el = sheetEl.value
-  if (!el) return
+  if (el!) return
 
   el.style.transition = 'none'
 
@@ -374,17 +373,13 @@ const progressStyle = computed(() => ({
   '--range-progress': `${progressPercent.value}%`,
   '--accent-color': accentColor.value,
 }))
-const volumeStyle = computed(() => ({
-  '--range-progress': `${muted.value ? 0 : Number(volume.value || 0) * 100}%`,
-  '--accent-color': accentColor.value,
-}))
 
 function onSeek(e: Event) {
   seekPercent(Number((e.target as HTMLInputElement).value))
 }
 
-function onVolume(e: Event) {
-  setVolume(Number((e.target as HTMLInputElement).value))
+function onVolume(val: number) {
+  setVolume(val)
 }
 
 function close() {

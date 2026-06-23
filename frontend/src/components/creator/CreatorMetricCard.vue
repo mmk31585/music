@@ -8,7 +8,7 @@
         <p class="mt-1 text-xs font-medium text-white/40">{{ label }}</p>
       </div>
       <div
-        class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white/40 transition group-hover:bg-[#1db954]/10 group-hover:text-[#1db954]"
+        class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white/40 transition group-hover:bg-spotify/10 group-hover:text-spotify"
       >
         <i aria-hidden="true" :class="icon" />
       </div>

@@ -1,10 +1,10 @@
 <template>
   <div
-    class="auth-card w-full animate-reveal rounded-2xl border border-white/[0.06] bg-black/40 p-8 shadow-2xl backdrop-blur-xl"
+    class="auth-card w-full animate-reveal rounded-2xl border border-white/6 bg-black/40 p-8 shadow-2xl backdrop-blur-xl"
   >
     <div class="mb-8 text-center">
-      <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-[#a855f7]/10">
-        <i class="pi pi-sparkles text-2xl text-[#a855f7]" />
+      <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-aurora-purple/10">
+        <i class="pi pi-sparkles text-2xl text-aurora-purple" />
       </div>
       <h1 class="font-display text-2xl font-bold text-white tracking-tight">Join Muse</h1>
       <p class="mt-1.5 text-sm text-white/40">Create your account and start discovering</p>
@@ -13,7 +13,7 @@
     <form class="space-y-4" @submit.prevent="onSubmit">
       <!-- Display name -->
       <div class="group">
-        <label for="register-display-name" class="mb-1.5 block text-sm font-medium text-white/60 group-focus-within:text-[#1db954] transition-colors duration-200">
+        <label for="register-display-name" class="mb-1.5 block text-sm font-medium text-white/60 group-focus-within:text-spotify transition-colors duration-200">
           Display name
         </label>
         <span class="relative block">
@@ -36,7 +36,7 @@
 
       <!-- Username -->
       <div class="group">
-        <label for="register-username" class="mb-1.5 block text-sm font-medium text-white/60 group-focus-within:text-[#1db954] transition-colors duration-200">
+        <label for="register-username" class="mb-1.5 block text-sm font-medium text-white/60 group-focus-within:text-spotify transition-colors duration-200">
           Username
         </label>
         <span class="relative block">
@@ -59,7 +59,7 @@
 
       <!-- Email -->
       <div class="group">
-        <label for="register-email" class="mb-1.5 block text-sm font-medium text-white/60 group-focus-within:text-[#1db954] transition-colors duration-200">
+        <label for="register-email" class="mb-1.5 block text-sm font-medium text-white/60 group-focus-within:text-spotify transition-colors duration-200">
           Email
         </label>
         <span class="relative block">
@@ -83,7 +83,7 @@
 
       <!-- Password -->
       <div class="group">
-        <label for="register-password" class="mb-1.5 block text-sm font-medium text-white/60 group-focus-within:text-[#1db954] transition-colors duration-200">
+        <label for="register-password" class="mb-1.5 block text-sm font-medium text-white/60 group-focus-within:text-spotify transition-colors duration-200">
           Password
         </label>
         <span class="relative block">
@@ -127,13 +127,13 @@
         icon-pos="right"
         :loading="loading"
         :disabled="loading"
-        class="auth-btn w-full border-0 bg-[#1db954] text-black font-semibold hover:bg-[#1ed760] transition-all duration-200 mt-6"
+        class="auth-btn w-full border-0 bg-spotify text-black font-semibold hover:bg-spotify-hover transition-all duration-200 mt-6"
       />
 
       <!-- Switch to login -->
       <p class="text-center text-sm text-white/40">
         Already have an account?
-        <RouterLink to="/auth/login" class="font-medium text-[#1db954] transition-colors duration-200 hover:text-[#1ed760]">
+        <RouterLink to="/auth/login" class="font-medium text-spotify transition-colors duration-200 hover:text-spotify-hover">
           Log in
         </RouterLink>
       </p>
@@ -142,9 +142,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
 import { useRegisterForm } from '@/composables/auth/useRegisterForm'
 
 const { form, errors, apiError, loading, onSubmit } = useRegisterForm()

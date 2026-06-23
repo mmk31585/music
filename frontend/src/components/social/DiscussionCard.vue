@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex items-start gap-3 rounded-xl bg-white/[0.03] p-4 ring-1 ring-white/[0.06] transition hover:bg-white/[0.05] focus-within:ring-[#1db954] focus-within:ring-2"
+    class="flex items-start gap-3 rounded-xl bg-white/3 p-4 ring-1 ring-white/6 transition hover:bg-white/5 focus-within:ring-spotify focus-within:ring-2"
     role="article"
     :aria-label="`Discussion by ${discussion.userName || discussion.user_id}`"
   >
@@ -76,7 +76,7 @@ defineEmits<{
 }>()
 
 const formattedTime = computed(() => {
-  if (!props.discussion.created_at) return ''
+  if (props.discussion.created_at!) return ''
   const d = new Date(props.discussion.created_at)
   const now = new Date()
   const diff = now.getTime() - d.getTime()

@@ -101,7 +101,7 @@
 
       <RouterLink
         to="/admin/ingestion"
-        class="flex items-center justify-center gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-8 transition-colors hover:bg-white/[0.04]"
+        class="flex items-center justify-center gap-2 rounded-2xl border border-white/6 bg-white/2 px-5 py-8 transition-colors hover:bg-white/4"
       >
         <i aria-hidden="true" class="pi pi-arrow-right text-sm text-primary" />
         <span class="text-sm font-medium text-white">Go to Ingestion</span>
@@ -116,8 +116,8 @@
     <!-- Content Panels -->
     <section class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
       <!-- Recent Tracks -->
-      <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
-        <div class="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+      <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
+        <div class="flex items-center justify-between border-b border-white/6 px-5 py-4">
           <div class="flex items-center gap-3">
             <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
               <i aria-hidden="true" class="pi pi-play-circle text-xs text-emerald-400" />
@@ -137,14 +137,14 @@
           </RouterLink>
         </div>
 
-        <div v-if="loading" class="divide-y divide-white/[0.04]">
+        <div v-if="loading" class="divide-y divide-white/4">
           <div v-for="i in 5" :key="i" class="flex items-center gap-3 px-5 py-4">
-            <div class="h-10 w-10 animate-pulse rounded-lg bg-white/[0.06]" />
+            <div class="h-10 w-10 animate-pulse rounded-lg bg-white/6" />
             <div class="flex-1 space-y-1.5">
-              <div class="h-3.5 w-32 animate-pulse rounded bg-white/[0.06]" />
-              <div class="h-3 w-48 animate-pulse rounded bg-white/[0.04]" />
+              <div class="h-3.5 w-32 animate-pulse rounded bg-white/6" />
+              <div class="h-3 w-48 animate-pulse rounded bg-white/4" />
             </div>
-            <div class="h-3.5 w-10 animate-pulse rounded bg-white/[0.04]" />
+            <div class="h-3.5 w-10 animate-pulse rounded bg-white/4" />
           </div>
         </div>
 
@@ -153,15 +153,15 @@
           <p class="mt-2 text-sm text-slate-500">No tracks yet</p>
         </div>
 
-        <div v-else class="divide-y divide-white/[0.04]">
+        <div v-else class="divide-y divide-white/4">
           <div
             v-for="(track, i) in recentTracks"
             :key="track.id ?? i"
-            class="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/[0.02]"
+            class="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/2"
           >
             <button
               type="button"
-              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-all hover:bg-[#1db954]/20 hover:text-[#1db954] disabled:opacity-30"
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-all hover:bg-spotify/20 hover:text-spotify disabled:opacity-30"
               :disabled="loadingTrackId === String(track.id)"
               :aria-label="'Play ' + track.title"
               :title="isTrackPlaying(track) ? 'Now playing' : 'Play track'"
@@ -184,7 +184,7 @@
               {{ i + 1 }}
             </span>
 
-            <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/[0.04]">
+            <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/4">
               <img
                 v-if="track.cover_url"
                 :src="track.cover_url"
@@ -218,8 +218,8 @@
       <!-- Right column -->
       <div class="space-y-6">
         <!-- Activity / Tips -->
-        <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
-          <div class="border-b border-white/[0.06] px-5 py-4">
+        <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
+          <div class="border-b border-white/6 px-5 py-4">
             <div class="flex items-center gap-3">
               <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
                 <i aria-hidden="true" class="pi pi-info-circle text-xs text-blue-400" />
@@ -237,7 +237,7 @@
                   :class="
                     tip.done
                       ? 'bg-emerald-500/10 text-emerald-400'
-                      : 'bg-white/[0.06] text-slate-500'
+                      : 'bg-white/6 text-slate-500'
                   "
                 >
                   <i aria-hidden="true" v-if="tip.done" class="pi pi-check text-[10px]" />
@@ -259,8 +259,8 @@
         </div>
 
         <!-- System Health -->
-        <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
-          <div class="border-b border-white/[0.06] px-5 py-4">
+        <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
+          <div class="border-b border-white/6 px-5 py-4">
             <div class="flex items-center gap-3">
               <div
                 class="flex h-8 w-8 items-center justify-center rounded-lg"
@@ -276,7 +276,7 @@
             </div>
           </div>
 
-          <div class="divide-y divide-white/[0.04]">
+          <div class="divide-y divide-white/4">
             <div class="flex items-center justify-between px-5 py-3">
               <span class="text-sm text-slate-400">API Status</span>
 
@@ -422,7 +422,7 @@ function toArray<T>(value: unknown): T[] {
 function formatDuration(value?: number | string | null): string {
   const seconds = Number(value)
 
-  if (!Number.isFinite(seconds) || seconds <= 0) {
+  if (Number.isFinite!(seconds) || seconds <= 0) {
     return '—'
   }
 

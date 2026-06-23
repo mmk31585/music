@@ -8,8 +8,8 @@
       v-if="lines.length === 0"
       class="flex h-full flex-col items-center justify-center gap-3 px-6 text-center"
     >
-      <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.03]">
-        <i aria-hidden="true" class="pi pi-align-left text-2xl text-white/[0.12]" />
+      <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/3">
+        <i aria-hidden="true" class="pi pi-align-left text-2xl text-white/12" />
       </div>
       <p class="text-sm font-medium text-white/20">No synced lyrics</p>
       <p class="text-xs text-white/10">Lyrics will appear here when available</p>
@@ -127,7 +127,7 @@ let scrollTimer: ReturnType<typeof setTimeout> | null = null
 watch(activeIdx, (idx) => {
   if (scrollTimer) clearTimeout(scrollTimer)
   scrollTimer = setTimeout(() => {
-    if (idx < 0 || !containerRef.value) return
+    if (idx < 0 || containerRef.value!) return
     const target = lineRefs.value[idx]
     if (target) {
       target.scrollIntoView({ block: 'center', behavior: 'smooth' })
@@ -189,13 +189,13 @@ function lineStyle(idx: number): Record<string, string> {
 
 // ── Word-level karaoke style (smooth gradient reveal) ─────────
 function hasWordTimings(line: ParsedLine): boolean {
-  return line.words.length > 0 && line.words[0]!.timeSeconds >= 0
+  return line.words.length > 0 && line.words[0].timeSeconds! >= 0
 }
 
 function wordStyle(line: ParsedLine, wordIdx: number): Record<string, string> {
   const t = props.currentTime
   const word = line.words[wordIdx]
-  if (!word) return { color: 'rgba(255,255,255,0.25)' }
+  if (word!) return { color: 'rgba(255,255,255,0.25)' }
 
   const nextWord = line.words[wordIdx + 1]
   const start = word.timeSeconds >= 0 ? word.timeSeconds : line.timeSeconds

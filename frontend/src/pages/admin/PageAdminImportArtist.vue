@@ -22,7 +22,7 @@
           label="Search Artist"
           icon="pi pi-search"
           :loading="searching"
-          :disabled="!artistName.trim()"
+          :disabled="artistName.trim!()"
           @click="doSearch"
         />
       </div>
@@ -41,7 +41,7 @@
 
     <!-- Batch in progress -->
     <div v-else-if="batchId" class="mt-6">
-      <div class="rounded-xl border border-white/[0.06] bg-white/[0.03] p-6">
+      <div class="rounded-xl border border-white/6 bg-white/3 p-6">
         <div class="text-center">
           <i aria-hidden="true" class="pi pi-spin pi-spinner text-3xl text-emerald-400"></i>
           <p class="mt-3 text-sm font-medium text-white">Importing {{ batchTotal }} tracks...</p>
@@ -49,7 +49,7 @@
             {{ batchCompleted + batchFailed }} / {{ batchTotal }} processed
             <span v-if="batchFailed > 0">({{ batchFailed }} failed)</span>
           </p>
-          <div class="mx-auto mt-4 h-2 w-full max-w-md overflow-hidden rounded-full bg-white/[0.06]">
+          <div class="mx-auto mt-4 h-2 w-full max-w-md overflow-hidden rounded-full bg-white/6">
             <div
               class="h-full rounded-full bg-emerald-500 transition-all duration-500"
               :style="{ width: batchProgressPct + '%' }"
@@ -59,12 +59,12 @@
         </div>
 
         <!-- Per-track status list -->
-        <div class="mt-6 space-y-2 border-t border-white/[0.06] pt-4">
+        <div class="mt-6 space-y-2 border-t border-white/6 pt-4">
           <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Tracks</p>
           <div
             v-for="job in batchJobs"
             :key="job.title + job.artist"
-            class="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-2"
+            class="flex items-center justify-between rounded-lg bg-white/3 px-3 py-2"
           >
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm text-white">{{ job.title }}</p>
@@ -106,9 +106,9 @@
           v-if="discography.artist_info.image"
           :src="discography.artist_info.image"
           :alt="discography.artist_info.name"
-          class="h-16 w-16 shrink-0 rounded-full object-cover ring-2 ring-white/[0.08]"
+          class="h-16 w-16 shrink-0 rounded-full object-cover ring-2 ring-white/8"
         />
-        <div v-else class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/[0.06]">
+        <div v-else class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/6">
           <i aria-hidden="true" class="pi pi-user text-2xl text-slate-500"></i>
         </div>
         <div>
@@ -124,8 +124,8 @@
       </div>
 
       <!-- Filter bar -->
-      <div class="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
-        <IconField class="min-w-[200px] flex-1">
+      <div class="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-white/6 bg-white/3 px-4 py-3">
+        <IconField class="min-w-50 flex-1">
           <InputIcon><i aria-hidden="true" class="pi pi-filter"></i></InputIcon>
           <InputText
             v-model="filterQuery"
@@ -154,12 +154,12 @@
       </div>
 
       <!-- Batch actions bar -->
-      <div class="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
+      <div class="flex items-center gap-3 rounded-xl border border-white/6 bg-white/3 px-4 py-3">
         <label class="flex items-center gap-2 text-sm text-slate-300">
           <Checkbox
             :binary="true"
             :model-value="allTracksSelected"
-            :indeterminate="someTracksSelected && !allTracksSelected"
+            :indeterminate="someTracksSelected && allTracksSelected!"
             @update:model-value="toggleSelectAll"
           />
           Select all {{ visibleTrackCount }} track{{ visibleTrackCount !== 1 ? 's' : '' }}
@@ -181,11 +181,11 @@
         <template v-for="(album, ai) in discography.albums" :key="album.title + ai">
           <div
             v-if="albumHasVisibleTracks(ai)"
-            class="overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02]"
+            class="overflow-hidden rounded-xl border border-white/6 bg-white/2"
           >
           <!-- Album header (clickable collapse) -->
           <button
-            class="flex w-full items-center gap-4 px-4 py-3 text-left transition hover:bg-white/[0.03]"
+            class="flex w-full items-center gap-4 px-4 py-3 text-left transition hover:bg-white/3"
             @click="toggleAlbum(ai)"
           >
             <img
@@ -194,7 +194,7 @@
               :alt="album.title"
               class="h-12 w-12 shrink-0 rounded-lg object-cover"
             />
-            <div v-else class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-white/[0.06]">
+            <div v-else class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-white/6">
               <i aria-hidden="true" class="pi pi-compact-disc text-lg text-slate-500"></i>
             </div>
             <div class="min-w-0 flex-1">
@@ -223,11 +223,11 @@
           </button>
 
           <!-- Tracks (collapsible) -->
-          <div v-if="isAlbumOpen(ai)" class="border-t border-white/[0.06]">
+          <div v-if="isAlbumOpen(ai)" class="border-t border-white/6">
             <template v-for="(track, ti) in album.tracks" :key="track.title + ti">
               <div
                 v-if="trackMatchesFilter(track)"
-                class="flex items-center gap-3 px-4 py-2.5 transition hover:bg-white/[0.03]"
+                class="flex items-center gap-3 px-4 py-2.5 transition hover:bg-white/3"
               >
                 <Checkbox
                   :binary="true"
@@ -285,13 +285,6 @@
 import { ref, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import InputIcon from 'primevue/inputicon'
-import IconField from 'primevue/iconfield'
-import Checkbox from 'primevue/checkbox'
-import Select from 'primevue/select'
-import Message from 'primevue/message'
 import { AdminSectionHeader } from '@/components/admin'
 import { useImportApi } from '@/services/api/importcmd'
 import type { AlbumGroup, TrackResult, BatchJobResult, ImportResponse } from '@/services/api/importcmd'
@@ -315,7 +308,7 @@ const filterQuery = ref('')
 const filterSource = ref('')
 
 const sourceOptions = computed(() => {
-  if (!discography.value) return []
+  if (discography.value!) return []
   const sources = new Set<string>()
   for (const album of discography.value.albums) {
     for (const track of album.tracks) {
@@ -329,25 +322,25 @@ const hasActiveFilter = computed(() => filterQuery.value || filterSource.value)
 
 function trackMatchesFilter(track: TrackResult): boolean {
   const q = filterQuery.value.toLowerCase().trim()
-  if (q && !track.title.toLowerCase().includes(q)) return false
+  if (q && track.title.toLowerCase!().includes(q)) return false
   if (filterSource.value && track.source?.toLowerCase() !== filterSource.value) return false
   return true
 }
 
 function albumHasVisibleTracks(albumIdx: number): boolean {
   const album = discography.value?.albums[albumIdx]
-  if (!album) return false
+  if (album!) return false
   return album.tracks.some(t => trackMatchesFilter(t))
 }
 
 function visibleAlbumTrackCount(albumIdx: number): number {
   const album = discography.value?.albums[albumIdx]
-  if (!album) return 0
+  if (album!) return 0
   return album.tracks.filter(t => trackMatchesFilter(t)).length
 }
 
 const visibleTrackCount = computed(() => {
-  if (!discography.value) return 0
+  if (discography.value!) return 0
   let count = 0
   for (const album of discography.value.albums) {
     count += album.tracks.filter(t => trackMatchesFilter(t)).length
@@ -356,7 +349,7 @@ const visibleTrackCount = computed(() => {
 })
 
 const visibleAlbumCount = computed(() => {
-  if (!discography.value) return 0
+  if (discography.value!) return 0
   let count = 0
   for (let ai = 0; ai < discography.value.albums.length; ai++) {
     if (albumHasVisibleTracks(ai)) count++
@@ -365,7 +358,7 @@ const visibleAlbumCount = computed(() => {
 })
 
 const visibleSelectedCount = computed(() => {
-  if (!discography.value) return 0
+  if (discography.value!) return 0
   let count = 0
   for (const key of selectedTracks.value) {
     const parts = key.split(':').map(Number)
@@ -401,19 +394,19 @@ const batchJobs = ref<BatchJobResult[]>([])
 let progressTimer: ReturnType<typeof setInterval> | null = null
 
 const totalTracks = computed(() => {
-  if (!discography.value) return 0
+  if (discography.value!) return 0
   return discography.value.albums.reduce((sum, a) => sum + a.tracks.length, 0)
 })
 
 const selectedCount = computed(() => selectedTracks.value.size)
 
 const allTracksSelected = computed(() => {
-  if (!discography.value || visibleTrackCount.value === 0) return false
+  if (discography.value! || visibleTrackCount.value === 0) return false
   return visibleSelectedCount.value === visibleTrackCount.value
 })
 
 const someTracksSelected = computed(() => {
-  return visibleSelectedCount.value > 0 && !allTracksSelected.value
+  return visibleSelectedCount.value > 0 && allTracksSelected.value!
 })
 
 function trackKey(albumIdx: number, trackIdx: number): string {
@@ -436,19 +429,19 @@ function toggleTrack(albumIdx: number, trackIdx: number, val: boolean) {
 }
 
 function albumTracksSelected(albumIdx: number): boolean {
-  if (!discography.value) return false
+  if (discography.value!) return false
   const album = discography.value.albums[albumIdx]
-  if (!album) return false
+  if (album!) return false
   for (let ti = 0; ti < album.tracks.length; ti++) {
-    if (!isTrackSelected(albumIdx, ti)) return false
+    if (isTrackSelected!(albumIdx, ti)) return false
   }
   return album.tracks.length > 0
 }
 
 function albumPartiallySelected(albumIdx: number): boolean {
-  if (!discography.value) return false
+  if (discography.value!) return false
   const album = discography.value.albums[albumIdx]
-  if (!album) return false
+  if (album!) return false
   let count = 0
   for (let ti = 0; ti < album.tracks.length; ti++) {
     if (isTrackSelected(albumIdx, ti)) count++
@@ -457,9 +450,9 @@ function albumPartiallySelected(albumIdx: number): boolean {
 }
 
 function toggleAlbumTracks(albumIdx: number, val: boolean) {
-  if (!discography.value) return
+  if (discography.value!) return
   const album = discography.value.albums[albumIdx]
-  if (!album) return
+  if (album!) return
   for (let ti = 0; ti < album.tracks.length; ti++) {
     const key = trackKey(albumIdx, ti)
     if (val) {
@@ -472,12 +465,12 @@ function toggleAlbumTracks(albumIdx: number, val: boolean) {
 }
 
 function toggleSelectAll(val: boolean) {
-  if (!discography.value) return
+  if (discography.value!) return
   selectedTracks.value = new Set()
   if (val) {
     for (let ai = 0; ai < discography.value.albums.length; ai++) {
       const album = discography.value.albums[ai]
-      if (!album) continue
+      if (album!) continue
       for (let ti = 0; ti < album.tracks.length; ti++) {
         const track = album.tracks[ti]
         if (track && trackMatchesFilter(track)) {
@@ -493,22 +486,22 @@ function isAlbumOpen(ai: number): boolean {
 }
 
 function toggleAlbum(ai: number) {
-  openAlbums.value[ai] = !isAlbumOpen(ai)
+  openAlbums.value[ai] = isAlbumOpen!(ai)
   openAlbums.value = { ...openAlbums.value }
 }
 
 function sourceBadge(source: string): string {
   const map: Record<string, string> = {
-    deezer: '!bg-purple-500/20 !text-purple-400',
-    musicbrainz: '!bg-blue-500/20 !text-blue-400',
-    spotify: '!bg-emerald-500/20 !text-emerald-400',
+    deezer: 'bg-purple-500/20! text-purple-400!',
+    musicbrainz: 'bg-blue-500/20! text-blue-400!',
+    spotify: 'bg-emerald-500/20! text-emerald-400!',
   }
-  return map[source?.toLowerCase()] || '!bg-slate-500/20 !text-slate-400'
+  return map[source?.toLowerCase()] || 'bg-slate-500/20! text-slate-400!'
 }
 
 async function doSearch() {
   const name = artistName.value.trim()
-  if (!name) return
+  if (name!) return
 
   searching.value = true
   searchError.value = ''
@@ -535,7 +528,7 @@ async function doSearch() {
 }
 
 async function doBatchImport() {
-  if (!discography.value || selectedCount.value === 0) return
+  if (discography.value! || selectedCount.value === 0) return
 
   const tracks: Array<{
     title: string
@@ -604,7 +597,7 @@ function startBatchProgressPolling(batchIdVal: string) {
   progressTimer = setInterval(async () => {
     try {
       const progress = await importApi.getBatchProgress(batchIdVal)
-      if (!progress) return
+      if (progress!) return
 
       batchCompleted.value = progress.completed
       batchFailed.value = progress.failed
@@ -615,7 +608,7 @@ function startBatchProgressPolling(batchIdVal: string) {
         const updatedJobs = [...batchJobs.value]
         for (let i = 0; i < updatedJobs.length; i++) {
           const job = updatedJobs[i]
-          if (!job) continue
+          if (job!) continue
           if (job.jobId) {
             try {
               const jobProgress = await importApi.getProgress(job.jobId)
@@ -667,18 +660,18 @@ onUnmounted(() => {
 })
 
 function batchJobStatusClass(job: BatchJobResult & { status?: string }): string {
-  if (job.error) return '!text-red-400'
-  if (!job.jobId) return '!text-slate-500'
-  if (job.status === 'complete') return '!text-emerald-400'
-  if (job.status === 'failed') return '!text-red-400'
-  if (job.status === 'downloading' || job.status === 'uploading') return '!text-amber-400'
-  if (job.status === 'queued' || job.status === 'resolving') return '!text-blue-400'
-  return '!text-slate-400'
+  if (job.error) return 'text-red-400!'
+  if (job.jobId!) return 'text-slate-500!'
+  if (job.status === 'complete') return 'text-emerald-400!'
+  if (job.status === 'failed') return 'text-red-400!'
+  if (job.status === 'downloading' || job.status === 'uploading') return 'text-amber-400!'
+  if (job.status === 'queued' || job.status === 'resolving') return 'text-blue-400!'
+  return 'text-slate-400!'
 }
 
 function batchJobStatusLabel(job: BatchJobResult & { status?: string }): string {
   if (job.error) return 'Failed'
-  if (!job.jobId) return 'Skipped'
+  if (job.jobId!) return 'Skipped'
   if (job.status === 'complete') return 'Complete ✓'
   if (job.status === 'failed') return 'Failed ✗'
   if (job.status) return job.status.charAt(0).toUpperCase() + job.status.slice(1)
@@ -703,7 +696,7 @@ function resetAll() {
 }
 
 function formatDuration(seconds: number): string {
-  if (!seconds || seconds <= 0) return '—'
+  if (seconds! || seconds <= 0) return '—'
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
   return `${m}:${s.toString().padStart(2, '0')}`

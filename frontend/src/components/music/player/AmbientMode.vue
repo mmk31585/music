@@ -20,13 +20,13 @@
           />
           <div
             v-else
-            class="h-full w-full bg-gradient-to-br from-[#0a0a0a] via-[#121212] to-[#1a1a2e]"
+            class="h-full w-full bg-linear-to-br from-surface-base via-surface-raised to-surface-overlay"
           />
         </div>
 
         <!-- Dark gradient overlay -->
         <div
-          class="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/80"
+          class="pointer-events-none absolute inset-0 bg-linear-to-b from-black/60 via-black/30 to-black/80"
         />
 
         <!-- Ambient particles layer -->
@@ -38,7 +38,7 @@
           <div class="flex items-center justify-between px-5 pt-5 pb-3">
             <button
               type="button"
-              class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white"
+              class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 backdrop-blur-xs transition-all hover:bg-white/10 hover:text-white"
               aria-label="Close"
               @click="close"
             >
@@ -46,7 +46,7 @@
             </button>
             <div class="glass flex items-center gap-2 rounded-full px-4 py-2 text-xs text-white/50">
               <span
-                class="flex h-2 w-2 rounded-full bg-[#1db954]"
+                class="flex h-2 w-2 rounded-full bg-spotify"
                 :class="{ 'glow-spread': isPlaying }"
               />
               <span class="font-semibold tracking-wider uppercase">Ambient Mode</span>
@@ -69,7 +69,7 @@
                 />
                 <div
                   v-else
-                  class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1db954]/30 to-[#121212]"
+                  class="flex h-full w-full items-center justify-center bg-linear-to-br from-spotify/30 to-surface-raised"
                 >
                   <i aria-hidden="true" class="pi pi-music text-5xl text-white/20" />
                 </div>
@@ -85,38 +85,37 @@
           <!-- Bottom controls (minimal, translucent) -->
           <div class="relative z-10 flex flex-col items-center gap-3 px-6 pb-8">
             <!-- Seekbar -->
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="0.1"
-              class="fullscreen-range w-full max-w-md"
-              :style="progressStyle"
-              :value="progressPercent"
-              :disabled="!currentTrack"
-              @input="onSeek"
+            <Slider
+              :model-value="progressPercent"
+              @update:model-value="onSeek"
+              :min="0"
+              :max="100"
+              :step="0.1"
+              class="w-full max-w-md"
+              :disabled="currentTrack!"
+              aria-label="Seek"
             />
 
             <div class="flex items-center gap-6">
               <button
                 type="button"
-                class="spring relative flex h-10 w-10 items-center justify-center rounded-full text-white/40 backdrop-blur-sm transition-all hover:bg-white/15 hover:text-white"
-                :class="{ '!text-[#1db954]': shuffleMode !== 'off' }"
-                :disabled="!currentTrack"
+                class="spring relative flex h-10 w-10 items-center justify-center rounded-full text-white/40 backdrop-blur-xs transition-all hover:bg-white/15 hover:text-white"
+                :class="{ 'text-spotify!': shuffleMode !== 'off' }"
+                :disabled="currentTrack!"
                 aria-label="Shuffle"
                 @click="toggleShuffle"
               >
                 <i aria-hidden="true" class="pi pi-sort-alt text-sm" />
                 <span
                   v-if="shuffleMode !== 'off'"
-                  class="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#a855f7] text-[8px] font-bold text-white"
+                  class="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-aurora-purple text-[8px] font-bold text-white"
                 >{{ shuffleMode === 'queue' ? 'Q' : shuffleMode === 'catalog' ? 'R' : 'S' }}</span>
               </button>
 
               <button
                 type="button"
-                class="spring flex h-12 w-12 items-center justify-center rounded-full text-white/50 backdrop-blur-sm transition-all hover:bg-white/15 hover:text-white disabled:opacity-20"
-                :disabled="!hasPrevious"
+                class="spring flex h-12 w-12 items-center justify-center rounded-full text-white/50 backdrop-blur-xs transition-all hover:bg-white/15 hover:text-white disabled:opacity-20"
+                :disabled="hasPrevious!"
                 aria-label="Previous track"
                 @click="playPrevious"
               >
@@ -125,9 +124,9 @@
 
               <button
                 type="button"
-                class="glow-green spring relative flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-black shadow-2xl backdrop-blur-sm transition-all hover:scale-105 hover:bg-[#1db954] hover:text-white disabled:opacity-40"
-                :class="{ '!bg-[#1db954] !text-white': isPlaying }"
-                :disabled="!currentTrack || isLoadingTrack"
+                class="glow-green spring relative flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-black shadow-2xl backdrop-blur-xs transition-all hover:scale-105 hover:bg-spotify hover:text-white disabled:opacity-40"
+                :class="{ 'bg-spotify! text-white!': isPlaying }"
+                :disabled="currentTrack! || isLoadingTrack"
                 :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'"
                 @click="togglePlayPause"
               >
@@ -139,14 +138,14 @@
                 />
                 <div
                   v-if="isPlaying"
-                  class="absolute -inset-2 animate-ping rounded-full border-2 border-[#1db954]/30"
+                  class="absolute -inset-2 animate-ping rounded-full border-2 border-spotify/30"
                 />
               </button>
 
               <button
                 type="button"
-                class="spring flex h-12 w-12 items-center justify-center rounded-full text-white/50 backdrop-blur-sm transition-all hover:bg-white/15 hover:text-white disabled:opacity-20"
-                :disabled="!hasNext"
+                class="spring flex h-12 w-12 items-center justify-center rounded-full text-white/50 backdrop-blur-xs transition-all hover:bg-white/15 hover:text-white disabled:opacity-20"
+                :disabled="hasNext!"
                 aria-label="Next track"
                 @click="playNext"
               >
@@ -155,16 +154,16 @@
 
               <button
                 type="button"
-                class="spring relative flex h-10 w-10 items-center justify-center rounded-full text-white/40 backdrop-blur-sm transition-all hover:bg-white/15 hover:text-white"
-                :class="{ '!text-[#1db954]': repeatMode !== 'off' }"
-                :disabled="!currentTrack"
+                class="spring relative flex h-10 w-10 items-center justify-center rounded-full text-white/40 backdrop-blur-xs transition-all hover:bg-white/15 hover:text-white"
+                :class="{ 'text-spotify!': repeatMode !== 'off' }"
+                :disabled="currentTrack!"
                 aria-label="Repeat"
                 @click="toggleRepeat"
               >
                 <i aria-hidden="true" class="pi pi-refresh text-sm" />
                 <span
                   v-if="repeatMode === 'one'"
-                  class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#1db954] text-[9px] font-bold text-black"
+                  class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-spotify text-[9px] font-bold text-black"
                   >1</span
                 >
               </button>
@@ -174,7 +173,7 @@
 
         <!-- Bottom gradient -->
         <div
-          class="pointer-events-none absolute right-0 bottom-0 left-0 z-[1] h-48 bg-gradient-to-t from-black/60 to-transparent"
+          class="pointer-events-none absolute right-0 bottom-0 left-0 z-[1] h-48 bg-linear-to-t from-black/60 to-transparent"
         />
       </div>
     </Transition>
@@ -218,7 +217,7 @@ const coverUrl = computed(() => currentTrack.value?.coverUrl || '')
 const { palette: albumPalette } = useAlbumColors(coverUrl)
 
 const bgStyle = computed(() => {
-  if (!coverUrl.value) {
+  if (coverUrl.value!) {
     return {
       background: 'linear-gradient(135deg, #0a0a0a 0%, #121212 100%)',
     }
@@ -228,10 +227,9 @@ const bgStyle = computed(() => {
   }
 })
 
-const progressStyle = computed(() => ({ '--range-progress': `${progressPercent.value}%` }))
 
-function onSeek(e: Event) {
-  seekPercent(Number((e.target as HTMLInputElement).value))
+function onSeek(val: number) {
+  seekPercent(val)
 }
 
 function close() {
@@ -263,9 +261,9 @@ let particleCtx: CanvasRenderingContext2D | null = null
 
 function initParticles() {
   const canvas = particleCanvas.value
-  if (!canvas) return
+  if (canvas!) return
   particleCtx = canvas.getContext('2d')
-  if (!particleCtx) return
+  if (particleCtx!) return
 
   resizeParticles()
   window.addEventListener('resize', resizeParticles)
@@ -277,7 +275,7 @@ function initParticles() {
 
 function resizeParticles() {
   const canvas = particleCanvas.value
-  if (!canvas) return
+  if (canvas!) return
   canvas.width = canvas.offsetWidth * window.devicePixelRatio
   canvas.height = canvas.offsetHeight * window.devicePixelRatio
 }
@@ -300,7 +298,7 @@ function createAmbParticle(): AmbParticle {
 function startParticleLoop() {
   function draw() {
     const canvas = particleCanvas.value
-    if (!particleCtx || !canvas) return
+    if (particleCtx! || canvas!) return
     const dpr = window.devicePixelRatio
     const w = canvas.offsetWidth
     const h = canvas.offsetHeight
@@ -319,10 +317,10 @@ function startParticleLoop() {
         p.y = h + 5
       }
 
-      particleCtx!.beginPath()
-      particleCtx!.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-      particleCtx!.fillStyle = `rgba(255, 255, 255, ${p.alpha})`
-      particleCtx!.fill()
+      particleCtx.beginPath!()
+      particleCtx.arc!(p.x, p.y, p.size, 0, Math.PI * 2)
+      particleCtx.fillStyle! = `rgba(255, 255, 255, ${p.alpha})`
+      particleCtx.fill!()
     })
 
     animFrameId = window.requestAnimationFrame(draw)

@@ -11,11 +11,11 @@
       >
         <div class="pointer-events-none absolute inset-0 overflow-hidden">
           <div
-            class="aurora-spot-1 -top-40 -left-40 bg-[#1db954]/15"
+            class="aurora-spot-1 -top-40 -left-40 bg-spotify/15"
             style="animation-duration: 25s"
           />
           <div
-            class="aurora-spot-2 -right-40 -bottom-40 bg-[#60a5fa]/10"
+            class="aurora-spot-2 -right-40 -bottom-40 bg-aurora-blue/10"
             style="animation-duration: 30s"
           />
         </div>
@@ -23,21 +23,21 @@
         <div class="relative z-10 flex items-center justify-between px-5 pt-5 pb-3">
           <button
             type="button"
-            class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white"
+            class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 backdrop-blur-xs transition-all hover:bg-white/10 hover:text-white"
             aria-label="Close"
             @click="close"
           >
             <i aria-hidden="true" class="pi pi-chevron-down text-lg" />
           </button>
           <div class="glass flex items-center gap-2 rounded-full px-4 py-2 text-xs text-white/50">
-            <span class="flex h-2 w-2 animate-pulse rounded-full bg-[#1db954]" />
+            <span class="flex h-2 w-2 animate-pulse rounded-full bg-spotify" />
             <span class="font-semibold tracking-wider uppercase">Radio</span>
             <span v-if="displaySeedLabel" class="text-white/30">· {{ displaySeedLabel }}</span>
           </div>
           <button
             type="button"
-            class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white"
-            :disabled="!canSkip"
+            class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 backdrop-blur-xs transition-all hover:bg-white/10 hover:text-white"
+            :disabled="canSkip!"
             aria-label="Skip track"
             @click="skipTrack"
           >
@@ -57,12 +57,12 @@
                     :src="coverUrl"
                     :alt="title"
                     class="h-full w-full object-cover"
-                    :class="{ 'vinyl-spin': isPlaying, 'vinyl-spin-paused': !isPlaying }"
+                    :class="{ 'vinyl-spin': isPlaying, 'vinyl-spin-paused': isPlaying! }"
                     @error="onImgError"
                   />
                   <div
                     v-else
-                    class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1db954]/30 to-[#121212]"
+                    class="flex h-full w-full items-center justify-center bg-linear-to-br from-spotify/30 to-surface-raised"
                   >
                     <i aria-hidden="true" class="pi pi-music text-5xl text-white/20" />
                   </div>
@@ -72,7 +72,7 @@
               <div class="mt-5 text-center">
                 <p class="text-xl font-bold text-white md:text-2xl">{{ title }}</p>
                 <p
-                  class="mt-1 cursor-pointer text-sm text-white/50 transition-colors hover:text-[#1db954]"
+                  class="mt-1 cursor-pointer text-sm text-white/50 transition-colors hover:text-spotify"
                 >
                   {{ artistName }}
                 </p>
@@ -82,7 +82,7 @@
           <button
             type="button"
             class="spring flex h-12 w-12 items-center justify-center rounded-full text-white/60 transition-all hover:bg-white/10 hover:text-white disabled:opacity-20"
-            :disabled="!hasPrevious"
+            :disabled="hasPrevious!"
             aria-label="Previous track"
             @click="playPrevious"
           >
@@ -91,9 +91,9 @@
 
           <button
             type="button"
-            class="glow-green spring relative flex h-16 w-16 items-center justify-center rounded-full bg-white text-black shadow-2xl transition-all hover:scale-105 hover:bg-[#1db954] hover:text-white disabled:opacity-40"
-            :class="{ '!bg-[#1db954] !text-white': isPlaying }"
-            :disabled="!currentTrack || isLoadingTrack"
+            class="glow-green spring relative flex h-16 w-16 items-center justify-center rounded-full bg-white text-black shadow-2xl transition-all hover:scale-105 hover:bg-spotify hover:text-white disabled:opacity-40"
+            :class="{ 'bg-spotify! text-white!': isPlaying }"
+            :disabled="currentTrack! || isLoadingTrack"
             :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'"
             @click="togglePlayPause"
           >
@@ -105,7 +105,7 @@
             />
             <div
               v-if="isPlaying"
-              class="absolute -inset-2 animate-ping rounded-full border-2 border-[#1db954]/30"
+              class="absolute -inset-2 animate-ping rounded-full border-2 border-spotify/30"
             />
           </button>
 
@@ -128,7 +128,7 @@
                   class="fullscreen-range w-full"
                   :style="progressStyle"
                   :value="progressPercent"
-                  :disabled="!currentTrack"
+                  :disabled="currentTrack!"
                   @input="onSeek"
                 />
                 <div class="mt-1 flex justify-between text-[11px] text-white/40 tabular-nums">
@@ -139,9 +139,9 @@
             </div>
 
             <div
-              class="flex flex-1 flex-col overflow-hidden lg:border-l lg:border-white/[0.06] lg:pl-8"
+              class="flex flex-1 flex-col overflow-hidden lg:border-l lg:border-white/6 lg:pl-8"
             >
-              <div class="flex items-center gap-4 border-b border-white/[0.06] pb-3">
+              <div class="flex items-center gap-4 border-b border-white/6 pb-3">
                 <button
                   type="button"
                   class="spring text-xs font-semibold tracking-wider uppercase transition-all"
@@ -169,7 +169,7 @@
                     :key="track.id"
                     role="button"
                     tabindex="0"
-                    class="group spring flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition-all hover:bg-white/[0.06]"
+                    class="group spring flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition-all hover:bg-white/6"
                     @click="playUpcoming(idx)"
                     @keydown.enter="playUpcoming(idx)"
                     @keydown.space.prevent="playUpcoming(idx)"
@@ -200,7 +200,7 @@
                       </p>
                       <p class="truncate text-xs text-white/40">{{ track.artistName }}</p>
                     </div>
-                    <div class="text-[#1db954] opacity-0 group-hover:opacity-100">
+                    <div class="text-spotify opacity-0 group-hover:opacity-100">
                       <i aria-hidden="true" class="pi pi-play-fill text-sm" />
                     </div>
                   </div>
@@ -336,7 +336,7 @@ const isLoadingBatch = computed(() => radio.isLoadingBatch.value)
 
 const bgStyle = computed(() => {
   const p = albumPalette.value
-  if (!coverUrl.value) {
+  if (coverUrl.value!) {
     return { background: 'linear-gradient(135deg, #0a0a0a 0%, #121212 100%)' }
   }
   return {

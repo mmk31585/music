@@ -2,7 +2,7 @@
   <div class="mx-auto w-full max-w-3xl px-4 pt-6 pb-32 md:px-6 lg:px-8">
     <div class="mb-6 flex items-center justify-between">
       <div>
-        <p class="text-xs font-bold tracking-[0.25em] text-[#1db954] uppercase">Updates</p>
+        <p class="text-xs font-bold tracking-[0.25em] text-spotify uppercase">Updates</p>
         <h1 class="mt-1 text-3xl font-black text-white">Notifications</h1>
       </div>
       <button
@@ -17,7 +17,7 @@
 
     <section v-if="today.length" class="mb-8" aria-live="polite">
       <p class="mb-3 text-xs font-semibold tracking-wider text-slate-500 uppercase">Today</p>
-      <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+      <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
         <NotificationItem
           v-for="n in today"
           :key="n.id"
@@ -30,7 +30,7 @@
 
     <section v-if="thisWeek.length" class="mb-8" aria-live="polite">
       <p class="mb-3 text-xs font-semibold tracking-wider text-slate-500 uppercase">This Week</p>
-      <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+      <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
         <NotificationItem
           v-for="n in thisWeek"
           :key="n.id"
@@ -43,7 +43,7 @@
 
     <section v-if="earlier.length" class="mb-8" aria-live="polite">
       <p class="mb-3 text-xs font-semibold tracking-wider text-slate-500 uppercase">Earlier</p>
-      <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+      <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
         <NotificationItem
           v-for="n in earlier"
           :key="n.id"
@@ -56,7 +56,7 @@
 
     <div
       v-if="!notifications.length && !loading && !error"
-      class="flex flex-col items-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-6 py-20 text-center"
+      class="flex flex-col items-center gap-4 rounded-2xl border border-white/6 bg-white/3 px-6 py-20 text-center"
       role="status"
     >
       <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
@@ -86,10 +86,10 @@
 
     <div v-if="loading" class="space-y-3" role="status">
       <div v-for="i in 5" :key="i" class="flex items-center gap-4">
-        <div class="h-9 w-9 animate-pulse rounded-full bg-white/[0.06]" />
+        <div class="h-9 w-9 animate-pulse rounded-full bg-white/6" />
         <div class="flex-1 space-y-2">
-          <div class="h-4 w-3/4 animate-pulse rounded bg-white/[0.06]" />
-          <div class="h-3 w-1/4 animate-pulse rounded bg-white/[0.06]" />
+          <div class="h-4 w-3/4 animate-pulse rounded bg-white/6" />
+          <div class="h-3 w-1/4 animate-pulse rounded bg-white/6" />
         </div>
       </div>
     </div>
@@ -113,7 +113,7 @@ const loading = ref(true)
 const error = ref('')
 const notifications = ref<NotificationResponse[]>([])
 
-const unreadCount = computed(() => notifications.value.filter((n) => !n.isRead).length)
+const unreadCount = computed(() => notifications.value.filter((n) => n.isRead!).length)
 
 const grouped = computed(() => {
   const now = Date.now()

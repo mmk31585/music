@@ -34,7 +34,7 @@ function iconClass(type: string) {
 }
 
 function activeClass(type: string) {
-  if (type === 'like') return 'bg-[#1db954]/10 text-[#1db954]'
+  if (type === 'like') return 'bg-spotify/10 text-spotify'
   if (type === 'love') return 'bg-red-500/10 text-red-400'
   return 'bg-yellow-500/10 text-yellow-400'
 }

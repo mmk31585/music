@@ -1,7 +1,7 @@
 <template>
   <div
-    class="group overflow-hidden rounded-2xl bg-white/[0.06] ring-1 ring-white/[0.10] transition-all duration-300
-           hover:bg-white/[0.08] hover:ring-white/[0.15] focus-within:ring-2 focus-within:ring-[#1db954]"
+    class="group overflow-hidden rounded-2xl bg-white/6 ring-1 ring-white/10 transition-all duration-300
+           hover:bg-white/8 hover:ring-white/15 focus-within:ring-2 focus-within:ring-spotify"
     role="article"
     :aria-label="`Club: ${club.name}`"
   >
@@ -13,7 +13,7 @@
     />
     <div
       v-else
-      class="flex h-20 items-center justify-center bg-gradient-to-br from-purple-500/10 to-purple-500/5"
+      class="flex h-20 items-center justify-center bg-linear-to-br from-purple-500/10 to-purple-500/5"
     >
       <i aria-hidden="true" class="pi pi-building text-2xl text-purple-400/30" />
     </div>
@@ -54,7 +54,7 @@
             <div
               v-for="(avatar, i) in clubAvatars.slice(0, 5)"
               :key="i"
-              class="h-5 w-5 overflow-hidden rounded-full border-2 border-[#0A0A0A]"
+              class="h-5 w-5 overflow-hidden rounded-full border-2 border-surface-base"
             >
               <img :src="avatar" alt="" class="h-full w-full object-cover" />
             </div>
@@ -77,7 +77,7 @@
         <button
           aria-label="Share club"
           class="flex h-9 w-9 items-center justify-center rounded-lg text-white/30 transition
-                 hover:bg-white/[0.06] hover:text-white/60 focus-visible:outline-2 focus-visible:outline-[#1db954]"
+                 hover:bg-white/6 hover:text-white/60 focus-visible:outline-2 focus-visible:outline-[#1db954]"
           @click="$emit('share', club.id)"
         >
           <i aria-hidden="true" class="pi pi-share-alt text-sm" />

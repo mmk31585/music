@@ -1,7 +1,7 @@
 <template>
   <RouterLink :to="`/album/${album.id}`" class="group block w-44 shrink-0 space-y-3">
     <div
-      class="relative aspect-square overflow-hidden rounded-2xl bg-white/[0.06] shadow-lg ring-1 ring-white/10 transition group-hover:ring-[#1db954]/50"
+      class="relative aspect-square overflow-hidden rounded-2xl bg-white/6 shadow-lg ring-1 ring-white/10 transition group-hover:ring-spotify/50"
     >
       <img
         v-if="album.cover_url"
@@ -18,7 +18,7 @@
         class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100"
       >
         <div
-          class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954] text-black shadow-xl"
+          class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify text-black shadow-xl"
         >
           <i aria-hidden="true" class="pi pi-play-fill text-lg" />
         </div>

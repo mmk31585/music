@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { useSocialApi } from '@/services/api/social'
 import { useRecommendationsApi } from '@/services/api/recommendation'
 import { useToast } from 'primevue/usetoast'
+import { translateMessage } from '@/utils/message-translations'
 import type { ActivityFeedItem } from '@/services/api/social/types'
 import type { RecommendationTrack } from '@/services/api/recommendation/types'
 
@@ -48,7 +49,7 @@ export function useDiscover() {
     } catch (err: unknown) {
       error.value = err
       const msg = err instanceof Error ? err.message : 'Failed to load discover data'
-      toast.add({ severity: 'error', summary: 'Discover Error', detail: msg, life: 5000 })
+      toast.add({ severity: 'error', summary: 'خطا', detail: translateMessage(msg) ?? msg, life: 5000 })
     } finally {
       loading.value = false
     }

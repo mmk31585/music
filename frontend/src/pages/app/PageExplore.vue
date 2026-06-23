@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="mb-6">
       <div class="flex items-center gap-3">
-        <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#1db954]/10">
-          <i aria-hidden="true" class="pi pi-compass text-[#1db954]" />
+        <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-spotify/10">
+          <i aria-hidden="true" class="pi pi-compass text-spotify" />
         </div>
         <div>
           <h1 class="text-2xl font-black text-white sm:text-3xl">Explore</h1>
@@ -21,7 +21,7 @@
         type="button"
         class="rounded-full px-4 py-2 text-sm font-bold transition-all duration-200"
         :class="activeFilter === filter.key
-          ? 'bg-[#1db954] text-black shadow-lg shadow-[#1db954]/20'
+          ? 'bg-spotify text-black shadow-lg shadow-spotify/20'
           : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'"
         @click="activeFilter = filter.key"
       >
@@ -35,7 +35,7 @@
       class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5"
     >
       <div v-for="i in 10" :key="i">
-        <div class="aspect-[9/16] w-full animate-pulse rounded-2xl bg-white/5" />
+        <div class="aspect-9/16 w-full animate-pulse rounded-2xl bg-white/5" />
         <div class="mt-2 h-3 w-3/4 animate-pulse rounded bg-white/5" />
         <div class="mt-1.5 h-2.5 w-1/2 animate-pulse rounded bg-white/5" />
       </div>
@@ -72,7 +72,7 @@
         {{ activeFilter === 'all' ? 'No videos yet' : `No ${activeFilter === 'official_mv' ? 'official MVs' : 'fan edits'} found` }}
       </p>
       <p v-if="activeFilter !== 'all'" class="mt-1 text-xs text-white/30">
-        <button class="text-[#1db954] hover:underline" @click="activeFilter = 'all'">Show all videos</button>
+        <button class="text-spotify hover:underline" @click="activeFilter = 'all'">Show all videos</button>
       </p>
     </div>
 
@@ -87,9 +87,9 @@
         <span>Loading more...</span>
       </div>
       <div v-else class="flex items-center gap-2 text-xs text-white/20">
-        <span class="h-px w-8 bg-white/[0.06]" />
+        <span class="h-px w-8 bg-white/6" />
         <span>Scroll for more</span>
-        <span class="h-px w-8 bg-white/[0.06]" />
+        <span class="h-px w-8 bg-white/6" />
       </div>
     </div>
 
@@ -168,7 +168,7 @@ async function loadVideos() {
 }
 
 async function loadMore() {
-  if (loadingMore.value || !hasMore.value) return
+  if (loadingMore.value || hasMore.value!) return
   loadingMore.value = true
   try {
     const response = await videoApi.getExploreVideos({ limit: LIMIT, offset: offset.value })

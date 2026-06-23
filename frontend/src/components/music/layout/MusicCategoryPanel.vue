@@ -1,11 +1,11 @@
 <template>
   <aside
-    class="hidden h-screen w-56 shrink-0 border-x border-white/[0.04] bg-black/20 backdrop-blur-2xl lg:block"
+    class="hidden h-screen w-56 shrink-0 border-x border-white/4 bg-black/20 backdrop-blur-2xl lg:block"
     style="backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);"
   >
     <div class="flex h-full flex-col">
       <!-- ── Panel Header ── -->
-      <div class="flex shrink-0 items-center gap-3 border-b border-white/[0.04] px-4 py-4">
+      <div class="flex shrink-0 items-center gap-3 border-b border-white/4 px-4 py-4">
         <div
           class="flex h-8 w-8 items-center justify-center rounded-xl"
           :class="categoryMeta.iconBg"
@@ -19,14 +19,14 @@
       </div>
 
       <!-- ── Quick Filters ── -->
-      <div v-if="quickFilters.length > 0" class="shrink-0 border-b border-white/[0.04] px-3 py-3">
+      <div v-if="quickFilters.length > 0" class="shrink-0 border-b border-white/4 px-3 py-3">
         <div class="flex flex-wrap gap-1.5">
           <button
             v-for="filter in quickFilters"
             :key="filter.label"
             type="button"
             class="rounded-lg px-3 py-1.5 text-[11px] font-bold transition"
-            :class="filter.active ? 'bg-white/15 text-white' : 'bg-white/[0.04] text-slate-400 hover:bg-white/10 hover:text-white'"
+            :class="filter.active ? 'bg-white/15 text-white' : 'bg-white/4 text-slate-400 hover:bg-white/10 hover:text-white'"
             @click="filter.action?.()"
           >
             {{ filter.label }}
@@ -45,14 +45,14 @@
             :key="item.to"
             :to="item.to"
             class="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition"
-            :class="isActive(item.to) ? 'bg-white/[0.08] text-white' : 'text-slate-400 hover:bg-white/[0.04] hover:text-white'"
+            :class="isActive(item.to) ? 'bg-white/8 text-white' : 'text-slate-400 hover:bg-white/4 hover:text-white'"
             :aria-current="isActive(item.to) ? 'page' : undefined"
           >
             <i v-if="item.icon" aria-hidden="true" :class="item.icon" class="text-xs" />
             <span>{{ item.label }}</span>
             <span
               v-if="item.badge"
-              class="ml-auto flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white/10 px-1.5 text-[9px] font-bold text-slate-400"
+              class="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-white/10 px-1.5 text-[9px] font-bold text-slate-400"
             >
               {{ item.badge }}
             </span>
@@ -61,9 +61,9 @@
       </nav>
 
       <!-- ── Bottom Context ── -->
-      <div class="shrink-0 border-t border-white/[0.04] px-4 py-3">
-        <div class="flex items-center gap-2 rounded-xl bg-white/[0.03] px-3 py-2">
-          <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1db954]/30 to-[#a855f7]/30">
+      <div class="shrink-0 border-t border-white/4 px-4 py-3">
+        <div class="flex items-center gap-2 rounded-xl bg-white/3 px-3 py-2">
+          <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-linear-to-br from-spotify/30 to-aurora-purple/30">
             <i aria-hidden="true" class="pi pi-sparkles text-[10px] text-white/70" />
           </div>
           <p class="text-[10px] font-medium text-slate-500 leading-tight">
@@ -108,12 +108,12 @@ function isActive(to: string) {
 }
 
 // ── Category Detection ──
-type Category = 'home' | 'discover' | 'recommendations' | 'library' | 'social' | 'ai' | 'more'
+type Category = 'home' | 'search' | 'recommendations' | 'library' | 'social' | 'ai' | 'more'
 
 const activeCategory = computed<Category>(() => {
   const path = route.path
   if (path === '/' || path.startsWith('/track/') || path.startsWith('/album/') || path.startsWith('/artist/')) return 'home'
-  if (path.startsWith('/discover')) return 'discover'
+  if (path.startsWith('/search')) return 'search'
   if (path.startsWith('/recommendations')) return 'recommendations'
   if (path.startsWith('/library') || path.startsWith('/playlist') || path.startsWith('/recently-played')) return 'library'
   if (path.startsWith('/social') || path.startsWith('/notifications')) return 'social'
@@ -123,12 +123,12 @@ const activeCategory = computed<Category>(() => {
 
 const categoryMeta = computed(() => {
   const map: Record<Category, { label: string; icon: string; iconBg: string }> = {
-    home: { label: 'Browse', icon: 'pi pi-home', iconBg: 'bg-[#1db954]/20 text-[#1db954]' },
-    discover: { label: 'Discover', icon: 'pi pi-compass', iconBg: 'bg-[#a855f7]/20 text-[#a855f7]' },
-    recommendations: { label: 'For You', icon: 'pi pi-star', iconBg: 'bg-[#f472b6]/20 text-[#f472b6]' },
-    library: { label: 'Library', icon: 'pi pi-bookmark', iconBg: 'bg-[#60a5fa]/20 text-[#60a5fa]' },
-    social: { label: 'Community', icon: 'pi pi-users', iconBg: 'bg-[#f59e0b]/20 text-[#f59e0b]' },
-    ai: { label: 'AI', icon: 'pi pi-magic', iconBg: 'bg-gradient-to-br from-[#1db954]/20 to-[#a855f7]/20 text-white' },
+    home: { label: 'Browse', icon: 'pi pi-home', iconBg: 'bg-spotify/20 text-spotify' },
+    search: { label: 'Search', icon: 'pi pi-search', iconBg: 'bg-spotify/20 text-spotify' },
+    recommendations: { label: 'For You', icon: 'pi pi-star', iconBg: 'bg-aurora-pink/20 text-aurora-pink' },
+    library: { label: 'Library', icon: 'pi pi-bookmark', iconBg: 'bg-aurora-blue/20 text-aurora-blue' },
+    social: { label: 'Community', icon: 'pi pi-users', iconBg: 'bg-amber-500/20 text-amber-500' },
+    ai: { label: 'AI', icon: 'pi pi-magic', iconBg: 'bg-linear-to-br from-spotify/20 to-aurora-purple/20 text-white' },
     more: { label: 'More', icon: 'pi pi-ellipsis-h', iconBg: 'bg-white/10 text-white' },
   }
   return map[activeCategory.value]
@@ -144,11 +144,12 @@ const quickFilters = computed<QuickFilter[]>(() => {
         { label: 'Trending', active: false, action: () => {} },
         { label: 'New', active: false, action: () => {} },
       ]
-    case 'discover':
+    case 'search':
       return [
-        { label: 'Genres', active: true },
-        { label: 'Moods', active: false },
-        { label: 'New Releases', active: false },
+        { label: 'All', active: path === '/search', action: () => router.push('/search') },
+        { label: 'Songs', active: false },
+        { label: 'Artists', active: false },
+        { label: 'Albums', active: false },
       ]
     case 'recommendations':
       return [
@@ -187,7 +188,6 @@ const navSections = computed<NavSection[]>(() => {
         label: 'Main',
         items: [
           { label: 'Home', to: '/', icon: 'pi pi-home' },
-          { label: 'Discover', to: '/discover', icon: 'pi pi-compass' },
           { label: 'Search', to: '/search', icon: 'pi pi-search' },
         ],
       })
@@ -201,21 +201,22 @@ const navSections = computed<NavSection[]>(() => {
       })
       break
 
-    case 'discover':
+    case 'search':
       sections.push({
-        label: 'Explore',
+        label: 'Browse',
         items: [
-          { label: 'Genres', to: '/discover', icon: 'pi pi-tag' },
-          { label: 'Moods', to: '/discover?tab=moods', icon: 'pi pi-heart' },
-          { label: 'New Releases', to: '/discover?tab=new', icon: 'pi pi-star' },
-          { label: 'Charts', to: '/discover?tab=charts', icon: 'pi pi-chart-bar' },
+          { label: 'Genres', to: '/search', icon: 'pi pi-tag' },
+          { label: 'Moods', to: '/ai/mood-explorer', icon: 'pi pi-heart' },
+          { label: 'New Releases', to: '/recommendations/recent', icon: 'pi pi-star' },
+          { label: 'Popular', to: '/recommendations/popular', icon: 'pi pi-chart-bar' },
         ],
       })
       sections.push({
-        label: 'Radio',
+        label: 'Discover',
         items: [
-          { label: 'Artist Radio', to: '/discover/radio', icon: 'pi pi-waveform' },
-          { label: 'Genre Radio', to: '/discover/radio?type=genre', icon: 'pi pi-sort-alt' },
+          { label: 'Made For You', to: '/search', icon: 'pi pi-user' },
+          { label: 'Trending', to: '/search', icon: 'pi pi-fire' },
+          { label: 'Viral Hits', to: '/search', icon: 'pi pi-bolt' },
         ],
       })
       break
@@ -308,7 +309,7 @@ const navSections = computed<NavSection[]>(() => {
 const contextHint = computed(() => {
   const map: Record<Category, string> = {
     home: 'Explore your music world',
-    discover: 'Find something new today',
+    search: 'Search songs, artists, albums, and more',
     recommendations: 'Handpicked just for you',
     library: 'Your personal collection',
     social: 'Connect through music',

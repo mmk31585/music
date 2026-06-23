@@ -12,7 +12,7 @@
           text
           size="small"
           :loading="loading"
-          class="!text-slate-400 hover:!text-white"
+          class="text-slate-400! hover:text-white!"
           @click="fetchCatalog"
         />
       </template>
@@ -53,8 +53,8 @@
     <!-- Content Grid -->
     <section class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
       <!-- Tracks Panel -->
-      <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
-        <div class="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+      <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
+        <div class="flex items-center justify-between border-b border-white/6 px-5 py-4">
           <div class="flex items-center gap-3">
             <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
               <i aria-hidden="true" class="pi pi-play-circle text-xs text-emerald-400" />
@@ -72,12 +72,12 @@
           </div>
         </div>
 
-        <div v-if="loading" class="divide-y divide-white/[0.04]">
+        <div v-if="loading" class="divide-y divide-white/4">
           <div v-for="i in 6" :key="i" class="flex items-center gap-3 px-5 py-3.5">
-            <div class="h-9 w-9 animate-pulse rounded-md bg-white/[0.06]" />
+            <div class="h-9 w-9 animate-pulse rounded-md bg-white/6" />
             <div class="flex-1 space-y-1.5">
-              <div class="h-3.5 w-32 animate-pulse rounded bg-white/[0.06]" />
-              <div class="h-3 w-44 animate-pulse rounded bg-white/[0.04]" />
+              <div class="h-3.5 w-32 animate-pulse rounded bg-white/6" />
+              <div class="h-3 w-44 animate-pulse rounded bg-white/4" />
             </div>
           </div>
         </div>
@@ -87,15 +87,15 @@
           <p class="mt-2 text-sm text-slate-500">No tracks found</p>
         </div>
 
-        <div v-else class="max-h-[500px] divide-y divide-white/[0.04] overflow-y-auto">
+        <div v-else class="max-h-125 divide-y divide-white/4 overflow-y-auto">
           <div
             v-for="(track, i) in tracks"
             :key="track.id"
-            class="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/[0.02]"
+            class="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/2"
           >
             <button
               type="button"
-              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-all hover:bg-[#1db954]/20 hover:text-[#1db954] disabled:opacity-30"
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-all hover:bg-spotify/20 hover:text-spotify disabled:opacity-30"
               :disabled="loadingTrackId === String(track.id)"
               :aria-label="'Play ' + track.title"
               :title="isTrackPlaying(track) ? 'Now playing' : 'Play track'"
@@ -116,7 +116,7 @@
 
             <span class="w-5 text-center text-xs tabular-nums text-slate-600">{{ i + 1 }}</span>
 
-            <div class="h-9 w-9 shrink-0 overflow-hidden rounded-md bg-white/[0.04]">
+            <div class="h-9 w-9 shrink-0 overflow-hidden rounded-md bg-white/4">
               <img
                 v-if="track.cover_url"
                 :src="track.cover_url"
@@ -149,8 +149,8 @@
       <!-- Right Column -->
       <div class="space-y-6">
         <!-- Artists Panel -->
-        <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
-          <div class="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+        <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
+          <div class="flex items-center justify-between border-b border-white/6 px-5 py-4">
             <div class="flex items-center gap-3">
               <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
                 <i aria-hidden="true" class="pi pi-users text-xs text-blue-400" />
@@ -165,10 +165,10 @@
             </RouterLink>
           </div>
 
-          <div v-if="loading" class="divide-y divide-white/[0.04]">
+          <div v-if="loading" class="divide-y divide-white/4">
             <div v-for="i in 4" :key="i" class="flex items-center gap-3 px-5 py-3">
-              <div class="h-8 w-8 animate-pulse rounded-full bg-white/[0.06]" />
-              <div class="h-3.5 w-28 animate-pulse rounded bg-white/[0.06]" />
+              <div class="h-8 w-8 animate-pulse rounded-full bg-white/6" />
+              <div class="h-3.5 w-28 animate-pulse rounded bg-white/6" />
             </div>
           </div>
 
@@ -176,14 +176,14 @@
             <p class="text-sm text-slate-500">No artists</p>
           </div>
 
-          <div v-else class="max-h-60 divide-y divide-white/[0.04] overflow-y-auto">
+          <div v-else class="max-h-60 divide-y divide-white/4 overflow-y-auto">
             <div
               v-for="artist in artists"
               :key="artist.id"
-              class="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/[0.02]"
+              class="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/2"
             >
               <div
-                class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/[0.06]"
+                class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/6"
               >
                 <img
                   v-if="artist.image_url"
@@ -206,8 +206,8 @@
         </div>
 
         <!-- Albums Panel -->
-        <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
-          <div class="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+        <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
+          <div class="flex items-center justify-between border-b border-white/6 px-5 py-4">
             <div class="flex items-center gap-3">
               <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
                 <i aria-hidden="true" class="pi pi-book text-xs text-purple-400" />
@@ -224,8 +224,8 @@
 
           <div v-if="loading" class="grid grid-cols-3 gap-3 p-5">
             <div v-for="i in 3" :key="i" class="space-y-2">
-              <div class="aspect-square animate-pulse rounded-lg bg-white/[0.06]" />
-              <div class="h-3 w-3/4 animate-pulse rounded bg-white/[0.04]" />
+              <div class="aspect-square animate-pulse rounded-lg bg-white/6" />
+              <div class="h-3 w-3/4 animate-pulse rounded bg-white/4" />
             </div>
           </div>
 
@@ -236,7 +236,7 @@
           <div v-else class="grid grid-cols-3 gap-3 p-5">
             <div v-for="album in albums.slice(0, 6)" :key="album.id" class="min-w-0">
               <div
-                class="aspect-square overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.04]"
+                class="aspect-square overflow-hidden rounded-lg border border-white/6 bg-white/4"
               >
                 <img
                   v-if="album.cover_url"
@@ -256,8 +256,8 @@
         </div>
 
         <!-- Genres Panel -->
-        <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
-          <div class="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+        <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
+          <div class="flex items-center justify-between border-b border-white/6 px-5 py-4">
             <div class="flex items-center gap-3">
               <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
                 <i aria-hidden="true" class="pi pi-tags text-xs text-amber-400" />
@@ -276,7 +276,7 @@
             <div
               v-for="i in 6"
               :key="i"
-              class="h-8 animate-pulse rounded-full bg-white/[0.06]"
+              class="h-8 animate-pulse rounded-full bg-white/6"
               :style="{ width: `${50 + Math.random() * 50}px` }"
             />
           </div>
@@ -289,7 +289,7 @@
             <span
               v-for="genre in genres"
               :key="genre.id"
-              class="rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1.5 text-xs text-slate-300"
+              class="rounded-full border border-white/8 bg-white/3 px-3.5 py-1.5 text-xs text-slate-300"
             >
               {{ genre.name }}
             </span>
@@ -302,7 +302,6 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import Button from 'primevue/button'
 import AdminSectionHeader from '@/components/admin/AdminSectionHeader.vue'
 import AdminStatCard from '@/components/admin/AdminStatCard.vue'
 import { useTracksApi, type Track } from '@/services/api/catalog/tracks'

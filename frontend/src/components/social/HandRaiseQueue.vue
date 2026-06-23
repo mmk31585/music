@@ -1,5 +1,5 @@
 <template>
-  <div v-if="pendingRaises.length" class="rounded-2xl bg-white/[0.04] p-6 ring-1 ring-white/[0.07]">
+  <div v-if="pendingRaises.length" class="rounded-2xl bg-white/4 p-6 ring-1 ring-white/7">
     <div class="mb-4 flex items-center justify-between">
       <h2 class="text-xs font-bold uppercase tracking-wider text-white/30">
         درخواست‌های صحبت ({{ pendingRaises.length }})
@@ -14,7 +14,7 @@
       <div
         v-for="raise in pendingRaises"
         :key="raise.user_id"
-        class="flex items-center gap-3 rounded-xl bg-white/[0.03] px-3 py-2.5"
+        class="flex items-center gap-3 rounded-xl bg-white/3 px-3 py-2.5"
       >
         <div class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/10">
           <img
@@ -34,7 +34,7 @@
 
         <div class="flex shrink-0 gap-1">
           <button
-            class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1db954]/10 text-[#1db954] transition hover:bg-[#1db954]/20"
+            class="flex h-8 w-8 items-center justify-center rounded-lg bg-spotify/10 text-spotify transition hover:bg-spotify/20"
             title="تأیید"
             aria-label="تأیید"
             @click="$emit('approve', raise.user_id)"
@@ -58,7 +58,7 @@
   <!-- Empty state (host sees this when no pending requests) -->
   <div
     v-else
-    class="rounded-2xl bg-white/[0.04] p-6 text-center text-sm text-white/30 ring-1 ring-white/[0.07]"
+    class="rounded-2xl bg-white/4 p-6 text-center text-sm text-white/30 ring-1 ring-white/7"
   >
     درخواستی برای صحبت نیست
   </div>

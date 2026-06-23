@@ -21,7 +21,7 @@
           label="Search"
           icon="pi pi-search"
           :loading="searching"
-          :disabled="!query.trim()"
+          :disabled="query.trim!()"
           @click="doSearch"
         />
       </div>
@@ -37,11 +37,11 @@
     </div>
 
     <div v-else-if="importJobId" class="mt-6">
-      <div class="rounded-xl border border-white/[0.06] bg-white/[0.03] p-6 text-center">
+      <div class="rounded-xl border border-white/6 bg-white/3 p-6 text-center">
         <i aria-hidden="true" class="pi pi-spin pi-spinner text-3xl text-emerald-400"></i>
         <p class="mt-3 text-sm font-medium text-white">Import in progress...</p>
         <p class="mt-1 text-xs text-slate-500">{{ importStage }}</p>
-        <div class="mx-auto mt-4 h-2 w-full max-w-md overflow-hidden rounded-full bg-white/[0.06]">
+        <div class="mx-auto mt-4 h-2 w-full max-w-md overflow-hidden rounded-full bg-white/6">
           <div
             class="h-full rounded-full bg-emerald-500 transition-all duration-500"
             :style="{ width: importProgress + '%' }"
@@ -57,7 +57,7 @@
       <div
         v-for="(r, i) in results"
         :key="r.url"
-        class="group flex items-center gap-4 rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 transition hover:border-white/[0.12]"
+        class="group flex items-center gap-4 rounded-xl border border-white/6 bg-white/3 p-4 transition hover:border-white/12"
       >
         <img
           v-if="r.thumbnail"
@@ -65,7 +65,7 @@
           alt=""
           class="h-16 w-16 shrink-0 rounded-lg object-cover"
         />
-        <div v-else class="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-white/[0.06]">
+        <div v-else class="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-white/6">
           <i aria-hidden="true" class="pi pi-music text-xl text-slate-500"></i>
         </div>
 
@@ -92,7 +92,7 @@
           :label="importingUrl === r.url ? 'Importing...' : 'Import'"
           :icon="importingUrl === r.url ? 'pi pi-spin pi-spinner' : 'pi pi-download'"
           :loading="importingUrl === r.url"
-          :disabled="!!importingUrl"
+          :disabled="!importingUrl!"
           size="small"
           @click="doImport(r)"
         />
@@ -115,11 +115,6 @@
 import { ref, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import InputIcon from 'primevue/inputicon'
-import IconField from 'primevue/iconfield'
-import Message from 'primevue/message'
 import { AdminSectionHeader } from '@/components/admin'
 import { useImportApi } from '@/services/api/importcmd'
 import type { SearchResult } from '@/services/api/importcmd'
@@ -141,22 +136,22 @@ let progressTimer: ReturnType<typeof setInterval> | null = null
 
 function sourceBadge(source: string): string {
   const map: Record<string, string> = {
-    spotify: '!bg-emerald-500/20 !text-emerald-400',
-    deezer: '!bg-purple-500/20 !text-purple-400',
-    musicbrainz: '!bg-blue-500/20 !text-blue-400',
-    lastfm: '!bg-red-500/20 !text-red-400',
-    local: '!bg-slate-500/20 !text-slate-400',
-    bandcamp: '!bg-cyan-500/20 !text-cyan-400',
-    soundcloud: '!bg-orange-500/20 !text-orange-400',
-    youtube: '!bg-rose-500/20 !text-rose-400',
-    archiveorg: '!bg-amber-500/20 !text-amber-400',
+    spotify: 'bg-emerald-500/20! text-emerald-400!',
+    deezer: 'bg-purple-500/20! text-purple-400!',
+    musicbrainz: 'bg-blue-500/20! text-blue-400!',
+    lastfm: 'bg-red-500/20! text-red-400!',
+    local: 'bg-slate-500/20! text-slate-400!',
+    bandcamp: 'bg-cyan-500/20! text-cyan-400!',
+    soundcloud: 'bg-orange-500/20! text-orange-400!',
+    youtube: 'bg-rose-500/20! text-rose-400!',
+    archiveorg: 'bg-amber-500/20! text-amber-400!',
   }
-  return map[source.toLowerCase()] || '!bg-slate-500/20 !text-slate-400'
+  return map[source.toLowerCase()] || 'bg-slate-500/20! text-slate-400!'
 }
 
 async function doSearch() {
   const q = query.value.trim()
-  if (!q) return
+  if (q!) return
 
   searching.value = true
   searchError.value = ''
@@ -256,7 +251,7 @@ onUnmounted(() => {
 })
 
 function formatDuration(seconds: number): string {
-  if (!seconds || seconds <= 0) return '—'
+  if (seconds! || seconds <= 0) return '—'
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
   return `${m}:${s.toString().padStart(2, '0')}`

@@ -4,7 +4,7 @@
       <div
         v-if="visible"
         ref="rootEl"
-        class="fixed inset-0 z-50 flex flex-col overflow-hidden text-white select-none outline-none"
+        class="fixed inset-0 z-50 flex flex-col overflow-hidden text-white select-none outline-hidden"
         :style="resolvedBgStyle"
         @keydown="onKeydown"
         tabindex="0"
@@ -27,7 +27,7 @@
         <div class="relative z-10 flex h-14 items-center justify-between px-4 md:px-6">
           <button
             type="button"
-            class="flex h-10 w-10 items-center justify-center rounded-full text-white/50 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-[#1db954]"
+            class="flex h-10 w-10 items-center justify-center rounded-full text-white/50 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-spotify"
             @click="close"
             aria-label="بستن"
           >
@@ -41,7 +41,7 @@
           <div class="flex items-center gap-1">
             <button
               type="button"
-              class="flex h-10 w-10 items-center justify-center rounded-full text-white/50 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-[#1db954]"
+              class="flex h-10 w-10 items-center justify-center rounded-full text-white/50 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-spotify"
               @click="showOverflow = !showOverflow"
               aria-label="بیشتر"
               :aria-expanded="showOverflow"
@@ -57,7 +57,7 @@
             class="flex flex-1 flex-col items-center overflow-y-auto px-4 pb-4"
           >
             <div class="flex w-full max-w-md flex-1 flex-col items-center justify-center gap-5">
-              <div class="relative h-[280px] w-[280px] md:h-[320px] md:w-[320px]">
+              <div class="relative h-70 w-70 md:h-80 md:w-80">
                 <div
                   class="relative h-full w-full overflow-hidden rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.7)] transition-all duration-1000"
                   :class="{ 'shadow-[0_0_60px_rgba(29,185,84,0.2)]': isPlaying }"
@@ -68,19 +68,19 @@
                     :alt="title"
                     loading="lazy"
                     class="h-full w-full object-cover transition-all duration-300"
-                    :class="{ 'animate-[art-pop_300ms_cubic-bezier(0.34,1.56,0.64,1)]': !!currentTrack }"
+                    :class="{ 'animate-[art-pop_300ms_cubic-bezier(0.34,1.56,0.64,1)]': currentTrack!! }"
                     @error="onImgError"
                   />
                   <div
                     v-else
-                    class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1db954]/30 to-[#121212]"
+                    class="flex h-full w-full items-center justify-center bg-linear-to-br from-spotify/30 to-surface-raised"
                   >
                     <i aria-hidden="true" class="pi pi-music text-5xl text-white/30" />
                   </div>
                 </div>
                 <div
                   v-if="isPlaying"
-                  class="pointer-events-none absolute -inset-4 animate-[pulse-ring_2s_ease-in-out_infinite] rounded-full border border-[#1db954]/30"
+                  class="pointer-events-none absolute -inset-4 animate-[pulse-ring_2s_ease-in-out_infinite] rounded-full border border-spotify/30"
                 />
               </div>
 
@@ -118,9 +118,9 @@
                   @mousemove="onProgressHover"
                   @mouseleave="hoverPos = null"
                 >
-                  <div class="h-1 w-full rounded-full bg-white/[0.15] transition-all duration-150 group-hover/seeks:h-1.5">
+                  <div class="h-1 w-full rounded-full bg-white/15 transition-all duration-150 group-hover/seeks:h-1.5">
                     <div
-                      class="relative h-full rounded-full bg-[#1db954] transition-all duration-100"
+                      class="relative h-full rounded-full bg-spotify transition-all duration-100"
                       :style="{ width: `${Math.min(progressPct, 100)}%` }"
                     >
                       <div
@@ -147,21 +147,21 @@
                   type="button"
                   :aria-label="shuffleMode !== 'off' ? 'Shuffle on' : 'Shuffle off'"
                   class="relative flex h-8 w-8 items-center justify-center rounded-full transition-all hover:bg-white/10 hover:text-white active:scale-90"
-                  :class="shuffleMode !== 'off' ? 'text-[#1db954]' : 'text-[rgba(255,255,255,0.35)]'"
+                  :class="shuffleMode !== 'off' ? 'text-spotify' : 'text-[rgba(255,255,255,0.35)]'"
                   :title="shuffleMode === 'off' ? 'Shuffle off' : shuffleMode === 'queue' ? 'Shuffle queue' : shuffleMode === 'catalog' ? 'Random catalog tracks' : 'Similar tracks'"
                   @click="toggleShuffle"
                 >
                   <i aria-hidden="true" class="pi pi-sort-alt text-sm" />
                   <span
                     v-if="shuffleMode !== 'off'"
-                    class="absolute -top-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-[#a855f7] text-[7px] font-bold text-white"
+                    class="absolute -top-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-aurora-purple text-[7px] font-bold text-white"
                   >{{ shuffleMode === 'queue' ? 'Q' : shuffleMode === 'catalog' ? 'R' : 'S' }}</span>
                 </button>
 
                 <button
                   type="button"
                   class="flex h-10 w-10 items-center justify-center rounded-full text-white/60 transition-all hover:bg-white/10 hover:text-white active:scale-90 disabled:opacity-20"
-                  :disabled="!hasPrevious"
+                  :disabled="hasPrevious!"
                   @click="playPrevious"
                   aria-label="قبلی"
                 >
@@ -171,23 +171,23 @@
                 <button
                   type="button"
                   :aria-label="isPlaying ? 'Pause' : 'Play'"
-                  class="relative flex h-16 w-16 items-center justify-center rounded-full bg-[#1db954] text-white shadow-lg transition-all active:scale-95 disabled:opacity-40"
+                  class="relative flex h-16 w-16 items-center justify-center rounded-full bg-spotify text-white shadow-lg transition-all active:scale-95 disabled:opacity-40"
                   :style="{ transitionTimingFunction: 'var(--ease-spring)', transitionDuration: '150ms' }"
-                  :disabled="!currentTrack || isLoadingTrack"
+                  :disabled="currentTrack! || isLoadingTrack"
                   @click="togglePlayPause"
                 >
                   <i aria-hidden="true" v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-xl" />
                   <i aria-hidden="true" v-else :class="isPlaying ? 'pi pi-pause' : 'pi pi-play'" class="text-xl" />
                   <span
                     v-if="isPlaying"
-                    class="absolute inset-0 animate-[play-ring_2s_ease-out_infinite] rounded-full border-2 border-[#1db954]/40"
+                    class="absolute inset-0 animate-[play-ring_2s_ease-out_infinite] rounded-full border-2 border-spotify/40"
                   />
                 </button>
 
                 <button
                   type="button"
                   class="flex h-10 w-10 items-center justify-center rounded-full text-white/60 transition-all hover:bg-white/10 hover:text-white active:scale-90 disabled:opacity-20"
-                  :disabled="!hasNext"
+                  :disabled="hasNext!"
                   @click="playNext"
                   aria-label="بعدی"
                 >
@@ -198,13 +198,13 @@
                   type="button"
                   :aria-label="repeatTitle"
                   class="relative flex h-8 w-8 items-center justify-center rounded-full transition-all hover:bg-white/10 hover:text-white active:scale-90"
-                  :class="repeatMode !== 'off' ? 'text-[#1db954]' : 'text-[rgba(255,255,255,0.35)]'"
+                  :class="repeatMode !== 'off' ? 'text-spotify' : 'text-[rgba(255,255,255,0.35)]'"
                   @click="toggleRepeat"
                 >
                   <i aria-hidden="true" class="pi pi-refresh text-sm" />
                   <span
                     v-if="repeatMode === 'one'"
-                    class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#1db954] text-[9px] font-bold text-black"
+                    class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-spotify text-[9px] font-bold text-black"
                   >1</span>
                 </button>
               </div>
@@ -219,27 +219,27 @@
                   <i aria-hidden="true" :class="volumeIcon" class="text-sm" />
                 </button>
                 <div class="group/vol relative flex items-center">
-                  <div class="relative h-1 w-24 overflow-hidden rounded-full bg-white/[0.15]">
+                  <div class="relative h-1 w-24 overflow-hidden rounded-full bg-white/15">
                     <div
                       class="h-full rounded-full bg-white/60"
                       :style="{ width: `${muted ? 0 : Number(volume) * 100}%` }"
                     />
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    class="absolute inset-0 cursor-pointer opacity-0"
-                    :value="muted ? 0 : volume"
-                    @input="onVolume"
+                  <Slider
+                    :model-value="muted ? 0 : volume"
+                    @update:model-value="onVolume"
+                    :min="0"
+                    :max="1"
+                    :step="0.01"
+                    class="absolute inset-0"
+                    aria-label="Volume"
                   />
                 </div>
 
                 <button
                   type="button"
-                  class="flex h-8 items-center gap-1.5 rounded-full bg-white/[0.04] px-3 text-xs font-bold transition-all hover:bg-white/10 hover:text-white active:scale-95"
-                  :class="{ 'bg-[#1db954]/10 text-[#1db954]': playbackRate !== 1 }"
+                  class="flex h-8 items-center gap-1.5 rounded-full bg-white/4 px-3 text-xs font-bold transition-all hover:bg-white/10 hover:text-white active:scale-95"
+                  :class="{ 'bg-spotify/10 text-spotify': playbackRate !== 1 }"
                   @click="cycleSpeed"
                 >
                   <i aria-hidden="true" class="pi pi-forward text-[10px]" />
@@ -248,8 +248,8 @@
 
                 <button
                   type="button"
-                  class="flex h-8 items-center gap-1.5 rounded-full bg-white/[0.04] px-3 text-xs font-bold transition-all hover:bg-white/10 hover:text-white active:scale-95"
-                  :class="{ 'bg-[#1db954]/10 text-[#1db954]': sleepTimerMinutes > 0 }"
+                  class="flex h-8 items-center gap-1.5 rounded-full bg-white/4 px-3 text-xs font-bold transition-all hover:bg-white/10 hover:text-white active:scale-95"
+                  :class="{ 'bg-spotify/10 text-spotify': sleepTimerMinutes > 0 }"
                   @click="sleepMenuOpen = !sleepMenuOpen"
                 >
                   <i aria-hidden="true" class="pi pi-clock text-[10px]" />
@@ -258,8 +258,8 @@
 
                 <button
                   type="button"
-                  class="flex h-8 items-center gap-1.5 rounded-full bg-white/[0.04] px-3 text-xs font-bold transition-all hover:bg-white/10 hover:text-white active:scale-95"
-                  :class="{ 'bg-[#1db954]/10 text-[#1db954]': crossfadeDuration > 0 }"
+                  class="flex h-8 items-center gap-1.5 rounded-full bg-white/4 px-3 text-xs font-bold transition-all hover:bg-white/10 hover:text-white active:scale-95"
+                  :class="{ 'bg-spotify/10 text-spotify': crossfadeDuration > 0 }"
                   @click="cycleCrossfade"
                 >
                   <i aria-hidden="true" class="pi pi-arrows-alt text-[10px]" />
@@ -285,7 +285,7 @@
                   :key="track.id"
                   role="button"
                   tabindex="0"
-                  class="group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition-all hover:bg-white/[0.06]"
+                  class="group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition-all hover:bg-white/6"
                   @click="playQueueItem(queueIndex + 1 + idx)"
                   @keydown.enter="playQueueItem(queueIndex + 1 + idx)"
                   @keydown.space.prevent="playQueueItem(queueIndex + 1 + idx)"
@@ -335,7 +335,7 @@
             <div class="flex-1 overflow-y-auto px-4 py-4 md:px-6">
               <div v-if="currentTrack" class="mb-6">
                 <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-[rgba(255,255,255,0.35)]">در حال پخش</p>
-                <div class="flex items-center gap-3 rounded-xl border-r-2 border-[#1db954] bg-white/[0.03] px-4 py-3">
+                <div class="flex items-center gap-3 rounded-xl border-r-2 border-spotify bg-white/3 px-4 py-3">
                   <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
                     <img
                       v-if="currentTrack.coverUrl"
@@ -353,7 +353,7 @@
                     <p class="truncate text-sm font-bold text-white" dir="auto">{{ currentTrack.title }}</p>
                     <p class="truncate text-xs text-white/40" dir="auto">{{ currentTrack.artistName }}</p>
                   </div>
-                  <i aria-hidden="true" class="pi pi-waveform text-lg text-[#1db954]" />
+                  <i aria-hidden="true" class="pi pi-waveform text-lg text-spotify" />
                 </div>
               </div>
 
@@ -366,7 +366,7 @@
                     :draggable="queueTracks.length > 1"
                     role="button"
                     tabindex="0"
-                    class="group flex cursor-grab items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-white/[0.06]"
+                    class="group flex cursor-grab items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-white/6"
                     @dragstart="onDragStart(idx)"
                     @dragover.prevent="onDragOver(idx)"
                     @dragend="onDragEnd"
@@ -419,7 +419,7 @@
           </div>
         </div>
 
-        <div class="relative z-10 flex justify-center border-t border-white/[0.06] bg-black/20 backdrop-blur-sm">
+        <div class="relative z-10 flex justify-center border-t border-white/6 bg-black/20 backdrop-blur-xs">
           <div class="relative flex gap-8">
             <button
               v-for="tab in tabs"
@@ -432,7 +432,7 @@
               {{ tab.label }}
             </button>
             <div
-              class="absolute bottom-0 h-0.5 bg-[#1db954] transition-all duration-200"
+              class="absolute bottom-0 h-0.5 bg-spotify transition-all duration-200"
               :style="tabIndicatorStyle"
               style="transition-timing-function: cubic-bezier(0.19, 1, 0.22, 1)"
             />
@@ -450,7 +450,7 @@
                 :key="opt.value"
                 type="button"
                 class="rounded-full px-3 py-1.5 text-xs font-medium text-white/50 transition-all hover:bg-white/10 hover:text-white"
-                :class="{ '!bg-[#1db954]/15 !text-[#1db954]': sleepTimerMinutes === opt.value }"
+                :class="{ 'bg-spotify/15! text-spotify!': sleepTimerMinutes === opt.value }"
                 @click="setTimer(opt.value)"
               >
                 {{ opt.label }}
@@ -473,7 +473,7 @@
             @click.self="showOverflow = false"
           >
             <div
-              class="min-w-[220px] origin-top-right rounded-2xl border border-white/10 bg-[#121212]/95 p-2 shadow-2xl backdrop-blur-xl"
+              class="min-w-55 origin-top-right rounded-2xl border border-white/10 bg-surface-raised/95 p-2 shadow-2xl backdrop-blur-xl"
             >
               <button
                 type="button"
@@ -641,7 +641,7 @@ function cycleCrossfade() {
 const queueTracks = computed(() => player.queue.value as PlaybackTrack[])
 
 const queueIndex = computed(() => {
-  if (!currentTrack.value) return -1
+  if (currentTrack.value!) return -1
   return queueTracks.value.findIndex((t) => t.id === currentTrack.value?.id)
 })
 
@@ -661,7 +661,7 @@ function onDragOver(index: number) {
   if (dragIndex.value === null || dragIndex.value === index) return
   const items = [...queueTracks.value]
   const [moved] = items.splice(dragIndex.value, 1)
-  if (!moved) return
+  if (moved!) return
   items.splice(index, 0, moved)
   player.updateQueue(items)
   dragIndex.value = index
@@ -672,12 +672,12 @@ function onDragEnd() {
 }
 
 const progressPct = computed(() => {
-  if (!duration.value) return 0
+  if (duration.value!) return 0
   return (currentTime.value / duration.value) * 100
 })
 
 function formatTime(s?: number | null): string {
-  if (!s) return '0:00'
+  if (s!) return '0:00'
   const total = Math.max(0, Math.floor(Number(s) || 0))
   const m = Math.floor(total / 60)
   const sec = total % 60
@@ -689,7 +689,7 @@ const durationLabel = computed(() =>
   formatTime(duration.value || currentTrack.value?.durationSeconds || 0),
 )
 const hoverTimeLabel = computed(() => {
-  if (hoverPos.value === null || !duration.value) return '0:00'
+  if (hoverPos.value === null || duration.value!) return '0:00'
   return formatTime((hoverPos.value / 100) * duration.value)
 })
 
@@ -711,7 +711,7 @@ function togglePlayPause() {
 
 function seekFromEvent(e: MouseEvent | KeyboardEvent) {
   const rect = progressRef.value?.getBoundingClientRect()
-  if (!rect) return
+  if (rect!) return
   const pct = ((e as MouseEvent).clientX - rect.left) / rect.width
   if (duration.value) {
     player.seek(pct * duration.value)
@@ -720,17 +720,17 @@ function seekFromEvent(e: MouseEvent | KeyboardEvent) {
 
 function onProgressHover(e: MouseEvent) {
   const rect = progressRef.value?.getBoundingClientRect()
-  if (!rect) return
+  if (rect!) return
   hoverPos.value = ((e.clientX - rect.left) / rect.width) * 100
 }
 
-function onVolume(e: Event) {
-  player.setVolume(Number((e.target as HTMLInputElement).value))
+function onVolume(val: number) {
+  player.setVolume(val)
 }
 
 function playQueueItem(index: number) {
   const track = queueTracks.value[index]
-  if (!track || track.id === currentTrack.value?.id) return
+  if (track! || track.id === currentTrack.value?.id) return
   player.setQueueAndPlay(queueTracks.value, index)
 }
 
@@ -761,14 +761,14 @@ function parseHexColor(hex: string): string {
     const r = parseInt(clean.substring(0, 2), 16)
     const g = parseInt(clean.substring(2, 4), 16)
     const b = parseInt(clean.substring(4, 6), 16)
-    if (!isNaN(r) && !isNaN(g) && !isNaN(b)) return `${r},${g},${b}`
+    if (isNaN!(r) && isNaN!(g) && isNaN!(b)) return `${r},${g},${b}`
   }
   return '29,185,84'
 }
 
 const auroraGradient = computed(() => {
   const p = accentColor.value || '#1db954'
-  if (!coverUrl.value) return {}
+  if (coverUrl.value!) return {}
   return {
     background: `
       radial-gradient(ellipse 80% 60% at 50% 0%,
@@ -780,7 +780,7 @@ const auroraGradient = computed(() => {
 })
 
 const resolvedBgStyle = computed(() => {
-  if (!coverUrl.value) {
+  if (coverUrl.value!) {
     return { background: '#0a0a0a' }
   }
   return {
@@ -835,7 +835,7 @@ const recs = shallowRef<RecommendationTrack[]>([])
 const recsLoading = ref(false)
 
 async function fetchRecs() {
-  if (!currentTrack.value?.id) return
+  if (currentTrack.value!?.id) return
   recsLoading.value = true
   try {
     const res = await recsApi.getSimilar(currentTrack.value.id, { limit: 10 })

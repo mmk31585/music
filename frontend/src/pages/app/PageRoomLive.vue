@@ -14,7 +14,7 @@
       <SkeletonLoader variant="card" class="h-64" />
     </div>
 
-    <div v-else-if="error" class="rounded-2xl bg-white/[0.03] p-12 text-center">
+    <div v-else-if="error" class="rounded-2xl bg-white/3 p-12 text-center">
       <p class="text-sm text-white/40">{{ error }}</p>
     </div>
 
@@ -25,9 +25,9 @@
         <div class="space-y-6 lg:col-span-2">
 
           <!-- Room header -->
-          <div class="rounded-2xl bg-white/[0.04] p-6 ring-1 ring-white/[0.07]">
+          <div class="rounded-2xl bg-white/4 p-6 ring-1 ring-white/7">
             <div class="flex items-start gap-4">
-              <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[#1db954]/10 text-2xl">
+              <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-spotify/10 text-2xl">
                 🎤
               </div>
               <div class="min-w-0 flex-1">
@@ -81,7 +81,7 @@
           <div v-if="isHost" class="flex flex-wrap gap-3">
             <button
               class="inline-flex items-center gap-1.5 rounded-xl bg-white/5 px-4 py-2 text-sm font-semibold text-white/60 transition hover:bg-white/10 hover:text-white disabled:opacity-40"
-              :disabled="!currentTrack || isTrackTransitioning"
+              :disabled="currentTrack! || isTrackTransitioning"
               @click="skipTrack"
             >
               <i aria-hidden="true" class="pi pi-forward text-xs" />
@@ -90,7 +90,7 @@
           </div>
 
           <!-- Player controls (seek + volume, below hero) -->
-          <div class="rounded-2xl bg-white/[0.04] p-4 ring-1 ring-white/[0.07]">
+          <div class="rounded-2xl bg-white/4 p-4 ring-1 ring-white/7">
             <div class="flex items-center gap-3">
               <button
                 class="flex h-8 w-8 items-center justify-center rounded-full text-white/40 transition hover:text-white/70"
@@ -130,15 +130,15 @@
           </div>
 
           <!-- Chat -->
-          <div class="rounded-2xl bg-white/[0.04] p-6 ring-1 ring-white/[0.07]">
+          <div class="rounded-2xl bg-white/4 p-6 ring-1 ring-white/7">
             <h2 class="mb-4 text-sm font-bold uppercase tracking-wider text-white/30">Chat</h2>
             <div ref="chatContainer" class="mb-4 max-h-64 space-y-2 overflow-y-auto" aria-live="polite" role="log">
               <div
                 v-for="(msg, i) in messages"
                 :key="i"
-                class="rounded-lg bg-white/[0.03] px-3 py-2"
+                class="rounded-lg bg-white/3 px-3 py-2"
               >
-                <span class="text-xs font-semibold text-[#1db954]">{{ msg.userName || msg.user_id?.slice(0, 8) || 'System' }}</span>
+                <span class="text-xs font-semibold text-spotify">{{ msg.userName || msg.user_id?.slice(0, 8) || 'System' }}</span>
                 <p class="mt-0.5 text-sm text-white/70">{{ msg.content }}</p>
               </div>
               <p v-if="!messages.length" class="text-center text-xs text-white/20">No messages yet</p>
@@ -149,12 +149,12 @@
                 type="text"
                 placeholder="Type a message..."
                 aria-label="Chat message"
-                class="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none transition focus:border-white/20"
+                class="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/20 outline-hidden transition focus:border-white/20"
               />
               <button
                 type="submit"
-                class="rounded-xl bg-[#1db954]/10 px-4 py-2.5 text-sm font-semibold text-[#1db954] transition hover:bg-[#1db954]/20 disabled:opacity-40"
-                :disabled="!chatInput.trim()"
+                class="rounded-xl bg-spotify/10 px-4 py-2.5 text-sm font-semibold text-spotify transition hover:bg-spotify/20 disabled:opacity-40"
+                :disabled="chatInput.trim!()"
               >
                 Send
               </button>
@@ -203,7 +203,7 @@
           <Teleport to="body">
             <div
               v-if="showLeaveConfirm"
-              class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+              class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs"
               @click.self="showLeaveConfirm = false"
             >
               <div class="glass-strong mx-4 w-full max-w-sm rounded-2xl p-8 text-center">
@@ -331,7 +331,7 @@ async function loadRoom() {
 
 async function togglePlay() {
   const np = queueState.value?.now_playing
-  if (!np?.track?.id) return
+  if (np!?.track?.id) return
   const trackId = np.track.id
 
   // If there was a previous playback error, clear it before retry
@@ -356,7 +356,7 @@ async function togglePlay() {
 /** Retry playback after an error */
 async function retryPlayback() {
   const trackId = currentTrack.value?.id
-  if (!trackId) return
+  if (trackId!) return
   playerStore.error = null
   isTrackTransitioning.value = true
   try {
@@ -369,7 +369,7 @@ async function retryPlayback() {
 /** Skip the current track (host only) */
 async function skipTrack() {
   const np = queueState.value?.now_playing
-  if (!np?.track?.id || !isHost.value) return
+  if (np!?.track?.id || isHost.value!) return
   try {
     await queueSocket.reportEnded(np.track.id)
   } catch {
@@ -396,7 +396,7 @@ watch(
 watch(
   () => playerStore.isLoadingTrack,
   (loading) => {
-    if (!loading) {
+    if (loading!) {
       // Give a tick for the player to emit its final state
       setTimeout(() => {
         isTrackTransitioning.value = false
@@ -415,7 +415,7 @@ function setupWebSocket() {
 
   wsClient.on('room.message', (msg: { payload?: { user_id: string; content: string } }) => {
     const uid = msg.payload?.user_id || ''
-    if (uid && !userNames.value[uid]) fetchUserName(uid)
+    if (uid && userNames.value[uid]!) fetchUserName(uid)
     messages.value.push({
       user_id: uid,
       userName: userName(uid),
@@ -438,7 +438,7 @@ function scrollChat() {
 }
 
 function sendMessage() {
-  if (!chatInput.value.trim()) return
+  if (chatInput.value.trim!()) return
   wsClient.send('room.message', {
     room_id: roomId,
     content: chatInput.value.trim(),
@@ -506,7 +506,7 @@ function handleToggleMute(payload: { userId: string; muted: boolean }) {
 }
 
 function formatTime(s: number): string {
-  if (!s || !isFinite(s)) return '0:00'
+  if (s! || isFinite!(s)) return '0:00'
   const m = Math.floor(s / 60)
   const sec = Math.floor(s % 60)
   return `${m}:${sec.toString().padStart(2, '0')}`

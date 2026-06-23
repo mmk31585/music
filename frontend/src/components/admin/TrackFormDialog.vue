@@ -1,14 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import Dialog from 'primevue/dialog'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import InputNumber from 'primevue/inputnumber'
-import Textarea from 'primevue/textarea'
-import AutoComplete from 'primevue/autocomplete'
-import Checkbox from 'primevue/checkbox'
-import Select from 'primevue/select'
 import { useToast } from 'primevue/usetoast'
 import { parseBlob } from 'music-metadata-browser'
 import { useLyricsApi } from '@/services/api/lyrics'
@@ -256,7 +248,7 @@ const canSubmit = computed(() => {
 
 const unresolvedAlbumName = computed(() => {
   const typed = getModelText(albumModel.value) || detectedAlbumName.value
-  if (!typed) return ''
+  if (typed!) return ''
   if (selectedAlbum.value) return ''
   if (findOptionByName(props.albumsOptions, typed)) return ''
   return typed
@@ -264,7 +256,7 @@ const unresolvedAlbumName = computed(() => {
 
 const unresolvedAlbumArtistName = computed(() => {
   const typed = getModelText(albumArtistModel.value) || detectedAlbumArtistName.value
-  if (!typed) return ''
+  if (typed!) return ''
   if (selectedAlbumArtist.value) return ''
   if (findOptionByName(props.artistsOptions, typed)) return ''
   return typed
@@ -273,7 +265,7 @@ const unresolvedAlbumArtistName = computed(() => {
 watch(
   () => props.visible,
   (visible) => {
-    if (!visible) return
+    if (visible!) return
 
     resetForm()
 
@@ -286,7 +278,7 @@ watch(
 
 watch(selectedAlbum, (album) => {
   // Auto-populate cover from the selected album if no cover is set yet
-  if (album && !coverPreviewUrl.value && !form.coverFile) {
+  if (album && coverPreviewUrl.value! && form.coverFile!) {
     const albumCover = album.cover_url || album.image_url || null
     if (albumCover) {
       form.cover_url = albumCover
@@ -536,20 +528,20 @@ function normalizeForSearch(value: string) {
 }
 
 function normalizeText(value?: string | null) {
-  if (!value) return undefined
+  if (value!) return undefined
 
   const normalized = value.trim().replace(/\s+/g, ' ')
   return normalized.length ? normalized : undefined
 }
 
 function getModelText(model: AutoCompleteModel) {
-  if (!model) return ''
+  if (model!) return ''
   if (typeof model === 'string') return model.trim()
   return model.name.trim()
 }
 
 function optionFromModel(model: AutoCompleteModel) {
-  if (!model) return null
+  if (model!) return null
   if (typeof model === 'string') return null
   return model
 }
@@ -560,7 +552,7 @@ function findOptionById(options: CatalogOption[], id?: CatalogId | null) {
 }
 
 function findOptionByName(options: CatalogOption[], name?: string | null) {
-  if (!name) return null
+  if (name!) return null
 
   const normalized = normalizeForSearch(name)
   return options.find((item) => normalizeForSearch(item.name) === normalized) ?? null
@@ -569,7 +561,7 @@ function findOptionByName(options: CatalogOption[], name?: string | null) {
 function searchOptions(options: CatalogOption[], query?: string) {
   const normalized = normalizeForSearch(query ?? '')
 
-  if (!normalized) {
+  if (normalized!) {
     return options.slice(0, 20)
   }
 
@@ -599,7 +591,7 @@ async function searchArtists(event: { query: string }) {
   filteredArtists.value = local.slice(0, 30)
 
   // If local search is empty or we want more results, query the API
-  if (q.length >= 2 || (!local.length && q.length > 0)) {
+  if (q.length >= 2 || (local.length! && q.length > 0)) {
     // Debounce API calls
     if (artistSearchTimer) clearTimeout(artistSearchTimer)
     artistSearchTimer = setTimeout(async () => {
@@ -612,7 +604,7 @@ async function searchArtists(event: { query: string }) {
           const seen = new Set(merged.map((a) => String(a.id)))
           for (const artist of results) {
             const opt = toCatalogOption(artist)
-            if (opt && !seen.has(String(opt.id))) {
+            if (opt && seen.has!(String(opt.id))) {
               merged.push(opt)
               seen.add(String(opt.id))
             }
@@ -632,7 +624,7 @@ async function searchArtists(event: { query: string }) {
 function toCatalogOption(artist: Record<string, any>): CatalogOption | null {
   const id = artist.id ?? artist.artist_id
   const name = artist.name ?? artist.artist_name
-  if (id == null || !name) return null
+  if (id == null || name!) return null
   return {
     id,
     name,
@@ -646,10 +638,10 @@ function toCatalogOption(artist: Record<string, any>): CatalogOption | null {
 /** Fetch individual artists by ID to supplement the options during hydration */
 async function hydrateMissingArtists(creditArtistIds: CatalogId[]) {
   const missingIds = creditArtistIds.filter(
-    (id) => !findOptionById(props.artistsOptions, id) && !hydratedArtistIds.value.has(String(id)),
+    (id) => findOptionById!(props.artistsOptions, id) && hydratedArtistIds.value.has!(String(id)),
   )
 
-  if (!missingIds.length) return
+  if (missingIds.length!) return
 
   const fetched: CatalogOption[] = []
   for (const id of missingIds) {
@@ -667,12 +659,12 @@ async function hydrateMissingArtists(creditArtistIds: CatalogId[]) {
     }
   }
 
-  if (!fetched.length) return
+  if (fetched.length!) return
 
   // Add fetched artists to filtered artists for AutoComplete
   const existing = new Set(filteredArtists.value.map((a) => String(a.id)))
   for (const opt of fetched) {
-    if (!existing.has(String(opt.id))) {
+    if (existing.has!(String(opt.id))) {
       filteredArtists.value.push(opt)
       existing.add(String(opt.id))
     }
@@ -680,7 +672,7 @@ async function hydrateMissingArtists(creditArtistIds: CatalogId[]) {
 }
 
 function splitArtists(value?: string | null) {
-  if (!value) return []
+  if (value!) return []
 
   return value
     .replace(/\s+\((feat\.?|ft\.?|featuring)\s+/gi, ' feat. ')
@@ -691,7 +683,7 @@ function splitArtists(value?: string | null) {
 }
 
 function splitGenres(values?: string[] | string | null): string[] {
-  if (!values) return []
+  if (values!) return []
 
   if (Array.isArray(values)) {
     return values
@@ -742,7 +734,7 @@ function toOptionsByNames(options: CatalogOption[], names: string[]) {
 
 function resolveAlbumInput() {
   const typed = getModelText(albumModel.value)
-  if (!typed) return
+  if (typed!) return
 
   const found = findOptionByName(props.albumsOptions, typed)
   if (found) {
@@ -752,7 +744,7 @@ function resolveAlbumInput() {
 
 function resolveAlbumArtistInput() {
   const typed = getModelText(albumArtistModel.value)
-  if (!typed) return
+  if (typed!) return
 
   const found = findOptionByName(props.artistsOptions, typed)
   if (found) {
@@ -772,7 +764,7 @@ async function onAudioFileChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
 
-  if (!file) return
+  if (file!) return
 
   form.audioFile = file
   audioFileName.value = file.name
@@ -786,7 +778,7 @@ function onCoverFileChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
 
-  if (!file) return
+  if (file!) return
 
   form.coverFile = file
 
@@ -872,31 +864,31 @@ async function autoFillFromAudioFile(file: File) {
   try {
     const metadata = await readAudioMetadata(file)
 
-    if (metadata.title && !form.title) {
+    if (metadata.title && form.title!) {
       form.title = metadata.title
     }
 
-    if (metadata.durationSeconds && !form.duration_seconds) {
+    if (metadata.durationSeconds && form.duration_seconds!) {
       form.duration_seconds = metadata.durationSeconds
     }
 
-    if (metadata.trackNumber && !form.track_number) {
+    if (metadata.trackNumber && form.track_number!) {
       form.track_number = metadata.trackNumber
     }
 
-    if (metadata.discNumber && !form.disc_number) {
+    if (metadata.discNumber && form.disc_number!) {
       form.disc_number = metadata.discNumber
     }
 
-    if (metadata.year && !form.year) {
+    if (metadata.year && form.year!) {
       form.year = metadata.year
     }
 
-    if (metadata.composer && !form.composer) {
+    if (metadata.composer && form.composer!) {
       form.composer = metadata.composer
     }
 
-    if (metadata.lyrics && !form.lyrics) {
+    if (metadata.lyrics && form.lyrics!) {
       form.lyrics = metadata.lyrics
     }
 
@@ -971,7 +963,7 @@ function buildCreditsPayload() {
   const extraCredits: CreditPayload[] = creditRows.value
     .filter((row) => row.artist && String(row.role).trim())
     .map((row, index) => ({
-      artist_id: row.artist!.id,
+      artist_id: row.artist.id!,
       role: String(row.role).trim(),
       position: index,
     }))
@@ -982,8 +974,8 @@ function buildCreditsPayload() {
 function submitForm() {
   const title = form.title.trim()
 
-  if (!title) return
-  if (!primaryArtistModels.value.length) return
+  if (title!) return
+  if (primaryArtistModels.value.length!) return
 
   const credits = buildCreditsPayload()
 
@@ -1046,7 +1038,7 @@ const LYRICS_TIMEOUT_MS = 8000
 async function fetchLRCLyrics() {
   const trackName = form.title?.trim()
   const artistName = primaryArtistModels.value[0]?.name || detectedArtistNames.value[0] || ''
-  if (!trackName) {
+  if (trackName!) {
     toast.add({ severity: 'warn', summary: 'Enter a track title first', life: 2500 })
     return
   }
@@ -1076,7 +1068,7 @@ async function fetchLRCLyrics() {
     }
 
     // Fallback to /search if exact fails
-    if (!data || (!data.syncedLyrics && !data.plainLyrics)) {
+    if (data! || (data.syncedLyrics! && data.plainLyrics!)) {
       const q = artistName ? `${artistName} ${trackName}` : trackName
       try {
         const searchController = new AbortController()
@@ -1113,7 +1105,7 @@ async function fetchLRCLyrics() {
           albumModel.value = matchedAlbum
 
           // Auto-populate cover from the matched album if none set
-          if (!coverPreviewUrl.value && !form.coverFile) {
+          if (coverPreviewUrl.value! && form.coverFile!) {
             const albumCover = matchedAlbum.cover_url || matchedAlbum.image_url || null
             if (albumCover) {
               form.cover_url = albumCover
@@ -1126,17 +1118,17 @@ async function fetchLRCLyrics() {
       }
 
       // Auto-select primary artist from LRCLIB response (only if none selected)
-      if (data.artistName && !primaryArtistModels.value.length) {
+      if (data.artistName && primaryArtistModels.value.length!) {
         const matchedArtist = findOptionByName(props.artistsOptions, data.artistName)
         if (matchedArtist) {
           primaryArtistModels.value = [matchedArtist]
-        } else if (!detectedArtistNames.value.length) {
+        } else if (detectedArtistNames.value.length!) {
           detectedArtistNames.value = [data.artistName]
         }
       }
 
       // Try to fetch cover from iTunes API if we still don't have one
-      if (!coverPreviewUrl.value && !form.coverFile) {
+      if (coverPreviewUrl.value! && form.coverFile!) {
         fetchCoverFromiTunes().catch(() => {})
       }
       return
@@ -1163,7 +1155,7 @@ async function fetchLRCLyrics() {
  */
 async function fetchLyricsViaPipeline(trackName: string) {
   // If we're in edit mode and have a track ID, use the server pipeline
-  if (!props.track?.id) {
+  if (props.track!?.id) {
     toast.add({ severity: 'warn', summary: 'Save the track first, then try Fetch LRC again for AI-powered lyrics', life: 5000 })
     return
   }
@@ -1276,17 +1268,17 @@ async function fetchCoverFromiTunes() {
   const trackName = form.title?.trim()
   const artistName = primaryArtistModels.value[0]?.name || detectedArtistNames.value[0] || ''
   const albumName = getModelText(albumModel.value) || detectedAlbumName.value || ''
-  if (!trackName && !artistName && !albumName) return
+  if (trackName! && artistName! && albumName!) return
 
   try {
     const terms = [artistName, albumName || trackName].filter(Boolean).join(' ')
     const url = `https://itunes.apple.com/search?term=${encodeURIComponent(terms)}&entity=song&limit=5`
     const resp = await fetch(url, { headers: { Accept: 'application/json' } })
-    if (!resp.ok) return
+    if (resp.ok!) return
 
     const data: any = await resp.json()
     const result = data.results?.[0]
-    if (!result?.artworkUrl100) return
+    if (result!?.artworkUrl100) return
 
     // Get larger artwork by replacing 100x100 with larger size
     const coverUrl = result.artworkUrl100.replace('/100x100bb.', '/600x600bb.')
@@ -1313,7 +1305,7 @@ function closeDialog() {
 // ── Audio preview ──
 function toggleAudioPreview() {
   const audio = audioPreviewRef.value
-  if (!audio || !audioPreviewUrl.value) return
+  if (audio! || audioPreviewUrl.value!) return
 
   if (audio.paused) {
     audio.play().catch(() => {
@@ -1352,7 +1344,7 @@ function seekAudioPreview(event: Event) {
 }
 
 function formatDuration(seconds: number): string {
-  if (!seconds || !isFinite(seconds)) return '0:00'
+  if (seconds! || isFinite!(seconds)) return '0:00'
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${s.toString().padStart(2, '0')}`
@@ -1365,14 +1357,14 @@ function formatDuration(seconds: number): string {
     modal
     :header="isEditMode ? 'Edit track' : 'Create track'"
     class="w-[95vw] max-w-5xl"
-    content-class="!bg-[#121212] !text-white"
-    header-class="!bg-[#121212] !text-white"
+    content-class="bg-surface-raised! text-white!"
+    header-class="bg-surface-raised! text-white!"
   >
     <form class="space-y-6" @submit.prevent="submitForm">
       <!-- Uploads + Audio Preview -->
       <section class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <!-- Audio file upload -->
-        <div class="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
+        <div class="rounded-2xl border border-white/8 bg-white/3 p-4">
           <label class="mb-2 block text-xs font-medium text-slate-400">
             Audio file
           </label>
@@ -1389,7 +1381,7 @@ function formatDuration(seconds: number): string {
             type="button"
             icon="pi pi-upload"
             :label="audioFileName || 'Choose audio file'"
-            class="!rounded-xl"
+            class="rounded-xl!"
             outlined
             @click="triggerAudioInput"
           />
@@ -1403,7 +1395,7 @@ function formatDuration(seconds: number): string {
           </p>
 
           <!-- Audio preview (edit mode: existing track) -->
-          <div v-if="audioPreviewUrl" class="mt-4 border-t border-white/[0.06] pt-3">
+          <div v-if="audioPreviewUrl" class="mt-4 border-t border-white/6 pt-3">
             <div class="mb-2 flex items-center gap-2">
               <Button
                 type="button"
@@ -1412,7 +1404,7 @@ function formatDuration(seconds: number): string {
                 text
                 rounded
                 aria-label="Preview track audio"
-                class="!text-emerald-400 !text-xl"
+                class="text-emerald-400! text-xl!"
                 @click="toggleAudioPreview"
               />
               <span class="text-xs text-slate-500">
@@ -1429,7 +1421,7 @@ function formatDuration(seconds: number): string {
               :min="0"
               :max="audioPreviewDuration || 0"
               :value="audioPreviewCurrent"
-              class="h-1 w-full cursor-pointer appearance-none rounded-full bg-white/[0.08] accent-emerald-500"
+              class="h-1 w-full cursor-pointer appearance-none rounded-full bg-white/8 accent-emerald-500"
               @input="seekAudioPreview"
               aria-label="Seek audio preview"
             />
@@ -1447,7 +1439,7 @@ function formatDuration(seconds: number): string {
         </div>
 
         <!-- Cover image -->
-        <div class="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
+        <div class="rounded-2xl border border-white/8 bg-white/3 p-4">
           <label class="mb-2 block text-xs font-medium text-slate-400">
             Cover image
           </label>
@@ -1462,7 +1454,7 @@ function formatDuration(seconds: number): string {
 
           <div class="flex items-center gap-4">
             <div
-              class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl bg-white/[0.06]"
+              class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl bg-white/6"
             >
               <img
                 v-if="coverPreviewUrl"
@@ -1478,7 +1470,7 @@ function formatDuration(seconds: number): string {
                 type="button"
                 icon="pi pi-image"
                 label="Choose cover"
-                class="!rounded-xl"
+                class="rounded-xl!"
                 outlined
                 @click="triggerCoverInput"
               />
@@ -1489,7 +1481,7 @@ function formatDuration(seconds: number): string {
                 icon="pi pi-trash"
                 label="Remove"
                 text
-                class="!text-red-400"
+                class="text-red-400!"
                 @click="removeCover"
               />
             </div>
@@ -1507,7 +1499,7 @@ function formatDuration(seconds: number): string {
           <InputText
             v-model="form.title"
             placeholder="Track title"
-            class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
+            class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
           />
         </div>
 
@@ -1530,8 +1522,8 @@ function formatDuration(seconds: number): string {
               completeOnFocus
               placeholder="Search primary artists"
               class="w-full"
-              input-class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
-              panel-class="!bg-[#181818] !border-white/[0.08]"
+              input-class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
+              panel-class="bg-[#181818]! border-white/8!"
               @complete="searchArtists"
             >
               <template #option="{ option }">
@@ -1569,8 +1561,8 @@ function formatDuration(seconds: number): string {
               completeOnFocus
               placeholder="Search featured artists"
               class="w-full"
-              input-class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
-              panel-class="!bg-[#181818] !border-white/[0.08]"
+              input-class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
+              panel-class="bg-[#181818]! border-white/8!"
               @complete="searchArtists"
             >
               <template #option="{ option }">
@@ -1597,8 +1589,8 @@ function formatDuration(seconds: number): string {
               dropdown
               completeOnFocus
               class="w-full"
-              input-class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
-              panel-class="!bg-[#181818] !border-white/[0.08]"
+              input-class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
+              panel-class="bg-[#181818]! border-white/8!"
               @complete="searchAlbums"
               @blur="resolveAlbumInput"
             />
@@ -1626,8 +1618,8 @@ function formatDuration(seconds: number): string {
               dropdown
               completeOnFocus
               class="w-full"
-              input-class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
-              panel-class="!bg-[#181818] !border-white/[0.08]"
+              input-class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
+              panel-class="bg-[#181818]! border-white/8!"
               @complete="searchArtists"
               @blur="resolveAlbumArtistInput"
             />
@@ -1656,8 +1648,8 @@ function formatDuration(seconds: number): string {
             completeOnFocus
             placeholder="Search genres"
             class="w-full"
-            input-class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
-            panel-class="!bg-[#181818] !border-white/[0.08]"
+            input-class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
+            panel-class="bg-[#181818]! border-white/8!"
             @complete="searchGenres"
           >
             <template #option="{ option }">
@@ -1688,7 +1680,7 @@ function formatDuration(seconds: number): string {
           <InputNumber
             v-model="form.duration_seconds"
             class="w-full"
-            input-class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
+            input-class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
           />
         </div>
 
@@ -1700,7 +1692,7 @@ function formatDuration(seconds: number): string {
           <InputNumber
             v-model="form.track_number"
             class="w-full"
-            input-class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
+            input-class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
           />
         </div>
 
@@ -1712,7 +1704,7 @@ function formatDuration(seconds: number): string {
           <InputNumber
             v-model="form.disc_number"
             class="w-full"
-            input-class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
+            input-class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
           />
         </div>
 
@@ -1724,7 +1716,7 @@ function formatDuration(seconds: number): string {
           <InputNumber
             v-model="form.year"
             class="w-full"
-            input-class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
+            input-class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
           />
         </div>
       </section>
@@ -1740,7 +1732,7 @@ function formatDuration(seconds: number): string {
             <InputText
               v-model="form.isrc"
               placeholder="e.g. USRC17607839"
-              class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
+              class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
             />
           </div>
 
@@ -1752,7 +1744,7 @@ function formatDuration(seconds: number): string {
             <InputText
               v-model="form.language"
               placeholder="en, fa, fr..."
-              class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
+              class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
             />
           </div>
         </div>
@@ -1766,7 +1758,7 @@ function formatDuration(seconds: number): string {
             <InputText
               v-model="form.release_date"
               placeholder="YYYY-MM-DD"
-              class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
+              class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
             />
           </div>
 
@@ -1778,7 +1770,7 @@ function formatDuration(seconds: number): string {
             <InputText
               v-model="form.label"
               placeholder="Record label"
-              class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
+              class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
             />
           </div>
         </div>
@@ -1801,12 +1793,12 @@ function formatDuration(seconds: number): string {
         <InputText
           v-model="form.composer"
           placeholder="Composer names"
-          class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
+          class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
         />
       </section>
 
       <!-- Credits -->
-      <section class="space-y-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
+      <section class="space-y-3 rounded-2xl border border-white/8 bg-white/3 p-4">
         <div class="flex items-center justify-between">
           <div>
             <h3 class="text-sm font-semibold text-white">Credits</h3>
@@ -1821,7 +1813,7 @@ function formatDuration(seconds: number): string {
             label="Add credit"
             size="small"
             outlined
-            class="!rounded-lg"
+            class="rounded-lg!"
             @click="addCreditRow"
           />
         </div>
@@ -1829,7 +1821,7 @@ function formatDuration(seconds: number): string {
         <div
           v-for="(row, index) in creditRows"
           :key="index"
-          class="grid grid-cols-1 gap-3 rounded-xl border border-white/[0.06] bg-black/20 p-3 md:grid-cols-[1fr_220px_44px]"
+          class="grid grid-cols-1 gap-3 rounded-xl border border-white/6 bg-black/20 p-3 md:grid-cols-[1fr_220px_44px]"
         >
           <AutoComplete
             v-model="row.artist"
@@ -1839,8 +1831,8 @@ function formatDuration(seconds: number): string {
             dropdown
             completeOnFocus
             class="w-full"
-            input-class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
-            panel-class="!bg-[#181818] !border-white/[0.08]"
+            input-class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
+            panel-class="bg-[#181818]! border-white/8!"
             @complete="searchArtists"
           />
 
@@ -1851,15 +1843,15 @@ function formatDuration(seconds: number): string {
             optionValue="value"
             editable
             placeholder="Role"
-            class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
-            panel-class="!bg-[#181818] !border-white/[0.08]"
+            class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
+            panel-class="bg-[#181818]! border-white/8!"
           />
 
           <Button
             type="button"
             icon="pi pi-trash"
             text
-            class="!text-slate-500 hover:!text-red-400"
+            class="text-slate-500! hover:text-red-400!"
             @click="removeCreditRow(index)"
           />
         </div>
@@ -1880,7 +1872,7 @@ function formatDuration(seconds: number): string {
             <InputText
               v-model="form.lyrics_language"
               placeholder="en"
-              class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
+              class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
             />
           </div>
 
@@ -1897,8 +1889,8 @@ function formatDuration(seconds: number): string {
               ]"
               optionLabel="label"
               optionValue="value"
-              class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
-              panel-class="!bg-[#181818] !border-white/[0.08]"
+              class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
+              panel-class="bg-[#181818]! border-white/8!"
             />
           </div>
         </div>
@@ -1916,7 +1908,7 @@ function formatDuration(seconds: number): string {
               size="small"
               text
               :loading="metadataLoading || aiGenerating"
-              class="!text-teal-400 hover:!text-teal-300"
+              class="text-teal-400! hover:text-teal-300!"
               @click="fetchLRCLyrics"
             />
           </div>
@@ -1926,18 +1918,18 @@ function formatDuration(seconds: number): string {
             rows="6"
             autoResize
             placeholder="Track lyrics..."
-            class="w-full !rounded-xl !border-white/[0.08] !bg-white/[0.03] !text-white"
+            class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
           />
         </div>
       </section>
 
       <!-- Actions -->
-      <footer class="flex items-center justify-end gap-3 border-t border-white/[0.08] pt-4">
+      <footer class="flex items-center justify-end gap-3 border-t border-white/8 pt-4">
         <Button
           type="button"
           label="Cancel"
           text
-          class="!text-slate-300"
+          class="text-slate-300!"
           @click="closeDialog"
         />
 
@@ -1946,8 +1938,8 @@ function formatDuration(seconds: number): string {
           icon="pi pi-check"
           :label="isEditMode ? 'Save changes' : 'Create track'"
           :loading="props.loading"
-          :disabled="!canSubmit || props.loading"
-          class="!rounded-xl"
+          :disabled="canSubmit! || props.loading"
+          class="rounded-xl!"
         />
       </footer>
     </form>

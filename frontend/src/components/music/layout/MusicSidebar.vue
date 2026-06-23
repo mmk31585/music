@@ -7,12 +7,11 @@
     <!-- Toggle button -->
     <div class="flex items-center justify-between px-3 py-3" :class="collapsed ? 'flex-col gap-3' : ''">
       <RouterLink v-if="!collapsed" to="/" class="flex items-center gap-3 rounded-2xl px-1 py-2">
-        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#1db954] text-xl text-black">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-spotify text-xl text-black">
           <i aria-hidden="true" class="pi pi-volume-up" />
         </div>
         <div>
           <div class="text-lg font-black text-white">Music App</div>
-          <div class="text-xs font-medium text-slate-400">Stream everything</div>
         </div>
       </RouterLink>
       <button
@@ -32,8 +31,8 @@
         <p class="px-4 pb-1 pt-2 text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">Browse</p>
         <RouterLink
           v-for="item in mainNav" :key="item.to" :to="item.to"
-          class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
-          :class="isActive(item.to) ? 'bg-white/[0.10] text-white' : ''"
+          class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/8 hover:text-white"
+          :class="isActive(item.to) ? 'bg-white/10 text-white' : ''"
           :aria-current="isActive(item.to) ? 'page' : undefined"
         >
           <i aria-hidden="true" :class="item.icon" class="text-lg" />
@@ -44,8 +43,8 @@
         <p class="px-4 pb-1 pt-2 text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">Library</p>
         <RouterLink
           v-for="item in libraryNav" :key="item.to" :to="item.to"
-          class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
-          :class="isActive(item.to) ? 'bg-white/[0.10] text-white' : ''"
+          class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/8 hover:text-white"
+          :class="isActive(item.to) ? 'bg-white/10 text-white' : ''"
           :aria-current="isActive(item.to) ? 'page' : undefined"
         >
           <i aria-hidden="true" :class="item.icon" class="text-lg" />
@@ -56,8 +55,8 @@
         <p class="px-4 pb-1 pt-2 text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">Social</p>
         <RouterLink
           v-for="item in socialNav" :key="item.to" :to="item.to"
-          class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
-          :class="isActive(item.to) ? 'bg-white/[0.10] text-white' : ''"
+          class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/8 hover:text-white"
+          :class="isActive(item.to) ? 'bg-white/10 text-white' : ''"
           :aria-current="isActive(item.to) ? 'page' : undefined"
         >
           <i aria-hidden="true" :class="item.icon" class="text-lg" />
@@ -68,8 +67,8 @@
         <p class="px-4 pb-1 pt-2 text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">More</p>
         <RouterLink
           v-for="item in moreNav" :key="item.to" :to="item.to"
-          class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
-        :class="isActive(item.to) ? 'bg-white/[0.10] text-white' : ''"
+          class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 transition hover:bg-white/8 hover:text-white"
+        :class="isActive(item.to) ? 'bg-white/10 text-white' : ''"
         :aria-current="isActive(item.to) ? 'page' : undefined"
       >
           <i aria-hidden="true" :class="item.icon" class="text-lg" />
@@ -81,8 +80,8 @@
     <nav v-else aria-label="Main navigation" class="mt-2 flex flex-col items-center gap-1 px-1">
       <RouterLink
         v-for="item in allNav" :key="item.to" :to="item.to"
-        class="flex h-10 w-10 items-center justify-center rounded-xl text-lg transition hover:bg-white/[0.08]"
-        :class="isActive(item.to) ? 'text-white bg-white/[0.10]' : 'text-slate-400 hover:text-white'"
+        class="flex h-10 w-10 items-center justify-center rounded-xl text-lg transition hover:bg-white/8"
+        :class="isActive(item.to) ? 'text-white bg-white/10' : 'text-slate-400 hover:text-white'"
         :title="item.label"
         :aria-current="isActive(item.to) ? 'page' : undefined"
       >
@@ -108,14 +107,13 @@ const authStore = useUserAuthStore()
 
 const collapsed = ref(localStorage.getItem('sidebar-collapsed') === 'true')
 function toggleCollapsed() {
-  collapsed.value = !collapsed.value
+  collapsed.value = collapsed.value!
   localStorage.setItem('sidebar-collapsed', String(collapsed.value))
   window.dispatchEvent(new CustomEvent('sidebar-collapse', { detail: collapsed.value }))
 }
 
 const mainNav = [
   { label: 'Home', icon: 'pi pi-home', to: '/' },
-  { label: 'Discover', icon: 'pi pi-compass', to: '/discover' },
   { label: 'Search', icon: 'pi pi-search', to: '/search' },
   { label: 'Recommendations', icon: 'pi pi-star', to: '/recommendations' },
   { label: 'Music Videos', icon: 'pi pi-video', to: '/videos' },
@@ -147,16 +145,6 @@ const moreNav = computed(() => {
     items.push({ label: 'Admin Panel', icon: 'pi pi-shield', to: '/admin' })
   }
   return items
-})
-
-const latestAlbum = computed(() => {
-  const track = playerStore.currentTrack
-  if (!track) return null
-  return {
-    cover_url: track.coverUrl,
-    title: track.albumTitle || track.title,
-    artist_name: track.artistName,
-  }
 })
 
 const allNav = computed(() => [...mainNav, ...libraryNav, ...socialNav, ...moreNav.value])

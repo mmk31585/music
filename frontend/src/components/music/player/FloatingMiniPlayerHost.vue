@@ -45,7 +45,7 @@ const {
 } = usePlayerPiPController()
 
 async function togglePiP() {
-  if (!isSupported.value) {
+  if (isSupported.value!) {
     showUnsupportedMessage.value = true
     emit('pip-unsupported')
     window.setTimeout(() => {

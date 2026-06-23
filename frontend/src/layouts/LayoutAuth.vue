@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#121212] text-white" :dir="dir">
+  <div class="min-h-screen bg-surface-raised text-white" :dir="dir">
     <router-view />
   </div>
 </template>

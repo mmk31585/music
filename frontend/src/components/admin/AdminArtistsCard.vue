@@ -7,12 +7,12 @@
           {{ filteredArtists.length }} artist{{ filteredArtists.length !== 1 ? 's' : '' }}
         </span>
         <div class="h-4 w-px bg-white/10" />
-        <IconField class="!w-56">
+        <IconField class="w-56!">
           <InputIcon><i aria-hidden="true" class="pi pi-search text-xs text-slate-500" /></InputIcon>
           <InputText
             v-model="searchQuery"
             placeholder="Search artists..."
-            class="!h-9 !w-full !rounded-lg !border-white/[0.08] !bg-white/[0.03] !text-sm !text-white placeholder:!text-slate-600"
+            class="h-9! w-full! rounded-lg! border-white/8! bg-white/3! text-sm! text-white! placeholder:text-slate-600!"
           />
         </IconField>
       </div>
@@ -21,20 +21,20 @@
         label="Add artist"
         icon="pi pi-plus"
         size="small"
-        class="!rounded-xl !bg-emerald-500 !px-4 !text-black hover:!bg-emerald-400"
+        class="rounded-xl! bg-emerald-500! px-4! text-black! hover:bg-emerald-400!"
         @click="openCreate"
       />
     </div>
 
     <!-- Content -->
-    <div class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+    <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
       <!-- Loading State -->
-      <div v-if="loading" class="divide-y divide-white/[0.04]">
+      <div v-if="loading" class="divide-y divide-white/4">
         <div v-for="i in 5" :key="i" class="flex items-center gap-4 px-5 py-4">
-          <div class="h-10 w-10 animate-pulse rounded-full bg-white/[0.06]" />
+          <div class="h-10 w-10 animate-pulse rounded-full bg-white/6" />
           <div class="flex-1 space-y-2">
-            <div class="h-4 w-32 animate-pulse rounded bg-white/[0.06]" />
-            <div class="h-3 w-48 animate-pulse rounded bg-white/[0.04]" />
+            <div class="h-4 w-32 animate-pulse rounded bg-white/6" />
+            <div class="h-3 w-48 animate-pulse rounded bg-white/4" />
           </div>
         </div>
       </div>
@@ -51,7 +51,7 @@
             label="Add artist"
             icon="pi pi-plus"
             size="small"
-            class="!rounded-xl !bg-emerald-500 !px-4 !text-black hover:!bg-emerald-400"
+            class="rounded-xl! bg-emerald-500! px-4! text-black! hover:bg-emerald-400!"
             @click="openCreate"
           />
         </template>
@@ -66,14 +66,14 @@
       />
 
       <!-- Artist List -->
-      <div v-else class="divide-y divide-white/[0.04]">
+      <div v-else class="divide-y divide-white/4">
         <div
           v-for="artist in filteredArtists"
           :key="artist.id"
-          class="group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-white/[0.02]"
+          class="group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-white/2"
         >
           <!-- Avatar -->
-          <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-white/[0.06]">
+          <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-white/6">
             <img
               v-if="artist.image_url"
               :src="artist.image_url"
@@ -118,7 +118,7 @@
               text
               rounded
               size="small"
-              class="!h-8 !w-8 !text-slate-400 hover:!text-white"
+              class="h-8! w-8! text-slate-400! hover:text-white!"
               v-tooltip.top="'View'"
               @click="router.push({ name: 'admin.artist.detail', params: { id: artist.id } })"
             />
@@ -128,7 +128,7 @@
               rounded
               size="small"
               :loading="enrichingId === artist.id"
-              class="!h-8 !w-8 !text-slate-400 hover:!text-amber-400"
+              class="h-8! w-8! text-slate-400! hover:text-amber-400!"
               v-tooltip.top="'Enrich'"
               @click="handleEnrich(artist)"
             />
@@ -137,7 +137,7 @@
               text
               rounded
               size="small"
-              class="!h-8 !w-8 !text-slate-400 hover:!text-emerald-400"
+              class="h-8! w-8! text-slate-400! hover:text-emerald-400!"
               v-tooltip.top="'Edit'"
               @click="openEdit(artist)"
             />
@@ -146,7 +146,7 @@
               text
               rounded
               size="small"
-              class="!h-8 !w-8 !text-slate-400 hover:!text-red-400"
+              class="h-8! w-8! text-slate-400! hover:text-red-400!"
               v-tooltip.top="'Delete'"
               @click="openDeleteConfirm(artist)"
             />
@@ -177,8 +177,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
 import { useToast } from 'primevue/usetoast'
 import AdminEmptyState from './AdminEmptyState.vue'
 import ArtistFormDialog from './ArtistFormDialog.vue'
@@ -210,7 +208,7 @@ const enrichingId = ref<string | number | null>(null)
 
 const filteredArtists = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
-  if (!q) return artists.value
+  if (q!) return artists.value
   return artists.value.filter(
     (a) =>
       a.name.toLowerCase().includes(q) ||
@@ -264,7 +262,7 @@ async function handleSubmit(payload: ArtistFormPayload) {
 }
 
 async function handleDelete() {
-  if (!deleteTarget.value) return
+  if (deleteTarget.value!) return
   try {
     await deleteArtist(deleteTarget.value.id)
     toast.add({ severity: 'success', summary: 'Artist deleted', life: 2500 })

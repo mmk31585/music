@@ -1,9 +1,9 @@
 <template>
   <div class="mx-auto w-full max-w-7xl px-4 pt-6 pb-32 md:px-6 lg:px-8">
     <section
-      class="relative overflow-hidden rounded-[2rem] border border-white/[0.06] bg-[#0C0C14] p-10 text-white"
+      class="relative overflow-hidden rounded-2xl border border-white/6 bg-[#0C0C14] p-10 text-white"
     >
-      <div class="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-[#1db954]/10 blur-3xl" />
+      <div class="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-spotify/10 blur-3xl" />
       <div class="relative">
         <p class="text-[10px] font-bold tracking-[0.35em] text-white/30 uppercase">Collections</p>
         <h1 class="mt-2 text-4xl font-black md:text-6xl">Playlists</h1>
@@ -18,7 +18,7 @@
         <h2 class="text-xl font-bold text-white">My Playlists</h2>
         <button
           type="button"
-          class="rounded-full bg-[#1db954] px-6 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-[#1ed760]"
+          class="rounded-full bg-spotify px-6 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-spotify-hover"
           @click="showCreate = true"
         >
           <i aria-hidden="true" class="pi pi-plus mr-2" />
@@ -27,7 +27,7 @@
       </div>
 
       <div v-if="loading" class="mt-6 space-y-3">
-        <div v-for="i in 4" :key="i" class="h-20 animate-pulse rounded-2xl bg-white/[0.06]" />
+        <div v-for="i in 4" :key="i" class="h-20 animate-pulse rounded-2xl bg-white/6" />
       </div>
 
       <div
@@ -43,7 +43,7 @@
         <p class="mt-2 text-sm text-slate-400">Start by creating your first playlist.</p>
         <button
           type="button"
-          class="mt-5 rounded-full bg-[#1db954] px-6 py-3 text-sm font-bold text-black transition hover:bg-[#1ed760]"
+          class="mt-5 rounded-full bg-spotify px-6 py-3 text-sm font-bold text-black transition hover:bg-spotify-hover"
           @click="showCreate = true"
         >
           <i aria-hidden="true" class="pi pi-plus mr-2" />
@@ -56,7 +56,7 @@
           v-for="playlist in playlists"
           :key="playlist.id"
           :to="`/playlist/${playlist.id}`"
-          class="group rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.08]"
+          class="group rounded-2xl border border-white/10 bg-white/4 p-4 transition hover:-translate-y-0.5 hover:bg-white/8"
         >
           <div class="relative mb-3 aspect-square overflow-hidden rounded-xl bg-white/10">
             <img
@@ -70,7 +70,7 @@
               <i aria-hidden="true" class="pi pi-list text-3xl text-slate-500" />
             </div>
             <div class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100">
-              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954] text-black shadow-xl">
+              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify text-black shadow-xl">
                 <i aria-hidden="true" class="pi pi-play-fill text-lg" />
               </div>
             </div>
@@ -85,7 +85,7 @@
       v-model:visible="showCreate"
       header="Create Playlist"
       :modal="true"
-      class="w-full max-w-md rounded-2xl bg-[#121212]"
+      class="w-full max-w-md rounded-2xl bg-surface-raised"
     >
       <div class="space-y-4 p-4">
         <div>
@@ -93,7 +93,7 @@
           <InputText
             v-model="newName"
             placeholder="My awesome playlist"
-            class="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-white placeholder:text-slate-500"
+            class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-slate-500"
           />
         </div>
         <div>
@@ -102,7 +102,7 @@
             v-model="newDescription"
             placeholder="Optional description"
             rows="3"
-            class="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-white placeholder:text-slate-500"
+            class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-slate-500"
           />
         </div>
         <div class="flex items-center gap-2">
@@ -117,8 +117,8 @@
           />
           <Button
             label="Create"
-            class="rounded-xl bg-[#1db954] px-5 py-2 text-sm font-semibold text-black hover:bg-[#1ed760]"
-            :disabled="!newName.trim() || creating"
+            class="rounded-xl bg-spotify px-5 py-2 text-sm font-semibold text-black hover:bg-spotify-hover"
+            :disabled="newName.trim!() || creating"
             @click="handleCreate"
           />
         </div>
@@ -133,11 +133,6 @@ import { useToast } from 'primevue/usetoast'
 import { useRouter } from 'vue-router'
 import { usePlaylistsApi } from '@/services/api/playlist'
 import type { PlaylistListItem } from '@/services/api/playlist'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
-import Checkbox from 'primevue/checkbox'
-import Button from 'primevue/button'
 
 const playlistsApi = usePlaylistsApi()
 const router = useRouter()
@@ -164,7 +159,7 @@ async function fetchPlaylists() {
 }
 
 async function handleCreate() {
-  if (!newName.value.trim() || creating.value) return
+  if (newName.value.trim!() || creating.value) return
   creating.value = true
   try {
     const result = await playlistsApi.createPlaylist({

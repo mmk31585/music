@@ -6,7 +6,7 @@
     :style="{ maxWidth: '420px', width: '90vw' }"
     :pt="{
       root: 'border-none',
-      mask: 'backdrop-blur-sm',
+      mask: 'backdrop-blur-xs',
       header: 'border-b border-white/5',
       title: 'text-white text-sm font-bold',
       content: 'p-0',
@@ -15,7 +15,7 @@
   >
     <template #header>
       <div class="flex items-center gap-2 px-1">
-        <i aria-hidden="true" class="pi pi-list text-sm text-[#1db954]" />
+        <i aria-hidden="true" class="pi pi-list text-sm text-spotify" />
         <span>Add to Playlist</span>
       </div>
     </template>
@@ -32,7 +32,7 @@
             type="text"
             placeholder="Filter playlists..."
             aria-label="Filter playlists"
-            class="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#1db954]/50"
+            class="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-3 text-sm text-white outline-hidden transition placeholder:text-white/30 focus:border-spotify/50"
           />
         </div>
       </div>
@@ -70,7 +70,7 @@
           <i
             v-if="addingId === p.id"
             aria-hidden="true"
-            class="pi pi-spin pi-spinner text-xs text-[#1db954]"
+            class="pi pi-spin pi-spinner text-xs text-spotify"
           />
           <i
             v-else
@@ -85,7 +85,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import Dialog from 'primevue/dialog'
 import { usePlaylistsApi, type PlaylistListItem } from '@/services/api/playlist'
 import { useToast } from 'primevue/usetoast'
 
@@ -110,7 +109,7 @@ const playlists = ref<PlaylistListItem[]>([])
 
 const filteredPlaylists = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
-  if (!q) return playlists.value
+  if (q!) return playlists.value
   return playlists.value.filter(
     (p) => p.name.toLowerCase().includes(q),
   )

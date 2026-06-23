@@ -1,7 +1,7 @@
 <template>
   <button
     type="button"
-    class="group relative flex h-16 w-full cursor-pointer items-center gap-3 overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.04] p-2 text-right transition-all duration-200 hover:bg-white/[0.08] focus-visible:ring-2 focus-visible:ring-[#1db954] focus-visible:ring-offset-2 focus-visible:outline-none"
+    class="group relative flex h-16 w-full cursor-pointer items-center gap-3 overflow-hidden rounded-xl border border-white/6 bg-white/4 p-2 text-right transition-all duration-200 hover:bg-white/8 focus-visible:ring-2 focus-visible:ring-spotify focus-visible:ring-offset-2 focus-visible:outline-hidden"
     :class="{ 'border-l-[3px] border-l-[#1db954]': isPlaying }"
     :style="{ transitionDelay: `${delay}ms` }"
     @click="$emit('play', item)"
@@ -21,7 +21,7 @@
     <div class="min-w-0 flex-1">
       <p
         class="truncate text-sm font-semibold"
-        :class="isPlaying ? 'text-[#1db954]' : 'text-white'"
+        :class="isPlaying ? 'text-spotify' : 'text-white'"
       >
         {{ item.title || item.track_title || 'بدون عنوان' }}
       </p>
@@ -30,7 +30,7 @@
       </p>
     </div>
     <div
-      class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1db954] text-black opacity-0 transition-all duration-200 group-hover:opacity-100"
+      class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-spotify text-black opacity-0 transition-all duration-200 group-hover:opacity-100"
     >
       <i aria-hidden="true" class="pi pi-play-fill text-sm" />
     </div>

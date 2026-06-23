@@ -1,11 +1,11 @@
 <template>
   <div class="mx-auto max-w-7xl space-y-8 px-4 pt-4 pb-32 md:px-6 lg:px-8">
     <!-- ── Dynamic Hero ── -->
-    <div class="relative overflow-hidden rounded-[2rem] p-8 md:p-10">
+    <div class="relative overflow-hidden rounded-2xl p-8 md:p-10">
       <div class="pointer-events-none absolute inset-0" aria-hidden="true">
-        <div class="absolute -top-40 -right-40 h-[500px] w-[500px] rounded-full bg-[#1db954]/8 blur-3xl" />
-        <div class="absolute -bottom-20 -left-20 h-[300px] w-[300px] rounded-full bg-[#a855f7]/6 blur-3xl" />
-        <div class="absolute inset-0 bg-gradient-to-br from-black/40 via-transparent to-black/60" />
+        <div class="absolute -top-40 -right-40 h-125 w-125 rounded-full bg-spotify/8 blur-3xl" />
+        <div class="absolute -bottom-20 -left-20 h-75 w-75 rounded-full bg-aurora-purple/6 blur-3xl" />
+        <div class="absolute inset-0 bg-linear-to-br from-black/40 via-transparent to-black/60" />
       </div>
 
       <div class="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -20,7 +20,7 @@
         <!-- Inline "Start a Party from current track" -->
         <div
           v-if="currentTrack"
-          class="flex items-center gap-3 rounded-2xl bg-white/[0.06] p-3 ring-1 ring-white/[0.10]"
+          class="flex items-center gap-3 rounded-2xl bg-white/6 p-3 ring-1 ring-white/10"
         >
           <div class="h-10 w-10 shrink-0 overflow-hidden rounded-xl">
             <img
@@ -33,13 +33,13 @@
               <i aria-hidden="true" class="pi pi-music text-sm text-white/30" />
             </div>
           </div>
-          <div class="min-w-0 max-w-[180px]">
+          <div class="min-w-0 max-w-45">
             <p class="truncate text-xs font-medium text-white">{{ currentTrack.title }}</p>
             <p class="truncate text-[10px] text-white/40">Now Playing</p>
           </div>
           <button
             aria-label="Start a listening party with this track"
-            class="rounded-full bg-[#1db954] px-4 py-2 text-[11px] font-bold text-black transition hover:bg-[#1ed760] hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-white"
+            class="rounded-full bg-spotify px-4 py-2 text-[11px] font-bold text-black transition hover:bg-spotify-hover hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-white"
             @click="startPartyFromTrack"
           >
             <span class="flex items-center gap-1.5">
@@ -54,7 +54,7 @@
     <!-- loading state -->
     <template v-if="loading">
       <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div v-for="i in 3" :key="i" class="rounded-2xl bg-white/[0.04] p-5 ring-1 ring-white/[0.06]">
+        <div v-for="i in 3" :key="i" class="rounded-2xl bg-white/4 p-5 ring-1 ring-white/6">
           <div class="h-4 w-20 rounded-full bg-white/5 animate-pulse mb-4" />
           <div class="h-24 rounded-xl bg-white/5 animate-pulse mb-3" />
           <div class="h-8 w-full rounded-lg bg-white/5 animate-pulse" />
@@ -70,7 +70,7 @@
       <!-- ── Bento Grid: Live Now / Trending Parties / Your Clubs ── -->
       <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
         <!-- Live Now -->
-        <div class="rounded-2xl bg-white/[0.06] p-5 ring-1 ring-white/[0.10] transition hover:bg-white/[0.08] group">
+        <div class="rounded-2xl bg-white/6 p-5 ring-1 ring-white/10 transition hover:bg-white/8 group">
           <div class="flex items-center gap-2 mb-3">
             <span class="flex h-2 w-2 rounded-full bg-red-500 motion-safe:animate-pulse" />
             <span class="text-[10px] font-bold tracking-wider text-red-400 uppercase">Live Now</span>
@@ -80,7 +80,7 @@
           <div class="flex items-end gap-0.5 h-12 mb-3" aria-hidden="true">
             <div
               v-for="i in 16" :key="i"
-              class="w-1.5 rounded-full bg-[#1db954]/60"
+              class="w-1.5 rounded-full bg-spotify/60"
               :style="{ height: `${12 + Math.random() * 36}px`, animationDelay: `${i * 100}ms` }"
             />
           </div>
@@ -92,11 +92,11 @@
               <div class="flex -space-x-2" aria-label="Listeners">
                 <div
                   v-for="i in Math.min(5, featuredRoom.listener_count || 0)" :key="i"
-                  class="h-7 w-7 overflow-hidden rounded-full border-2 border-[#0A0A0A] bg-white/10"
+                  class="h-7 w-7 overflow-hidden rounded-full border-2 border-surface-base bg-white/10"
                 />
                 <div
                   v-if="(featuredRoom.listener_count || 0) > 5"
-                  class="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#0A0A0A] bg-white/10 text-[9px] font-bold text-white/60"
+                  class="flex h-7 w-7 items-center justify-center rounded-full border-2 border-surface-base bg-white/10 text-[9px] font-bold text-white/60"
                 >
                   +{{ (featuredRoom.listener_count || 0) - 5 }}
                 </div>
@@ -124,7 +124,7 @@
         </div>
 
         <!-- Trending Parties -->
-        <div class="rounded-2xl bg-white/[0.06] p-5 ring-1 ring-white/[0.10]">
+        <div class="rounded-2xl bg-white/6 p-5 ring-1 ring-white/10">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-sm font-bold text-white">Trending Parties</h3>
             <button
@@ -138,7 +138,7 @@
           <div v-if="parties.length" class="space-y-2">
             <div
               v-for="party in parties.slice(0, 3)" :key="party.id"
-              class="flex items-center gap-3 rounded-xl p-2 transition hover:bg-white/[0.04] cursor-pointer"
+              class="flex items-center gap-3 rounded-xl p-2 transition hover:bg-white/4 cursor-pointer"
               @click="handleJoinParty(party.id)"
             >
               <div class="h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-white/10">
@@ -151,14 +151,14 @@
                 <p class="truncate text-xs font-medium text-white">{{ party.title }}</p>
                 <p class="text-[10px] text-white/30">{{ party.participant_count || 0 }} listening</p>
               </div>
-              <span class="flex h-2 w-2 rounded-full bg-[#1db954] motion-safe:animate-pulse shrink-0" />
+              <span class="flex h-2 w-2 rounded-full bg-spotify motion-safe:animate-pulse shrink-0" />
             </div>
           </div>
           <div v-else class="flex flex-col items-center gap-3 py-8 text-center">
             <i aria-hidden="true" class="pi pi-users text-xl text-white/20" />
             <p class="text-xs text-white/30">No active parties</p>
             <button
-              class="rounded-full bg-[#1db954]/10 px-4 py-1.5 text-[10px] font-semibold text-[#1db954] transition hover:bg-[#1db954]/20"
+              class="rounded-full bg-spotify/10 px-4 py-1.5 text-[10px] font-semibold text-spotify transition hover:bg-spotify/20"
               @click="openCreateWizard('party')"
             >
               Start One
@@ -167,7 +167,7 @@
         </div>
 
         <!-- Your Clubs -->
-        <div class="rounded-2xl bg-white/[0.06] p-5 ring-1 ring-white/[0.10]">
+        <div class="rounded-2xl bg-white/6 p-5 ring-1 ring-white/10">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-sm font-bold text-white">Your Clubs</h3>
             <button
@@ -181,7 +181,7 @@
           <div v-if="myClubs.length" class="space-y-2">
             <div
               v-for="club in myClubs.slice(0, 3)" :key="club.id"
-              class="flex items-center gap-3 rounded-xl p-2 transition hover:bg-white/[0.04] cursor-pointer"
+              class="flex items-center gap-3 rounded-xl p-2 transition hover:bg-white/4 cursor-pointer"
               @click="router.push(`/social/clubs/${club.id}`)"
             >
               <div
@@ -218,11 +218,11 @@
       </div>
 
       <!-- ── Activity River ── -->
-      <div class="rounded-2xl bg-white/[0.06] p-5 ring-1 ring-white/[0.10]" role="feed" aria-label="Live activity feed">
+      <div class="rounded-2xl bg-white/6 p-5 ring-1 ring-white/10" role="feed" aria-label="Live activity feed">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-sm font-bold text-white">Activity</h3>
           <span class="flex items-center gap-1.5 text-[10px] text-white/30">
-            <span class="h-1.5 w-1.5 rounded-full bg-[#1db954] motion-safe:animate-pulse" aria-hidden="true" />
+            <span class="h-1.5 w-1.5 rounded-full bg-spotify motion-safe:animate-pulse" aria-hidden="true" />
             Live
           </span>
         </div>
@@ -240,7 +240,7 @@
         </div>
         <button
           v-if="activities.length > 5"
-          class="mt-3 w-full rounded-lg py-2 text-xs text-white/40 transition hover:bg-white/[0.04] hover:text-white/60"
+          class="mt-3 w-full rounded-lg py-2 text-xs text-white/40 transition hover:bg-white/4 hover:text-white/60"
           @click="showAllActivities"
         >
           Show {{ activities.length - 5 }} more
@@ -248,7 +248,7 @@
       </div>
 
       <!-- ── Discussions ── -->
-      <div class="rounded-2xl bg-white/[0.06] p-5 ring-1 ring-white/[0.10]">
+      <div class="rounded-2xl bg-white/6 p-5 ring-1 ring-white/10">
         <h3 class="text-sm font-bold text-white mb-4">Discussions</h3>
         <DiscussionThread
           :discussions="discussions"
@@ -318,7 +318,7 @@ const createEntityType = ref<'party' | 'room' | 'club'>('party')
 const currentTrack = computed(() => playerStore.currentTrack)
 
 const greeting = computed(() => {
-  if (!authStore.isLoggedIn) return 'Community'
+  if (authStore.isLoggedIn!) return 'Community'
   const name = authStore.user?.displayName || authStore.user?.username || ''
   const hour = new Date().getHours()
   let timeGreeting = 'Hello'
@@ -358,7 +358,7 @@ async function fetchUserName(userId: string) {
 }
 
 async function fetchTrackName(trackId: string) {
-  if (!trackId || trackNames.value[trackId]) return
+  if (trackId! || trackNames.value[trackId]) return
   try {
     const track = await playerApi.getPlaybackTrack(trackId)
     trackNames.value[trackId] = `${track.artistName} - ${track.title}`

@@ -28,7 +28,7 @@ function handleAction() {
     return
   }
 
-  if (props.action === 'play' && !hasReachedLimit.value) {
+  if (props.action === 'play' && hasReachedLimit.value!) {
     incrementGuestPlay()
     emit('proceed')
     return

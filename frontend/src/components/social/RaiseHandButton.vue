@@ -3,7 +3,7 @@
     v-if="myRole === 'listener'"
     class="raise-hand-btn fixed bottom-24 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2.5 rounded-full px-5 py-3 text-sm font-semibold shadow-lg backdrop-blur-xl transition-all duration-250"
     :class="handRaised
-      ? 'border border-[#f59e0b]/50 bg-[#f59e0b]/10 text-[#f59e0b] hover:bg-[#f59e0b]/20'
+      ? 'border border-amber-500/50 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20'
       : 'border border-white/10 bg-white/5 text-white hover:bg-white/10'"
     @click="handRaised ? $emit('lower') : $emit('raise')"
   >

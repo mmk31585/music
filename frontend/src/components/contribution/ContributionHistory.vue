@@ -20,7 +20,7 @@
     </div>
 
     <div v-else class="relative space-y-0">
-      <div class="absolute top-3 bottom-3 left-4 w-px bg-white/[0.06]" />
+      <div class="absolute top-3 bottom-3 left-4 w-px bg-white/6" />
 
       <div v-for="(item, idx) in items" :key="item.id" class="relative flex gap-4 pb-6 last:pb-0">
         <div
@@ -35,7 +35,7 @@
             <span class="text-sm font-medium text-white/70">{{
               changeLabel(item.change_type)
             }}</span>
-            <span class="rounded bg-white/5 px-1.5 py-0.5 text-[10px] font-medium text-white/30">{{
+            <span class="rounded-sm bg-white/5 px-1.5 py-0.5 text-[10px] font-medium text-white/30">{{
               item.changed_by
             }}</span>
           </div>
@@ -83,13 +83,13 @@ function toggleExpand(idx: number) {
 function badgeClass(changeType: string) {
   switch (changeType) {
     case 'approve':
-      return 'bg-[#1db954]/15 text-[#1db954]'
+      return 'bg-spotify/15 text-spotify'
     case 'reject':
       return 'bg-red-500/15 text-red-400'
     case 'create':
-      return 'bg-[#60a5fa]/15 text-[#60a5fa]'
+      return 'bg-aurora-blue/15 text-aurora-blue'
     case 'revert':
-      return 'bg-[#f59e0b]/15 text-[#f59e0b]'
+      return 'bg-amber-500/15 text-amber-500'
     default:
       return 'bg-white/5 text-white/40'
   }

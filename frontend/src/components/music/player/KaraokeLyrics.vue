@@ -8,7 +8,7 @@
         <div
           v-for="i in 6"
           :key="i"
-          class="shimmer h-5 rounded bg-white/[0.06]"
+          class="shimmer h-5 rounded bg-white/6"
           :style="{ width: `${55 + ((i * 7) % 30)}%` }"
         />
       </div>
@@ -38,7 +38,7 @@
             'scale-105 font-bold text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]':
               idx === activeLineIdx,
             'text-white/15 hover:text-white/35': isPast(idx),
-            'text-white/25 hover:text-white/50': idx !== activeLineIdx && !isPast(idx),
+            'text-white/25 hover:text-white/50': idx !== activeLineIdx && isPast!(idx),
           }"
           @click="onLineClick(line.timeSeconds)"
           @keydown.enter="onLineClick(line.timeSeconds)"
@@ -51,7 +51,7 @@
               class="transition-all duration-[50ms] ease-linear"
               :class="
                 isWordActive(line, wIdx)
-                  ? 'text-[#1db954] drop-shadow-[0_0_12px_rgba(29,185,84,0.6)]'
+                  ? 'text-spotify drop-shadow-[0_0_12px_rgba(29,185,84,0.6)]'
                   : 'text-white/40'
               "
             >
@@ -75,9 +75,9 @@
     <!-- Karaoke badge -->
     <div v-if="karaoke && content" class="absolute top-4 left-1/2 z-20 -translate-x-1/2">
       <span
-        class="inline-flex items-center gap-1.5 rounded-full border border-[#1db954]/20 bg-[#1db954]/10 px-3 py-1 text-[10px] font-bold tracking-wider text-[#1db954] uppercase backdrop-blur-sm"
+        class="inline-flex items-center gap-1.5 rounded-full border border-spotify/20 bg-spotify/10 px-3 py-1 text-[10px] font-bold tracking-wider text-spotify uppercase backdrop-blur-xs"
       >
-        <span class="glow-spread flex h-1.5 w-1.5 rounded-full bg-[#1db954]" />
+        <span class="glow-spread flex h-1.5 w-1.5 rounded-full bg-spotify" />
         Karaoke
       </span>
     </div>
@@ -127,7 +127,7 @@ let parsedCache: ParsedLine[] = []
 watch(
   () => [props.type, props.content],
   () => {
-    if (!props.content) {
+    if (props.content!) {
       parsedCache = []
       return
     }
@@ -140,7 +140,7 @@ watch(
 const activeLineIdx = computed(() => {
   const t = props.currentTime
   for (let i = parsedCache.length - 1; i >= 0; i--) {
-    if (t >= parsedCache[i]!.timeSeconds) return i
+    if (t >= parsedCache[i].timeSeconds!) return i
   }
   return -1
 })
@@ -150,11 +150,11 @@ function isPast(idx: number) {
 }
 
 function isWordActive(line: ParsedLine, wordIdx: number) {
-  if (!line.words || line.words.length === 0) return true
+  if (line.words! || line.words.length === 0) return true
   const t = props.currentTime
   const word = line.words[wordIdx]
   const nextWord = line.words[wordIdx + 1]
-  if (!word) return false
+  if (word!) return false
   const start = word.timeSeconds >= 0 ? word.timeSeconds : line.timeSeconds
   const end = nextWord?.timeSeconds ?? line.timeSeconds + 4
   return t >= start && t < end
@@ -165,7 +165,7 @@ let autoScrollTimer: ReturnType<typeof setTimeout> | null = null
 watch(activeLineIdx, (idx) => {
   if (autoScrollTimer) clearTimeout(autoScrollTimer)
   autoScrollTimer = setTimeout(() => {
-    if (idx < 0 || !containerRef.value) return
+    if (idx < 0 || containerRef.value!) return
     const target = lineRefs.value[idx]
     target?.scrollIntoView({ block: 'center', behavior: 'smooth' })
   }, 80)

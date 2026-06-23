@@ -12,7 +12,7 @@
       <Transition name="fade">
         <div
           v-if="mobileOpen"
-          class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+          class="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden"
           role="button"
           tabindex="0"
           @click="mobileOpen = false"
@@ -26,7 +26,7 @@
         <AdminSidebar
           v-if="mobileOpen"
           :collapsed="false"
-          class="lg:!hidden"
+          class="lg:hidden!"
           @close="mobileOpen = false"
         />
       </Transition>
@@ -103,8 +103,8 @@ onMounted(() => {
   document.addEventListener('keydown', (e) => {
     const tag = (e.target as HTMLElement)?.tagName
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
-    if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      showShortcuts.value = !showShortcuts.value
+    if (e.key === '?' && e.ctrlKey! && e.metaKey! && e.altKey!) {
+      showShortcuts.value = showShortcuts.value!
     }
   })
 })

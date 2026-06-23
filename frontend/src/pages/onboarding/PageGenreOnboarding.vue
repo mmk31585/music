@@ -1,15 +1,15 @@
 <template>
   <div
-    class="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#0a0a0a] via-[#0f0f1a] to-[#0a0a0a] px-4"
+    class="flex min-h-screen items-center justify-center bg-linear-to-br from-surface-base via-[#0f0f1a] to-surface-base px-4"
   >
     <div
       class="w-full max-w-xl rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-xl"
     >
       <div class="mb-8 text-center">
         <div
-          class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#1db954]/20"
+          class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-spotify/20"
         >
-          <i aria-hidden="true" class="pi pi-music text-3xl text-[#1db954]" />
+          <i aria-hidden="true" class="pi pi-music text-3xl text-spotify" />
         </div>
         <h1 class="text-2xl font-bold text-white md:text-3xl">چه سبک موسیقی رو دوست داری؟</h1>
         <p class="mt-2 text-sm text-slate-400">
@@ -22,7 +22,7 @@
         <div
           v-for="n in 12"
           :key="n"
-          class="animate-pulse rounded-xl border border-white/10 bg-white/[0.04] px-5 py-2.5 text-sm"
+          class="animate-pulse rounded-xl border border-white/10 bg-white/4 px-5 py-2.5 text-sm"
         >
           <span class="text-transparent">Loading</span>
         </div>
@@ -40,8 +40,8 @@
           class="spring rounded-xl border px-5 py-2.5 text-sm font-medium transition-all"
           :class="
             selectedIds.includes(genre.id)
-              ? 'border-[#1db954] bg-[#1db954]/15 text-[#1db954] shadow-[0_0_12px_rgba(29,185,84,0.15)]'
-              : 'border-white/10 bg-white/[0.04] text-slate-300 hover:border-white/20 hover:bg-white/[0.08] hover:text-white'
+              ? 'border-spotify bg-spotify/15 text-spotify shadow-[0_0_12px] shadow-spotify/15'
+              : 'border-white/10 bg-white/4 text-slate-300 hover:border-white/20 hover:bg-white/8 hover:text-white'
           "
           @click="toggleGenre(genre.id)"
         >
@@ -65,7 +65,7 @@
           icon-class="ml-2"
           :loading="saving"
           :disabled="selectedIds.length < 3 || saving"
-          class="w-full max-w-xs border-0 bg-[#1db954] px-6 text-black hover:bg-[#1ed760]"
+          class="w-full max-w-xs border-0 bg-spotify px-6 text-black hover:bg-spotify-hover"
           @click="saveGenres"
         />
         <button
@@ -83,7 +83,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import Button from 'primevue/button'
 import { useGenresApi } from '@/services/api/catalog/genres'
 import { client } from '@/composables'
 

@@ -11,7 +11,7 @@
         v-for="badge in allBadges"
         :key="badge.id"
         class="group relative flex flex-col items-center rounded-xl p-4 text-center transition-all duration-300"
-        :class="earnedBadgeMap[badge.id] ? 'bg-white/5' : 'bg-white/[0.02] opacity-40 saturate-0'"
+        :class="earnedBadgeMap[badge.id] ? 'bg-white/5' : 'bg-white/2 opacity-40 saturate-0'"
       >
         <!-- Badge icon -->
         <div
@@ -43,7 +43,7 @@
         <!-- Earned stamp overlay -->
         <div
           v-if="earnedBadgeMap[badge.id]"
-          class="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#1db954] text-[10px] text-black shadow-lg"
+          class="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-spotify text-[10px] text-black shadow-lg"
         >
           ✓
         </div>

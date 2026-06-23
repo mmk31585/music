@@ -7,11 +7,11 @@
         :class="moodBgClass"
       />
       <div
-        class="absolute -top-1/3 -right-1/4 h-[500px] w-[500px] rounded-full opacity-30 blur-[150px] transition-all duration-1000"
+        class="absolute -top-1/3 -right-1/4 h-125 w-125 rounded-full opacity-30 blur-[150px] transition-all duration-1000"
         :class="moodSpotClass"
       />
       <div
-        class="absolute -bottom-1/3 -left-1/4 h-[400px] w-[400px] rounded-full opacity-20 blur-[120px] transition-all duration-1000"
+        class="absolute -bottom-1/3 -left-1/4 h-100 w-100 rounded-full opacity-20 blur-[120px] transition-all duration-1000"
         :class="moodSpotClass2"
       />
     </div>
@@ -24,7 +24,7 @@
         <div class="mb-10">
           <div class="mb-3 flex items-center gap-2">
             <span
-              class="inline-flex items-center gap-1.5 rounded-full border border-[#1db954]/20 bg-[#1db954]/10 px-3 py-1 text-[10px] font-bold tracking-[0.2em] text-[#1db954] uppercase"
+              class="inline-flex items-center gap-1.5 rounded-full border border-spotify/20 bg-spotify/10 px-3 py-1 text-[10px] font-bold tracking-[0.2em] text-spotify uppercase"
             >
               <i aria-hidden="true" class="pi pi-sparkles text-[10px]" />
               AI-Powered
@@ -48,13 +48,13 @@
             :class="[
               selectedMood === mood.value
                 ? moodSelectedBorder(mood.value)
-                : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12]',
+                : 'border-white/6 bg-white/2 hover:border-white/12',
             ]"
             @click="toggleMood(mood.value)"
           >
             <!-- Hover/Active gradient -->
             <div
-              class="pointer-events-none absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+              class="pointer-events-none absolute inset-0 bg-linear-to-br opacity-0 transition-opacity duration-500 group-hover:opacity-100"
               :class="getMoodGradient(mood.value)"
             />
             <!-- Selected glow -->
@@ -70,7 +70,7 @@
                 :class="
                   selectedMood === mood.value
                     ? moodIconActiveBg(mood.value)
-                    : 'bg-white/[0.06] text-white/40 group-hover:bg-white/[0.10]'
+                    : 'bg-white/6 text-white/40 group-hover:bg-white/10'
                 "
               >
                 <i aria-hidden="true" :class="mood.icon" />
@@ -106,7 +106,7 @@
               </h2>
               <span
                 v-if="tracks.length && selectedMood"
-                class="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-medium text-white/40"
+                class="rounded-full bg-white/6 px-2 py-0.5 text-[10px] font-medium text-white/40"
               >
                 {{ tracks.length }} tracks
               </span>
@@ -115,7 +115,7 @@
 
           <!-- Loading state -->
           <div v-if="loading" class="space-y-2">
-            <div v-for="i in 6" :key="i" class="flex items-center gap-3 rounded-2xl bg-white/[0.02] px-4 py-3">
+            <div v-for="i in 6" :key="i" class="flex items-center gap-3 rounded-2xl bg-white/2 px-4 py-3">
               <div class="shimmer h-10 w-10 shrink-0 rounded-lg" />
               <div class="flex-1 space-y-2">
                 <div class="shimmer h-3 w-3/4 rounded" />
@@ -128,14 +128,14 @@
           <!-- Track list -->
           <div
             v-else-if="tracks.length"
-            class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm"
+            class="overflow-hidden rounded-2xl border border-white/6 bg-white/2 backdrop-blur-xs"
           >
             <div
               v-for="(track, index) in tracks"
               :key="String(track.id)"
               role="button"
               tabindex="0"
-              class="group flex items-center gap-3 px-4 py-2.5 transition hover:bg-white/[0.04]"
+              class="group flex items-center gap-3 px-4 py-2.5 transition hover:bg-white/4"
               :style="{ animationDelay: `${index * 50}ms` }"
               @click="playTrack(index)"
               @keydown.enter="playTrack(index)"
@@ -147,7 +147,7 @@
               </span>
 
               <!-- Cover -->
-              <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/[0.06]">
+              <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/6">
                 <img
                   v-if="track.cover_url"
                   :src="track.cover_url as string"
@@ -189,7 +189,7 @@
                 <span
                   v-for="tag in ((track.mood as Record<string, unknown>).mood_tags as Array<{name: string}>)?.slice(0, 2)"
                   :key="tag.name"
-                  class="rounded-full bg-white/[0.06] px-2 py-0.5 text-[9px] font-medium text-white/40"
+                  class="rounded-full bg-white/6 px-2 py-0.5 text-[9px] font-medium text-white/40"
                 >
                   {{ tag.name }}
                 </span>
@@ -205,12 +205,12 @@
           <!-- Empty / Pick a mood state -->
           <div
             v-else-if="!selectedMood"
-            class="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-white/[0.06] bg-white/[0.02] px-6 py-20 text-center"
+            class="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-20 text-center"
           >
             <div
-              class="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1db954]/20 to-blue-500/20"
+              class="flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-spotify/20 to-blue-500/20"
             >
-              <i aria-hidden="true" class="pi pi-heart text-2xl text-[#1db954]" />
+              <i aria-hidden="true" class="pi pi-heart text-2xl text-spotify" />
             </div>
             <h3 class="text-lg font-bold text-white">What's your mood?</h3>
             <p class="max-w-xs text-sm text-white/40">
@@ -221,10 +221,10 @@
           <!-- No results state -->
           <div
             v-else
-            class="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-white/[0.06] bg-white/[0.02] px-6 py-20 text-center"
+            class="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-20 text-center"
           >
             <div
-              class="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-white/5 to-white/[0.02]"
+              class="flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-white/5 to-white/2"
             >
               <i aria-hidden="true" class="pi pi-inbox text-2xl text-white/20" />
             </div>
@@ -285,22 +285,22 @@ function getMoodGradient(mood: string): string {
     confident: 'from-purple-400/15 via-fuchsia-500/10 to-transparent',
     sleep: 'from-slate-400/15 via-blue-500/10 to-transparent',
   }
-  return gradients[mood] || 'from-[#1db954]/15 via-emerald-500/10 to-transparent'
+  return gradients[mood] || 'from-spotify/15 via-emerald-500/10 to-transparent'
 }
 
 function moodBgClass(): string {
-  if (!selectedMood.value) return 'bg-black/0'
+  if (selectedMood.value!) return 'bg-black/0'
   const bg: Record<string, string> = {
-    energetic: 'bg-gradient-to-b from-[#0a0a0a] via-orange-950/20 to-black',
-    happy: 'bg-gradient-to-b from-[#0a0a0a] via-amber-950/15 to-black',
-    chill: 'bg-gradient-to-b from-[#0a0a0a] via-teal-950/20 to-black',
-    calm: 'bg-gradient-to-b from-[#0a0a0a] via-blue-950/20 to-black',
-    sad: 'bg-gradient-to-b from-[#0a0a0a] via-indigo-950/20 to-black',
-    focus: 'bg-gradient-to-b from-[#0a0a0a] via-emerald-950/20 to-black',
-    romantic: 'bg-gradient-to-b from-[#0a0a0a] via-rose-950/20 to-black',
-    intense: 'bg-gradient-to-b from-[#0a0a0a] via-red-950/20 to-black',
-    confident: 'bg-gradient-to-b from-[#0a0a0a] via-purple-950/20 to-black',
-    sleep: 'bg-gradient-to-b from-[#0a0a0a] via-slate-950/20 to-black',
+    energetic: 'bg-linear-to-b from-surface-base via-orange-950/20 to-black',
+    happy: 'bg-linear-to-b from-surface-base via-amber-950/15 to-black',
+    chill: 'bg-linear-to-b from-surface-base via-teal-950/20 to-black',
+    calm: 'bg-linear-to-b from-surface-base via-blue-950/20 to-black',
+    sad: 'bg-linear-to-b from-surface-base via-indigo-950/20 to-black',
+    focus: 'bg-linear-to-b from-surface-base via-emerald-950/20 to-black',
+    romantic: 'bg-linear-to-b from-surface-base via-rose-950/20 to-black',
+    intense: 'bg-linear-to-b from-surface-base via-red-950/20 to-black',
+    confident: 'bg-linear-to-b from-surface-base via-purple-950/20 to-black',
+    sleep: 'bg-linear-to-b from-surface-base via-slate-950/20 to-black',
   }
   return bg[selectedMood.value] || 'bg-black/0'
 }
@@ -366,7 +366,7 @@ function moodIconActiveBg(mood: string): string {
     confident: 'bg-purple-400/20 text-purple-300',
     sleep: 'bg-slate-400/20 text-slate-300',
   }
-  return bg[mood] || 'bg-[#1db954]/20 text-[#1db954]'
+  return bg[mood] || 'bg-spotify/20 text-spotify'
 }
 
 function moodSelectedBorder(mood: string): string {
@@ -382,7 +382,7 @@ function moodSelectedBorder(mood: string): string {
     confident: 'border-purple-400/40 bg-purple-400/10',
     sleep: 'border-slate-400/40 bg-slate-400/10',
   }
-  return borders[mood] || 'border-[#1db954]/40 bg-[#1db954]/10'
+  return borders[mood] || 'border-spotify/40 bg-spotify/10'
 }
 
 function moodTextClass(mood: string): string {
@@ -398,7 +398,7 @@ function moodTextClass(mood: string): string {
     confident: 'text-purple-300',
     sleep: 'text-slate-300',
   }
-  return txt[mood] || 'text-[#1db954]'
+  return txt[mood] || 'text-spotify'
 }
 
 function getEnergyBarColor(energy: number): string {
@@ -437,7 +437,7 @@ async function toggleMood(mood: string) {
 }
 
 function playTrack(index: number) {
-  if (!tracks.value.length) return
+  if (tracks.value.length!) return
   const queue = tracks.value.map((t) => ({
     id: String(t.id),
     title: String(t.title ?? ''),
@@ -450,7 +450,7 @@ function playTrack(index: number) {
 }
 
 function formatTime(seconds?: number) {
-  if (!seconds) return '0:00'
+  if (seconds!) return '0:00'
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${String(s).padStart(2, '0')}`

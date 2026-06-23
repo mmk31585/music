@@ -1,9 +1,9 @@
 <template>
-  <div class="relative overflow-hidden rounded-[2rem]">
+  <div class="relative overflow-hidden rounded-2xl">
     <div
-      class="absolute inset-0 bg-gradient-to-b from-[#1db954]/20 via-[#121212]/60 to-[#121212]"
+      class="absolute inset-0 bg-linear-to-b from-spotify/20 via-surface-raised/60 to-surface-raised"
     />
-    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+    <div class="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
 
     <div
       class="relative z-10 flex flex-col items-center gap-6 px-6 pt-16 pb-8 text-center md:flex-row md:items-end md:gap-8 md:pt-8 md:text-left"
@@ -21,7 +21,7 @@
         />
         <div
           v-else
-          class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1db954]/30 to-[#121212] text-5xl text-white/40"
+          class="flex h-full w-full items-center justify-center bg-linear-to-br from-spotify/30 to-surface-raised text-5xl text-white/40"
         >
           <i aria-hidden="true" class="pi pi-user" />
         </div>
@@ -32,8 +32,8 @@
           v-if="artist?.is_verified"
           class="mb-2 flex items-center justify-center gap-1.5 md:justify-start"
         >
-          <i aria-hidden="true" class="pi pi-verified text-sm text-[#1db954]" />
-          <span class="text-xs font-medium text-[#1db954]">Verified Artist</span>
+          <i aria-hidden="true" class="pi pi-verified text-sm text-spotify" />
+          <span class="text-xs font-medium text-spotify">Verified Artist</span>
         </div>
 
         <h1 class="text-4xl leading-tight font-black text-white md:text-6xl">
@@ -52,7 +52,7 @@
         <div class="mt-6 flex flex-wrap items-center justify-center gap-3 md:justify-start">
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-full bg-[#1db954] px-8 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-[#1ed760]"
+            class="inline-flex items-center gap-2 rounded-full bg-spotify px-8 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-spotify-hover"
             @click="$emit('playAll')"
           >
             <i aria-hidden="true" class="pi pi-play-fill" />
@@ -61,7 +61,7 @@
 
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-8 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15"
+            class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-8 py-3 text-sm font-bold text-white backdrop-blur-xs transition hover:bg-white/15"
             @click="$emit('shuffle')"
           >
             <i aria-hidden="true" class="pi pi-shuffle" />
@@ -73,7 +73,7 @@
             :class="[
               'inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold transition',
               isFollowing
-                ? 'border border-[#1db954]/50 bg-[#1db954]/10 text-[#1db954] hover:bg-[#1db954]/20'
+                ? 'border border-spotify/50 bg-spotify/10 text-spotify hover:bg-spotify/20'
                 : 'border border-white/15 bg-white/10 text-white hover:bg-white/15',
             ]"
             @click="$emit('toggleFollow')"

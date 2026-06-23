@@ -1,9 +1,9 @@
 <template>
-  <div class="relative overflow-hidden rounded-[2rem]">
+  <div class="relative overflow-hidden rounded-2xl">
     <!-- Aurora gradient — driven by genreColor or green fallback -->
     <div class="pointer-events-none absolute inset-0" aria-hidden="true">
       <div
-        class="absolute inset-0 bg-gradient-to-br"
+        class="absolute inset-0 bg-linear-to-br"
         :style="heroGradient"
       />
       <div
@@ -14,7 +14,7 @@
         class="absolute -bottom-16 -left-16 h-60 w-60 rounded-full blur-3xl opacity-15"
         :style="{ background: orbColor2 }"
       />
-      <div class="absolute inset-0 bg-gradient-to-t from-[#08080A] via-[#08080A]/20 to-transparent" />
+      <div class="absolute inset-0 bg-linear-to-t from-surface-base via-surface-base/20 to-transparent" />
     </div>
 
     <div class="relative z-10 flex flex-col gap-6 px-6 pt-16 pb-8 md:flex-row md:items-end md:gap-10 md:pt-12 md:pb-10">
@@ -22,11 +22,11 @@
       <div class="relative shrink-0 self-center md:self-end">
         <div
           v-if="musicStatus?.playing"
-          class="absolute -inset-2 motion-safe:animate-ping rounded-full border-2 border-[#1db954] opacity-30"
+          class="absolute -inset-2 motion-safe:animate-ping rounded-full border-2 border-spotify opacity-30"
         />
         <div
           class="h-36 w-36 overflow-hidden rounded-full border-4 shadow-2xl md:h-44 md:w-44"
-          :class="musicStatus?.playing ? 'border-[#1db954]' : 'border-white/10'"
+          :class="musicStatus?.playing ? 'border-spotify' : 'border-white/10'"
         >
           <img
             v-if="avatarUrl"
@@ -38,7 +38,7 @@
           />
           <div
             v-else
-            class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1db954]/30 to-[#a855f7]/30 text-4xl text-white/40"
+            class="flex h-full w-full items-center justify-center bg-linear-to-br from-spotify/30 to-aurora-purple/30 text-4xl text-white/40"
           >
             <i aria-hidden="true" class="pi pi-user" />
           </div>
@@ -46,7 +46,7 @@
         <!-- Creator badge -->
         <div
           v-if="isCreator"
-          class="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-[#1db954] ring-2 ring-[#08080A] shadow-lg"
+          class="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-spotify ring-2 ring-surface-base shadow-lg"
           aria-label="Creator"
         >
           <i aria-hidden="true" class="pi pi-check text-[11px] text-black" />
@@ -87,7 +87,7 @@
         <!-- NOW PLAYING — prominent, animated -->
         <div
           v-if="musicStatus?.playing && currentTrackInfo"
-          class="mt-4 flex w-full max-w-md items-center gap-3 rounded-2xl bg-white/[0.06] p-3 ring-1 ring-white/[0.10] motion-safe:animate-fade-in-up"
+          class="mt-4 flex w-full max-w-md items-center gap-3 rounded-2xl bg-white/6 p-3 ring-1 ring-white/10 motion-safe:animate-fade-in-up"
         >
           <div class="h-12 w-12 shrink-0 overflow-hidden rounded-xl shadow-lg">
             <img
@@ -105,7 +105,7 @@
               <span class="flex gap-0.5" aria-hidden="true">
                 <span
                   v-for="i in 4" :key="i"
-                  class="h-3 w-0.5 rounded-full bg-[#1db954] motion-safe:animate-equalizer"
+                  class="h-3 w-0.5 rounded-full bg-spotify motion-safe:animate-equalizer"
                   :style="{ animationDelay: `${i * 100}ms` }"
                 />
               </span>
@@ -118,7 +118,7 @@
           <button
             v-if="!isOwnProfile"
             aria-label="Listen along"
-            class="shrink-0 rounded-full bg-[#1db954] px-4 py-1.5 text-[10px] font-bold text-black transition hover:bg-[#1ed760] hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-white"
+            class="shrink-0 rounded-full bg-spotify px-4 py-1.5 text-[10px] font-bold text-black transition hover:bg-spotify-hover hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-white"
             @click="$emit('listenAlong', currentTrackInfo.id)"
           >
             Listen
@@ -142,8 +142,8 @@
               'inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold transition',
               'focus-visible:outline-2 focus-visible:outline-white active:scale-[0.97]',
               isFollowing
-                ? 'border border-[#1db954]/50 bg-[#1db954]/10 text-[#1db954] hover:bg-[#1db954]/20'
-                : 'bg-[#1db954] text-black hover:bg-[#1ed760] hover:scale-105',
+                ? 'border border-spotify/50 bg-spotify/10 text-spotify hover:bg-spotify/20'
+                : 'bg-spotify text-black hover:bg-spotify-hover hover:scale-105',
             ]"
             @click="$emit('toggleFollow')"
           >
@@ -152,14 +152,14 @@
           </button>
           <button
             aria-label="Share profile"
-            class="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.04] p-3 text-white/60 backdrop-blur transition hover:bg-white/[0.10] hover:text-white active:scale-95 focus-visible:outline-2 focus-visible:outline-[#1db954]"
+            class="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/4 p-3 text-white/60 backdrop-blur-xs transition hover:bg-white/10 hover:text-white active:scale-95 focus-visible:outline-2 focus-visible:outline-[#1db954]"
             @click="$emit('share')"
           >
             <i aria-hidden="true" class="pi pi-share-alt text-sm" />
           </button>
           <button
             v-if="isOwnProfile"
-            class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-5 py-3 text-sm font-medium text-white/60 backdrop-blur transition hover:bg-white/[0.10] hover:text-white focus-visible:outline-2 focus-visible:outline-[#1db954]"
+            class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/4 px-5 py-3 text-sm font-medium text-white/60 backdrop-blur-xs transition hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-[#1db954]"
             @click="$emit('editProfile')"
           >
             <i aria-hidden="true" class="pi pi-pencil text-xs" />
@@ -225,7 +225,7 @@ const orbColor2 = computed(() => {
 })
 
 const formatJoinDate = computed(() => {
-  if (!props.joinDate) return ''
+  if (props.joinDate!) return ''
   const d = new Date(props.joinDate)
   try {
     return d.toLocaleDateString('fa-IR', { year: 'numeric', month: 'long' })
