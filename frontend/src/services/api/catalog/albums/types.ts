@@ -16,6 +16,7 @@ export const AlbumSchema = z
     coverUrl: z.string().optional().nullable(),
     artistId: IdSchema.optional().nullable(),
     releaseDate: z.string().optional().nullable(),
+    genre: z.string().optional().nullable(),
     artists: z.array(AlbumArtistSchema).optional().nullable(),
   })
   .transform((album) => ({
@@ -25,19 +26,29 @@ export const AlbumSchema = z
     artist_id: album.artistId ?? null,
     artist_name: album.artists?.find((a) => a.role === 'primary')?.name ?? album.artists?.[0]?.name ?? null,
     release_date: album.releaseDate ?? null,
+    genre: album.genre ?? null,
     track_count: 0,
   }))
 
-export type Album = z.infer<typeof AlbumSchema>
+export type Album = {
+  id: string | number
+  title: string
+  cover_url: string | null
+  artist_id: string | number | null
+  artist_name: string | null
+  release_date: string | null
+  genre: string | null
+  track_count: number
+}
 
 export interface AlbumCreatePayload {
   title: string
-  cover_url?: string | null
-  artist_id?: string | number | null
+  coverUrl?: string | null
+  artistId?: string | number | null
 }
 
 export interface AlbumUpdatePayload {
   title?: string
-  cover_url?: string | null
-  artist_id?: string | number | null
+  coverUrl?: string | null
+  artistId?: string | number | null
 }

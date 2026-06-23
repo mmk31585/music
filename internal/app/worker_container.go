@@ -78,9 +78,10 @@ func (c *WorkerContainer) buildWorkers() {
 	lfmClient := enrichment.NewLastFMClient(enrichCfg.LastFM)
 	spotClient := enrichment.NewSpotifyClient(enrichCfg.Spotify)
 	lrcClient := enrichment.NewLRCLibClient()
-	enricher := enrichment.NewEnricher(mbClient, lfmClient, spotClient, lrcClient, c.App.Logger)
+	mlClient := enrichment.NewMLEnrichmentClient(c.App.Config.MLService.BaseURL)
+	enricher := enrichment.NewEnricher(mbClient, lfmClient, spotClient, lrcClient, mlClient, c.App.Logger)
 
-	storageClient, err := platformstorage.New(context.Background(), platformstorage.Config{
+	storageClient, err := platformstorage.New(c.App.ctx, platformstorage.Config{
 		Driver: c.App.Config.Storage.Driver,
 		Local: platformstorage.LocalConfig{
 			BaseDir: c.App.Config.Storage.Local.BaseDir,
@@ -154,5 +155,37 @@ func (c *WorkerContainer) Run(ctx context.Context) error {
 }
 
 func (c *WorkerContainer) Shutdown(ctx context.Context) error {
+	c.App.Logger.Info("worker container shutdown: cancelling contexts")
+
+	// Cancel the app context to signal all workers to stop
+	if c.App.cancel != nil {
+		c.App.cancel()
+	}
+
+	// Wait for all workers with timeout
+	done := make(chan struct{})
+	go func() {
+		c.App.backgroundWg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		c.App.Logger.Info("worker container: all workers shut down gracefully")
+	case <-ctx.Done():
+		c.App.Logger.Warn("worker container: timeout waiting for workers", zap.Error(ctx.Err()))
+	}
+
+	// Close infrastructure
+	if c.App.DB != nil {
+		c.App.DB.Close()
+	}
+	if c.App.Redis != nil {
+		_ = c.App.Redis.Close()
+	}
+	if c.App.Logger != nil {
+		_ = c.App.Logger.Sync()
+	}
+
 	return nil
 }

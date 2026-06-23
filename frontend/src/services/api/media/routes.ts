@@ -5,7 +5,7 @@ import { MediaApiRoutes } from './enums'
 import { UploadResponseSchema, type UploadResponse, type Media } from './types'
 import { apiReplaceParams } from '@/utils/api-replace-params'
 
-export type UploadFieldName = 'artistImage' | 'albumCover' | 'trackCover' | 'trackAudio'
+export type UploadFieldName = 'artistImage' | 'albumCover' | 'trackCover' | 'trackAudio' | 'playlistCover'
 
 export const useMediaApi = () => {
   const uploadAdminMedia = async (

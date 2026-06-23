@@ -3,6 +3,9 @@ import { useUserAuthStore } from '@/stores'
 import { useSocialApi } from '@/services/api/social'
 import { useReactionsApi } from '@/services/api/reactions'
 import { useToast } from 'primevue/usetoast'
+import type { User } from '@/services/api/auth/types'
+import type { ActivityFeedItem } from '@/services/api/social/types'
+import type { RecommendationTrack } from '@/services/api/recommendation/types'
 
 export function useUserProfile(userId?: string) {
   const auth = useUserAuthStore()
@@ -13,17 +16,17 @@ export function useUserProfile(userId?: string) {
   const targetUserId = computed(() => String(userId || auth.user?.id || ''))
   const isOwnProfile = computed(() => !userId || String(userId) === String(auth.user?.id))
 
-  const followers = ref<any[]>([])
-  const following = ref<any[]>([])
+  const followers = ref<User[]>([])
+  const following = ref<User[]>([])
   const followerCount = ref(0)
   const followingCount = ref(0)
   const isFollowing = ref(false)
-  const feed = ref<any[]>([])
-  const likedTracks = ref<any[]>([])
-  const likedAlbums = ref<any[]>([])
+  const feed = ref<ActivityFeedItem[]>([])
+  const likedTracks = ref<RecommendationTrack[]>([])
+  const likedAlbums = ref<RecommendationTrack[]>([])
   const feedHasMore = ref(false)
   const loading = ref(false)
-  const error = ref<any>(null)
+  const error = ref<unknown>(null)
 
   const displayName = computed(() => {
     return auth.user?.displayName || auth.user?.username || auth.user?.name || 'User'
@@ -67,7 +70,7 @@ export function useUserProfile(userId?: string) {
         const followingCheck = await socialApi.isFollowing(uid).catch(() => null)
         if (followingCheck) isFollowing.value = followingCheck.is_following
       }
-    } catch (err) {
+    } catch (err: unknown) {
       error.value = err
       const msg = err instanceof Error ? err.message : 'Failed to load profile'
       toast.add({ severity: 'error', summary: 'Profile Error', detail: msg, life: 5000 })

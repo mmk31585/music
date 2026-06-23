@@ -3,11 +3,11 @@
     <div
       class="flex h-10 w-10 items-center justify-center rounded-full bg-[#1db954] font-bold text-black"
     >
-      S
+      M
     </div>
     <div>
-      <h1 class="text-lg font-bold text-white">Soundify</h1>
-      <p class="text-xs text-slate-400">Music Platform</p>
+      <h1 class="text-lg font-bold text-white">Muse</h1>
+      <p class="text-xs text-slate-400">Persian Music Platform</p>
     </div>
   </div>
 </template>

@@ -41,6 +41,11 @@ Based on scan results, create a prioritized task list:
 ### 5. Verify & Report
 Run `npm run lint` / `npm run type-check` after changes. Restart servers if needed. Report summary.
 
+## Team Mode Alternative
+For tightly-coupled, cross-domain work (e.g., building an end-to-end feature), use `@muse-team` instead of this coordinator. The team model replaces isolated sub-agents with **peer-to-peer communication** — teammates message each other directly when blocked/unblocked, update a shared task list, and you only supervise.
+
+See `.opencode/agents/muse-team.md` for the full workflow.
+
 ## Project Quick-Ref
 
 - **Frontend:** Vue 3 + Pinia 3 + PrimeVue 4 + Tailwind v4, TypeScript strict

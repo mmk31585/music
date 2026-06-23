@@ -2,6 +2,7 @@ package track
 
 import (
 	"errors"
+	"log/slog"
 	"music/internal/modules/catalog/common"
 	"net/http"
 
@@ -19,28 +20,44 @@ func NewHandler(service *Service) *Handler {
 
 // ListPublic godoc
 // @Summary List public tracks
-// @Description Returns a paginated list of publicly visible tracks.
+// @Description Returns a paginated list of publicly visible tracks. Supports optional filtering by album_id or artist_id.
 // @Tags tracks
 // @Produce json
 // @Param limit query int false "Maximum number of items to return"
 // @Param offset query int false "Number of items to skip"
-// @Success 200 {array} Track
+// @Param album_id query string false "Filter by album ID"
+// @Param artist_id query string false "Filter by artist ID"
+// @Success 200 {array} TrackResponse
 // @Failure 500 {object} map[string]interface{}
 // @Router /tracks [get]
 func (h *Handler) ListPublic(c *gin.Context) {
 	p := common.ParsePagination(c)
 
-	items, err := h.service.List(c.Request.Context(), p.Limit, p.Offset, true)
+	var opts ListOptions
+	if albumID := c.Query("album_id"); albumID != "" {
+		uid, err := uuid.Parse(albumID)
+		if err == nil {
+			opts.AlbumID = &uid
+		}
+	}
+	if artistID := c.Query("artist_id"); artistID != "" {
+		uid, err := uuid.Parse(artistID)
+		if err == nil {
+			opts.ArtistID = &uid
+		}
+	}
+	if q := c.Query("q"); q != "" {
+		opts.Query = q
+	}
+
+	items, err := h.service.List(c.Request.Context(), p.Limit, p.Offset, true, opts)
 	if err != nil {
 		c.Error(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list tracks"})
 		return
 	}
 
-	if items == nil {
-		items = []Track{}
-	}
-	c.JSON(http.StatusOK, items)
+	c.JSON(http.StatusOK, TrackListToResponse(items))
 }
 
 // ListAdmin godoc
@@ -51,7 +68,7 @@ func (h *Handler) ListPublic(c *gin.Context) {
 // @Security Bearer
 // @Param limit query int false "Maximum number of items to return"
 // @Param offset query int false "Number of items to skip"
-// @Success 200 {array} Track
+// @Success 200 {array} TrackResponse
 // @Failure 401 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
 // @Router /admin/tracks [get]
@@ -63,10 +80,8 @@ func (h *Handler) ListAdmin(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list tracks"})
 		return
 	}
-	if items == nil {
-		items = []Track{}
-	}
-	c.JSON(http.StatusOK, items)
+
+	c.JSON(http.StatusOK, TrackListToResponse(items))
 }
 
 // Get godoc
@@ -75,7 +90,7 @@ func (h *Handler) ListAdmin(c *gin.Context) {
 // @Tags tracks
 // @Produce json
 // @Param trackID path string true "Track ID"
-// @Success 200 {object} Track
+// @Success 200 {object} TrackResponse
 // @Failure 400 {object} map[string]interface{}
 // @Failure 404 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
@@ -94,7 +109,7 @@ func (h *Handler) Get(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get track"})
 		return
 	}
-	c.JSON(http.StatusOK, item)
+	c.JSON(http.StatusOK, TrackToResponse(item))
 }
 
 // Create godoc
@@ -104,7 +119,7 @@ func (h *Handler) Get(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body CreateRequest true "Track creation payload"
-// @Success 201 {object} Track
+// @Success 201 {object} TrackResponse
 // @Failure 400 {object} map[string]interface{}
 // @Failure 409 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
@@ -140,7 +155,7 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, item)
+	c.JSON(http.StatusCreated, TrackToResponse(item))
 }
 
 // Update godoc
@@ -151,7 +166,7 @@ func (h *Handler) Create(c *gin.Context) {
 // @Produce json
 // @Param trackID path string true "Track ID"
 // @Param request body UpdateRequest true "Track update payload"
-// @Success 200 {object} Track
+// @Success 200 {object} TrackResponse
 // @Failure 400 {object} map[string]interface{}
 // @Failure 404 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
@@ -177,10 +192,11 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update track"})
+		slog.Error("failed to update track", "trackID", c.Param("trackID"), "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, item)
+	c.JSON(http.StatusOK, TrackToResponse(item))
 }
 
 // Delete godoc
@@ -217,7 +233,7 @@ func (h *Handler) Delete(c *gin.Context) {
 // @Tags tracks
 // @Produce json
 // @Param limit query int false "Number of random tracks to return (max 100)"
-// @Success 200 {array} Track
+// @Success 200 {array} TrackResponse
 // @Failure 500 {object} map[string]interface{}
 // @Router /tracks/random [get]
 func (h *Handler) Random(c *gin.Context) {
@@ -227,10 +243,7 @@ func (h *Handler) Random(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch random tracks"})
 		return
 	}
-	if items == nil {
-		items = []Track{}
-	}
-	c.JSON(http.StatusOK, items)
+	c.JSON(http.StatusOK, TrackListToResponse(items))
 }
 
 func (h *Handler) Credits(c *gin.Context) {
@@ -244,10 +257,7 @@ func (h *Handler) Credits(c *gin.Context) {
 		return
 	}
 
-	if items == nil {
-		items = []TrackCredit{}
-	}
-	c.JSON(http.StatusOK, items)
+	c.JSON(http.StatusOK, TrackCreditsToResponse(items))
 }
 
 func (h *Handler) ReplaceCredits(c *gin.Context) {
@@ -271,20 +281,18 @@ func (h *Handler) ReplaceCredits(c *gin.Context) {
 		return
 	}
 
-	if items == nil {
-		items = []TrackCredit{}
-	}
-	c.JSON(http.StatusOK, items)
+	c.JSON(http.StatusOK, TrackCreditsToResponse(items))
 }
+
 func (h *Handler) Artists(c *gin.Context) {
 	trackID := c.Param("trackID")
 
 	items, err := h.service.ListArtists(c.Request.Context(), trackID)
 	if err != nil {
-		switch err {
-		case common.ErrInvalidInput:
+		switch {
+		case errors.Is(err, common.ErrInvalidInput):
 			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
-		case common.ErrNotFound:
+		case errors.Is(err, common.ErrNotFound):
 			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": err.Error()})
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "failed to fetch track artists"})
@@ -309,10 +317,10 @@ func (h *Handler) ReplaceArtists(c *gin.Context) {
 
 	items, err := h.service.ReplaceArtists(c.Request.Context(), trackID, req)
 	if err != nil {
-		switch err {
-		case common.ErrInvalidInput:
+		switch {
+		case errors.Is(err, common.ErrInvalidInput):
 			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
-		case common.ErrNotFound:
+		case errors.Is(err, common.ErrNotFound):
 			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": err.Error()})
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "failed to replace track artists"})

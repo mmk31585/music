@@ -304,14 +304,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { SkeletonLoader } from '@/components/common'
 import { useUserAuthStore } from '@/stores'
-import { useRequest } from '@/composables/useRequest'
+import { useRequest, useRTL } from '@/composables'
 
 const auth = useUserAuthStore()
 const toast = useToast()
+const { isRTL, setRTL } = useRTL()
 
 const activeTab = ref('profile')
 const tabs = [
@@ -353,6 +354,16 @@ const preferences = reactive({
   notifySocial: true,
 })
 
+// Sync RTL preference with composable
+watch(() => preferences.rtl, (val) => {
+  setRTL(val)
+}, { immediate: true })
+
+// Sync initial value from composable to form
+if (isRTL.value) {
+  preferences.rtl = true
+}
+
 const initials = computed(() => {
   const name = auth.user?.displayName || auth.user?.username || auth.user?.name || '?'
   const words = name.split(/\s+/).filter(Boolean)
@@ -388,7 +399,7 @@ async function saveProfile() {
   saveMessage.value = ''
   saveError.value = false
   try {
-    await useRequest('/users/profile', {
+    await useRequest('/users/me/profile', {
       method: 'PUT',
       data: {
         displayName: form.displayName || undefined,
@@ -426,7 +437,7 @@ async function savePassword() {
   passwordMessage.value = ''
   passwordError.value = false
   try {
-    await useRequest('/users/password', {
+    await useRequest('/users/me/password', {
       method: 'PUT',
       data: {
         currentPassword: passwordForm.currentPassword,
@@ -448,9 +459,9 @@ async function savePreferences() {
   prefSaving.value = true
   prefMessage.value = ''
   try {
-    await useRequest('/users/profile', {
+    await useRequest('/users/me/profile', {
       method: 'PUT',
-      data: { preferences: { ...preferences } },
+      data: { preferences: JSON.stringify({ ...preferences }) },
     })
     prefMessage.value = 'Preferences saved'
     setTimeout(() => {

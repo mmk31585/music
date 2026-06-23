@@ -1,5 +1,5 @@
 APP_NAME=musicapp
-DOCKER_COMPOSE=docker compose -f deployments/docker-compose.yml
+DOCKER_COMPOSE=docker compose --env-file .env -f deployments/docker-compose.yml
 
 run:
 	@air -c .air.toml
@@ -19,7 +19,24 @@ build-worker:
 build-all: build build-worker
 
 test:
-	go test ./...
+	go test ./... -race -count=1
+
+test-coverage:
+	go test ./... -race -coverprofile=coverage.out -covermode=atomic -count=1
+
+cover-html: test-coverage
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report: file://$(PWD)/coverage.html"
+
+cover-ci:
+	go test ./... -race -coverprofile=coverage.out -covermode=atomic -count=1
+	go tool cover -func=coverage.out | tail -1 | awk '{print $$NF}' | sed 's/%//' | xargs -I{} bash -c 'if [ "{}" \< "30.0" ]; then echo "FAIL: Coverage {}% < 30.0% threshold"; exit 1; else echo "PASS: Coverage {}% >= 30.0%"; fi'
+
+lint-go:
+	golangci-lint run ./... --timeout 5m
+
+lint-frontend:
+	cd frontend && npm run lint
 
 fmt:
 	go fmt ./...

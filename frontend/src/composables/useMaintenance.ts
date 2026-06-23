@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 
 export function useMaintenance() {
   const secret = ref<string | null>(
-    (safeLocalStorage.getItem('maintenance_secret') as string | null) || null,
+    safeLocalStorage.getItem<string>('maintenance_secret'),
   )
   const getSecret = computed(() => secret.value)
 

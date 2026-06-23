@@ -7,13 +7,23 @@
       </div>
     </div>
 
-    <div v-else-if="error" class="flex flex-col items-center gap-4 py-24 text-center">
-      <i aria-hidden="true" class="pi pi-exclamation-circle text-4xl text-slate-500" />
-      <h2 class="text-xl font-bold text-white">Artist not found</h2>
-      <RouterLink to="/" class="text-sm font-medium text-[#1db954] underline underline-offset-2">
-        Go home
-      </RouterLink>
-    </div>
+    <AppEmptyState
+      v-else-if="error"
+      variant="error"
+      icon="pi pi-exclamation-circle"
+      title="Artist not found"
+      description="This artist may have been removed or the link is invalid."
+    >
+      <template #action>
+        <RouterLink
+          to="/"
+          class="inline-flex items-center gap-2 rounded-full bg-[#1db954] px-5 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760]"
+        >
+          <i aria-hidden="true" class="pi pi-home" />
+          Go home
+        </RouterLink>
+      </template>
+    </AppEmptyState>
 
     <template v-else-if="artist">
       <div
@@ -56,12 +66,12 @@
             </button>
           </div>
         </template>
-        <div v-else class="flex flex-col items-center gap-3 py-16 text-center">
-          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
-            <i aria-hidden="true" class="pi pi-music text-xl text-slate-500" />
-          </div>
-          <p class="text-sm font-medium text-white/60">No tracks found for this artist</p>
-        </div>
+        <AppEmptyState
+          v-else
+          icon="pi pi-music"
+          title="No tracks found"
+          description="No tracks found for this artist"
+        />
       </section>
 
       <!-- Section divider -->
@@ -87,12 +97,12 @@
             </HomeCarousel>
           </div>
         </template>
-        <div v-else class="flex flex-col items-center gap-3 py-16 text-center">
-          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
-            <i aria-hidden="true" class="pi pi-inbox text-xl text-slate-500" />
-          </div>
-          <p class="text-sm font-medium text-white/60">No albums yet</p>
-        </div>
+        <AppEmptyState
+          v-else
+          icon="pi pi-inbox"
+          title="No albums yet"
+          description="Albums will appear here once they're released."
+        />
       </section>
 
       <!-- Related -->
@@ -110,12 +120,12 @@
             </HomeCarousel>
           </div>
         </template>
-        <div v-else class="flex flex-col items-center gap-3 py-16 text-center">
-          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
-            <i aria-hidden="true" class="pi pi-inbox text-xl text-slate-500" />
-          </div>
-          <p class="text-sm font-medium text-white/60">No related artists</p>
-        </div>
+        <AppEmptyState
+          v-else
+          icon="pi pi-inbox"
+          title="No related artists"
+          description="Check back later for similar artist suggestions."
+        />
       </section>
 
       <!-- Bio -->
@@ -151,7 +161,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { SkeletonLoader } from '@/components/common'
+import { SkeletonLoader, AppEmptyState } from '@/components/common'
 import { useArtist } from '@/composables/catalog/useArtist'
 import { usePlayer } from '@/composables/player'
 import { usePlayerApi } from '@/services/api/player'

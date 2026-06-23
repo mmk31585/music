@@ -3,7 +3,13 @@ import type { UseRequestConfig } from '@/plugins/client/types'
 import { RecommendationApiRoutes } from './enums'
 import {
   RecommendationResponseSchema,
+  HomeFeedResponseSchema,
+  ListeningStatsSchema,
+  DiscoverWeeklyResponseSchema,
   type RecommendationResponse,
+  type HomeFeedResponse,
+  type ListeningStats,
+  type DiscoverWeeklyResponse,
 } from './types'
 
 export const useRecommendationsApi = () => {
@@ -98,11 +104,78 @@ export const useRecommendationsApi = () => {
     )
   }
 
+  const getPersonalized = async (
+    params?: { limit?: number },
+    config?: UseRequestConfig<RecommendationResponse>,
+  ) => {
+    return useRequest<RecommendationResponse>(
+      RecommendationApiRoutes.PERSONALIZED,
+      {
+        method: 'GET',
+        params,
+      },
+      {
+        schema: RecommendationResponseSchema,
+        silent: true,
+        ...config,
+      },
+    )
+  }
+
+  const getHomeFeed = async (
+    config?: UseRequestConfig<HomeFeedResponse>,
+  ) => {
+    return useRequest<HomeFeedResponse>(
+      RecommendationApiRoutes.HOME,
+      {
+        method: 'GET',
+      },
+      {
+        schema: HomeFeedResponseSchema,
+        silent: true,
+        ...config,
+      },
+    )
+  }
+
+  const getDiscoverWeekly = async (
+    config?: UseRequestConfig<DiscoverWeeklyResponse>,
+  ) => {
+    return useRequest<DiscoverWeeklyResponse>(
+      RecommendationApiRoutes.DISCOVER_WEEKLY,
+      { method: 'GET' },
+      {
+        schema: DiscoverWeeklyResponseSchema,
+        silent: true,
+        ...config,
+      },
+    )
+  }
+
+  const getListeningStats = async (
+    params?: { period?: string },
+    config?: UseRequestConfig<ListeningStats>,
+  ) => {
+    return useRequest<ListeningStats>(
+      RecommendationApiRoutes.STATS,
+      { method: 'GET', params },
+      {
+        schema: ListeningStatsSchema,
+        silent: true,
+        ...config,
+      },
+    )
+  }
+
   return {
     getPopular,
     getBest,
     getRecent,
     getForYou,
     getSimilar,
+    getHomeFeed,
+    getPersonalized,
+    getDiscoverWeekly,
+    getListeningStats,
   }
 }

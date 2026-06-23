@@ -11,6 +11,10 @@
     "design-system": {
       "path": "docs/DESIGN_SYSTEM.md",
       "description": "Use for UI/UX design tokens, brand identity, component specifications, and visual language"
+    },
+    "instructions": {
+      "path": ".github/instructions",
+      "description": "Use for coding standards: Go, Vue 3, localization/LTR, accessibility (WCAG 2.2 AA), Docker/containerization, and git hooks"
     }
   },
   "agent": {
@@ -55,6 +59,15 @@
     "muse-infra": {
       "description": "Infrastructure agent for Muse. API barrel, router config, stores, services, plugins, composables root.",
       "mode": "subagent"
+    },
+    "muse-team": {
+      "description": "Agent Team supervisor for Muse. Owns the shared task list, coordinates teammates (frontend/backend/infra) that communicate directly peer-to-peer instead of through the main agent. Teammates unblock each other directly (e.g., frontend requests a schema from backend and is unblocked immediately). The supervisor only monitors progress, resolves conflicts, and approves the main goal.",
+      "mode": "primary",
+      "color": "success"
     }
-  }
+  },
+  "plugin": [
+    "opencode-copilot-plugin@latest",
+    "ai"
+  ]
 }

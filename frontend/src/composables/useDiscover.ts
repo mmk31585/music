@@ -16,7 +16,7 @@ export function useDiscover() {
   const recent = ref<RecommendationTrack[]>([])
   const feed = ref<ActivityFeedItem[]>([])
   const loading = ref(false)
-  const error = ref<any>(null)
+  const error = ref<unknown>(null)
 
   async function fetchDiscover() {
     loading.value = true
@@ -31,21 +31,21 @@ export function useDiscover() {
       ])
 
       if (popularData) {
-        popular.value = Array.isArray(popularData) ? popularData : ((popularData as Record<string, any[]>).data ?? [])
+        popular.value = popularData.items
       }
 
       if (forYouData) {
-        forYou.value = Array.isArray(forYouData) ? forYouData : ((forYouData as Record<string, any[]>).data ?? [])
+        forYou.value = forYouData.items
       }
 
       if (recentData) {
-        recent.value = Array.isArray(recentData) ? recentData : ((recentData as Record<string, any[]>).data ?? [])
+        recent.value = recentData.items
       }
 
       if (feedData) {
         feed.value = feedData.items
       }
-    } catch (err) {
+    } catch (err: unknown) {
       error.value = err
       const msg = err instanceof Error ? err.message : 'Failed to load discover data'
       toast.add({ severity: 'error', summary: 'Discover Error', detail: msg, life: 5000 })

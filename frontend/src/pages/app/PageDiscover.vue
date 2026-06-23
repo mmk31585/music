@@ -135,7 +135,7 @@
                 <img
                   v-if="item.track_cover_url"
                   :src="item.track_cover_url"
-                  :alt="item.track_title"
+                  :alt="item.track_title ?? undefined"
                   loading="lazy"
                   class="h-full w-full object-cover transition duration-500 group-hover:scale-110"
                   @error="onImgError"
@@ -454,6 +454,9 @@ import { usePlayerApi } from '@/services/api/player'
 import { MOOD_OPTIONS } from '@/services/api/ai/types'
 import { onImgError } from '@/utils/helpers'
 import { HomeCarousel, ActivityItem } from '@/components/music'
+import type { RecommendationTrack } from '@/services/api/recommendation/types'
+import type { HistoryItem } from '@/services/api/history/types'
+import type { ActivityFeedItem } from '@/services/api/social/types'
 
 const socialApi = useSocialApi()
 const recsApi = useRecommendationsApi()
@@ -461,25 +464,25 @@ const historyApi = useHistoryApi()
 const player = usePlayer()
 const playerApi = usePlayerApi()
 
-const popular = ref<Record<string, unknown>[]>([])
-const forYou = ref<Record<string, unknown>[]>([])
-const recent = ref<Record<string, unknown>[]>([])
-const feed = ref<Record<string, unknown>[]>([])
-const recentlyPlayed = ref<Record<string, unknown>[]>([])
+const popular = ref<RecommendationTrack[]>([])
+const forYou = ref<RecommendationTrack[]>([])
+const recent = ref<RecommendationTrack[]>([])
+const feed = ref<ActivityFeedItem[]>([])
+const recentlyPlayed = ref<HistoryItem[]>([])
 const loading = ref(true)
 
-const moods: Record<string, unknown>[] = (MOOD_OPTIONS as unknown as Record<string, unknown>[]).slice(0, 8).map((m: Record<string, unknown>) => {
+const moods = MOOD_OPTIONS.slice(0, 8).map((m) => {
   const colors: Record<string, { bg: string; fg: string }> = {
     energetic: { bg: 'rgba(34,197,94,0.12)', fg: '#22c55e' },
     happy: { bg: 'rgba(250,204,21,0.12)', fg: '#facc15' },
-    calm: { bg: 'rgba(96,165,250,0.12)', fg: '#60a5fa' },
+    chill: { bg: 'rgba(96,165,250,0.12)', fg: '#60a5fa' },
+    calm: { bg: 'rgba(148,163,184,0.12)', fg: '#94a3b8' },
     sad: { bg: 'rgba(148,163,184,0.12)', fg: '#94a3b8' },
-    focused: { bg: 'rgba(168,85,247,0.12)', fg: '#a855f7' },
+    focus: { bg: 'rgba(168,85,247,0.12)', fg: '#a855f7' },
     romantic: { bg: 'rgba(244,114,182,0.12)', fg: '#f472b6' },
-    dark: { bg: 'rgba(100,116,139,0.12)', fg: '#64748b' },
-    party: { bg: 'rgba(239,68,68,0.12)', fg: '#ef4444' },
+    intense: { bg: 'rgba(239,68,68,0.12)', fg: '#ef4444' },
   }
-  const c = colors[m.value] || { bg: 'rgba(255,255,255,0.06)', fg: '#fff' }
+  const c = colors[m.value] ?? { bg: 'rgba(255,255,255,0.06)', fg: '#fff' }
   return { ...m, bg: c.bg, fg: c.fg }
 })
 
@@ -505,34 +508,34 @@ async function fetchDiscover() {
   }
 }
 
-function playTrack(track: Record<string, unknown>) {
+function playTrack(track: RecommendationTrack) {
   player.setQueueAndPlay(
     [
       {
-        id: String(track.id),
-        title: track.title as string,
-        artistName: (track.artist_name as string) || 'Unknown',
-        albumTitle: (track.album_title as string) || null,
-        coverUrl: (track.cover_url as string) || null,
-        durationSeconds: (track.duration_seconds as number) ?? null,
-        streamUrl: playerApi.getTrackStreamUrl(String(track.id)),
+        id: track.id,
+        title: track.title,
+        artistName: track.artist_name || 'Unknown',
+        albumTitle: track.album_title || null,
+        coverUrl: track.cover_url || null,
+        durationSeconds: track.duration_seconds ?? null,
+        streamUrl: playerApi.getTrackStreamUrl(track.id),
       },
     ],
     0,
   )
 }
 
-function playHistoryItem(item: Record<string, unknown>) {
+function playHistoryItem(item: HistoryItem) {
   player.setQueueAndPlay(
     [
       {
-        id: String(item.track_id),
-        title: (item.track_title as string) || 'Unknown',
-        artistName: (item.artist_name as string) || 'Unknown',
-        albumTitle: (item.album_title as string) || null,
-        coverUrl: (item.track_cover_url as string) || null,
-        durationSeconds: (item.track_duration as number) ?? null,
-        streamUrl: playerApi.getTrackStreamUrl(String(item.track_id)),
+        id: item.track_id,
+        title: item.track_title || 'Unknown',
+        artistName: item.artist_name || 'Unknown',
+        albumTitle: null,
+        coverUrl: item.track_cover_url || null,
+        durationSeconds: item.track_duration ?? null,
+        streamUrl: playerApi.getTrackStreamUrl(item.track_id),
       },
     ],
     0,

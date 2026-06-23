@@ -1,12 +1,26 @@
 # Service Architecture — Persian Music Ecosystem
 
 > **Document**: Microservices, Event Bus, Recommendation, Search, Moderation, Gamification, Trust
-> **Status**: v1.0 — Final
+> **Status**: v1.1 — Current (updated 2026-06-22)
+> **🚧 Aspirational**: This document describes a microservices architecture that is the long-term target. The current implementation is a **Go monolith** with all modules in a single binary (`cmd/api`).
 > **Target**: 50M users, 10M tracks, 1B streams/month
+
+## Current Status (as of June 2026)
+
+The platform is currently a **Go monolith** hosted in a single `cmd/api` binary. All 30 modules live under `internal/modules/` and share the same database pool. Key architectural notes:
+
+- **Not microservices**: There is no service mesh, no gRPC, no Kafka event bus in production. All inter-module communication is direct Go function calls.
+- **Database**: A single PostgreSQL database with all tables. Vertical partitioning planned for future.
+- **Search**: OpenSearch is configured in docker-compose but only basic search is implemented.
+- **Cache**: Redis is configured but used primarily for sessions and rate limiting.
+- **ML Service**: The `moja-ml-service/` directory is a separate Python microservice (FastAPI + Celery) for audio processing (Whisper, embeddings, mood analysis). It's the only genuinely separate service.
+- **Frontend**: Single Vue 3 SPA communicating with the Go API via REST + WebSocket.
 
 ---
 
 ## 1. Microservices Overview
+
+> 🚧 **Aspirational**: These microservices do not yet exist as separate processes. All functionality is implemented as Go packages within a single `internal/modules/` directory tree. When the monolith is decomposed, each module will become a standalone service.
 
 | Service | Responsibility | Database | Replicas | Language |
 |---------|---------------|----------|----------|----------|

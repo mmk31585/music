@@ -52,7 +52,7 @@ export type TrackFormPayload = {
 function buildArtistsFromPayload(payload: TrackFormPayload): TrackArtistRequest[] {
   if (payload.credits?.length) {
     return payload.credits.map((credit, index) => ({
-      artist_id: credit.artist_id,
+      artistId: credit.artist_id,
       role: credit.role,
       position: index,
     }))
@@ -60,7 +60,7 @@ function buildArtistsFromPayload(payload: TrackFormPayload): TrackArtistRequest[
 
   if (payload.artists?.length) {
     return payload.artists.map((artist, index) => ({
-      artist_id: artist.artist_id,
+      artistId: artist.artist_id,
       role: artist.role || (index === 0 ? 'primary' : 'featured'),
       position: artist.position ?? index,
     }))
@@ -74,7 +74,7 @@ function buildArtistsFromPayload(payload: TrackFormPayload): TrackArtistRequest[
 
   return [
     {
-      artist_id: primaryArtistId,
+      artistId: primaryArtistId,
       role: 'primary',
       position: 0,
     },
@@ -90,15 +90,16 @@ function toCreatePayload(payload: TrackFormPayload): TrackCreatePayload {
 
   return {
     title: payload.title,
-    artist_id: primaryArtistId,
+    artistId: primaryArtistId,
     artists: buildArtistsFromPayload(payload),
-    album_id: payload.album_id ?? null,
-    duration_seconds: payload.duration_seconds ?? null,
-    audio_url: payload.audio_url ?? null,
-    cover_url: payload.cover_url ?? null,
-    genre_ids: payload.genre_ids ?? [],
-    track_number: payload.track_number ?? null,
+    albumId: payload.album_id ?? null,
+    durationSeconds: payload.duration_seconds ?? null,
+    audioUrl: payload.audio_url ?? null,
+    coverUrl: payload.cover_url ?? null,
+    genreIds: payload.genre_ids ?? [],
+    trackNumber: payload.track_number ?? null,
     explicit: payload.explicit ?? false,
+    isPublic: true,
   }
 }
 
@@ -108,15 +109,16 @@ function toUpdatePayload(payload: TrackFormPayload): TrackUpdatePayload {
 
   return {
     title: payload.title,
-    artist_id: primaryArtistId ?? null,
+    artistId: primaryArtistId ?? null,
     artists: buildArtistsFromPayload(payload),
-    album_id: payload.album_id ?? null,
-    duration_seconds: payload.duration_seconds ?? null,
-    audio_url: payload.audio_url ?? null,
-    cover_url: payload.cover_url ?? null,
-    genre_ids: payload.genre_ids ?? [],
-    track_number: payload.track_number ?? null,
+    albumId: payload.album_id ?? null,
+    durationSeconds: payload.duration_seconds ?? null,
+    audioUrl: payload.audio_url ?? null,
+    coverUrl: payload.cover_url ?? null,
+    genreIds: payload.genre_ids ?? [],
+    trackNumber: payload.track_number ?? null,
     explicit: payload.explicit ?? false,
+    isPublic: true,
   }
 }
 
@@ -214,7 +216,7 @@ export function useAdminTracks() {
         const uploadedAudio = await adminUploadTrackAudio(payload.audioFile)
         createPayload = {
           ...createPayload,
-          audio_url: getUploadedAudioUrl(uploadedAudio),
+          audioUrl: getUploadedAudioUrl(uploadedAudio),
         }
       }
 
@@ -222,7 +224,7 @@ export function useAdminTracks() {
         const uploadedCover = await adminUploadTrackCover(payload.coverFile)
         createPayload = {
           ...createPayload,
-          cover_url: getUploadedCoverUrl(uploadedCover),
+          coverUrl: getUploadedCoverUrl(uploadedCover),
         }
       }
 
@@ -250,7 +252,7 @@ export function useAdminTracks() {
         const uploadedAudio = await adminUploadTrackAudio(payload.audioFile)
         updatePayload = {
           ...updatePayload,
-          audio_url: getUploadedAudioUrl(uploadedAudio),
+          audioUrl: getUploadedAudioUrl(uploadedAudio),
         }
       }
 
@@ -258,7 +260,7 @@ export function useAdminTracks() {
         const uploadedCover = await adminUploadTrackCover(payload.coverFile)
         updatePayload = {
           ...updatePayload,
-          cover_url: getUploadedCoverUrl(uploadedCover),
+          coverUrl: getUploadedCoverUrl(uploadedCover),
         }
       }
 

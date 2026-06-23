@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -18,12 +19,19 @@ func RateLimitOptional(rdb *redis.Client, requestsPerMinute int) gin.HandlerFunc
 			return
 		}
 
+		// Build a unique key scoped to user+route to prevent cross-route exhaustion
 		var key string
-		userID, exists := c.Get("auth_user_id")
-		if exists && userID.(string) != "" {
-			key = "ratelimit:user:" + userID.(string) + ":" + c.Request.URL.Path
+		userIDRaw, exists := c.Get("auth_user_id")
+		if exists {
+			// Safe type assertion with ok check — prevents panic if value is not string
+			userIDStr, ok := userIDRaw.(string)
+			if ok && userIDStr != "" {
+				key = fmt.Sprintf("ratelimit:user:%s:%s:%s", userIDStr, c.Request.Method, c.Request.URL.Path)
+			} else {
+				key = fmt.Sprintf("ratelimit:ip:%s:%s:%s", c.ClientIP(), c.Request.Method, c.Request.URL.Path)
+			}
 		} else {
-			key = "ratelimit:ip:" + c.ClientIP() + ":" + c.Request.URL.Path
+			key = fmt.Sprintf("ratelimit:ip:%s:%s:%s", c.ClientIP(), c.Request.Method, c.Request.URL.Path)
 		}
 
 		count, err := rdb.Get(c.Request.Context(), key).Int()

@@ -116,17 +116,43 @@
           <div
             v-for="(track, i) in albumTracks"
             :key="track.id"
-            class="flex cursor-pointer items-center gap-4 px-4 py-3 transition-colors hover:bg-white/[0.02]"
+            class="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-white/[0.02]"
             :class="i < albumTracks.length - 1 ? 'border-b border-white/[0.04]' : ''"
-            @click="router.push({ name: 'admin.track.detail', params: { id: track.id } })"
           >
-            <span class="w-6 text-center text-xs text-slate-500">{{ track.track_number || i + 1 }}</span>
-            <div class="min-w-0 flex-1">
+            <button
+              type="button"
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-all hover:bg-[#1db954]/20 hover:text-[#1db954] disabled:opacity-30"
+              :disabled="loadingTrackId === String(track.id)"
+              :aria-label="'Play ' + track.title"
+              :title="isTrackPlaying(track) ? 'Now playing' : 'Play track'"
+              @click.stop="handlePlayTrack(track)"
+            >
+              <i
+                v-if="loadingTrackId === String(track.id)"
+                aria-hidden="true"
+                class="pi pi-spin pi-spinner text-sm"
+              />
+              <i
+                v-else
+                aria-hidden="true"
+                :class="getTrackPlayButtonIcon(track)"
+                class="text-sm"
+              />
+            </button>
+            <span class="w-5 text-center text-xs text-slate-500">{{ track.track_number || i + 1 }}</span>
+            <div
+              class="min-w-0 flex-1 cursor-pointer"
+              @click="router.push({ name: 'admin.track.detail', params: { id: track.id } })"
+            >
               <p class="truncate text-sm font-medium text-white">{{ track.title }}</p>
               <p v-if="track.artist_name" class="truncate text-xs text-slate-500">{{ track.artist_name }}</p>
             </div>
             <span v-if="track.duration_seconds" class="text-xs text-slate-500">{{ formatDuration(track.duration_seconds) }}</span>
-            <i aria-hidden="true" class="pi pi-chevron-right text-xs text-slate-600" />
+            <i
+              aria-hidden="true"
+              class="pi pi-chevron-right cursor-pointer text-xs text-slate-600"
+              @click="router.push({ name: 'admin.track.detail', params: { id: track.id } })"
+            />
           </div>
         </div>
       </div>
@@ -156,10 +182,13 @@ import Button from 'primevue/button'
 import { useToast } from 'primevue/usetoast'
 import AdminEmptyState from '@/components/admin/AdminEmptyState.vue'
 import AlbumFormDialog from '@/components/admin/AlbumFormDialog.vue'
+import type { AlbumFormPayload } from '@/composables/admin/useAdminAlbums'
 import AdminDeleteConfirm from '@/components/admin/AdminDeleteConfirm.vue'
 import { useAlbumsApi } from '@/services/api/catalog/albums'
 import { useArtistsApi } from '@/services/api/catalog/artists'
 import { useTracksApi } from '@/services/api/catalog/tracks'
+import { usePlayer } from '@/composables/player'
+import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
 import type { Album } from '@/services/api/catalog/albums'
 import type { Artist } from '@/services/api/catalog/artists'
 import type { Track } from '@/services/api/catalog/tracks'
@@ -184,6 +213,39 @@ const saving = ref(false)
 const showDelete = ref(false)
 const deleting = ref(false)
 const enriching = ref(false)
+const loadingTrackId = ref<string | null>(null)
+const player = usePlayer()
+const playerApi = usePlayerApi()
+
+function buildPlaybackTrack(track: Track): PlaybackTrack {
+  const id = String(track.id)
+  return {
+    id,
+    title: track.title || 'Untitled',
+    artistName: track.artist_name || 'Unknown artist',
+    coverUrl: album.value?.cover_url || null,
+    durationSeconds: track.duration_seconds ?? null,
+    streamUrl: playerApi.getTrackStreamUrl(id),
+  }
+}
+
+async function handlePlayTrack(track: Track) {
+  loadingTrackId.value = String(track.id)
+  try {
+    await player.toggleTrack(buildPlaybackTrack(track))
+  } finally {
+    loadingTrackId.value = null
+  }
+}
+
+function isTrackPlaying(track: Track): boolean {
+  return player.currentTrack.value?.id === String(track.id)
+}
+
+function getTrackPlayButtonIcon(track: Track): string {
+  if (isTrackPlaying(track) && player.isPlaying.value) return 'pi pi-pause-fill'
+  return 'pi pi-play-fill'
+}
 
 const albumTracks = computed(() =>
   allTracks.value.filter(t => String(t.album_id) === route.params.id)
@@ -233,7 +295,7 @@ async function handleEnrich() {
   }
 }
 
-async function handleEditSubmit(payload: Record<string, unknown>) {
+async function handleEditSubmit(payload: AlbumFormPayload) {
   if (!album.value) return
   saving.value = true
   try {

@@ -169,6 +169,7 @@ import { useUserAuthStore } from '@/stores'
 import { TrackPickerDialog, RoomNowPlayingHero, RoomQueueList } from '@/components/social'
 import { useRoomQueueSocket } from '@/composables/social/useRoomQueueSocket'
 import { useAppToast } from '@/composables/useAppToast'
+import { audioEngine } from '@/services/player'
 import type { ListeningParty } from '@/services/api/social'
 import type { Track } from '@/services/api/catalog/tracks'
 
@@ -179,7 +180,7 @@ const playerStore = usePlayerStore()
 const auth = useUserAuthStore()
 const toast = useAppToast()
 
-const partyId = route.params.id as string
+const partyId = String(route.params.id)
 
 const loading = ref(true)
 const error = ref('')
@@ -192,7 +193,7 @@ const isTrackTransitioning = ref(false)
 
 // Room queue socket composable
 const roomQueue = useRoomQueueSocket(partyId)
-const { queueState, playbackContext } = roomQueue
+const { queueState, playbackContext, partyStatus } = roomQueue
 
 /* ---- Now Playing track driven by queue state ---- */
 const nowPlayingTrackId = computed(() => queueState.value?.now_playing?.track?.id ?? null)
@@ -264,7 +265,8 @@ async function skipTrack() {
 watch(
   () => queueState.value?.now_playing?.track?.id,
   (newTrackId, oldTrackId) => {
-    if (newTrackId && newTrackId !== oldTrackId) {
+    // Only auto-play if we're still a participant in the party
+    if (newTrackId && newTrackId !== oldTrackId && isParticipant.value) {
       playNowPlayingTrack(newTrackId)
     }
   },
@@ -370,8 +372,7 @@ watch(
     if (p.current_track_id && !playerStore.currentTrack && !qs.now_playing) {
       playerStore.playTrackById(p.current_track_id)
         .catch(() => {
-          // If that fails, suggest it to the queue system
-          roomQueue.suggest(p.current_track_id)
+          roomQueue.suggest(String(p.current_track_id))
         })
     }
   },
@@ -382,10 +383,31 @@ async function updateStatus(status: string, trackId?: string) {
   try {
     await api.updatePartyStatus(partyId, status, trackId)
     if (party.value) party.value.status = status as ListeningParty['status']
+    // Start playback immediately for the host (WebSocket broadcast will
+    // handle other participants via the partyStatus watcher below)
+    if (status === 'active' && nowPlayingTrackId.value) {
+      playNowPlayingTrack(nowPlayingTrackId.value)
+    } else if (status === 'paused' && isPlayingTrack.value) {
+      playerStore.pause()
+    }
   } catch (err) {
     console.error('Failed to update status:', err)
   }
 }
+
+/* ---- React to party status changes from WebSocket ---- */
+watch(partyStatus, (status) => {
+  if (!status || !isParticipant.value) return
+  // Sync local party status for UI badge
+  if (party.value) {
+    party.value.status = status as ListeningParty['status']
+  }
+  if (status === 'active' && nowPlayingTrackId.value) {
+    playNowPlayingTrack(nowPlayingTrackId.value)
+  } else if (status === 'paused' && isPlayingTrack.value) {
+    playerStore.pause()
+  }
+})
 
 async function handleJoin() {
   try {
@@ -400,6 +422,7 @@ async function handleLeave() {
   try {
     await api.leaveParty(partyId)
     isParticipant.value = false
+    playbackContext.value = null
   } catch (err) {
     console.error('Failed to leave party:', err)
   }
@@ -410,10 +433,8 @@ function goBack() {
 }
 
 /* ---- Track-ended detection ---- */
-// Watch for audio engine "ended" events via the player store.
-// When the currentParty track finishes and this room is our
-// playback context, report it to the backend so the next
-// candidate advances.
+// Listen for the native audio engine "ended" event and report it
+// to the party backend so the queue advances to the next track.
 let unsubscribeEnded: (() => void) | null = null
 
 onMounted(() => {
@@ -421,17 +442,15 @@ onMounted(() => {
   // Set playback context when this page mounts
   playbackContext.value = { type: 'room', roomId: partyId }
 
-  // Detect track ended via player store's currentTime + duration watcher
-  const stopWatch = watch(
-    () => [playerStore.currentTime, playerStore.duration, playerStore.isPlaying] as const,
-    ([time, dur, playing]) => {
-      if (!playing && dur > 0 && time >= dur - 1 && nowPlayingTrackId.value) {
-        // Track ended naturally — report it so the queue advances
-        roomQueue.reportEnded(nowPlayingTrackId.value)
-      }
-    },
-  )
-  unsubscribeEnded = stopWatch
+  // Use the native audio "ended" event instead of a time-based watcher.
+  // The time-based watcher (currentTime + duration) had false positives
+  // when the user PAUSED near the end of a track — those would wrongly
+  // call reportEnded and advance the room queue.
+  unsubscribeEnded = audioEngine.on('ended', () => {
+    if (nowPlayingTrackId.value) {
+      roomQueue.reportEnded(nowPlayingTrackId.value)
+    }
+  })
 })
 
 onUnmounted(() => {

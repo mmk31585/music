@@ -311,7 +311,12 @@
             <Column field="artist" header="Artist">
               <template #body="{ data }">
                 <span v-if="data.artist" class="text-emerald-600 dark:text-emerald-400">
-                  <i aria-hidden="true" class="pi pi-check-circle mr-1 text-xs"></i>{{ data.artist }}
+                  <i aria-hidden="true" class="pi pi-check-circle mr-1 text-xs"></i>
+                  {{ data.artist }}
+                  <span
+                    v-if="hasFeatArtists(data.artist)"
+                    class="ml-1.5 rounded-full bg-purple-500/15 px-1.5 py-0.5 text-[10px] font-medium text-purple-400"
+                  >feat.</span>
                 </span>
                 <span v-else class="text-orange-500">
                   <i aria-hidden="true" class="pi pi-exclamation-circle mr-1 text-xs"></i>Not found
@@ -669,6 +674,10 @@ function handlePageChange(event: { first: number; rows: number }) {
   currentPage.value = Math.floor(event.first / event.rows) + 1
   pageSize.value = event.rows
   loadDrafts()
+}
+
+function hasFeatArtists(artist: string): boolean {
+  return /feat\.|ft\.|featuring/i.test(artist)
 }
 
 function formatDuration(seconds?: number): string {

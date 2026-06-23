@@ -13,7 +13,10 @@ var (
 	ErrLyricsNotFound      = errors.New("lyrics not found")
 	ErrLyricsAlreadyExists = errors.New("lyrics already exists for this track and language")
 	ErrTrackNotFound       = errors.New("track not found")
+	ErrTrackNoTitle        = errors.New("track has no title")
 	ErrInvalidLyricsType   = errors.New("invalid lyrics type")
+	ErrLRCLibNoLyrics      = errors.New("no lyrics found on LRCLIB")
+	ErrLRCLibEmptyResponse = errors.New("lrclib returned empty lyrics")
 )
 
 type Repository struct {
@@ -56,10 +59,15 @@ func (r *Repository) CreateLyrics(ctx context.Context, req CreateLyricsRequest) 
 		return Lyrics{}, ErrInvalidLyricsType
 	}
 
+	source := req.Source
+	if source == "" {
+		source = "manual"
+	}
+
 	query := `
-		INSERT INTO lyrics (track_id, language, type, content)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, track_id, language, type, content, created_at, updated_at
+		INSERT INTO lyrics (track_id, language, type, content, source, confidence_score)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, track_id, language, type, content, source, confidence_score, created_at, updated_at
 	`
 
 	var l Lyrics
@@ -68,12 +76,16 @@ func (r *Repository) CreateLyrics(ctx context.Context, req CreateLyricsRequest) 
 		req.Language,
 		req.Type,
 		req.Content,
+		source,
+		req.ConfidenceScore,
 	).Scan(
 		&l.ID,
 		&l.TrackID,
 		&l.Language,
 		&l.Type,
 		&l.Content,
+		&l.Source,
+		&l.ConfidenceScore,
 		&l.CreatedAt,
 		&l.UpdatedAt,
 	)
@@ -94,7 +106,7 @@ func (r *Repository) UpdateLyrics(ctx context.Context, lyricsID string, req Upda
 			content = COALESCE($3, content),
 			updated_at = NOW()
 		WHERE id = $4
-		RETURNING id, track_id, language, type, content, created_at, updated_at
+		RETURNING id, track_id, language, type, content, source, confidence_score, created_at, updated_at
 	`
 
 	var l Lyrics
@@ -109,6 +121,8 @@ func (r *Repository) UpdateLyrics(ctx context.Context, lyricsID string, req Upda
 		&l.Language,
 		&l.Type,
 		&l.Content,
+		&l.Source,
+		&l.ConfidenceScore,
 		&l.CreatedAt,
 		&l.UpdatedAt,
 	)
@@ -147,7 +161,7 @@ func (r *Repository) DeleteLyrics(ctx context.Context, lyricsID string) error {
 
 func (r *Repository) GetLyricsByTrackID(ctx context.Context, trackID string) ([]Lyrics, error) {
 	query := `
-		SELECT id, track_id, language, type, content, created_at, updated_at
+		SELECT id, track_id, language, type, content, source, confidence_score, created_at, updated_at
 		FROM lyrics
 		WHERE track_id = $1
 		ORDER BY language ASC
@@ -168,6 +182,8 @@ func (r *Repository) GetLyricsByTrackID(ctx context.Context, trackID string) ([]
 			&l.Language,
 			&l.Type,
 			&l.Content,
+			&l.Source,
+			&l.ConfidenceScore,
 			&l.CreatedAt,
 			&l.UpdatedAt,
 		); err != nil {
@@ -181,7 +197,7 @@ func (r *Repository) GetLyricsByTrackID(ctx context.Context, trackID string) ([]
 
 func (r *Repository) GetLyricsByTrackAndLanguage(ctx context.Context, trackID, language string) (Lyrics, error) {
 	query := `
-		SELECT id, track_id, language, type, content, created_at, updated_at
+		SELECT id, track_id, language, type, content, source, confidence_score, created_at, updated_at
 		FROM lyrics
 		WHERE track_id = $1 AND language = $2
 	`
@@ -193,6 +209,8 @@ func (r *Repository) GetLyricsByTrackAndLanguage(ctx context.Context, trackID, l
 		&l.Language,
 		&l.Type,
 		&l.Content,
+		&l.Source,
+		&l.ConfidenceScore,
 		&l.CreatedAt,
 		&l.UpdatedAt,
 	)
@@ -222,17 +240,19 @@ func (r *Repository) LyricsExists(ctx context.Context, trackID, language string)
 	return exists, nil
 }
 
-// TrackInfo holds the minimal info needed to query LRCLIB.
+// TrackInfo holds the minimal info needed to query LRCLIB or enqueue AI job.
 type TrackInfo struct {
 	Title           string
 	ArtistName      string
 	DurationSeconds int
+	AudioURL        string
 }
 
 // GetTrackInfo fetches track title and primary artist name from the DB.
 func (r *Repository) GetTrackInfo(ctx context.Context, trackID string) (*TrackInfo, error) {
 	query := `
-		SELECT t.title, COALESCE(a.name, '') AS artist_name, t.duration_seconds
+		SELECT t.title, COALESCE(a.name, '') AS artist_name,
+		       t.duration_seconds, COALESCE(t.audio_url, '') AS audio_url
 		FROM tracks t
 		LEFT JOIN track_artists ta ON ta.track_id = t.id AND ta.role = 'primary'
 		LEFT JOIN artists a ON a.id = ta.artist_id
@@ -245,12 +265,13 @@ func (r *Repository) GetTrackInfo(ctx context.Context, trackID string) (*TrackIn
 		&info.Title,
 		&info.ArtistName,
 		&info.DurationSeconds,
+		&info.AudioURL,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, ErrTrackNotFound
-	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to get track info: %w", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrTrackNotFound
+		}
+		return nil, err
 	}
 	return &info, nil
 }

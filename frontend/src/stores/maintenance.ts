@@ -11,12 +11,12 @@ export const useMaintenanceStore = defineStore('useMaintenance', () => {
     inMaintenance: false,
     checked: false,
   })
-  const isMaintencenane = computed(() => state.value.inMaintenance)
+  const isMaintenance = computed(() => state.value.inMaintenance)
   const isChecked = computed(() => state.value.checked)
 
   return {
     state,
     isChecked,
-    isMaintencenane,
+    isMaintenance,
   }
 })

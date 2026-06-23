@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "run_id": "fix-whisper-multilanguage-with_skill",
+  "config": "with_skill",
+  "expectations": [
+    {"text": "identifies root cause", "passed": true, "evidence": "Exact root cause identified: service.py:114-119 applies normalize_persian_text unconditionally; persian_normalizer.py has no language gating"},
+    {"text": "suggests language gating", "passed": true, "evidence": "Adds language parameter to normalize_persian_text, defines PERSIAN_LANGUAGE_CODES set, gates hazm + char fix behind it"},
+    {"text": "references service.py", "passed": true, "evidence": "Directly references service.py and provides exact code changes with line numbers"},
+    {"text": "references lrc_formatter.py", "passed": true, "evidence": "References lrc_formatter.py:52, suggests removing normalize_persian_text call and accepting pre-normalized text"},
+    {"text": "includes test cases", "passed": true, "evidence": "6 test cases covering Turkish, English, Arabic, Persian fallback, special chars preservation"},
+    {"text": "detects dead config", "passed": true, "evidence": "Identifies whisper_language_hint in config.py:30 as dead config, also points out dead code in transcriber.py:92,132"}
+  ]
+}

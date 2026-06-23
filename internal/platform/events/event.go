@@ -26,26 +26,57 @@ func (e BaseEvent) OccurredAt() time.Time {
 }
 
 const (
-	EventTrackPlayed           = "track.played"
-	EventPlaylistCreated       = "playlist.created"
-	EventSubscriptionPurchased = "subscription.purchased"
-	EventUserRegistered        = "user.registered"
+	EventTrackPlayed            = "track.played"
+	EventPlaylistCreated        = "playlist.created"
+	EventSubscriptionPurchased  = "subscription.purchased"
+	EventUserRegistered         = "user.registered"
+	EventPlaybackSignalRecorded = "playback.signal_recorded"
+	EventTrackLiked             = "track.liked"
 )
 
 type TrackPlayedEvent struct {
 	BaseEvent
 
-	UserID    uuid.UUID `json:"user_id"`
-	TrackID   uuid.UUID `json:"track_id"`
-	ArtistID  uuid.UUID `json:"artist_id"`
-	AlbumID   uuid.UUID `json:"album_id"`
-	Duration  int       `json:"duration"`
-	Completed bool      `json:"completed"`
-	Source    string    `json:"source,omitempty"`
+	UserID          uuid.UUID `json:"user_id"`
+	TrackID         uuid.UUID `json:"track_id"`
+	ArtistID        uuid.UUID `json:"artist_id"`
+	AlbumID         uuid.UUID `json:"album_id"`
+	Duration        int       `json:"duration"`  // seconds listened
+	Completed       bool      `json:"completed"` // frontend-reported completion
+	Source          string    `json:"source,omitempty"`
+	SessionID       uuid.UUID `json:"session_id,omitempty"`
+	TrackDurationMs int64     `json:"track_duration_ms,omitempty"`
 }
 
 func (e TrackPlayedEvent) EventName() string {
 	return EventTrackPlayed
+}
+
+type PlaybackSignalRecordedEvent struct {
+	BaseEvent
+
+	UserID            uuid.UUID `json:"user_id"`
+	TrackID           uuid.UUID `json:"track_id"`
+	SessionID         uuid.UUID `json:"session_id,omitempty"`
+	PlayedDurationMs  int64     `json:"played_duration_ms"`
+	TrackDurationMs   int64     `json:"track_duration_ms"`
+	CompletionPercent float64   `json:"completion_percent"`
+	SignalType        string    `json:"signal_type"`
+}
+
+func (e PlaybackSignalRecordedEvent) EventName() string {
+	return EventPlaybackSignalRecorded
+}
+
+type TrackLikedEvent struct {
+	BaseEvent
+
+	UserID  uuid.UUID `json:"user_id"`
+	TrackID uuid.UUID `json:"track_id"`
+}
+
+func (e TrackLikedEvent) EventName() string {
+	return EventTrackLiked
 }
 
 type PlaylistCreatedEvent struct {

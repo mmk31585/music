@@ -60,13 +60,13 @@ const items = ref<Record<string, unknown>[]>([])
 const loading = ref(false)
 
 const trackRows = computed(() =>
-  items.value.map((item) => ({
-    id: item.track_id,
-    title: item.title,
-    artist_name: item.artist_name,
-    album_title: item.album_title,
-    cover_url: item.cover_url,
-    duration_seconds: item.duration_seconds,
+  items.value.map((item: Record<string, unknown>) => ({
+    id: String(item.track_id ?? ''),
+    title: String(item.title ?? ''),
+    artist_name: String(item.artist_name ?? ''),
+    album_title: String(item.album_title ?? ''),
+    cover_url: String(item.cover_url ?? ''),
+    duration_seconds: Number(item.duration_seconds ?? 0),
   })),
 )
 

@@ -3,7 +3,7 @@ import { IdSchema } from '../common'
 import { GenreSchema } from '../genres'
 
 export const TrackArtistRequestSchema = z.object({
-  artist_id: IdSchema,
+  artistId: IdSchema,
   role: z.string(),
   position: z.number().int().nonnegative().optional(),
 })
@@ -48,33 +48,50 @@ export const TrackSchema = z
     explicit: track.explicit ?? false,
   }))
 
-export type Track = z.infer<typeof TrackSchema>
+export type Track = {
+  id: string | number
+  title: string
+  duration_seconds: number
+  audio_url: string | null
+  cover_url: string | null
+  artist_id: string | number | null
+  album_id: string | number | null
+  genre_id: string | number | null
+  artist_name: string | null
+  album_title: string | null
+  genres: any[]
+  play_count: number
+  track_number: number | null
+  explicit: boolean
+}
 export type TrackArtistRequest = z.infer<typeof TrackArtistRequestSchema>
 
 export interface TrackCreatePayload {
   title: string
-  artist_id: string | number
+  artistId: string | number
   artists?: TrackArtistRequest[]
-  album_id?: string | number | null
-  duration_seconds?: number | null
-  audio_url?: string | null
-  cover_url?: string | null
-  genre_ids?: Array<string | number>
-  track_number?: number | null
+  albumId?: string | number | null
+  durationSeconds?: number | null
+  audioUrl?: string | null
+  coverUrl?: string | null
+  genreIds?: Array<string | number>
+  trackNumber?: number | null
   explicit?: boolean | null
+  isPublic?: boolean
 }
 
 export interface TrackUpdatePayload {
   title?: string
-  artist_id?: string | number | null
+  artistId?: string | number | null
   artists?: TrackArtistRequest[]
-  album_id?: string | number | null
-  duration_seconds?: number | null
-  audio_url?: string | null
-  cover_url?: string | null
-  genre_ids?: Array<string | number>
-  track_number?: number | null
+  albumId?: string | number | null
+  durationSeconds?: number | null
+  audioUrl?: string | null
+  coverUrl?: string | null
+  genreIds?: Array<string | number>
+  trackNumber?: number | null
   explicit?: boolean | null
+  isPublic?: boolean | null
 }
 
 export interface TrackUploadPayload extends TrackCreatePayload {

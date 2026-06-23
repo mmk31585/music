@@ -84,8 +84,8 @@ export function useRegisterForm() {
     if (!form.password.trim()) {
       errors.password = 'Password is required'
       valid = false
-    } else if (form.password.trim().length < 6) {
-      errors.password = 'Password must be at least 6 characters'
+    } else if (form.password.trim().length < 8) {
+      errors.password = 'Password must be at least 8 characters'
       valid = false
     }
 
@@ -93,34 +93,30 @@ export function useRegisterForm() {
   }
 
   function applyBackendErrors(error: any) {
-    const err = error as {
-      response?: {
-        data?: BackendValidationError
-      }
-      message?: string
-    }
+    // The error comes from request-factory as { data, message } where
+    // data is the full backend error response body.
+    const backendError = error?.data as BackendValidationError | undefined
+    const errMessage = (error?.message ?? '') as string
 
-    const data = err?.response?.data
-
-    if (data?.code === 'VALIDATION_ERROR' && data.details) {
-      if (data.details.displayName) {
-        errors.displayName = data.details.displayName
+    if (backendError?.code === 'VALIDATION_ERROR' && backendError.details) {
+      if (backendError.details.displayName) {
+        errors.displayName = backendError.details.displayName
       }
-      if (data.details.username) {
-        errors.username = data.details.username
+      if (backendError.details.username) {
+        errors.username = backendError.details.username
       }
-      if (data.details.email) {
-        errors.email = data.details.email
+      if (backendError.details.email) {
+        errors.email = backendError.details.email
       }
-      if (data.details.password) {
-        errors.password = data.details.password
+      if (backendError.details.password) {
+        errors.password = backendError.details.password
       }
 
-      apiError.value = data.message || 'Please fix the highlighted fields'
+      apiError.value = backendError.message || 'Please fix the highlighted fields'
       return
     }
 
-    apiError.value = err?.message || 'Registration failed'
+    apiError.value = errMessage || 'Registration failed'
   }
 
   async function onSubmit() {

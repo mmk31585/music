@@ -84,11 +84,11 @@ func (h *Handler) GetAdminPlaybackTrack(c *gin.Context) {
 // StreamTrack godoc
 //
 //	@Summary		Stream track audio
-//	@Description	Redirects client to the actual audio file URL
+//	@Description	Serves the audio file directly instead of redirecting to a storage URL.
 //	@Tags			Player
 //	@Produce		plain
 //	@Param			id	path	string	true	"Track ID"
-//	@Success		302	"Redirect to audio file"
+//	@Success		200	"Audio file content"
 //	@Failure		400	{object}	ErrorResponse	"Invalid track ID"
 //	@Failure		403	{object}	ErrorResponse	"Track is private"
 //	@Failure		404	{object}	ErrorResponse	"Track or audio not found"
@@ -106,27 +106,28 @@ func (h *Handler) StreamTrack(c *gin.Context) {
 
 	log.Println("StreamTrack track audio_url:", track.AudioURL)
 
-	audioURL, err := h.service.ResolveAudioURL(c.Request.Context(), track.AudioURL)
+	data, contentType, err := h.service.GetAudioContent(c.Request.Context(), track.AudioURL)
 	if err != nil {
-		log.Println("ResolveAudioURL error:", err)
+		log.Println("GetAudioContent error:", err)
 		h.handleError(c, err)
 		return
 	}
 
-	log.Println("StreamTrack redirecting to:", audioURL)
-
-	c.Redirect(http.StatusFound, audioURL)
+	c.Header("Accept-Ranges", "bytes")
+	c.Header("Cache-Control", "public, max-age=3600, immutable")
+	c.Header("Cross-Origin-Resource-Policy", "cross-origin")
+	c.Data(http.StatusOK, contentType, data)
 }
 
 // StreamAdminTrack godoc
 //
 //	@Summary		Stream admin track audio
-//	@Description	Redirects client to the actual audio file URL including private tracks
+//	@Description	Serves the audio file directly including private tracks.
 //	@Tags			Player Admin
 //	@Produce		plain
 //	@Security		BearerAuth
 //	@Param			id	path	string	true	"Track ID"
-//	@Success		302	"Redirect to audio file"
+//	@Success		200	"Audio file content"
 //	@Failure		400	{object}	ErrorResponse	"Invalid track ID"
 //	@Failure		404	{object}	ErrorResponse	"Track or audio not found"
 //	@Failure		500	{object}	ErrorResponse	"Internal server error"
@@ -138,13 +139,17 @@ func (h *Handler) StreamAdminTrack(c *gin.Context) {
 		return
 	}
 
-	audioURL, err := h.service.ResolveAudioURL(c.Request.Context(), track.AudioURL)
+	data, contentType, err := h.service.GetAudioContent(c.Request.Context(), track.AudioURL)
 	if err != nil {
+		log.Println("GetAudioContent error:", err)
 		h.handleError(c, err)
 		return
 	}
 
-	c.Redirect(http.StatusFound, audioURL)
+	c.Header("Accept-Ranges", "bytes")
+	c.Header("Cache-Control", "public, max-age=3600, immutable")
+	c.Header("Cross-Origin-Resource-Policy", "cross-origin")
+	c.Data(http.StatusOK, contentType, data)
 }
 
 func (h *Handler) handleError(c *gin.Context, err error) {

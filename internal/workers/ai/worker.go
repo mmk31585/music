@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"music/internal/config"
 	"music/internal/modules/ai"
 
 	"github.com/jmoiron/sqlx"
@@ -14,12 +15,25 @@ type Worker struct {
 	repo   *ai.Repository
 	client ai.AIClient
 	logger *zap.Logger
+	cfg    *config.Config
 }
 
-func NewWorker(db *sqlx.DB, logger *zap.Logger) *Worker {
+func NewWorker(db *sqlx.DB, logger *zap.Logger, cfg *config.Config) *Worker {
 	repo := ai.NewRepository(db)
-	client := ai.NewFallbackClient()
-	return &Worker{repo: repo, client: client, logger: logger}
+
+	var client ai.AIClient
+	if cfg.AI.Enabled && cfg.AI.OpenAIKey != "" {
+		client = ai.NewOpenAIClient(cfg.AI.OpenAIEndpoint, cfg.AI.OpenAIKey, cfg.AI.EmbeddingModel)
+		logger.Info("AI worker using OpenAI client",
+			zap.String("endpoint", cfg.AI.OpenAIEndpoint),
+			zap.String("model", cfg.AI.EmbeddingModel),
+		)
+	} else {
+		client = ai.NewFallbackClient()
+		logger.Info("AI worker using fallback client (no OpenAI key)")
+	}
+
+	return &Worker{repo: repo, client: client, logger: logger, cfg: cfg}
 }
 
 func (w *Worker) Name() string { return "ai" }

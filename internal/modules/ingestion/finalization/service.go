@@ -43,9 +43,34 @@ type FinalizeResult struct {
 }
 
 type DraftMetadata struct {
-	Artist ArtistMeta `json:"artist"`
-	Album  AlbumMeta  `json:"album"`
-	Track  TrackMeta  `json:"track"`
+	Artist  ArtistMeta   `json:"artist,omitempty"` // DEPRECATED: use Artists
+	Artists []ArtistMeta `json:"artists,omitempty"`
+	Album   AlbumMeta    `json:"album"`
+	Track   TrackMeta    `json:"track"`
+}
+
+// PrimaryArtist returns the primary artist from Artists[0], or falls back
+// to the deprecated singular Artist field for backward compatibility.
+func (d *DraftMetadata) PrimaryArtist() *ArtistMeta {
+	if len(d.Artists) > 0 {
+		return &d.Artists[0]
+	}
+	if d.Artist.Name != "" {
+		return &d.Artist
+	}
+	return nil
+}
+
+// AllArtists returns the complete artist list. Falls back to the deprecated
+// singular Artist field wrapped as a single-element slice.
+func (d *DraftMetadata) AllArtists() []ArtistMeta {
+	if len(d.Artists) > 0 {
+		return d.Artists
+	}
+	if d.Artist.Name != "" {
+		return []ArtistMeta{d.Artist}
+	}
+	return nil
 }
 
 type ArtistMeta struct {
@@ -130,19 +155,34 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 		}
 	}
 
+	allArtists := final.AllArtists()
+	if len(allArtists) == 0 {
+		return nil, fmt.Errorf("no artist metadata found in draft")
+	}
+
+	// Re-host external images for all artists, preferring local assets
 	assets, err := s.getAssetsByDraftID(ctx, draftID)
 	if err != nil {
 		return nil, fmt.Errorf("get assets: %w", err)
 	}
 
-	// Prefer locally-hosted draft assets over external re-hosted URLs
 	assetArtistImage := assetByType(assets, "artist_image")
 	assetAlbumCover := assetByType(assets, "album_cover")
 	assetTrackCover := assetByType(assets, "cover", "track_cover")
 
-	if final.Artist.ImageURL == "" && assetArtistImage != "" {
-		final.Artist.ImageURL = assetArtistImage
+	for i := range allArtists {
+		if allArtists[i].ImageURL == "" && assetArtistImage != "" {
+			allArtists[i].ImageURL = assetArtistImage
+		}
+		if allArtists[i].ImageURL != "" && s.isExternalURL(allArtists[i].ImageURL) {
+			if localURL, err := s.rehostExternalImage(ctx, allArtists[i].ImageURL, draftID, fmt.Sprintf("artist_%d", i)); err != nil {
+				s.logger.Warn("failed to re-host artist image", zap.Int("index", i), zap.Error(err))
+			} else {
+				allArtists[i].ImageURL = localURL
+			}
+		}
 	}
+
 	if final.Album.CoverURL == "" && assetAlbumCover != "" {
 		final.Album.CoverURL = assetAlbumCover
 	}
@@ -150,14 +190,7 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 		final.Track.CoverURL = assetTrackCover
 	}
 
-	// Re-host external images to local storage (only for URLs not already hosted)
-	if final.Artist.ImageURL != "" && s.isExternalURL(final.Artist.ImageURL) {
-		if localURL, err := s.rehostExternalImage(ctx, final.Artist.ImageURL, draftID, "artist"); err != nil {
-			s.logger.Warn("failed to re-host artist image", zap.Error(err))
-		} else {
-			final.Artist.ImageURL = localURL
-		}
-	}
+	// Re-host external images for album and track
 	if final.Album.CoverURL != "" && s.isExternalURL(final.Album.CoverURL) {
 		if localURL, err := s.rehostExternalImage(ctx, final.Album.CoverURL, draftID, "album"); err != nil {
 			s.logger.Warn("failed to re-host album cover", zap.Error(err))
@@ -179,15 +212,26 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	artistID, err := s.upsertArtistTx(ctx, tx, &final.Artist)
-	if err != nil {
-		return nil, fmt.Errorf("artist: %w", err)
+	// Upsert all artists, collect their IDs
+	artistIDs := make([]uuid.UUID, len(allArtists))
+	for i := range allArtists {
+		id, err := s.upsertArtistTx(ctx, tx, &allArtists[i])
+		if err != nil {
+			return nil, fmt.Errorf("artist[%d]: %w", i, err)
+		}
+		artistIDs[i] = id
+		s.logger.Info("artist resolved",
+			zap.Int("index", i),
+			zap.String("artist_id", id.String()),
+			zap.String("name", allArtists[i].Name),
+		)
 	}
-	s.logger.Info("artist resolved", zap.String("artist_id", artistID.String()))
+
+	primaryArtistID := artistIDs[0]
 
 	var albumID uuid.UUID
 	if final.Album.Action != "skip" {
-		albumID, err = s.upsertAlbumTx(ctx, tx, &final.Album, artistID)
+		albumID, err = s.upsertAlbumTx(ctx, tx, &final.Album, primaryArtistID)
 		if err != nil {
 			return nil, fmt.Errorf("album: %w", err)
 		}
@@ -202,7 +246,7 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 	if lastSlash != -1 {
 		audioFilename = audioKey[lastSlash+1:]
 	}
-	dstAudioKey := fmt.Sprintf("%s/%s/%s", CatalogAudioDir, artistID.String(), audioFilename)
+	dstAudioKey := fmt.Sprintf("%s/%s/%s", CatalogAudioDir, primaryArtistID.String(), audioFilename)
 
 	if err := s.storage.Copy(ctx, audioKey, dstAudioKey); err != nil {
 		return nil, fmt.Errorf("copy audio: %w", err)
@@ -225,7 +269,7 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 	}
 
 	result := &FinalizeResult{
-		ArtistID: artistID.String(),
+		ArtistID: primaryArtistID.String(),
 		AlbumID:  albumID.String(),
 	}
 
@@ -300,7 +344,8 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 
 	trackID, err := s.insertTrackTx(ctx, tx, insertTrackParams{
 		Title:           final.Track.Title,
-		ArtistID:        artistID,
+		ArtistID:        primaryArtistID,
+		ArtistIDs:       artistIDs,
 		AlbumID:         albumIDPtr,
 		DurationSeconds: final.Track.DurationSeconds,
 		TrackNumber:     trackNumber,
@@ -336,7 +381,7 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 		s.logger.Info("lyrics inserted", zap.String("track_id", trackID.String()), zap.String("type", lyricsType))
 	}
 
-	if err := s.updateDraftResultTx(ctx, tx, draftID, artistID, albumID, trackID); err != nil {
+	if err := s.updateDraftResultTx(ctx, tx, draftID, primaryArtistID, albumID, trackID); err != nil {
 		return nil, fmt.Errorf("update draft: %w", err)
 	}
 
@@ -353,7 +398,8 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 
 type insertTrackParams struct {
 	Title           string
-	ArtistID        uuid.UUID
+	ArtistID        uuid.UUID   // Primary artist
+	ArtistIDs       []uuid.UUID // All artists (primary + featured)
 	AlbumID         *uuid.UUID
 	DurationSeconds int
 	TrackNumber     int
@@ -390,10 +436,25 @@ func (s *Service) insertTrackTx(ctx context.Context, tx *sqlx.Tx, p insertTrackP
 		return uuid.Nil, common.MapPGError(err)
 	}
 
-	if _, err := tx.ExecContext(ctx, `
+	// Insert all artists into track_artists (primary + any featured)
+	artistValues := make([]string, 0, len(p.ArtistIDs))
+	artistArgs := []any{trackID}
+	for i, aid := range p.ArtistIDs {
+		role := "featured"
+		position := i + 1
+		if i == 0 {
+			role = "primary"
+		}
+		baseArgIdx := i * 3
+		artistValues = append(artistValues,
+			fmt.Sprintf("($1, $%d, $%d, $%d)", baseArgIdx+2, baseArgIdx+3, baseArgIdx+4))
+		artistArgs = append(artistArgs, aid, role, position)
+	}
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 		INSERT INTO track_artists (track_id, artist_id, role, position)
-		VALUES ($1, $2, 'primary', 1)
-	`, trackID, p.ArtistID); err != nil {
+		VALUES %s
+		ON CONFLICT DO NOTHING
+	`, strings.Join(artistValues, ", ")), artistArgs...); err != nil {
 		return uuid.Nil, common.MapPGError(err)
 	}
 

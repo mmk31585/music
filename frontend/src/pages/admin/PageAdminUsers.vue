@@ -500,7 +500,7 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Dialog from 'primevue/dialog'
 import { useToast } from 'primevue/usetoast'
-import { useAuthApi } from '@/services/api'
+import { useAuthApi } from '@/services/api/auth'
 import { AdminSectionHeader, AdminEmptyState } from '@/components/admin'
 import AdminDeleteConfirm from '@/components/admin/AdminDeleteConfirm.vue'
 
@@ -663,7 +663,7 @@ function viewUser(u: AdminUser) {
   detailLoading.value = true
   adminGetUser(u.id)
     .then((res: Record<string, unknown>) => {
-      if (res) userDetail.value = res
+      if (res) userDetail.value = res as unknown as AdminUser
     })
     .catch(() => {
       toast.add({ severity: 'error', summary: 'Failed to load user details', life: 3000 })

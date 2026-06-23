@@ -44,6 +44,18 @@ export const useArtistsApi = () => {
     )
   }
 
+  const searchArtists = async (q: string, config?: UseRequestConfig<Artist[]>) => {
+    return useRequest<Artist, true>(
+      `${ArtistApiRoutes.ADMIN_LIST}?q=${encodeURIComponent(q)}`,
+      { method: 'GET' },
+      {
+        schema: ArtistSchema,
+        silent: true,
+        ...config,
+      },
+    )
+  }
+
   const adminCreateArtist = async (
     payload: ArtistCreatePayload,
     config?: UseRequestConfig<Artist>,

@@ -83,6 +83,30 @@ func (m *mockRepo) GetLikedTrackIDs(ctx context.Context, userID string, limit in
 	return args.Get(0).([]string), args.Error(1)
 }
 
+func (m *mockRepo) GetGenreNames(ctx context.Context, genreIDs []string) ([]string, error) {
+	args := m.Called(ctx, genreIDs)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]string), args.Error(1)
+}
+
+func (m *mockRepo) GetAllUserPlayedTrackIDs(ctx context.Context, userID string) ([]string, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]string), args.Error(1)
+}
+
+func (m *mockRepo) GetPopularGenreIDs(ctx context.Context, limit int) ([]string, error) {
+	args := m.Called(ctx, limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]string), args.Error(1)
+}
+
 func (m *mockRepo) GetTracksFromArtists(ctx context.Context, artistIDs []string, limit int) ([]TrackItem, error) {
 	args := m.Called(ctx, artistIDs, limit)
 	return args.Get(0).([]TrackItem), args.Error(1)

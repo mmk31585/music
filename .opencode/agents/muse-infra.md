@@ -33,3 +33,13 @@ Configured API modules (`useXxxApi()`), router instance, common stores
 
 ## Deps
 None — base layer
+
+## Teammates (Direct Comms)
+When running in **team mode** (`@muse-team` deployed you), message peers directly:
+- `@muse-auth` — registers auth API modules, router guards, token storage
+- `@muse-catalog` — registers catalog API modules, catalog route config
+- `@muse-player` — registers player API modules, WebSocket channels
+- `@muse-social` — registers social API modules, WebSocket rooms
+- `@muse-creator` — registers creator API modules, creator routes
+- `@muse-admin` — registers admin API modules, admin route config
+- `@muse-ui` — configures router with new pages, registers global stores

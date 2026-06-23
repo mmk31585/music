@@ -1,16 +1,47 @@
 package history
 
+// ── Audit of existing history tracking ─────────────────────────────────
+// What the existing system captures:
+//   1. Event: TrackPlayedEvent (via events.EventTrackPlayed bus) — fires
+//      from the player module when a track finishes playing.
+//   2. Fields stored in listening_history:
+//      - user_id, track_id, played_at (timestamp)
+//      - duration (seconds played, INTEGER, min=0)
+//      - completed (BOOLEAN, FALSE by default — marks natural end vs abort)
+//   3. Does NOT capture:
+//      - session_id (no way to group plays in a listening session)
+//      - completion_percent (only raw duration in seconds)
+//      - signal_type (no skip/completion/replay classification)
+//      - track_duration_ms (no denominator to compute completion % from)
+//   4. The Record endpoint is not exposed publicly yet — only consumed via
+//      the event handler from player events.
+//   5. There is a separate play_history table in the library module that
+//      tracks play counts via an explicit REST endpoint. The taste profile
+//      system uses listening_history as its primary source.
+// What this Phase adds:
+//   - session_id, track_duration_ms, completion_percent, signal_type
+//     columns to listening_history
+//   - Signal classification (skip_negative, complete_positive,
+//     replay_strong, partial_neutral) at write time
+//   - Explicit like (is_explicit_like) integration
+//   - Taste profile aggregation in the recommendation module,
+//     driven asynchronously by a "track.signal_recorded" event
+// ────────────────────────────────────────────────────────────────────────
+
 import (
 	"context"
 	"errors"
 	"strconv"
 
 	"github.com/google/uuid"
+
+	"music/internal/platform/events"
 )
 
 var (
 	ErrInvalidTrackID  = errors.New("invalid track id")
 	ErrInvalidDuration = errors.New("invalid duration")
+	ErrInvalidSignal   = errors.New("invalid signal type")
 )
 
 const (
@@ -19,11 +50,16 @@ const (
 )
 
 type Service struct {
-	repo *Repository
+	repo      *Repository
+	publisher events.Publisher
 }
 
 func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
+}
+
+func NewServiceWithPublisher(repo *Repository, publisher events.Publisher) *Service {
+	return &Service{repo: repo, publisher: publisher}
 }
 
 func (s *Service) GetHistory(
@@ -62,6 +98,7 @@ func (s *Service) GetHistory(
 
 // Record is not exposed through a public route yet.
 // This is for playback/player integration later.
+// It now computes signal type and publishes an async event.
 func (s *Service) Record(
 	ctx context.Context,
 	userID uuid.UUID,
@@ -76,7 +113,107 @@ func (s *Service) Record(
 		return nil, ErrInvalidDuration
 	}
 
-	return s.repo.Record(ctx, userID, trackID, req.Duration, req.Completed)
+	// Basic insert (keep old path for backward compat)
+	item, err := s.repo.Record(ctx, userID, trackID, req.Duration, req.Completed)
+	if err != nil {
+		return nil, err
+	}
+
+	// Compute and store signal (non-blocking, async)
+	go func() {
+		sigCtx := context.Background()
+
+		playedMs := int64(req.Duration) * 1000
+		trackMs := req.TrackDurationMs
+		if trackMs <= 0 {
+			trackMs = playedMs // fallback if unknown
+		}
+
+		completion := float64(0)
+		if trackMs > 0 {
+			completion = float64(playedMs) / float64(trackMs)
+		}
+
+		var sessionUUID uuid.UUID
+		if req.SessionID != "" {
+			sessionUUID, _ = uuid.Parse(req.SessionID)
+		}
+
+		// Determine if this is a replay within the session
+		isReplay := false
+		if sessionUUID != uuid.Nil {
+			signals, err := s.repo.ListSignalsByUser(sigCtx, userID, 1)
+			if err == nil {
+				for _, sig := range signals {
+					if sig.TrackID == trackID && sig.SessionID == sessionUUID {
+						isReplay = true
+						break
+					}
+				}
+			}
+		}
+
+		signalType := ClassifySignal(playedMs, trackMs, isReplay)
+
+		_ = s.repo.RecordSignal(sigCtx, userID, trackID, playedMs, trackMs, completion, signalType, false, sessionUUID)
+
+		// Publish event for async profile recomputation
+		if s.publisher != nil {
+			_ = s.publisher.Publish(sigCtx, events.PlaybackSignalRecordedEvent{
+				BaseEvent:         events.NewBaseEvent(),
+				UserID:            userID,
+				TrackID:           trackID,
+				SessionID:         sessionUUID,
+				PlayedDurationMs:  playedMs,
+				TrackDurationMs:   trackMs,
+				CompletionPercent: completion,
+				SignalType:        signalType,
+			})
+		}
+	}()
+
+	return item, nil
+}
+
+// RecordSignal is a synchronous version that records a classified signal
+// and publishes the event. Used by the like integration and tests.
+func (s *Service) RecordSignal(
+	ctx context.Context,
+	userID, trackID uuid.UUID,
+	playedDurationMs, trackDurationMs int64,
+	completionPercent float64,
+	signalType string,
+	isExplicitLike bool,
+	sessionID uuid.UUID,
+) error {
+	if err := s.repo.RecordSignal(ctx, userID, trackID, playedDurationMs, trackDurationMs, completionPercent, signalType, isExplicitLike, sessionID); err != nil {
+		return err
+	}
+
+	if s.publisher != nil {
+		_ = s.publisher.Publish(ctx, events.PlaybackSignalRecordedEvent{
+			BaseEvent:         events.NewBaseEvent(),
+			UserID:            userID,
+			TrackID:           trackID,
+			SessionID:         sessionID,
+			PlayedDurationMs:  playedDurationMs,
+			TrackDurationMs:   trackDurationMs,
+			CompletionPercent: completionPercent,
+			SignalType:        signalType,
+		})
+	}
+
+	return nil
+}
+
+// ListSignalsByUser returns signal-enriched history for taste profile recomputation.
+func (s *Service) ListSignalsByUser(ctx context.Context, userID uuid.UUID, days int) ([]PlaybackSignal, error) {
+	return s.repo.ListSignalsByUser(ctx, userID, days)
+}
+
+// GetRepo exposes the repository for cross-module usage (taste profile).
+func (s *Service) GetRepo() *Repository {
+	return s.repo
 }
 
 func parsePositiveInt(raw string, fallback int) int {

@@ -8,6 +8,7 @@ import (
 	"music/internal/modules/auth"
 	"music/internal/modules/catalog"
 	"music/internal/modules/contribution"
+	"music/internal/modules/covers"
 	"music/internal/modules/creator"
 	"music/internal/modules/dashboard"
 	"music/internal/modules/follow"
@@ -29,6 +30,7 @@ import (
 	"music/internal/modules/search"
 	"music/internal/modules/social"
 	"music/internal/modules/subscription"
+	"music/internal/modules/video"
 	"net/http"
 	"time"
 
@@ -68,12 +70,15 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	catalog.RegisterAdminRoutes(api, catalogHandlers, c.AuthMW)
 
 	lyrics.RegisterRoutes(api, c.LyricsHandler, c.AuthMW)
+	lyrics.RegisterInternalRoutes(api, c.LyricsHandler, c.MLServiceHMACMW)
 
-	playlist.RegisterRoutes(api, c.PlaylistHandler, c.AuthMW)
+	covers.RegisterInternalRoutes(api, c.CoverHandler, c.MLServiceHMACMW)
+
+	playlist.RegisterRoutes(api, c.PlaylistHandler, c.AuthMW, c.OptionalAuthMW)
 	library.RegisterRoutes(api, c.LibraryHandler, c.AuthMW)
 	queue.RegisterRoutes(api, c.QueueHandler, c.AuthMW)
 	follow.RegisterRoutes(api, c.FollowHandler, c.AuthMW)
-	recommendation.RegisterRoutes(api, c.RecommendationHandler, c.AuthMW)
+	recommendation.RegisterRoutes(api, c.RecommendationHandler, c.OnboardingHandler, c.AuthMW)
 	history.RegisterRoutes(api, c.HistoryHandler, c.AuthMW)
 
 	analytics.RegisterRoutes(api, c.AnalyticsHandler)
@@ -131,26 +136,33 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	social.RegisterRoutes(api, c.SocialHandler, c.AuthMW)
 	ai.RegisterRoutes(api, c.AIHandler, c.AuthMW)
 
+	video.RegisterRoutes(api, c.VideoHandler, c.AuthMW)
+	video.RegisterInternalRoutes(api, c.VideoHandler, c.MLServiceHMACMW)
+
 	// Start periodic enrichment for all tracks (runs every 6 hours)
 	if c.EnrichHandler != nil {
-		go c.startPeriodicEnrichment()
+		enrichCtx := c.enrichCtx
+		go func() {
+			defer c.enrichDone()
+			c.startPeriodicEnrichment(enrichCtx)
+		}()
 	}
 }
 
-func (c *Container) startPeriodicEnrichment() {
-	ctx := context.Background()
+// startPeriodicEnrichment runs enrichment on a 6-hour loop until the context is cancelled.
+func (c *Container) startPeriodicEnrichment(ctx context.Context) {
 	ticker := time.NewTicker(6 * time.Hour)
 	defer ticker.Stop()
 
-	// Run once at startup
-	go c.EnrichHandler.EnrichAllBackground(ctx)
+	// Run once at startup (non-blocking)
+	c.EnrichHandler.EnrichAllBackground(ctx)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			go c.EnrichHandler.EnrichAllBackground(ctx)
+			c.EnrichHandler.EnrichAllBackground(ctx)
 		}
 	}
 }

@@ -3,6 +3,8 @@ package history
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"music/internal/platform/events"
 )
 
@@ -20,10 +22,17 @@ func (h *EventHandler) OnTrackPlayed(ctx context.Context, event events.Event) er
 		return nil
 	}
 
+	sessionID := ""
+	if e.SessionID != uuid.Nil {
+		sessionID = e.SessionID.String()
+	}
+
 	_, err := h.service.Record(ctx, e.UserID, RecordListeningRequest{
-		TrackID:   e.TrackID.String(),
-		Duration:  e.Duration,
-		Completed: e.Completed,
+		TrackID:         e.TrackID.String(),
+		Duration:        e.Duration,
+		Completed:       e.Completed,
+		SessionID:       sessionID,
+		TrackDurationMs: e.TrackDurationMs,
 	})
 
 	return err

@@ -78,7 +78,17 @@ func (s *Service) GetPlaylist(ctx context.Context, playlistID uuid.UUID, request
 
 	if !p.IsPublic {
 		if requesterID == nil || *requesterID != p.UserID {
-			return Playlist{}, nil, ErrForbiddenPlaylistAccess
+			// Check if the requester is a collaborator on a collaborative playlist
+			if requesterID != nil {
+				isCollab, checkErr := s.repo.IsCollaborator(ctx, playlistID.String(), requesterID.String())
+				if checkErr == nil && isCollab {
+					// Collaborator gets access
+				} else {
+					return Playlist{}, nil, ErrForbiddenPlaylistAccess
+				}
+			} else {
+				return Playlist{}, nil, ErrForbiddenPlaylistAccess
+			}
 		}
 	}
 

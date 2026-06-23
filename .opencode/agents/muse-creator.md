@@ -21,3 +21,11 @@ Creator API modules, gamification API modules
 
 ## Deps
 `@infra` (API), `@ui` (common components, layout)
+
+## Teammates (Direct Comms)
+When running in **team mode** (`@muse-team` deployed you), message peers directly:
+- `@muse-catalog` — needs track/album data for creator analytics
+- `@muse-social` — coordinates activity feed events for badges/XP
+- `@muse-auth` — needs user identity for creator verification
+- `@muse-infra` — needs new API endpoints registered
+- `@muse-ui` — shares creator dashboard component props

@@ -129,6 +129,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useToast } from 'primevue/usetoast'
 import { useRouter } from 'vue-router'
 import { usePlaylistsApi } from '@/services/api/playlist'
 import type { PlaylistListItem } from '@/services/api/playlist'
@@ -180,6 +181,8 @@ async function handleCreate() {
       await fetchPlaylists()
     }
   } catch (err) {
+    const toast = useToast()
+    toast.add({ severity: 'error', summary: 'Failed to create playlist', detail: 'Please try again later.', life: 4000 })
     console.error('Failed to create playlist:', err)
   } finally {
     creating.value = false

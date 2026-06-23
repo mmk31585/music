@@ -1,6 +1,7 @@
 package media
 
 import (
+	"context"
 	"errors"
 	"mime/multipart"
 	"net/http"
@@ -12,11 +13,18 @@ import (
 	"music/internal/common/response"
 )
 
-type Handler struct {
-	service *Service
+// ServiceInterface defines the service methods needed by the HTTP handler.
+type ServiceInterface interface {
+	Upload(ctx context.Context, category UploadCategory, file multipart.File, header *multipart.FileHeader, createdBy *uuid.UUID) (*UploadResponse, error)
+	ListMedia(ctx context.Context) ([]Media, error)
+	DeleteMedia(ctx context.Context, id uuid.UUID) error
 }
 
-func NewHandler(service *Service) *Handler {
+type Handler struct {
+	service ServiceInterface
+}
+
+func NewHandler(service ServiceInterface) *Handler {
 	return &Handler{service: service}
 }
 
@@ -31,6 +39,9 @@ func NewHandler(service *Service) *Handler {
 // @Param albumCover formData file false "Album cover file"
 // @Param trackCover formData file false "Track cover file"
 // @Param trackAudio formData file false "Track audio file"
+// @Param playlistCover formData file false "Playlist cover file"
+// @Param video formData file false "Video file"
+// @Param videoAudio formData file false "Video audio file"
 // @Success 201 {object} response.SuccessResponse
 // @Failure 400 {object} response.ErrorResponse
 // @Failure 401 {object} response.ErrorResponse
@@ -168,6 +179,18 @@ func detectUploadField(r *http.Request) (UploadCategory, string, error) {
 		{
 			Name:     "trackAudio",
 			Category: UploadCategoryTrackAudio,
+		},
+		{
+			Name:     "playlistCover",
+			Category: UploadCategoryPlaylistCover,
+		},
+		{
+			Name:     "video",
+			Category: UploadCategoryVideo,
+		},
+		{
+			Name:     "videoAudio",
+			Category: UploadCategoryVideoAudio,
 		},
 	}
 

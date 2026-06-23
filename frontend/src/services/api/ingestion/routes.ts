@@ -4,6 +4,7 @@ import type { AxiosRequestConfig } from 'axios'
 import type { UseRequestConfig } from '@/plugins/client/types'
 import { IngestionApiRoutes } from './enums'
 import {
+  DraftListItemSchema,
   UploadResponseSchema,
   DraftDetailResponseSchema,
   ListDraftsResponseSchema,
@@ -63,7 +64,8 @@ export const useIngestionApi = () => {
       `${IngestionApiRoutes.ADMIN_DRAFTS}${qs ? `?${qs}` : ''}`,
       { method: 'GET' },
       {
-        schema: ListDraftsResponseSchema,
+        // Use per-item schema so request-factory's pagination handler validates correctly
+        schema: DraftListItemSchema,
         silent: true,
         ...config,
       },
@@ -87,11 +89,13 @@ export const useIngestionApi = () => {
 
   const enrichDraft = async (
     id: string,
+    scope?: string[],
     config?: UseRequestConfig<any>,
   ) => {
+    const body = scope && scope.length > 0 ? { scope } : undefined
     return useRequest<any>(
       IngestionApiRoutes.ADMIN_ENRICH.replace(':id', id),
-      { method: 'POST' },
+      { method: 'POST', data: body },
       { silent: false, ...config },
     )
   }
@@ -108,6 +112,18 @@ export const useIngestionApi = () => {
         silent: true,
         ...config,
       },
+    )
+  }
+
+  const updateDraftMetadata = async (
+    id: string,
+    data: { title?: string; artist?: string; album?: string },
+    config?: UseRequestConfig<any>,
+  ) => {
+    return useRequest<any>(
+      IngestionApiRoutes.ADMIN_UPDATE_METADATA.replace(':id', id),
+      { method: 'PATCH', data },
+      { silent: false, ...config },
     )
   }
 
@@ -229,6 +245,7 @@ export const useIngestionApi = () => {
     enrichDraft,
     getDraftSuggestions,
     saveFinalMetadata,
+    updateDraftMetadata,
     rejectDraft,
     searchArtists,
     searchAlbums,

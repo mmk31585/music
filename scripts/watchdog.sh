@@ -7,7 +7,7 @@ set -euo pipefail
 # Stop: Ctrl+C
 
 INTERVAL=10
-FRONTEND_PORT=5173
+FRONTEND_PORT=3000
 API_PORT=8080
 FRONTEND_PID=""
 API_PID=""
@@ -141,14 +141,16 @@ check_api() {
 }
 
 check_infra() {
-  if command -v pg_isready &>/dev/null; then
-    if pg_isready -q 2>/dev/null; then
-      update_status "postgres" "healthy"
-    else
-      update_status "postgres" "down"
-      log_error "Postgres is not reachable"
-    fi
+  # Postgres runs in Docker on TCP port 5432 (not Unix socket)
+  if pg_isready -h localhost -p 5432 -q 2>/dev/null; then
+    update_status "postgres" "healthy"
+  elif command -v pg_isready &>/dev/null && pg_isready -q 2>/dev/null; then
+    update_status "postgres" "healthy"
+  else
+    update_status "postgres" "down"
+    log_error "Postgres is not reachable"
   fi
+  # Redis runs in Docker; redis-cli may not be on host, use nc as fallback
   if command -v redis-cli &>/dev/null; then
     if redis-cli ping 2>/dev/null | grep -q "PONG"; then
       update_status "redis" "healthy"
@@ -156,6 +158,11 @@ check_infra() {
       update_status "redis" "down"
       log_error "Redis is not reachable"
     fi
+  elif echo "PING" | nc -w2 localhost 6379 2>/dev/null | grep -q "PONG"; then
+    update_status "redis" "healthy"
+  else
+    update_status "redis" "down"
+    log_error "Redis is not reachable"
   fi
 }
 

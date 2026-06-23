@@ -182,10 +182,14 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
     type DataType = IsArray extends true ? T[] : T
 
     function isPaginatedResponse(value: any): value is PaginatedProps<T> {
-      return (value &&
+      return (
+        value !== null &&
         typeof value === 'object' &&
-        Array.isArray((value as PaginatedProps<T>).items) &&
-        !!(value as PaginatedProps<T>).meta) as boolean
+        Array.isArray((value as Record<string, unknown>).items) &&
+        // Require a total count — excludes non-paginated objects that happen
+        // to have an `items` array (e.g. RecommendationResponse: { type, items, limit })
+        typeof (value as Record<string, unknown>).total === 'number'
+      ) as boolean
     }
 
     function invalidZodSchema(
@@ -266,9 +270,13 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
                 return
               }
 
+              // Extract meta from either explicit meta field or flattened pagination fields,
+              // then spread it alongside items for caller convenience (items + total + page + limit).
+              const meta = (data.meta ?? (typeof data.total === 'number' ? { total: data.total, page: data.page, limit: data.limit } : {})) as Record<string, unknown>
+
               payload.data = {
+                ...meta,
                 items: validation.data,
-                meta: data.meta,
               } as DataType
             } else {
               const isArray = Array.isArray(data)

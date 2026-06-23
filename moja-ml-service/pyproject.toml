@@ -1,0 +1,65 @@
+[project]
+name = "moja-ml-service"
+version = "0.1.0"
+description = "Audio/ML processing service for the Moja (موجا) Persian music platform — transcription, feature extraction, recommendations"
+requires-python = ">=3.11"
+dependencies = [
+    "alembic>=1.13",
+    "asyncpg>=0.29",
+    "celery[redis]>=5.3",
+    "fastapi>=0.110",
+    "faster-whisper>=1.0",
+    "ffmpeg-python>=0.2.0",
+    "hazm>=0.10.0",
+    "httpx>=0.27",
+    "librosa>=0.10",
+    "numpy>=1.26",
+    "pgvector>=0.2.5",
+    "pgvector>=0.2.5",
+    "psycopg2-binary>=2.9.12",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+    "python-multipart>=0.0.32",
+    "redis>=5.0",
+    "scikit-learn>=1.4",
+    "sqlalchemy[asyncio]>=2.0",
+    "uvicorn[standard]>=0.29",
+]
+
+[project.optional-dependencies]
+audio = [
+    "openl3>=0.4.2",
+    "tensorflow-cpu>=2.15",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: marks tests that require external services (e.g. a real Whisper model or database)",
+    "slow: marks tests that are slow (CPU-bound inference, large downloads, etc.)",
+]
+addopts = "-m 'not integration and not slow'"
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[dependency-groups]
+dev = [
+    "mypy>=2.1.0",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=7.1.0",
+    "pytest-mock>=3.15.1",
+    "respx>=0.23.1",
+    "ruff>=0.15.18",
+]

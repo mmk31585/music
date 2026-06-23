@@ -1,7 +1,7 @@
 # Operations & Scaling — Persian Music Ecosystem
 
 > **Document**: Deployment, Scaling, Monitoring, Roadmap
-> **Status**: v1.0 — Final
+> **Status**: v1.1 — Current (updated 2026-06-22)
 > **Target**: 50M users, 10M tracks, 1B streams/month
 
 ---
@@ -206,26 +206,33 @@ Commit → Lint → TypeCheck → Unit Test → Build → Integration Test →
 ### 3.3 GitHub Actions Workflow
 
 ```yaml
-# .github/workflows/deploy.yml (abbreviated)
+# .github/workflows/ci.yml (current implementation)
 jobs:
-  test:
-    - golangci-lint
-    - go test ./... -race -cover
-    - npx vue-tsc --noEmit
-    - npx vitest run
+  lint:            # go vet + golangci-lint + frontend type-check + eslint
+  security:        # gitleaks + trivy filesystem + npm audit + go mod verify
+  go-test:         # go test -race -cover, coverage threshold >= 30%
+  frontend-test:   # vitest --run --coverage
+  frontend-build:  # npm run build-only
+  docker:          # Build & push to GHCR (api, worker, frontend, ml-service)
+  container-scan:  # trivy scan on built images
+```
 
-  build:
-    - docker build -t music-api:${{ github.sha }}
-    - docker build -t music-frontend:${{ github.sha }}
+> 🚧 **Not yet implemented**: The following CI/CD phases from the aspirational pipeline are not yet in place:
+> - Integration tests with testcontainers-go
+> - E2E tests with Playwright
+> - Deploy to Kubernetes / ArgoCD
+> - Canary deployments with monitoring
+> - Performance/load testing
 
-  deploy-staging:
-    - helm upgrade --install music-api ./deploy/charts/api
-    - run e2e tests against staging
+### Deploy Workflow
 
-  deploy-production:
-    - trigger canary via ArgoCD
-    - monitor for 10 min (error rate, latency, traffic)
-    - promote to full rollout
+```yaml
+# .github/workflows/deploy.yml (current)
+# Triggered on tags matching v*.*.*
+# Builds all 4 Docker images with semver tags
+# Pushes to GHCR
+# Optionally deploys via SSH to Docker Compose target
+# Health monitoring for canary period (10 min)
 ```
 
 ---

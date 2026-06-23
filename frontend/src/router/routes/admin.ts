@@ -77,6 +77,18 @@ export const adminRoutes: RouteRecordRaw[] = [
         meta: { title: 'Media' },
       },
       {
+        path: 'videos',
+        name: 'admin.videos',
+        component: () => import('@/pages/admin/PageAdminVideos.vue'),
+        meta: { title: 'Videos' },
+      },
+      {
+        path: 'video-upload',
+        name: 'admin.video-upload',
+        component: () => import('@/pages/admin/PageAdminVideoUpload.vue'),
+        meta: { title: 'Video Upload' },
+      },
+      {
         path: 'import',
         name: 'admin.import',
         component: () => import('@/pages/admin/PageAdminImport.vue'),

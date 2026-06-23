@@ -7,19 +7,20 @@ import (
 )
 
 type Config struct {
-	App         AppConfig
-	Postgres    PostgresConfig
-	Redis       RedisConfig
-	Log         LogConfig
-	CORS        CORSConfig
-	Auth        AuthConfig
-	Media       MediaConfig
-	OpenSearch  OpenSearchConfig
-	Storage     StorageConfig
-	Enrichment  EnrichmentConfig
-	Features    FeaturesConfig
-	AI          AIConfig
-	Payment     PaymentConfig
+	App        AppConfig
+	Postgres   PostgresConfig
+	Redis      RedisConfig
+	Log        LogConfig
+	CORS       CORSConfig
+	Auth       AuthConfig
+	Media      MediaConfig
+	OpenSearch OpenSearchConfig
+	Storage    StorageConfig
+	Enrichment EnrichmentConfig
+	Features   FeaturesConfig
+	AI         AIConfig
+	Payment    PaymentConfig
+	MLService  MLServiceConfig
 
 	// Legacy song module compatibility. The active upload path lives in
 	// internal/modules/media, but these keep old packages buildable until the
@@ -33,19 +34,20 @@ func Load() (*Config, error) {
 	_ = godotenv.Load()
 
 	cfg := &Config{
-		App:         loadAppConfig(),
-		Postgres:    loadPostgresConfig(),
-		Redis:       loadRedisConfig(),
-		Log:         loadLogConfig(),
-		CORS:        loadCORSConfig(),
-		Auth:        loadAuthConfig(),
-		Media:       loadMediaConfig(),
-		OpenSearch:  loadOpenSearchConfig(),
-		Storage:     loadStorageConfig(),
-		Enrichment:  loadEnrichmentConfig(),
-		Features:    loadFeaturesConfig(),
-		AI:          loadAIConfig(),
-		Payment:     loadPaymentConfig(),
+		App:        loadAppConfig(),
+		Postgres:   loadPostgresConfig(),
+		Redis:      loadRedisConfig(),
+		Log:        loadLogConfig(),
+		CORS:       loadCORSConfig(),
+		Auth:       loadAuthConfig(),
+		Media:      loadMediaConfig(),
+		OpenSearch: loadOpenSearchConfig(),
+		Storage:    loadStorageConfig(),
+		Enrichment: loadEnrichmentConfig(),
+		Features:   loadFeaturesConfig(),
+		AI:         loadAIConfig(),
+		Payment:    loadPaymentConfig(),
+		MLService:  loadMLServiceConfig(),
 	}
 
 	cfg.applyLegacyUploadCompatibility()
@@ -53,6 +55,9 @@ func Load() (*Config, error) {
 	if cfg.Postgres.URL == "" {
 		return nil, fmt.Errorf("POSTGRES_URL is required")
 	}
+
+	// Validate critical configuration — panics in production if secrets are weak
+	ValidateProductionConfig(cfg)
 
 	return cfg, nil
 }

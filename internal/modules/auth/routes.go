@@ -20,6 +20,14 @@ func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, authMW gin.HandlerFun
 		protected.GET("/me", handler.Me)
 	}
 
+	// User profile (authenticated)
+	users := rg.Group("/users")
+	users.Use(authMW)
+	{
+		users.PUT("/me/profile", handler.UpdateProfile)
+		users.PUT("/me/password", handler.ChangePassword)
+	}
+
 	// Admin user management
 	admin := rg.Group("/admin/users")
 	admin.Use(authMW, RequireRole("admin"))

@@ -1,7 +1,22 @@
 <template>
-  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <div class="relative">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
 
-  <div class="flex h-screen overflow-hidden bg-transparent text-white">
+    <!-- Offline banner -->
+    <div
+      v-if="!isOnline"
+      role="alert"
+      class="fixed top-0 left-0 right-0 z-[9999] flex items-center justify-center gap-2 bg-red-600/90 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm"
+      style="padding-top: max(0.5rem, env(safe-area-inset-top, 0.5rem))"
+    >
+      <i class="pi pi-wifi text-xs" aria-hidden="true" />
+      <span>You are offline. Some features may be unavailable.</span>
+    </div>
+
+    <div
+      class="flex h-screen overflow-hidden bg-transparent text-white"
+      :dir="rtlDir"
+    >
     <!-- ── Left Sidebar ── -->
     <MusicSidebar />
 
@@ -16,9 +31,8 @@
 
       <main
         id="main-content"
-        class="flex-1 overflow-y-auto scroll-smooth"
+        class="flex-1 overflow-y-auto scroll-smooth scroll-bar"
         :class="mainPadding"
-        style="scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.06) transparent;"
       >
         <RouterView v-slot="{ Component }">
           <Transition name="page" mode="out-in">
@@ -177,41 +191,29 @@
       </div>
     </Transition>
 
-    <NowPlayingBar
-      @toggle-fullscreen="fullscreenOpen = !fullscreenOpen"
-      @toggle-queue="showQueue = !showQueue"
-      @toggle-lyrics="onToggleLyrics"
-      @toggle-mobile-sheet="mobileSheetOpen = !mobileSheetOpen"
-    />
     <SearchOverlay v-model:visible="searchOpen" />
-    <FullscreenPlayer v-if="!ffEnabled" v-model:visible="fullscreenOpen" :initial-tab="playerInitialTab" />
-    <ExpandedPlayer v-else v-model:visible="fullscreenOpen" />
-    <QueuePanel v-model:visible="showQueue" />
-    <MobileBottomSheet v-model:visible="mobileSheetOpen" @open-fullscreen="fullscreenOpen = true" />
-    <KeyboardShortcuts v-model:visible="showShortcuts" />
+    <RadioMode v-model:visible="radioVisible" :seed-id="radioSeedId" :seed-label="radioSeedLabel" />
+    <PlayerRegion />
     <MobileBottomNav />
+  </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   MusicSidebar,
-  NowPlayingBar,
   SearchOverlay,
-  FullscreenPlayer,
-  ExpandedPlayer,
-  QueuePanel,
-  MobileBottomSheet,
-  KeyboardShortcuts,
+  RadioMode,
+  PlayerRegion,
 } from '@/components/music'
 import MusicRightPane from '@/components/music/layout/MusicRightPane.vue'
 import MusicAppHeader from '@/components/layouts/MusicAppHeader.vue'
 import { MobileBottomNav } from '@/components/layouts'
 import { useUserAuthStore, useFeatureFlagsStore, usePlayerStore } from '@/stores'
 import { useAuth } from '@/composables/auth/useAuth'
-import { client } from '@/composables'
+import { client, useRTL } from '@/composables'
 import { wsClient } from '@/services/socket/client'
 import type { NotificationResponse } from '@/services/api/notification/routes'
 
@@ -229,6 +231,7 @@ const libraryItems = [
 ]
 
 const socialItems = [
+  { label: 'Explore', icon: 'pi pi-compass', to: '/explore' },
   { label: 'Social Hub', icon: 'pi pi-users', to: '/social' },
   { label: 'Notifications', icon: 'pi pi-bell', to: '/notifications' },
 ]
@@ -247,6 +250,7 @@ const moreItems = [
 const pageTitleMap: Record<string, string> = {
   '/': 'Home',
   '/discover': 'Discover',
+  '/explore': 'Explore',
   '/search': 'Search',
   '/recommendations': 'Recommendations',
   '/library': 'Library',
@@ -271,11 +275,23 @@ const ff = useFeatureFlagsStore()
 const { logout } = useAuth()
 const mobileOpen = ref(false)
 const searchOpen = ref(false)
-const fullscreenOpen = ref(false)
-const showQueue = ref(false)
-const mobileSheetOpen = ref(false)
+
+const radioVisible = ref(false)
+const radioSeedId = ref('')
+const radioSeedLabel = ref('')
+
+function openRadio(trackId: string, seedLabel?: string) {
+  radioSeedId.value = trackId
+  radioSeedLabel.value = seedLabel || ''
+  radioVisible.value = true
+}
+
+provide('openRadio', openRadio)
+
+const { dir: rtlDir } = useRTL()
 
 const barCollapsed = ref(localStorage.getItem('player-bar-collapsed') === 'true')
+const isOnline = ref(navigator.onLine)
 
 onMounted(() => {
   const handler = (e: Event) => {
@@ -288,7 +304,7 @@ const mainPadding = computed(() => {
   if (playerStore.currentTrack) {
     return barCollapsed.value ? 'pb-20 lg:pb-16' : 'pb-32 lg:pb-28'
   }
-  return 'pb-16 lg:pb-0'
+  return 'pb-24 lg:pb-0'
 })
 const showShortcuts = ref(false)
 const playerInitialTab = ref<'now-playing' | 'queue' | 'lyrics'>('now-playing')
@@ -336,6 +352,9 @@ onMounted(() => {
       showShortcuts.value = !showShortcuts.value
     }
   })
+  const updateOnline = () => { isOnline.value = navigator.onLine }
+  window.addEventListener('online', updateOnline)
+  window.addEventListener('offline', updateOnline)
 })
 
 onUnmounted(() => {
@@ -401,6 +420,11 @@ const pageTitle = computed(() => {
 
   return bestMatch
 })
+
+// Update document title when page changes
+watch(pageTitle, (title) => {
+  document.title = title ? `${title} — Muse` : 'Muse'
+}, { immediate: true })
 
 function onToggleLyrics() {
   playerInitialTab.value = 'lyrics'

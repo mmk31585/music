@@ -20,3 +20,11 @@ Admin composables, admin API modules
 
 ## Deps
 `@infra` (API, router), `@ui` (common components)
+
+## Teammates (Direct Comms)
+When running in **team mode** (`@muse-team` deployed you), message peers directly:
+- `@muse-catalog` — coordinates track/album/artist CRUD ops
+- `@muse-auth` — needs user roles/permissions for admin guards
+- `@muse-creator` — coordinates creator verification and moderation
+- `@muse-infra` — needs admin API modules registered, admin route config
+- `@muse-ui` — shares admin layout components, sidebar navigation

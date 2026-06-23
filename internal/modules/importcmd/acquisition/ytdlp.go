@@ -27,22 +27,12 @@ type ytDlpResolver struct {
 	proxy    string
 }
 
-func newBandcampResolver(proxy string) *ytDlpResolver {
-	return &ytDlpResolver{
-		name:     "bandcamp",
-		prefix:   "bandcamp5",
-		quality:  QualityFLAC,
-		priority: 1,
-		proxy:    proxy,
-	}
-}
-
 func newSoundCloudResolver(proxy string) *ytDlpResolver {
 	return &ytDlpResolver{
 		name:     "soundcloud",
-		prefix:   "scsearch5",
+		prefix:   "scsearch",
 		quality:  QualityV0,
-		priority: 2,
+		priority: 1,
 		proxy:    proxy,
 	}
 }
@@ -52,17 +42,7 @@ func newYTMusicResolver(proxy string) *ytDlpResolver {
 		name:     "youtube",
 		prefix:   "ytsearch5",
 		quality:  Quality128,
-		priority: 4,
-		proxy:    proxy,
-	}
-}
-
-func newArchiveResolver(proxy string) *ytDlpResolver {
-	return &ytDlpResolver{
-		name:     "archiveorg",
-		prefix:   "archiveorg5",
-		quality:  QualityV0,
-		priority: 3,
+		priority: 2,
 		proxy:    proxy,
 	}
 }

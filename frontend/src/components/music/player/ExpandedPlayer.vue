@@ -532,6 +532,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayer } from '@/composables/player'
+import { usePlayerStore } from '@/stores/player'
 import { useAlbumColors } from '@/composables/useAlbumColors'
 import { useLyricsApi, type Lyrics } from '@/services/api/lyrics'
 import { useRecommendationsApi, type RecommendationTrack } from '@/services/api/recommendation'
@@ -599,21 +600,21 @@ const sleepMenuOpen = ref(false)
 const karaokeMode = ref(true)
 
 const repeatTitle = computed(() => {
-  if (repeatMode.value === 'off') return 'Repeat: off'
-  if (repeatMode.value === 'all') return 'Repeat: all'
+  if (repeatMode === 'off') return 'Repeat: off'
+  if (repeatMode === 'all') return 'Repeat: all'
   return 'Repeat: one'
 })
 
 const speedOptions = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
 function cycleSpeed() {
-  const idx = speedOptions.indexOf(playbackRate.value)
+  const idx = speedOptions.indexOf(playbackRate)
   const nextIdx = (idx + 1) % speedOptions.length
   setPlaybackRate(speedOptions[nextIdx]!)
 }
 
 const sleepTimerLabel = computed(() => {
-  const minutes = sleepTimerMinutes.value
+  const minutes = sleepTimerMinutes
   if (minutes <= 0) return ''
   return `${minutes}m`
 })
@@ -632,7 +633,8 @@ function setTimer(minutes: number) {
 }
 
 function cycleCrossfade() {
-  crossfadeDuration.value = crossfadeDuration.value > 0 ? 0 : 5
+  const store = usePlayerStore()
+  store.crossfadeDuration = store.crossfadeDuration > 0 ? 0 : 5
 }
 
 const queueTracks = computed(() => player.queue.value as PlaybackTrack[])
@@ -696,7 +698,7 @@ const volumeIcon = computed(() => {
   return 'pi pi-volume-up'
 })
 
-const speedLabel = computed(() => `${playbackRate.value}x`)
+const speedLabel = computed(() => `${playbackRate}x`)
 
 function togglePlayPause() {
   if (isPlaying.value) {
@@ -706,10 +708,10 @@ function togglePlayPause() {
   }
 }
 
-function seekFromEvent(e: MouseEvent) {
+function seekFromEvent(e: MouseEvent | KeyboardEvent) {
   const rect = progressRef.value?.getBoundingClientRect()
   if (!rect) return
-  const pct = (e.clientX - rect.left) / rect.width
+  const pct = ((e as MouseEvent).clientX - rect.left) / rect.width
   if (duration.value) {
     player.seek(pct * duration.value)
   }

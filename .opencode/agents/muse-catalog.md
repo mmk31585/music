@@ -23,3 +23,11 @@ You are **Catalog & Search** for Muse. When delegated to, you immediately:
 
 ## Deps
 `@infra` (API, router), `@player` (play action)
+
+## Teammates (Direct Comms)
+When running in **team mode** (`@muse-team` deployed you), message peers directly:
+- `@muse-auth` — needs user/role data for catalog permissions
+- `@muse-infra` — needs new API modules registered in barrel, shares response types
+- `@muse-player` — provides `PlaybackTrack` shape, coordinates playlist→queue handoff
+- `@muse-ui` — shares catalog component props, needs layout integration
+- `@muse-admin` — coordinates admin catalog CRUD flows

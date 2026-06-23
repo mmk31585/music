@@ -44,7 +44,7 @@ func NewService(storage platformstorage.Storage, repo *Repository, enricher *enr
 	}
 }
 
-func (s *Service) EnrichDraft(ctx context.Context, draftID string) error {
+func (s *Service) EnrichDraft(ctx context.Context, draftID string, scope ...enrichment.EnrichScope) error {
 	draft, err := s.repo.GetDraftByID(ctx, draftID)
 	if err != nil {
 		return err
@@ -53,25 +53,29 @@ func (s *Service) EnrichDraft(ctx context.Context, draftID string) error {
 		return ErrDraftNotFound
 	}
 
-	if draft.Status != DraftStatusPending && draft.Status != DraftStatusEnrichmentFailed {
+	// Allow enrichment from any non-terminal state
+	if draft.Status != DraftStatusPending && draft.Status != DraftStatusEnrichmentFailed && draft.Status != DraftStatusReview {
 		return nil
 	}
 
-	if err := s.repo.UpdateDraftStatus(ctx, draftID, DraftStatusEnriching); err != nil {
-		return err
+	// Only set status to enriching for full enrichment (no scope) or if coming from pending/failed
+	if len(scope) == 0 || len(scope[0]) == 0 || draft.Status != DraftStatusReview {
+		if err := s.repo.UpdateDraftStatus(ctx, draftID, DraftStatusEnriching); err != nil {
+			return err
+		}
 	}
 
 	tags := parseExtractedTags(draft.ExtractedMetadata)
 
-	go s.enrichAsync(draftID, tags.Title, tags.Artist, tags.Album, int(tags.Duration))
+	go s.enrichAsync(draftID, tags.Title, tags.Artist, tags.Album, int(tags.Duration), scope...)
 
 	return nil
 }
 
-func (s *Service) enrichAsync(draftID, title, artist, album string, durationSeconds int) {
+func (s *Service) enrichAsync(draftID, title, artist, album string, durationSeconds int, scope ...enrichment.EnrichScope) {
 	ctx := context.Background()
 
-	result, err := s.enricher.Enrich(ctx, title, artist, album, durationSeconds)
+	result, err := s.enricher.Enrich(ctx, title, artist, album, durationSeconds, scope...)
 	if err != nil {
 		zap.L().Error("enrichment failed", zap.String("draft_id", draftID), zap.Error(err))
 		_ = s.repo.UpdateDraftStatus(ctx, draftID, DraftStatusEnrichmentFailed)
@@ -538,6 +542,37 @@ func detectCoverMime(ext string) string {
 	default:
 		return "image/jpeg"
 	}
+}
+
+// UpdateExtractedMetadata overrides the draft's extracted (ffprobe) metadata
+// with provided values. This is used by the import worker when the downloaded
+// file has incorrect embedded tags (e.g., iTunes previews with generic IDs).
+func (s *Service) UpdateExtractedMetadata(ctx context.Context, draftID, title, artist, album string) error {
+	draft, err := s.repo.GetDraftByID(ctx, draftID)
+	if err != nil {
+		return err
+	}
+	if draft == nil {
+		return ErrDraftNotFound
+	}
+
+	tags := parseExtractedTags(draft.ExtractedMetadata)
+	if title != "" {
+		tags.Title = title
+	}
+	if artist != "" {
+		tags.Artist = artist
+	}
+	if album != "" {
+		tags.Album = album
+	}
+
+	extractedJSON, err := extractedTagsToJSON(tags)
+	if err != nil {
+		return fmt.Errorf("marshal metadata: %w", err)
+	}
+
+	return s.repo.UpdateDraftExtractedMetadata(ctx, draftID, extractedJSON)
 }
 
 func (s *Service) SaveFinalMetadata(ctx context.Context, id string, req SaveFinalMetadataRequest) error {

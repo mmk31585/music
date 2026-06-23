@@ -1,0 +1,13 @@
+{
+  "eval_id": 1,
+  "run_id": "add-track-description-feature-with_skill",
+  "config": "with_skill",
+  "expectations": [
+    {"text": "mentions AIClient interface", "passed": true, "evidence": "Response says 'Add to AIClient interface + implement' and references client.go:13-17 with code showing GenerateTrackDescription added to the interface"},
+    {"text": "covers all 7 module files", "passed": true, "evidence": "Covers client.go, model.go, service.go, handler.go, repository.go, dto.go, routes.go — each with its own numbered section and code examples"},
+    {"text": "includes migration file", "passed": true, "evidence": "Section 8 includes SQL migration for track_descriptions table with +goose Up/Down, references migration naming convention"},
+    {"text": "references module pattern", "passed": true, "evidence": "Describes 'standard 8-step AI capability pattern' and follows handler → service → repository flow throughout"},
+    {"text": "mentions fallback client", "passed": true, "evidence": "Section 1: 'Implement on fallbackClient — return a templated string' with specific example"},
+    {"text": "includes frontend integration", "passed": true, "evidence": "Section 10 covers frontend: enums.ts, types.ts, routes.ts updates for the new feature"}
+  ]
+}

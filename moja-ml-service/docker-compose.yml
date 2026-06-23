@@ -1,0 +1,92 @@
+# ── Moja ML Service — Docker Compose ──────────────────────────────────
+#
+# This compose file provides the infrastructure and services needed to run
+# the ML service locally.
+#
+# ── Local development ──────────────────────────────────────────────────
+#   1. cp .env.example .env
+#   2. docker compose up -d                     # Start infra + worker
+#   3. uv run alembic upgrade head
+#   4. uv run uvicorn app.main:app --reload
+#
+# ── Shared volume mode ─────────────────────────────────────────────────
+#   If STORAGE_MODE=shared_volume, mount the Go backend's uploads directory:
+#
+#   services:
+#     app: &app
+#       volumes:
+#         - ../moja-backend/uploads:/mnt/audio-uploads:ro
+#     worker:
+#       volumes:
+#         - ../moja-backend/uploads:/mnt/audio-uploads:ro
+#
+#   The :ro ensures the ML service cannot accidentally modify source files.
+
+services:
+  # ── FastAPI application ──────────────────────────────────────────────
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_started
+    # volumes:
+    #   - ../moja-backend/uploads:/mnt/audio-uploads:ro
+    restart: unless-stopped
+
+  # ── Celery worker (lyrics + cover + embedding tasks) ─────────────────
+  # Conservative single-worker default for a tight-RAM VPS. Listens to all
+  # queues sequentially at concurrency=1 to avoid OOM from loading multiple
+  # ML models in parallel. If either queue backs up significantly under
+  # real load, split into separate worker containers (one per queue, each
+  # still concurrency=1) — provided enough RAM is available for both
+  # openl3 (~1 GB) and faster-whisper (~2 GB) simultaneously.
+  worker:
+    build: .
+    command: >
+      uv run celery
+      -A app.workers.celery_app worker
+      --loglevel=info
+      --queues=lyrics_queue,covers_queue,embedding_queue
+      --concurrency=1
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_started
+    # volumes:
+    #   - ../moja-backend/uploads:/mnt/audio-uploads:ro
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          # Tune this to your actual VPS RAM. 4G is a safe starting point
+          # for a Whisper "medium" model (int8) + openl3 (TF) + Python overhead.
+          memory: 4G
+
+  # ── Redis (broker + result backend for Celery, general-purpose cache) ──
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  # ── Postgres (this service's own database) ───────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: moja_ml
+      POSTGRES_USER: moja_ml
+      POSTGRES_PASSWORD: ${MOJA_ML_PGPASSWORD:-changeme_in_production}
+    ports:
+      # Expose on 5433 to avoid conflict with the Go backend's Postgres on 5432
+      - "5433:5432"
+    volumes:
+      - moja_ml_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  moja_ml_pgdata:

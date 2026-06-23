@@ -37,7 +37,7 @@
           <div class="h-full rounded-full transition-[width] duration-100" :style="progressStyle" />
         </div>
         <div v-if="collapsed" class="relative z-10 flex items-center gap-3 px-4 h-14">
-          <div role="button" tabindex="0" class="relative shrink-0 cursor-pointer" @click="emit('toggle-fullscreen')" @keydown.enter="emit('toggle-fullscreen')" @keydown.space.prevent="emit('toggle-fullscreen')">
+          <div role="button" tabindex="0" aria-label="Open fullscreen player" class="relative shrink-0 cursor-pointer" @click="emit('toggle-fullscreen')" @keydown.enter="emit('toggle-fullscreen')" @keydown.space.prevent="emit('toggle-fullscreen')">
             <div class="h-10 w-10 overflow-hidden rounded-xl shadow-lg ring-1 ring-white/10">
               <img
                 v-if="currentTrack.coverUrl"
@@ -52,7 +52,7 @@
             </div>
           </div>
 
-          <div role="button" tabindex="0" class="min-w-0 flex-1 cursor-pointer" @click="emit('toggle-fullscreen')" @keydown.enter="emit('toggle-fullscreen')" @keydown.space.prevent="emit('toggle-fullscreen')">
+          <div role="button" tabindex="0" aria-label="Open fullscreen player" class="min-w-0 flex-1 cursor-pointer" @click="emit('toggle-fullscreen')" @keydown.enter="emit('toggle-fullscreen')" @keydown.space.prevent="emit('toggle-fullscreen')">
             <p class="truncate text-sm font-bold text-white leading-tight">{{ currentTrack.title }}</p>
             <p class="truncate text-xs text-white/50 leading-tight">{{ currentTrack.artistName }}</p>
           </div>
@@ -87,7 +87,7 @@
         <template v-if="!collapsed">
           <div class="relative z-10 flex items-center gap-4 px-6 pt-3">
             <div class="flex min-w-0 w-[25%] items-center gap-3">
-              <div role="button" tabindex="0" class="relative shrink-0 cursor-pointer" @click="emit('toggle-fullscreen')" @keydown.enter="emit('toggle-fullscreen')" @keydown.space.prevent="emit('toggle-fullscreen')">
+              <div role="button" tabindex="0" aria-label="Open fullscreen player" class="relative shrink-0 cursor-pointer" @click="emit('toggle-fullscreen')" @keydown.enter="emit('toggle-fullscreen')" @keydown.space.prevent="emit('toggle-fullscreen')">
                 <div
                   class="h-14 w-14 overflow-hidden rounded-[18px] shadow-[0_16px_32px_rgba(0,0,0,0.5)] ring-1 ring-white/10 transition-all duration-700"
                   :class="isPlaying ? 'scale-100' : 'scale-95 opacity-80'"
@@ -471,6 +471,7 @@
 import { computed, onBeforeUnmount, onMounted, onUnmounted, ref } from 'vue'
 
 import { usePlayerControls, useTrackLike } from '@/composables/player'
+import { usePlayerStore } from '@/stores/player'
 import { useAlbumColors } from '@/composables/useAlbumColors'
 import AddToPlaylistDialog from './AddToPlaylistDialog.vue'
 import PlayerOverflowMenu from './PlayerOverflowMenu.vue'
@@ -510,7 +511,7 @@ function setShuffleMode(mode: 'off' | 'queue' | 'catalog' | 'similar') {
 }
 
 function setRepeatMode(mode: 'off' | 'all' | 'one') {
-  repeatMode.value = mode
+  usePlayerStore().repeatMode = mode
   showRepeatMenu.value = false
 }
 
@@ -582,7 +583,7 @@ const progressStyle = computed(() => ({
   width: `${progressPercent.value}%`,
   background: progressColor.value,
   boxShadow: progressGlow.value,
-  transition: 'width 100ms linear, box-shadow 0.3s ease',
+  transition: 'width 100ms linear, background 0.5s ease, box-shadow 0.3s ease',
 }))
 
 function formatTime(s: number) {
@@ -602,10 +603,10 @@ function onVolume(e: Event) {
   setVolume(Number((e.target as HTMLInputElement).value))
 }
 
-function onSeekClick(e: MouseEvent) {
+function onSeekClick(e: MouseEvent | KeyboardEvent) {
   const bar = e.currentTarget as HTMLElement
   const rect = bar.getBoundingClientRect()
-  const pct = ((e.clientX - rect.left) / rect.width) * 100
+  const pct = (((e as MouseEvent).clientX - rect.left) / rect.width) * 100
   seekPercent(pct)
 }
 

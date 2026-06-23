@@ -1,47 +1,111 @@
 <template>
-  <div class="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-xl">
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-white">Log in</h1>
-      <p class="mt-2 text-sm text-slate-400">Continue to your music app</p>
+  <div
+    class="auth-card w-full animate-reveal rounded-2xl border border-white/[0.06] bg-black/40 p-8 shadow-2xl backdrop-blur-xl"
+  >
+    <div class="mb-8 text-center">
+      <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-[#1db954]/10">
+        <i class="pi pi-headphones text-2xl text-[#1db954]" />
+      </div>
+      <h1 class="font-display text-2xl font-bold text-white tracking-tight">Welcome back</h1>
+      <p class="mt-1.5 text-sm text-white/40">Log in to continue your music journey</p>
     </div>
 
     <form class="space-y-5" @submit.prevent="onSubmit">
-      <div>
-        <label for="login-email" class="mb-2 block text-sm font-medium text-slate-300">Email</label>
-        <InputText id="login-email" v-model="form.email" type="email" placeholder="you@example.com" class="w-full" aria-label="Email" />
-        <small v-if="errors.email" class="mt-1 block text-red-400" role="alert">
-          {{ errors.email }}
-        </small>
+      <!-- Email -->
+      <div class="group">
+        <label for="login-email" class="mb-1.5 block text-sm font-medium text-white/60 group-focus-within:text-[#1db954] transition-colors duration-200">
+          Email
+        </label>
+        <span class="relative block">
+          <i class="pi pi-envelope absolute top-1/2 left-3 -translate-y-1/2 text-sm text-white/30" />
+          <InputText
+            id="login-email"
+            v-model="form.email"
+            type="email"
+            placeholder="you@example.com"
+            class="auth-input w-full pl-10"
+            :class="{ 'ring-1 ring-red-500/50': errors.email }"
+            aria-label="Email"
+          />
+        </span>
+        <Transition name="fade-slide">
+          <small v-if="errors.email" class="mt-1 block text-xs text-red-400" role="alert">
+            {{ errors.email }}
+          </small>
+        </Transition>
       </div>
 
-      <div>
-        <label for="login-password" class="mb-2 block text-sm font-medium text-slate-300">Password</label>
-        <Password
-          id="login-password"
-          v-model="form.password"
-          placeholder="Enter password"
-          class="w-full"
-          input-class="w-full"
-          :feedback="false"
-          toggle-mask
-          aria-label="Password"
-        />
-        <small v-if="errors.password" class="mt-1 block text-red-400" role="alert">
-          {{ errors.password }}
-        </small>
+      <!-- Password -->
+      <div class="group">
+        <label for="login-password" class="mb-1.5 block text-sm font-medium text-white/60 group-focus-within:text-[#1db954] transition-colors duration-200">
+          Password
+        </label>
+        <span class="relative block">
+          <i class="pi pi-lock absolute top-1/2 left-3 -translate-y-1/2 text-sm text-white/30 z-10" />
+          <Password
+            id="login-password"
+            v-model="form.password"
+            placeholder="Enter password"
+            class="w-full"
+            input-class="auth-input w-full pl-10"
+            :feedback="false"
+            toggle-mask
+            :class="{ 'ring-1 ring-red-500/50': errors.password }"
+            aria-label="Password"
+          />
+        </span>
+        <Transition name="fade-slide">
+          <small v-if="errors.password" class="mt-1 block text-xs text-red-400" role="alert">
+            {{ errors.password }}
+          </small>
+        </Transition>
       </div>
 
+      <!-- API error -->
+      <Transition name="fade-slide">
+        <div
+          v-if="apiError"
+          class="flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/8 px-4 py-3 text-sm text-red-300"
+          role="alert"
+        >
+          <i class="pi pi-exclamation-circle mt-0.5 shrink-0 text-red-400" />
+          <span>{{ apiError }}</span>
+        </div>
+      </Transition>
+
+      <!-- Submit -->
       <Button
         type="submit"
         label="Log in"
-        icon="pi pi-sign-in"
+        icon="pi pi-arrow-right"
+        icon-pos="right"
         :loading="loading"
-        class="w-full border-0 bg-[#1db954] text-black"
+        class="auth-btn w-full border-0 bg-[#1db954] text-black font-semibold hover:bg-[#1ed760] transition-all duration-200"
       />
 
-      <p class="text-center text-sm text-slate-400">
-        Don’t have an account?
-        <RouterLink to="/auth/register" class="font-medium text-[#1db954] hover:underline">
+      <!-- Divider -->
+      <div class="relative my-6">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-white/[0.06]" />
+        </div>
+        <div class="relative flex justify-center text-xs">
+          <span class="bg-black/40 px-3 text-white/30">or</span>
+        </div>
+      </div>
+
+      <!-- Guest link -->
+      <RouterLink
+        to="/"
+        class="flex items-center justify-center gap-2 rounded-xl border border-white/[0.08] px-4 py-2.5 text-sm text-white/50 transition-all duration-200 hover:border-white/20 hover:text-white/80 hover:bg-white/[0.03]"
+      >
+        <i class="pi pi-user text-xs" />
+        Continue as guest
+      </RouterLink>
+
+      <!-- Switch to register -->
+      <p class="text-center text-sm text-white/40">
+        Don't have an account?
+        <RouterLink to="/auth/register" class="font-medium text-[#1db954] transition-colors duration-200 hover:text-[#1ed760]">
           Create one
         </RouterLink>
       </p>
@@ -55,5 +119,108 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import { useLoginForm } from '@/composables/auth/useLoginForm.ts'
 
-const { form, errors, loading, onSubmit } = useLoginForm()
+const { form, errors, apiError, loading, onSubmit } = useLoginForm()
 </script>
+
+<style scoped>
+.auth-card {
+  animation: card-enter 0.5s var(--ease-out-expo, cubic-bezier(0.19, 1, 0.22, 1)) both;
+}
+
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+:deep(.auth-input) {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: white !important;
+  border-radius: 12px !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+}
+
+:deep(.auth-input:focus) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: #1db954 !important;
+  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.15) !important;
+  outline: none !important;
+}
+
+:deep(.auth-input::placeholder) {
+  color: rgba(255, 255, 255, 0.2) !important;
+}
+
+:deep(.auth-btn) {
+  border-radius: 12px !important;
+  padding: 10px 0 !important;
+  font-size: 0.9rem !important;
+  box-shadow: 0 4px 16px rgba(29, 185, 84, 0.25) !important;
+}
+
+:deep(.auth-btn:hover) {
+  box-shadow: 0 6px 24px rgba(29, 185, 84, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+:deep(.p-password-input) {
+  /* Password component wraps inputtext, ensure the input gets the same styling */
+}
+
+:deep(.p-password .p-inputtext) {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: white !important;
+  border-radius: 12px !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  font-size: 0.875rem !important;
+}
+
+:deep(.p-password .p-inputtext:focus) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: #1db954 !important;
+  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.15) !important;
+}
+
+:deep(.p-password .p-input-icon) {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+:deep(.p-password-panel) {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+}
+
+/* PrimeVue password toggle icon */
+:deep(.p-password .p-password-toggle-icon) {
+  color: rgba(255, 255, 255, 0.3) !important;
+  right: 12px !important;
+}
+
+/* PrimeVue password input wrapper */
+:deep(.p-password) {
+  display: flex !important;
+}
+
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.2s ease;
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+</style>

@@ -100,7 +100,7 @@ export const useAuthApi = () => {
         params,
       },
       {
-        schema: AdminUserListResponseSchema,
+        schema: AdminUserSchema,
         silent: true,
         ...config,
       },

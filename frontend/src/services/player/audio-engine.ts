@@ -1,3 +1,8 @@
+export type VolumeChangePayload = {
+  volume: number
+  muted: boolean
+}
+
 type AudioEngineEventMap = {
   play: void
   pause: void
@@ -13,24 +18,27 @@ type AudioEngineEventMap = {
   durationchange: {
     duration: number
   }
-  volumechange: {
-    volume: number
-    muted: boolean
-  }
+  volumechange: VolumeChangePayload
   error: Error
 }
 
 type AudioEngineEventName = keyof AudioEngineEventMap
 type AudioEngineListener<K extends AudioEngineEventName> = (payload: AudioEngineEventMap[K]) => void
 
+type NativeEventName =
+  | 'play' | 'pause' | 'ended' | 'waiting' | 'playing' | 'canplay'
+  | 'loadedmetadata' | 'durationchange' | 'volumechange' | 'error'
+
 class AudioEngine {
   private audio: HTMLAudioElement
-  private listeners = new Map<AudioEngineEventName, Set<(payload: AudioEngineEventMap[AudioEngineEventName]) => void>>()
+  private listeners: { [K in AudioEngineEventName]?: Set<AudioEngineListener<K>> } = {} as { [K in AudioEngineEventName]?: Set<AudioEngineListener<K>> }
   private animationFrameId: number | null = null
   private lastProgressEmit = 0
   private audioContext: AudioContext | null = null
   private analyser: AnalyserNode | null = null
   private sourceNode: MediaElementAudioSourceNode | null = null
+  private nativeHandlers = new Map<NativeEventName, EventListener>()
+  private disposed = false
 
   constructor() {
     this.audio = new Audio()
@@ -72,72 +80,87 @@ class AudioEngine {
   }
 
   on<K extends AudioEngineEventName>(event: K, listener: AudioEngineListener<K>) {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, new Set())
-    }
-
-    this.listeners.get(event)?.add(listener)
+    const set = (this.listeners[event] ??= new Set() as any) as Set<AudioEngineListener<K>>
+    set.add(listener)
 
     return () => {
-      this.listeners.get(event)?.delete(listener)
+      set.delete(listener)
     }
   }
 
   private emit<K extends AudioEngineEventName>(event: K, payload: AudioEngineEventMap[K]) {
-    this.listeners.get(event)?.forEach((listener) => {
+    (this.listeners[event] as Set<AudioEngineListener<K>> | undefined)?.forEach((listener) => {
       listener(payload)
     })
   }
 
   private bindNativeEvents() {
-    this.audio.addEventListener('play', () => {
+    const onPlay: EventListener = () => {
       this.startProgressLoop()
       this.emit('play', undefined)
-    })
+    }
+    this.nativeHandlers.set('play', onPlay)
+    this.audio.addEventListener('play', onPlay)
 
-    this.audio.addEventListener('pause', () => {
+    const onPause: EventListener = () => {
       this.stopProgressLoop()
       this.emit('pause', undefined)
-    })
+    }
+    this.nativeHandlers.set('pause', onPause)
+    this.audio.addEventListener('pause', onPause)
 
-    this.audio.addEventListener('ended', () => {
+    const onEnded: EventListener = () => {
       this.stopProgressLoop()
       this.emit('ended', undefined)
-    })
+    }
+    this.nativeHandlers.set('ended', onEnded)
+    this.audio.addEventListener('ended', onEnded)
 
-    this.audio.addEventListener('waiting', () => {
+    const onWaiting: EventListener = () => {
       this.emit('waiting', undefined)
-    })
+    }
+    this.nativeHandlers.set('waiting', onWaiting)
+    this.audio.addEventListener('waiting', onWaiting)
 
-    this.audio.addEventListener('playing', () => {
+    const onPlaying: EventListener = () => {
       this.emit('playing', undefined)
-    })
+    }
+    this.nativeHandlers.set('playing', onPlaying)
+    this.audio.addEventListener('playing', onPlaying)
 
-    this.audio.addEventListener('canplay', () => {
+    const onCanplay: EventListener = () => {
       this.emit('canplay', undefined)
-    })
+    }
+    this.nativeHandlers.set('canplay', onCanplay)
+    this.audio.addEventListener('canplay', onCanplay)
 
-    this.audio.addEventListener('loadedmetadata', () => {
+    const onLoadedmetadata: EventListener = () => {
       this.emit('loadedmetadata', undefined)
       this.emit('durationchange', {
         duration: this.duration,
       })
-    })
+    }
+    this.nativeHandlers.set('loadedmetadata', onLoadedmetadata)
+    this.audio.addEventListener('loadedmetadata', onLoadedmetadata)
 
-    this.audio.addEventListener('durationchange', () => {
+    const onDurationchange: EventListener = () => {
       this.emit('durationchange', {
         duration: this.duration,
       })
-    })
+    }
+    this.nativeHandlers.set('durationchange', onDurationchange)
+    this.audio.addEventListener('durationchange', onDurationchange)
 
-    this.audio.addEventListener('volumechange', () => {
+    const onVolumechange: EventListener = () => {
       this.emit('volumechange', {
         volume: this.audio.volume,
         muted: this.audio.muted,
       })
-    })
+    }
+    this.nativeHandlers.set('volumechange', onVolumechange)
+    this.audio.addEventListener('volumechange', onVolumechange)
 
-    this.audio.addEventListener('error', () => {
+    const onError: EventListener = () => {
       const mediaError = this.audio.error
       let message = 'Audio playback error'
       if (mediaError) {
@@ -158,7 +181,35 @@ class AudioEngine {
       }
       const error = new Error(message)
       this.emit('error', error)
-    })
+    }
+    this.nativeHandlers.set('error', onError)
+    this.audio.addEventListener('error', onError)
+  }
+
+  /** Remove all native event listeners and custom listeners, then stop playback. */
+  dispose() {
+    if (this.disposed) return
+    this.disposed = true
+
+    this.stop()
+    this.stopProgressLoop()
+
+    // Remove all native event listeners
+    for (const [event, handler] of this.nativeHandlers) {
+      this.audio.removeEventListener(event, handler)
+    }
+    this.nativeHandlers.clear()
+
+    // Clear all custom listeners
+    this.listeners = {} as { [K in AudioEngineEventName]?: Set<AudioEngineListener<K>> }
+
+    // Clean up AudioContext
+    if (this.audioContext) {
+      this.audioContext.close().catch(() => {})
+      this.audioContext = null
+      this.analyser = null
+      this.sourceNode = null
+    }
   }
 
   async load(src: string) {
@@ -174,7 +225,15 @@ class AudioEngine {
       await this.load(src)
     }
 
-    await this.audio.play()
+    try {
+      await this.audio.play()
+    } catch {
+      // HTMLAudioElement.play() rejects with a DOMException when the media
+      // resource is not suitable (e.g. 404). The native 'error' event already
+      // fired and will be handled upstream — swallow the rejection here to
+      // prevent "Uncaught (in promise) DOMException" from hitting Vue's
+      // global error handler.
+    }
   }
 
   pause() {
@@ -248,5 +307,6 @@ class AudioEngine {
 
 export type AudioQuality = 'auto' | 'low' | 'medium' | 'high' | 'lossless'
 
+export { AudioEngine }
 export const audioEngine = new AudioEngine()
-export type { AudioEngine }
+export type { AudioEngine as AudioEngineType }

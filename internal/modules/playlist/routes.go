@@ -4,12 +4,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterRoutes(api *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
+func RegisterRoutes(api *gin.RouterGroup, h *Handler, authMW, optionalAuthMW gin.HandlerFunc) {
 	playlists := api.Group("/playlists")
 	{
-		// Public routes
+		// Public routes (with optional auth so logged-in users can see their own private playlists)
 		playlists.GET("", h.ListPublicPlaylists)
-		playlists.GET("/:id", h.GetPlaylist)
+		playlists.GET("/:id", optionalAuthMW, h.GetPlaylist)
 
 		// Auth routes
 		protected := playlists.Group("")
@@ -20,6 +20,7 @@ func RegisterRoutes(api *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
 
 			protected.PUT("/:id", h.UpdatePlaylist)
 			protected.DELETE("/:id", h.DeletePlaylist)
+			protected.PUT("/:id/collaborative", h.SetCollaborative)
 
 			protected.GET("/:id/collaborators", h.ListCollaborators)
 			protected.POST("/:id/tracks", h.AddTrack)

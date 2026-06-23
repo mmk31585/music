@@ -8,9 +8,11 @@ export function useRoomQueueSocket(roomId: string) {
   const isConnected = ref(false)
   // Track the playback context so we only report track-ended for this room
   const playbackContext = ref<{ type: 'room'; roomId: string } | null>(null)
+  const partyStatus = ref<string | null>(null)
 
   let unsubQueueUpdated: (() => void) | null = null
   let unsubTrackChanged: (() => void) | null = null
+  let unsubPartyStatus: (() => void) | null = null
 
   async function fetchState() {
     try {
@@ -24,6 +26,8 @@ export function useRoomQueueSocket(roomId: string) {
   function setupSocket() {
     wsClient.connect()
     wsClient.subscribe(`room:${roomId}`)
+    // Also subscribe to party channel for party-level events (status, position, etc.)
+    wsClient.subscribe(`party:${roomId}`)
 
     unsubQueueUpdated = wsClient.on('room.queue_updated', () => {
       fetchState()
@@ -31,6 +35,10 @@ export function useRoomQueueSocket(roomId: string) {
 
     unsubTrackChanged = wsClient.on('room.track_changed', () => {
       fetchState()
+    })
+
+    unsubPartyStatus = wsClient.on('party.status_changed', (payload: { status: string }) => {
+      partyStatus.value = payload.status
     })
 
     isConnected.value = true
@@ -45,7 +53,12 @@ export function useRoomQueueSocket(roomId: string) {
       unsubTrackChanged()
       unsubTrackChanged = null
     }
+    if (unsubPartyStatus) {
+      unsubPartyStatus()
+      unsubPartyStatus = null
+    }
     wsClient.unsubscribe(`room:${roomId}`)
+    wsClient.unsubscribe(`party:${roomId}`)
     isConnected.value = false
   }
 
@@ -58,19 +71,11 @@ export function useRoomQueueSocket(roomId: string) {
     teardownSocket()
   })
 
-  // Watch the player store for track-ended events.
-  // When the currently playing audio track ends AND this room is
-  // the active playback context, report it to the backend.
-  // We use the Pinia `$subscribe`-like pattern via watcher on
-  // the player store's currentTime/duration to detect end.
-  // Simpler: expose a manual end-of-track callback and let the
-  // page wire it up. The actual ended detection happens at the
-  // page level (PagePartyDetail) via audioEngine 'ended' event.
-
   return {
     queueState: readonly(queueState),
     isConnected: readonly(isConnected),
     playbackContext,
+    partyStatus: readonly(partyStatus),
     refresh: fetchState,
     suggest: (trackId: string) => suggestTrack(roomId, trackId),
     vote: (candidateId: string) => castVote(roomId, candidateId),

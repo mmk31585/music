@@ -1,7 +1,7 @@
 # Architecture Overview — Persian Music Ecosystem
 
 > **Document**: Architecture Overview
-> **Status**: v1.0 — Final
+> **Status**: v1.1 — Current (updated 2026-06-22)
 > **Target**: 50M users, 10M tracks, 1B streams/month across Iran and MENA
 
 ---
@@ -351,40 +351,63 @@ Client → CDN → API Gateway → Auth Middleware → Rate Limiter → Service 
 ```
 /
 ├── cmd/                    # Entry points
-│   ├── api/                # API server
-│   ├── worker/             # Background workers
-│   └── migrate/            # Database migrations
+│   ├── api/                # API server (Gin)
+│   ├── worker/             # Background workers (Celery-style)
+│   └── migrate/            # Database migrations (goose)
 ├── internal/               # Private application code
-│   ├── domain/             # Domain models, interfaces
-│   ├── service/            # Business logic
-│   ├── repository/         # Data access
-│   ├── handler/            # HTTP handlers
-│   ├── middleware/         # HTTP middleware
-│   ├── event/              # Event handlers
-│   └── pkg/                # Shared utilities
-├── pkg/                    # Shared libraries
-│   ├── auth/               # JWT, OAuth
-│   ├── storage/            # S3/MinIO abstraction
-│   ├── search/             # OpenSearch client
-│   ├── cache/              # Redis client
-│   └── bus/                # Kafka client
-├── api/                    # API definitions
-│   ├── openapi/            # OpenAPI specs
-│   └── proto/              # Protobuf definitions
-├── migrations/             # SQL migrations
-├── deploy/                 # Deployment configs
-│   ├── k8s/                # Kubernetes manifests
-│   └── docker/             # Dockerfiles
-├── frontend/               # Vue 3 SPA
+│   ├── common/             # Shared utilities (response, errors, middleware, validator)
+│   ├── config/             # Application configuration
+│   ├── modules/            # Domain modules (30 modules)
+│   │   ├── auth/           # Authentication, JWT, sessions
+│   │   ├── catalog/        # Tracks, albums, artists, genres (with sub-packages)
+│   │   ├── playlist/       # Playlists, collaborative
+│   │   ├── player/         # Playback, queue management
+│   │   ├── library/        # Liked tracks, saved items
+│   │   ├── history/        # Listening history
+│   │   ├── social/         # Follows, clubs, rooms, discussions
+│   │   ├── ai/             # Embeddings, mood analysis, recommendations
+│   │   ├── media/          # File uploads, storage
+│   │   ├── moderation/     # Content moderation
+│   │   ├── contribution/   # User contributions (lyrics, metadata)
+│   │   ├── gamification/   # XP, badges, levels
+│   │   ├── notification/   # Push, in-app notifications
+│   │   ├── subscription/   # Plans, billing
+│   │   ├── search/         # Full-text search
+│   │   ├── recommendation/ # ML recommendations
+│   │   ├── ingestion/      # Track ingestion pipeline
+│   │   ├── video/          # Video module
+│   │   └── ...             # (10+ additional modules)
+│   └── platform/           # Platform-level utilities (web helpers)
+├── migrations/             # SQL migrations (43 files)
+├── deployments/            # Deployment configs
+│   └── docker-compose.yml  # Docker Compose (Postgres, Redis, OpenSearch, MinIO, API, Frontend)
+├── moja-ml-service/        # Python ML microservice (FastAPI + Celery)
+│   ├── app/                # FastAPI application
+│   ├── tests/              # ML service tests
+│   └── Dockerfile
+├── frontend/               # Vue 3 SPA (TypeScript, Pinia, PrimeVue, Tailwind)
 │   ├── src/
-│   │   ├── components/     # Reusable components
-│   │   ├── pages/          # Page components
-│   │   ├── stores/         # Pinia stores
-│   │   ├── composables/    # Composition API hooks
-│   │   ├── services/       # API clients
-│   │   └── assets/         # CSS, images, fonts
+│   │   ├── components/     # Domain-sorted components (admin/, auth/, common/, music/, social/)
+│   │   ├── pages/          # Page components (app/, admin/, auth/, errors/)
+│   │   ├── stores/         # Pinia stores (player, user-auth, feature-flags)
+│   │   ├── composables/    # 27+ composables
+│   │   ├── services/       # API modules (25+), audio engine, WebSocket, storage
+│   │   ├── router/         # Vue Router config + domain route files
+│   │   ├── plugins/        # Axios client, request factory
+│   │   ├── types/          # TypeScript definitions
+│   │   ├── utils/          # PrimeVue preset, utilities
+│   │   └── tests/          # Vitest test files
 │   └── public/             # Static assets
-└── docs/                   # Documentation
-    ├── architecture/       # Architecture documents
-    └── DESIGN_SYSTEM.md    # Design system spec
+├── docs/                   # Documentation
+│   ├── architecture/       # Architecture documents
+│   └── DESIGN_SYSTEM.md    # Design system spec
+├── scripts/                # Shell scripts (migrate, deploy)
+├── .github/workflows/      # GitHub Actions (CI, deploy)
+├── Dockerfile              # API Docker image
+├── Dockerfile.worker       # Worker Docker image
+└── Makefile                # Build, test, lint targets
 ```
+
+## Current Status (as of June 2026)
+
+> **Note**: The architecture described in sections 1-6 represents the aspirational target. The current codebase is a **Go monolith** with a single `cmd/api` binary that hosts all 30 modules, not a microservices architecture. See `SERVICES.md` for details on which pieces are implemented vs aspirational.

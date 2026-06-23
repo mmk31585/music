@@ -1,6 +1,6 @@
 <template>
   <aside
-    class="hidden h-screen shrink-0 border-r border-white/10 bg-black/20 backdrop-blur-2xl xl:flex xl:flex-col transition-all duration-300 ease-out"
+    class="hidden h-screen shrink-0 border-r border-white/10 bg-black/20 backdrop-blur-2xl xl:flex xl:flex-col transition-all duration-300 ease-out z-30"
     :class="collapsed ? 'w-14 items-center' : 'w-[22rem]'"
     style="backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);"
   >
@@ -345,6 +345,7 @@ import { useRecommendationsApi } from '@/services/api/recommendation'
 import { queueManager } from '@/services/player/queue-manager'
 import { onImgError } from '@/utils/helpers'
 import type { PlaybackTrack } from '@/services/api/player'
+import type { RecommendationTrack } from '@/services/api/recommendation/types'
 
 const emit = defineEmits<{
   'close': []
@@ -426,13 +427,13 @@ watch(currentTrack, async (track) => {
     try {
       const recsApi = useRecommendationsApi()
       const result = await recsApi.getSimilar(track.id, { limit: 3 })
-      const items: Array<Record<string, unknown>> = (result as Record<string, unknown>)?.items as Array<Record<string, unknown>> ?? []
-      suggestions.value = items.map((item: Record<string, unknown>) => ({
+      const items = result?.items ?? []
+      suggestions.value = items.map((item: RecommendationTrack) => ({
         id: item.id,
         title: item.title,
-        artistName: item.artist_name || item.artistName || 'Unknown',
-        coverUrl: item.cover_url || item.coverUrl,
-        durationSeconds: item.duration_seconds ?? item.durationSeconds,
+        artistName: item.artist_name || 'Unknown',
+        coverUrl: item.cover_url,
+        durationSeconds: item.duration_seconds,
       }))
     } catch (err) {
       console.error('Failed to fetch suggestions:', err)
@@ -456,10 +457,10 @@ function clearQueue() {
   playerStore.updateQueue([])
 }
 
-function onSeekClick(e: MouseEvent) {
+function onSeekClick(e: MouseEvent | KeyboardEvent) {
   const bar = e.currentTarget as HTMLElement
   const rect = bar.getBoundingClientRect()
-  const pct = ((e.clientX - rect.left) / rect.width) * 100
+  const pct = (((e as MouseEvent).clientX - rect.left) / rect.width) * 100
   pc.seekPercent(pct)
 }
 

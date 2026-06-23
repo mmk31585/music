@@ -20,10 +20,13 @@ export function useAuth() {
         life: 2500,
       })
     } catch (error) {
+      const msg =
+        (error as Record<string, unknown>)?.message as string ??
+        (error instanceof Error ? error.message : 'Please try again')
       toast.add({
         severity: 'error',
         summary: 'Login failed',
-        detail: error instanceof Error ? error.message : 'Please try again',
+        detail: msg,
         life: 5000,
       })
       throw error
@@ -45,7 +48,7 @@ export function useAuth() {
         user: response.user,
       })
 
-      await router.push({ name: 'app.home' })
+      await router.push({ name: 'onboarding.genres' })
 
       toast.add({
         severity: 'success',
@@ -54,10 +57,13 @@ export function useAuth() {
         life: 2500,
       })
     } catch (error) {
+      const msg =
+        (error as Record<string, unknown>)?.message as string ??
+        (error instanceof Error ? error.message : 'Please try again')
       toast.add({
         severity: 'error',
         summary: 'Registration failed',
-        detail: error instanceof Error ? error.message : 'Please try again',
+        detail: msg,
         life: 5000,
       })
       throw error

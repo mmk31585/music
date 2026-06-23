@@ -20,4 +20,6 @@ COPY --from=builder /app/migrations /app/migrations
 WORKDIR /app
 RUN chown -R appuser:appuser /app
 USER appuser
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -sf http://localhost:8081/health || exit 1
 ENTRYPOINT ["./worker"]

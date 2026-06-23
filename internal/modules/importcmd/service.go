@@ -64,10 +64,12 @@ func (s *Service) Search(ctx context.Context, query string) ([]SearchResult, err
 	}
 
 	// Priority ladder: best quality first, stop at first source that returns results.
+	// Note: yt-dlp search prefixes differ by version. Current format (2026+):
+	//   ytsearch:  - YouTube search (e.g. "ytsearch5:query" for 5 results)
+	//   scsearch:  - SoundCloud search
+	//   bandcamp and archive.org have no generic search prefix in this version.
 	ladder := []sourceSearch{
-		{"bandcamp5", "bandcamp"},
-		{"scsearch5", "soundcloud"},
-		{"archiveorg5", "archiveorg"},
+		{"scsearch", "soundcloud"},
 		{"ytsearch5", "youtube"},
 	}
 

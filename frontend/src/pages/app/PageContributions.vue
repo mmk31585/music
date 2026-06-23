@@ -275,8 +275,8 @@ async function loadMyContributions(page = 1) {
   loadingMy.value = true
   try {
     const res = await api.listMy({ page, page_size: 20 })
-    myContributions.value = (res as Record<string, unknown>)?.data as Contribution[] ?? []
-    myMeta.value = (res as Record<string, unknown>)?.meta as { page: number; page_size: number; total: number } | null ?? null
+    myContributions.value = res?.data ?? []
+    myMeta.value = res?.meta ?? null
   } catch (err) {
     console.error('Failed to load contributions:', err)
     myContributions.value = []
@@ -289,7 +289,7 @@ async function loadPending() {
   loadingPending.value = true
   try {
     const res = await api.listPending({ page: 1, page_size: 50 })
-    pendingItems.value = (res as Record<string, unknown>)?.data as Contribution[] ?? []
+    pendingItems.value = res?.data ?? []
   } catch (err) {
     console.error('Failed to load pending:', err)
     pendingItems.value = []
@@ -302,7 +302,7 @@ async function loadLeaderboard() {
   loadingLeaderboard.value = true
   try {
     const res = await api.getLeaderboard({ limit: 20 })
-    leaderboardData.value = (res as ContributorStats[]) ?? []
+    leaderboardData.value = res ?? []
   } catch (err) {
     console.error('Failed to load leaderboard:', err)
     leaderboardData.value = []
@@ -320,7 +320,7 @@ async function viewHistory(c: Contribution) {
   loadingHistory.value = true
   try {
     const res = await api.getHistory(c.id)
-    historyItems.value = (res as ContributionHistoryItem[]) ?? []
+    historyItems.value = res ?? []
   } catch (err) {
     console.error('Failed to load history:', err)
     historyItems.value = []

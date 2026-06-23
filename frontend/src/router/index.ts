@@ -1,77 +1,38 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import type { RouteLocationNormalizedGeneric } from 'vue-router'
+import type { RouteLocationNormalized } from 'vue-router'
 import routes from './routes'
-import { useUserAuthStore } from '@/stores'
+import { checkMaintenanceGuard } from './middleware/maintenance-guard'
+import { checkLoginGuard } from './middleware/login-guard'
+import { checkAuthGuard } from './middleware/auth-guard'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 })
 
-function getHomeRoute(isAdmin: boolean) {
-  return isAdmin ? { name: 'admin.dashboard' } : { name: 'app.home' }
+/**
+ * Composes middleware functions into a single beforeEach chain.
+ * Each middleware returns either a redirect object or null.
+ * The first non-null result short-circuits and becomes the redirect.
+ */
+function chainMiddleware(
+  to: RouteLocationNormalized,
+  from: RouteLocationNormalized,
+  middlewares: Array<(to: RouteLocationNormalized) => ReturnType<typeof checkLoginGuard>>,
+) {
+  for (const middleware of middlewares) {
+    const result = middleware(to)
+    if (result !== null && result !== undefined) return result
+  }
+  return true
 }
 
-router.beforeEach((to: RouteLocationNormalizedGeneric) => {
-  const auth = useUserAuthStore()
-
-  const isAuthenticated = auth.isAuthenticated
-  const isAdmin = auth.isAdmin
-
-  // Logged-in users should not visit guest pages like login/register
-  if (to.meta.guestOnly && isAuthenticated) {
-    return getHomeRoute(isAdmin)
-  }
-
-  // Require authentication
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    return {
-      name: 'auth.login',
-      query: {
-        redirect: to.fullPath,
-      },
-    }
-  }
-
-  // Guest mode: protect routes that require an account
-  if (!isAuthenticated) {
-    const guestRestricted = [
-      '/library', '/playlists', '/profile', '/settings', '/subscription',
-      '/notifications', '/social', '/contributions', '/creator-dashboard',
-      '/gamification', '/ai/playlist-generator',
-    ]
-    if (guestRestricted.some((path) => to.path.startsWith(path))) {
-      return {
-        name: 'auth.login',
-        query: {
-          redirect: to.fullPath,
-        },
-      }
-    }
-  }
-
-  // Require admin role
-  if (to.meta.requiresRole === 'admin') {
-    if (!isAuthenticated) {
-      return {
-        name: 'auth.login',
-        query: {
-          redirect: to.fullPath,
-        },
-      }
-    }
-
-    if (!isAdmin) {
-      return { name: 'app.home' }
-    }
-  }
-
-  // Redirect admins from normal app landing pages to admin dashboard
-  if (to.meta.redirectIfAdmin && isAuthenticated && isAdmin) {
-    return { name: 'admin.dashboard' }
-  }
-
-  return true
+router.beforeEach((to: RouteLocationNormalized, from: RouteLocationNormalized) => {
+  return chainMiddleware(to, from, [
+    checkMaintenanceGuard,
+    checkLoginGuard,
+    checkAuthGuard,
+  ])
 })
 
 router.afterEach((to) => {

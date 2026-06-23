@@ -38,13 +38,12 @@
     </div>
 
     <template v-else-if="hasSearched">
-      <div v-if="hasNoResults" class="flex flex-col items-center gap-4 py-16 text-center">
-        <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5">
-          <i aria-hidden="true" class="pi pi-search text-3xl text-slate-600" />
-        </div>
-        <p class="text-sm text-slate-400">No results for "<span class="font-medium text-white">{{ lastQuery }}</span>"</p>
-        <p class="text-xs text-slate-500">Try a different search term</p>
-      </div>
+      <AppEmptyState
+        v-if="hasNoResults"
+        icon="pi pi-search"
+        title="No results found"
+        :description="noResultsText"
+      />
 
       <div v-else class="space-y-10" aria-live="polite">
         <section v-if="results.tracks.length">
@@ -156,22 +155,23 @@
       </div>
     </template>
 
-    <div v-else class="flex flex-col items-center gap-4 py-16 text-center">
-      <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5">
-        <i aria-hidden="true" class="pi pi-search text-3xl text-slate-600" />
-      </div>
-      <p class="text-sm text-slate-400">Type to search tracks, artists, and albums</p>
-    </div>
+    <AppEmptyState
+      v-else
+      icon="pi pi-search"
+      title="Search the catalog"
+      description="Type to search tracks, artists, and albums"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useSearchApi } from '@/services/api/catalog/search'
 import type { SearchResult } from '@/services/api/catalog/search'
 import { usePlayer } from '@/composables/player'
 import { usePlayerApi } from '@/services/api/player'
 import { onImgError } from '@/utils/helpers'
+import { AppEmptyState } from '@/components/common'
 
 const searchApi = useSearchApi()
 const player = usePlayer()
@@ -185,6 +185,10 @@ const hasSearched = ref(false)
 let debounce: ReturnType<typeof setTimeout> | null = null
 
 const hasNoResults = ref(false)
+
+const noResultsText = computed(() => 
+  `No results for "${lastQuery.value}". Try a different search term.`,
+)
 
 function onInput() {
   if (debounce) clearTimeout(debounce)

@@ -35,3 +35,13 @@ You are **UI/UX & Layout** for Muse. When delegated to, you immediately:
 
 ## Deps
 `@infra` (router, stores)
+
+## Teammates (Direct Comms)
+When running in **team mode** (`@muse-team` deployed you), message peers directly:
+- `@muse-auth` — needs login/register page layouts, auth error toasts
+- `@muse-player` — needs mini-player/theatre layout integration
+- `@muse-catalog` — needs catalog page layouts, shared card/list components
+- `@muse-social` — needs notification component placement
+- `@muse-creator` — needs dashboard layout components
+- `@muse-admin` — needs admin layout and sidebar
+- `@muse-infra` — needs router config for new pages, store integration

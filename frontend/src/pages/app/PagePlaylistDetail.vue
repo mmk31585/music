@@ -1,336 +1,380 @@
 <template>
-  <div class="mx-auto w-full max-w-5xl px-4 pt-6 pb-32 md:px-6 lg:px-8">
-    <div v-if="loading" class="space-y-6">
-      <div class="flex gap-6">
-        <SkeletonLoader variant="card" class="w-56 shrink-0" />
-        <div class="flex-1 space-y-3">
-          <SkeletonLoader variant="lines" :lines="3" />
-        </div>
-      </div>
-      <div class="space-y-2">
-        <SkeletonLoader v-for="i in 6" :key="i" variant="track" />
-      </div>
+  <div class="relative mx-auto min-h-screen w-full pb-36">
+    <!-- ── Ambient Aurora ── -->
+    <div class="aurora-bg pointer-events-none fixed inset-0" aria-hidden="true">
+      <div class="aurora-spot-1" />
+      <div class="aurora-spot-2" />
     </div>
 
-    <div v-else-if="error" class="flex flex-col items-center gap-4 py-24 text-center">
-      <i aria-hidden="true" class="pi pi-exclamation-circle text-4xl text-slate-500" />
-      <h2 class="text-xl font-bold text-white">Playlist not found</h2>
-      <RouterLink
-        to="/playlists"
-        class="text-sm font-medium text-[#1db954] underline underline-offset-2"
-      >
-        Back to playlists
-      </RouterLink>
-    </div>
-
-    <template v-else-if="playlist">
-      <div class="flex flex-col gap-6 md:flex-row md:items-end">
-        <div
-          class="relative h-56 w-56 shrink-0 overflow-hidden rounded-2xl bg-white/[0.06] shadow-2xl ring-1 ring-white/10"
-        >
-          <img
-            v-if="playlist.cover_url"
-            :src="playlist.cover_url"
-            :alt="playlist.name"
-            loading="lazy"
-            class="h-full w-full object-cover"
-            @error="onImgError"
-          />
-          <div
-            v-else
-            class="flex h-full items-center justify-center bg-gradient-to-br from-[#1db954]/20 to-[#121212]"
-          >
-            <i aria-hidden="true" class="pi pi-list text-4xl text-slate-500" />
-          </div>
-        </div>
-
-        <div class="flex-1">
-          <div class="flex items-center gap-2">
-            <p class="text-xs font-bold tracking-[0.25em] text-[#1db954] uppercase">Playlist</p>
-            <span
-              v-if="playlist.is_collaborative"
-              class="rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-400"
-            >
-              <i aria-hidden="true" class="pi pi-users mr-1 text-[10px]" />Collaborative
-            </span>
-          </div>
-          <h1 class="mt-2 text-3xl font-black text-white md:text-5xl">{{ playlist.name }}</h1>
-
-          <div class="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-400">
-            <span>{{ tracks.length }} {{ tracks.length === 1 ? 'track' : 'tracks' }}</span>
-            <span> • Updated {{ timeAgo }}</span>
-            <span v-if="collaborators.length" class="text-slate-500">
-              • {{ collaborators.length }}
-              {{ collaborators.length === 1 ? 'collaborator' : 'collaborators' }}
-            </span>
-          </div>
-
-          <p
-            v-if="playlist.description"
-            class="mt-2 max-w-lg text-sm leading-relaxed text-slate-400"
-          >
-            {{ playlist.description }}
-          </p>
-
-          <div class="mt-6 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              :disabled="!tracks.length"
-              class="inline-flex items-center gap-2 rounded-full bg-[#1db954] px-8 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-[#1ed760] disabled:opacity-40 disabled:hover:scale-100"
-              @click="playAll"
-            >
-              <i aria-hidden="true" class="pi pi-play-fill" /> Play
-            </button>
-
-            <button
-              v-if="isOwner"
-              type="button"
-              class="inline-flex items-center gap-2 rounded-full border px-6 py-3 text-sm font-bold transition"
-              :class="
-                playlist.is_collaborative
-                  ? 'border-blue-500/50 bg-blue-500/10 text-blue-400'
-                  : 'border-white/15 bg-white/10 text-white hover:bg-white/15'
-              "
-              @click="toggleCollaborative"
-            >
-              <i aria-hidden="true" class="pi pi-users text-xs" />
-              {{ playlist.is_collaborative ? 'Collaborative' : 'Make Collaborative' }}
-            </button>
-          </div>
-
-          <!-- Collaborators (owner only) -->
-          <div v-if="isOwner && collaborators.length" class="mt-4 flex flex-wrap gap-2">
-            <div
-              v-for="c in collaborators"
-              :key="c.user_id"
-              class="flex items-center gap-2 rounded-full bg-white/5 px-3 py-1.5 text-xs text-slate-300"
-            >
-              <i aria-hidden="true" class="pi pi-user text-[10px]" />
-              <span>{{ c.is_creator ? 'You' : `User #${c.user_id}` }}</span>
-              <button
-                v-if="!c.is_creator"
-                type="button"
-                class="text-slate-500 transition hover:text-red-400"
-                @click="removeCollab(c.user_id)"
-              >
-                <i aria-hidden="true" class="pi pi-times text-[10px]" />
-              </button>
+    <div class="relative z-10 px-4 pt-8 md:px-6 lg:px-8">
+      <div class="mx-auto max-w-6xl">
+        <!-- Loading -->
+        <div v-if="loading" class="space-y-6">
+          <div class="flex gap-6">
+            <div class="shimmer h-56 w-56 shrink-0 rounded-2xl" />
+            <div class="flex-1 space-y-3">
+              <div class="shimmer h-4 w-24 rounded-lg" />
+              <div class="shimmer h-8 w-64 rounded-lg" />
+              <div class="shimmer h-4 w-48 rounded-lg" />
             </div>
           </div>
-        </div>
-      </div>
-
-      <section class="mt-10">
-        <div class="mb-4 flex items-center justify-between">
-          <h2 class="text-lg font-bold text-white">Tracks</h2>
-          <div v-if="tracks.length" class="flex items-center gap-2">
-            <button
-              v-if="isOwner || isCollaborator"
-              type="button"
-              class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-xs font-medium text-white transition hover:bg-white/15"
-              @click="showAddTrack = true"
-            >
-              <i aria-hidden="true" class="pi pi-plus text-[10px]" />
-              Add Track
-            </button>
-            <button
-              v-if="isOwner || isCollaborator"
-              type="button"
-              class="rounded-full border border-red-500/30 px-4 py-1.5 text-xs font-medium text-red-400 transition hover:bg-red-500/10"
-              @click="deletePlaylist"
-            >
-              Delete playlist
-            </button>
+          <div class="space-y-2">
+            <div v-for="i in 5" :key="i" class="shimmer h-[60px] rounded-2xl" />
           </div>
         </div>
 
-        <div
-          v-if="tracks.length"
-          class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]"
-          aria-live="polite"
-        >
-          <div
-            v-for="(item, index) in tracks"
-            :key="item.playlist_track_id"
-            :draggable="isOwner || isCollaborator"
-            class="group flex items-center gap-3 px-4 py-2 transition"
-            :class="{
-              'hover:bg-white/[0.06]': true,
-              'opacity-50': dragIndex === index,
-              'border-t-2 border-[#1db954]': dropTargetIndex === index,
-            }"
-            @dragstart="onDragStart(index)"
-            @dragover="onDragOver(index)"
-            @dragleave="onDragLeave(index)"
-            @drop="onDrop(index)"
-            @dragend="onDragEnd"
-          >
-            <!-- Drag handle for owners/collaborators -->
-            <span
-              v-if="isOwner || isCollaborator"
-              class="flex w-6 cursor-grab items-center justify-center text-slate-500 active:cursor-grabbing"
-            >
-              <i aria-hidden="true" class="pi pi-bars text-xs opacity-0 transition group-hover:opacity-100" />
-            </span>
-            <span class="w-6 text-right text-xs text-slate-500">{{ index + 1 }}</span>
+        <!-- Error -->
+        <div v-else-if="error" class="flex flex-col items-center gap-4 py-24 text-center">
+          <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.04]">
+            <i aria-hidden="true" class="pi pi-exclamation-circle text-3xl text-white/20" />
+          </div>
+          <h2 class="text-xl font-bold text-white">Playlist not found</h2>
+          <RouterLink to="/library" class="text-sm font-medium text-[#1db954] hover:underline">
+            Back to library
+          </RouterLink>
+        </div>
 
-            <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
+        <!-- ── Content ── -->
+        <template v-else-if="playlist">
+          <div class="flex flex-col gap-8 md:flex-row md:items-end">
+            <!-- Cover -->
+          <div class="group relative h-56 w-56 shrink-0 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/[0.06]">
+            <!-- Custom cover image -->
+            <img
+              v-if="playlist.cover_url"
+              :src="playlist.cover_url"
+              :alt="playlist.name"
+              loading="lazy"
+              class="h-full w-full object-cover"
+              @error="onImgError"
+            />
+            <!-- Default: 4-track grid collage -->
+            <PlaylistCoverGrid
+              v-else
+              :covers="trackCoverUrls"
+              :track-count="tracks.length"
+              class="h-full w-full"
+            />
+
+            <!-- Edit cover overlay (owner only) -->
+            <div
+              v-if="isOwner"
+              class="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/50 opacity-0 backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-100"
+              @click="triggerCoverUpload"
+            >
+              <div class="flex flex-col items-center gap-1.5 text-white">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+                  <i aria-hidden="true" class="pi pi-camera text-lg" />
+                </div>
+                <span class="text-xs font-bold">{{ playlist.cover_url ? 'Change cover' : 'Add cover' }}</span>
+              </div>
+            </div>
+
+            <!-- Hidden file input -->
+            <input
+              ref="coverFileInput"
+              type="file"
+              accept="image/*"
+              class="hidden"
+              @change="onCoverFileSelected"
+            />
+          </div>
+
+            <!-- Info -->
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <p class="text-[10px] font-bold tracking-[0.25em] text-[#1db954] uppercase">Playlist</p>
+                <span
+                  v-if="playlist.is_collaborative"
+                  class="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400"
+                >
+                  <i aria-hidden="true" class="pi pi-users mr-1 text-[8px]" />Collaborative
+                </span>
+              </div>
+              <h1 class="mt-2 text-3xl font-black text-white md:text-5xl">{{ playlist.name }}</h1>
+
+              <div class="mt-3 flex flex-wrap items-center gap-2 text-sm text-white/40">
+                <span>{{ tracks.length }} {{ tracks.length === 1 ? 'track' : 'tracks' }}</span>
+                <span>• Updated {{ timeAgo }}</span>
+                <span v-if="collaborators.length" class="text-white/30">
+                  • {{ collaborators.length }}
+                  {{ collaborators.length === 1 ? 'collaborator' : 'collaborators' }}
+                </span>
+              </div>
+
+              <p v-if="playlist.description" class="mt-2 max-w-lg text-sm leading-relaxed text-white/40">
+                {{ playlist.description }}
+              </p>
+
+              <div class="mt-6 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  :disabled="!tracks.length"
+                  class="inline-flex items-center gap-2 rounded-full bg-[#1db954] px-8 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-[#1ed760] disabled:opacity-40 disabled:hover:scale-100"
+                  @click="playAll"
+                >
+                  <i aria-hidden="true" class="pi pi-play-fill" /> Play
+                </button>
+
+                <button
+                  v-if="isOwner"
+                  type="button"
+                  class="inline-flex items-center gap-2 rounded-full border px-6 py-3 text-sm font-bold transition"
+                  :class="
+                    playlist.is_collaborative
+                      ? 'border-blue-500/50 bg-blue-500/10 text-blue-400'
+                      : 'border-white/[0.06] bg-white/[0.04] text-white/60 hover:bg-white/[0.08] hover:text-white'
+                  "
+                  @click="toggleCollaborative"
+                >
+                  <i aria-hidden="true" class="pi pi-users text-xs" />
+                  {{ playlist.is_collaborative ? 'Collaborative' : 'Make Collaborative' }}
+                </button>
+
+                <button
+                  v-if="isOwner"
+                  type="button"
+                  class="inline-flex items-center gap-2 rounded-full border border-red-500/20 px-6 py-3 text-sm font-bold text-red-400 transition hover:bg-red-500/10"
+                  @click="deletePlaylist"
+                >
+                  <i aria-hidden="true" class="pi pi-trash text-xs" />
+                  Delete
+                </button>
+              </div>
+
+              <!-- Collaborators -->
+              <div v-if="isOwner && collaborators.length" class="mt-4 flex flex-wrap gap-2">
+                <div
+                  v-for="c in collaborators"
+                  :key="String(c.user_id)"
+                  class="flex items-center gap-2 rounded-full bg-white/[0.04] px-3 py-1.5 text-xs text-white/50"
+                >
+                  <i aria-hidden="true" class="pi pi-user text-[10px]" />
+                  <span>{{ c.is_creator ? 'You' : `User #${String(c.user_id)}` }}</span>
+                  <button
+                    v-if="!c.is_creator"
+                    type="button"
+                    class="text-white/30 transition hover:text-red-400"
+                    @click="removeCollab(String(c.user_id))"
+                  >
+                    <i aria-hidden="true" class="pi pi-times text-[10px]" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Tracks Section ── -->
+          <section class="mt-10">
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-lg font-bold text-white">Tracks</h2>
+              <div v-if="tracks.length" class="flex items-center gap-2">
+                <button
+                  v-if="isOwner || isCollaborator"
+                  type="button"
+                  class="inline-flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.04] px-4 py-1.5 text-xs font-medium text-white/60 transition hover:bg-white/[0.08] hover:text-white"
+                  @click="showAddTrack = true"
+                >
+                  <i aria-hidden="true" class="pi pi-plus text-[10px]" />
+                  Add Track
+                </button>
+              </div>
+            </div>
+
+            <div
+              v-if="tracks.length"
+              class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm"
+              aria-live="polite"
+            >
+              <div
+                v-for="(item, index) in tracks"
+                :key="item.playlist_track_id"
+                :draggable="isOwner || isCollaborator"
+                class="group flex items-center gap-3 px-4 py-2.5 transition"
+                :class="{
+                  'hover:bg-white/[0.04]': true,
+                  'opacity-50': dragIndex === index,
+                  'border-t-2 border-[#1db954]': dropTargetIndex === index,
+                }"
+                @dragstart="onDragStart(index)"
+                @dragover="onDragOver(index)"
+                @dragleave="onDragLeave(index)"
+                @drop="onDrop(index)"
+                @dragend="onDragEnd"
+              >
+                <!-- Drag handle -->
+                <span
+                  v-if="isOwner || isCollaborator"
+                  class="flex w-6 cursor-grab items-center justify-center text-white/20 active:cursor-grabbing"
+                >
+                  <i aria-hidden="true" class="pi pi-bars text-xs opacity-0 transition group-hover:opacity-100" />
+                </span>
+
+                <!-- Number / Play -->
+                <span class="flex w-6 items-center justify-center">
+                  <span class="text-xs font-bold text-white/20 group-hover:hidden">{{ index + 1 }}</span>
+                  <i aria-hidden="true" class="pi pi-play-fill hidden text-xs text-white group-hover:block" />
+                </span>
+
+                <!-- Cover -->
+                <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/[0.06]">
+                  <img
+                    v-if="item.cover_url"
+                    :src="item.cover_url"
+                    :alt="item.title"
+                    loading="lazy"
+                    class="h-full w-full object-cover"
+                    @error="onImgError"
+                  />
+                  <div v-else class="flex h-full items-center justify-center">
+                    <i aria-hidden="true" class="pi pi-music text-xs text-white/20" />
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Play track"
+                    class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100"
+                    @click="playTrack(index)"
+                  >
+                    <i aria-hidden="true" class="pi pi-play-fill text-xs text-white" />
+                  </button>
+                </div>
+
+                <!-- Info -->
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-medium text-white">{{ item.title }}</p>
+                  <p class="truncate text-xs text-white/40">{{ item.artist_name }}</p>
+                </div>
+
+                <!-- Duration -->
+                <span class="shrink-0 text-xs text-white/30 tabular-nums">
+                  {{ formatTime(item.duration_seconds) }}
+                </span>
+
+                <!-- Remove -->
+                <button
+                  v-if="isOwner || isCollaborator"
+                  type="button"
+                  aria-label="Remove from playlist"
+                  class="shrink-0 rounded-full p-1.5 text-white/20 opacity-0 transition group-hover:opacity-100 hover:bg-white/[0.06] hover:text-red-400"
+                  @click="removeTrack(item.track_id)"
+                >
+                  <i aria-hidden="true" class="pi pi-times text-xs" />
+                </button>
+              </div>
+            </div>
+
+            <div
+              v-else
+              class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/[0.06] bg-white/[0.02] px-6 py-16 text-center"
+            >
+              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.04]">
+                <i aria-hidden="true" class="pi pi-list text-xl text-white/20" />
+              </div>
+              <h3 class="text-base font-bold text-white">Empty playlist</h3>
+              <p class="text-sm text-white/40">Add tracks from search or your library</p>
+              <button
+                v-if="isOwner || isCollaborator"
+                type="button"
+                class="rounded-full bg-[#1db954] px-6 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760]"
+                @click="showAddTrack = true"
+              >
+                <i aria-hidden="true" class="pi pi-plus mr-1 text-xs" />
+                Add Track
+              </button>
+            </div>
+          </section>
+        </template>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════ -->
+    <!-- ADD TRACK DIALOG                         -->
+    <!-- ════════════════════════════════════════ -->
+    <Dialog
+      :visible="showAddTrack"
+      modal
+      :draggable="false"
+      :style="{ maxWidth: '500px', width: '90vw' }"
+      :pt="{
+        root: 'border-none',
+        mask: 'backdrop-blur-sm bg-black/60',
+        header: 'border-b border-white/5',
+        title: 'text-white text-sm font-bold',
+        content: 'p-0',
+      }"
+      @update:visible="showAddTrack = $event"
+    >
+      <template #header>
+        <div class="flex items-center gap-2 px-1">
+          <i aria-hidden="true" class="pi pi-search text-sm text-[#1db954]" />
+          <span>Add Track</span>
+        </div>
+      </template>
+
+      <div class="flex flex-col max-h-[70vh]">
+        <div class="shrink-0 p-3">
+          <div class="relative">
+            <i aria-hidden="true" class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/20" />
+            <input
+              v-model="addTrackQuery"
+              type="text"
+              placeholder="Search tracks..."
+              aria-label="Search tracks to add"
+              class="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] py-2.5 pl-9 pr-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#1db954]/30 focus:bg-white/[0.06]"
+              @input="onAddTrackSearch"
+            />
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-1">
+          <div v-if="addTrackLoading" class="flex items-center justify-center py-12">
+            <i aria-hidden="true" class="pi pi-spin pi-spinner text-lg text-white/20" />
+          </div>
+
+          <div
+            v-else-if="addTrackResults.length === 0 && addTrackQuery"
+            class="flex flex-col items-center gap-2 py-12 text-center"
+          >
+            <i aria-hidden="true" class="pi pi-search text-2xl text-white/20" />
+            <p class="text-sm text-white/40">No tracks found</p>
+          </div>
+
+          <div v-else-if="!addTrackQuery" class="flex flex-col items-center gap-2 py-12 text-center">
+            <i aria-hidden="true" class="pi pi-music text-2xl text-white/20" />
+            <p class="text-sm text-white/40">Type to search tracks</p>
+          </div>
+
+          <button
+            v-for="t in addTrackResults"
+            :key="String(t.id)"
+            type="button"
+            :disabled="addingTrackId === String(t.id)"
+            class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-white/[0.04] disabled:opacity-50"
+            @click="addSelectedTrack(String(t.id))"
+          >
+            <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/[0.06]">
               <img
-                v-if="item.cover_url"
-                :src="item.cover_url"
-                :alt="item.title"
-                loading="lazy"
+                v-if="t.cover_url"
+                :src="t.cover_url as string | undefined"
+                :alt="String(t.title ?? '')"
                 class="h-full w-full object-cover"
-                @error="onImgError"
               />
               <div v-else class="flex h-full items-center justify-center">
-                <i aria-hidden="true" class="pi pi-music text-xs text-slate-500" />
+                <i aria-hidden="true" class="pi pi-music text-xs text-white/20" />
               </div>
-              <button
-                type="button"
-                aria-label="Play track"
-                class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
-                @click="playTrack(index)"
-              >
-                <i aria-hidden="true" class="pi pi-play-fill text-xs text-white" />
-              </button>
             </div>
-
             <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-white">{{ item.title }}</p>
-              <p class="truncate text-xs text-slate-400">{{ item.artist_name }}</p>
+              <p class="truncate text-sm font-medium text-white">{{ t.title }}</p>
+              <p class="truncate text-xs text-white/40">{{ t.artist_name }}</p>
             </div>
-
-            <span class="text-xs text-slate-500">{{ formatTime(item.duration_seconds) }}</span>
-
-    <button
-      v-if="isOwner || isCollaborator"
-      type="button"
-      aria-label="Remove from playlist"
-      class="shrink-0 rounded-full p-1.5 text-slate-500 opacity-0 transition group-hover:opacity-100 hover:bg-white/10 hover:text-red-400"
-      @click="removeTrack(item.track_id)"
-    >
-      <i aria-hidden="true" class="pi pi-times text-xs" />
-    </button>
-          </div>
-        </div>
-
-        <div
-          v-else
-          class="flex flex-col items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-6 py-16 text-center"
-        >
-          <i aria-hidden="true" class="pi pi-list text-3xl text-slate-500" />
-          <h3 class="text-lg font-bold text-white">Empty playlist</h3>
-          <p class="text-sm text-slate-400">Add tracks from the search or your library</p>
-          <button
-            v-if="isOwner || isCollaborator"
-            type="button"
-            class="rounded-full bg-[#1db954] px-6 py-2 text-sm font-bold text-black transition hover:bg-[#1ed760]"
-            @click="showAddTrack = true"
-          >
-            <i aria-hidden="true" class="pi pi-plus mr-1 text-xs" />
-            Add Track
+            <span class="text-xs text-white/30">{{ formatDuration(t.duration_seconds as number) }}</span>
+            <i v-if="addingTrackId === t.id" aria-hidden="true" class="pi pi-spin pi-spinner text-xs text-[#1db954]" />
+            <i v-else aria-hidden="true" class="pi pi-plus text-xs text-white/30" />
           </button>
         </div>
-      </section>
-    </template>
+      </div>
+    </Dialog>
   </div>
-
-  <Dialog
-    :visible="showAddTrack"
-    modal
-    :draggable="false"
-    :style="{ maxWidth: '500px', width: '90vw' }"
-    :pt="{
-      root: 'border-none',
-      mask: 'backdrop-blur-sm',
-      header: 'border-b border-white/5',
-      title: 'text-white text-sm font-bold',
-      content: 'p-0',
-    }"
-    @update:visible="showAddTrack = $event"
-  >
-    <template #header>
-      <div class="flex items-center gap-2 px-1">
-        <i aria-hidden="true" class="pi pi-search text-sm text-[#1db954]" />
-        <span>Add Track</span>
-      </div>
-    </template>
-
-    <div class="flex flex-col max-h-[70vh]">
-      <div class="shrink-0 p-3">
-        <div class="relative">
-          <i
-            aria-hidden="true"
-            class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/30"
-          />
-          <input
-            v-model="addTrackQuery"
-            type="text"
-            placeholder="Search tracks..."
-            aria-label="Search tracks to add"
-            class="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#1db954]/50"
-            @input="onAddTrackSearch"
-          />
-        </div>
-      </div>
-
-      <div class="flex-1 overflow-y-auto px-1">
-        <div v-if="addTrackLoading" class="flex items-center justify-center py-12">
-          <i aria-hidden="true" class="pi pi-spin pi-spinner text-lg text-white/30" />
-        </div>
-
-        <div
-          v-else-if="addTrackResults.length === 0 && addTrackQuery"
-          class="flex flex-col items-center gap-2 py-12 text-center"
-        >
-          <i aria-hidden="true" class="pi pi-search text-2xl text-white/20" />
-          <p class="text-sm text-white/40">No tracks found</p>
-        </div>
-
-        <div v-else-if="!addTrackQuery" class="flex flex-col items-center gap-2 py-12 text-center">
-          <i aria-hidden="true" class="pi pi-music text-2xl text-white/20" />
-          <p class="text-sm text-white/40">Type to search tracks</p>
-        </div>
-
-        <button
-          v-for="t in addTrackResults"
-          :key="t.id"
-          type="button"
-          :disabled="addingTrackId === t.id"
-          class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-white/5 disabled:opacity-50"
-          @click="addSelectedTrack(t.id)"
-        >
-          <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
-            <img
-              v-if="t.cover_url"
-              :src="t.cover_url"
-              :alt="t.title"
-              class="h-full w-full object-cover"
-            />
-            <div v-else class="flex h-full items-center justify-center">
-              <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
-            </div>
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-medium text-white">{{ t.title }}</p>
-            <p class="truncate text-xs text-white/40">{{ t.artist_name }}</p>
-          </div>
-          <span class="text-xs text-white/30">{{ formatDuration(t.duration_seconds) }}</span>
-          <i
-            v-if="addingTrackId === t.id"
-            aria-hidden="true"
-            class="pi pi-spin pi-spinner text-xs text-[#1db954]"
-          />
-          <i
-            v-else
-            aria-hidden="true"
-            class="pi pi-plus text-xs text-white/30"
-          />
-        </button>
-      </div>
-    </div>
-  </Dialog>
 </template>
 
 <script setup lang="ts">
@@ -338,10 +382,11 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Dialog from 'primevue/dialog'
 import { useToast } from 'primevue/usetoast'
-import { SkeletonLoader } from '@/components/common'
 import { useUserAuthStore } from '@/stores'
+import { PlaylistCoverGrid } from '@/components/music'
 import { usePlaylistDetail } from '@/composables/catalog/usePlaylistDetail'
 import { usePlaylistsApi } from '@/services/api/playlist'
+import { useMediaApi } from '@/services/api/media'
 import { usePlayer } from '@/composables/player'
 import { usePlayerApi } from '@/services/api/player'
 import { useSearchApi } from '@/services/api/catalog/search'
@@ -383,9 +428,7 @@ function onDragOver(index: number) {
 }
 
 function onDragLeave(index: number) {
-  if (dropTargetIndex.value === index) {
-    dropTargetIndex.value = -1
-  }
+  if (dropTargetIndex.value === index) dropTargetIndex.value = -1
 }
 
 async function onDrop(targetIndex: number) {
@@ -399,24 +442,58 @@ async function onDrop(targetIndex: number) {
   reordered.splice(targetIndex, 0, moved!)
 
   const newOrder = reordered.map((t) => t.track_id)
-
-  // Optimistic update
   tracks.value = reordered
 
   try {
     await playlistsApi.reorderTracks(playlistId, newOrder)
-    toast.add({ severity: 'success', summary: 'Tracks reordered', life: 2000 })
   } catch {
     await fetchPlaylist()
     toast.add({ severity: 'error', summary: 'Failed to reorder', life: 3000 })
   }
-
   onDragEnd()
 }
 
 function onDragEnd() {
   dragIndex.value = -1
   dropTargetIndex.value = -1
+}
+
+const mediaApi = useMediaApi()
+const coverFileInput = ref<HTMLInputElement | null>(null)
+const uploadingCover = ref(false)
+
+const trackCoverUrls = computed(() => {
+  return tracks.value.map((t) => t.cover_url)
+})
+
+function triggerCoverUpload() {
+  coverFileInput.value?.click()
+}
+
+async function onCoverFileSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file || !playlist.value) return
+
+  uploadingCover.value = true
+  try {
+    const uploaded = await mediaApi.uploadAdminMedia('playlistCover', file, undefined, {
+      onUploadProgress(progressEvent) {
+        // Could add progress bar here
+      },
+    })
+    const url = uploaded.url || uploaded.file_url || uploaded.fileUrl || uploaded.path
+    if (!url) throw new Error('No URL returned from upload')
+
+    await playlistsApi.updatePlaylist(playlistId, { cover_url: url })
+    playlist.value.cover_url = url
+    toast.add({ severity: 'success', summary: 'Cover updated', life: 2000 })
+  } catch {
+    toast.add({ severity: 'error', summary: 'Failed to upload cover', life: 3000 })
+  } finally {
+    uploadingCover.value = false
+    input.value = '' // Reset file input
+  }
 }
 
 const isOwner = computed(() => {
@@ -438,18 +515,10 @@ const timeAgo = computed(() => {
 
 const collabHelper = useCollaborativePlaylist(
   playlistId,
-  () => {
-    fetchPlaylist()
-  },
-  () => {
-    fetchPlaylist()
-  },
-  () => {
-    fetchPlaylist()
-  },
-  () => {
-    fetchPlaylist()
-  },
+  () => { fetchPlaylist() },
+  () => { fetchPlaylist() },
+  () => { fetchPlaylist() },
+  () => { fetchPlaylist() },
 )
 
 async function toggleCollaborative() {
@@ -458,11 +527,7 @@ async function toggleCollaborative() {
     const newVal = !playlist.value.is_collaborative
     await playlistsApi.setCollaborative(playlistId, newVal)
     playlist.value.is_collaborative = newVal
-    toast.add({
-      severity: 'success',
-      summary: newVal ? 'Collaborative mode on' : 'Collaborative mode off',
-      life: 2000,
-    })
+    toast.add({ severity: 'success', summary: newVal ? 'Collaborative mode on' : 'Collaborative mode off', life: 2000 })
   } catch {
     toast.add({ severity: 'error', summary: 'Failed to update', life: 3000 })
   }
@@ -471,7 +536,7 @@ async function toggleCollaborative() {
 async function removeCollab(userId: string) {
   try {
     await playlistsApi.removeCollaborator(playlistId, userId)
-    collaborators.value = collaborators.value.filter((c) => c.user_id !== userId)
+    collaborators.value = collaborators.value.filter((c) => String(c.user_id) !== userId)
     toast.add({ severity: 'success', summary: 'Collaborator removed', life: 2000 })
   } catch {
     toast.add({ severity: 'error', summary: 'Failed to remove', life: 3000 })
@@ -484,9 +549,9 @@ onMounted(async () => {
   collabHelper.setup()
   const collabData = await playlistsApi.listCollaborators(playlistId).catch(() => null)
   if (collabData) {
-    collaborators.value = collabData
-    isCollaborator.value = collabData.some(
-      (c: Record<string, unknown>) => (c as { user_id: string; is_creator: boolean }).user_id === String(auth.user?.id) && !(c as { user_id: string; is_creator: boolean }).is_creator,
+    collaborators.value = Array.isArray(collabData) ? collabData : []
+    isCollaborator.value = collaborators.value.some(
+      (c: Record<string, unknown>) => String(c.user_id) === String(auth.user?.id) && !c.is_creator,
     )
   }
 })
@@ -495,6 +560,7 @@ onUnmounted(() => {
   collabHelper.teardown()
 })
 
+// ── Add Track ──
 const showAddTrack = ref(false)
 const addTrackQuery = ref('')
 const addTrackLoading = ref(false)
@@ -515,10 +581,9 @@ function onAddTrackSearch() {
     try {
       const res = await searchApi.searchCatalog({ query: q, type: 'tracks', limit: 10 })
       addTrackResults.value = res?.tracks || []
-  } catch (err) {
-    console.error('Failed to search tracks:', err)
-    addTrackResults.value = []
-  } finally {
+    } catch {
+      addTrackResults.value = []
+    } finally {
       addTrackLoading.value = false
     }
   }, 300)
@@ -568,7 +633,7 @@ async function deletePlaylist() {
   const deleted = await remove()
   if (deleted) {
     toast.add({ severity: 'success', summary: 'Playlist deleted', life: 2000 })
-    router.push('/playlists')
+    router.push('/library')
   }
 }
 

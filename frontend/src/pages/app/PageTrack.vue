@@ -1,440 +1,665 @@
 <template>
-  <div :key="String(route.params.id)" class="mx-auto w-full max-w-4xl px-4 pt-6 pb-32 md:px-6 lg:px-8">
-    <div v-if="loading" class="space-y-6">
-      <SkeletonLoader variant="hero" />
-    </div>
+  <div :key="String(route.params.id)" class="relative mx-auto min-h-screen pb-36">
+    <!-- Ambient background derived from cover art -->
+    <div
+      class="pointer-events-none fixed inset-0 transition-all duration-1000"
+      :style="ambientBg"
+      aria-hidden="true"
+    />
+    <div
+      class="pointer-events-none fixed inset-0 opacity-[0.015]"
+      style="background-image: repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 2px, rgba(255,255,255,0.04) 2px, rgba(255,255,255,0.04) 3px); background-size: 6px 6px;"
+      aria-hidden="true"
+    />
 
-    <div v-else-if="error" class="flex flex-col items-center gap-4 py-24 text-center">
-      <i aria-hidden="true" class="pi pi-exclamation-circle text-4xl text-slate-500" />
-      <h2 class="text-xl font-bold text-white">Track not found</h2>
-      <RouterLink to="/" class="text-sm font-medium text-[#1db954] underline underline-offset-2">
-        Go home
-      </RouterLink>
-    </div>
+    <div class="relative z-10 mx-auto w-full max-w-7xl px-4 pt-4 md:px-6 lg:px-8">
+      <!-- Back button -->
+      <button
+        type="button"
+        class="mb-6 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-white/50 transition hover:bg-white/[0.06] hover:text-white"
+        @click="goBack"
+      >
+        <i aria-hidden="true" class="pi pi-arrow-left text-xs" />
+        Back
+      </button>
 
-    <template v-else-if="track">
-      <div class="flex flex-col items-center">
-        <!-- Cover art with spinning vinyl effect -->
-        <div class="group relative">
-          <div
-            class="relative h-72 w-72 overflow-hidden rounded-full bg-white/[0.06] shadow-2xl ring-1 ring-white/10 md:h-80 md:w-80"
-            :class="{ 'animate-spin-slow': isPlaying }"
-          >
-            <img
-              v-if="track.cover_url"
-              :src="track.cover_url"
-              :alt="track.title"
-              loading="lazy"
-              class="h-full w-full object-cover"
-              @error="onImgError"
-            />
-            <div v-else class="flex h-full items-center justify-center">
-              <i aria-hidden="true" class="pi pi-compact-disc text-6xl text-slate-500" />
-            </div>
-
-            <!-- Center pin -->
-            <div class="absolute inset-0 flex items-center justify-center">
-              <div
-                class="h-10 w-10 rounded-full bg-black/60 shadow-lg ring-2 ring-white/20 backdrop-blur-sm"
-              />
+      <!-- Loading -->
+      <div v-if="loading" class="space-y-6">
+        <div class="flex flex-col gap-10 md:flex-row">
+          <SkeletonLoader variant="card" class="h-[340px] w-[340px] shrink-0" />
+          <div class="flex-1 space-y-4">
+            <SkeletonLoader variant="lines" :lines="1" class="max-w-sm" />
+            <SkeletonLoader variant="lines" :lines="1" class="max-w-xs" />
+            <SkeletonLoader variant="lines" :lines="2" class="max-w-md" />
+            <div class="mt-8 flex gap-4">
+              <SkeletonLoader variant="card" class="h-12 w-32 rounded-full" />
+              <SkeletonLoader variant="card" class="h-12 w-32 rounded-full" />
             </div>
           </div>
-
-          <!-- Equalizer ring -->
-          <div v-if="isPlaying" class="absolute -inset-3">
-            <svg class="h-full w-full -rotate-90" viewBox="0 0 100 100">
-              <circle
-                v-for="(bar, i) in 12"
-                :key="i"
-                cx="50"
-                cy="50"
-                :r="44 + (i % 3) * 2"
-                fill="none"
-                :stroke="'#1db954'"
-                :stroke-width="1.5"
-                :opacity="0.15 + (i % 4) * 0.2"
-                :stroke-dasharray="`${6 + (i % 3) * 4} ${12 - (i % 3) * 2}`"
-                class="equalizer-ring"
-                :style="{ animationDelay: `${i * 0.08}s` }"
-              />
-            </svg>
-          </div>
         </div>
-
-        <!-- Track Info -->
-        <div class="mt-8 text-center">
-          <div class="flex items-center justify-center gap-2">
-            <h1 class="text-3xl font-black text-white">{{ track.title }}</h1>
-            <span
-              v-if="track.explicit"
-              class="inline-flex h-5 w-5 items-center justify-center rounded bg-white/20 text-[10px] font-bold tracking-wide text-white"
-              title="Explicit"
-              >E</span
-            >
-          </div>
-          <div class="mt-2 flex items-center justify-center gap-2 text-sm text-slate-400">
-            <RouterLink
-              v-if="track.artist_name"
-              :to="`/artist/${track.artist_id}`"
-              class="font-bold text-white underline underline-offset-2 transition hover:text-[#1db954]"
-            >
-              {{ track.artist_name }}
-            </RouterLink>
-            <span v-if="track.album_title"> • </span>
-            <RouterLink
-              v-if="track.album_title"
-              :to="`/album/${track.album_id}`"
-              class="transition hover:text-white"
-            >
-              {{ track.album_title }}
-            </RouterLink>
-          </div>
-
-          <!-- Genres -->
-          <div
-            v-if="genreList.length > 0"
-            class="mt-3 flex flex-wrap items-center justify-center gap-1.5"
-          >
-            <span
-              v-for="g in genreList"
-              :key="g.id"
-              class="rounded-full border border-white/10 bg-white/[0.06] px-3 py-0.5 text-xs font-medium text-slate-300 transition hover:border-[#1db954]/30 hover:text-white"
-            >
-              {{ g.name }}
-            </span>
-          </div>
-
-          <!-- Play count -->
-          <p v-if="track.play_count > 0" class="mt-3 text-xs text-slate-500">
-            {{ formatPlayCount(track.play_count) }} plays
-          </p>
-        </div>
-
-        <!-- Main Controls -->
-        <div class="mt-8 flex items-center gap-6">
-          <button
-            type="button"
-            aria-label="Previous track"
-            class="flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white"
-            @click="player.playPrevious"
-          >
-            <i aria-hidden="true" class="pi pi-step-backward text-lg" />
-          </button>
-
-          <button
-            type="button"
-            aria-label="Toggle play"
-            class="relative flex h-16 w-16 items-center justify-center rounded-full bg-white text-black shadow-2xl transition hover:scale-105 hover:bg-[#1db954] hover:text-white"
-            @click="togglePlay"
-          >
-            <i
-              :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'"
-              class="ml-0.5 text-2xl"
-            />
-          </button>
-
-          <button
-            type="button"
-            aria-label="Next track"
-            class="flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white"
-            @click="player.playNext"
-          >
-            <i aria-hidden="true" class="pi pi-step-forward text-lg" />
-          </button>
-        </div>
-
-        <!-- Progress bar -->
-        <div class="mt-6 flex w-full max-w-md items-center gap-3">
-          <span class="w-10 text-right text-xs font-medium text-slate-500 tabular-nums">
-            {{ formatTime(player.currentTime.value) }}
-          </span>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="0.1"
-            aria-label="Seek"
-            class="player-range flex-1"
-            :style="{ '--range-progress': `${Number(player.progressPercent.value || 0)}%` }"
-            :value="player.progressPercent.value"
-            @input="onSeek"
-          />
-          <span class="w-10 text-xs font-medium text-slate-500 tabular-nums">
-            {{ formatTime(player.duration.value || track.duration_seconds || 0) }}
-          </span>
-        </div>
-
-        <!-- Secondary Controls -->
-        <div class="mt-6 flex items-center gap-6">
-          <button
-            type="button"
-            class="flex items-center gap-2 text-sm font-medium transition"
-            :class="isLiked ? 'text-[#1db954]' : 'text-slate-400 hover:text-white'"
-            @click="toggleLike"
-          >
-            <i aria-hidden="true" :class="isLiked ? 'pi pi-heart-fill' : 'pi pi-heart'" class="text-lg" />
-            {{ isLiked ? 'Liked' : 'Like' }}
-          </button>
-
-          <button
-            type="button"
-            class="flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-white"
-            @click="player.toggleShuffle"
-          >
-            <i
-              class="pi pi-sort-alt text-lg"
-              :class="{ 'text-[#1db954]': player.shuffleMode }"
-            />
-            Shuffle
-          </button>
-
-          <button
-            type="button"
-            class="relative flex items-center gap-2 text-sm font-medium transition"
-            :class="
-              player.repeatMode !== 'off'
-                ? 'text-[#1db954]'
-                : 'text-slate-400 hover:text-white'
-            "
-            @click="player.toggleRepeat"
-          >
-            <i aria-hidden="true" class="pi pi-refresh text-lg" />
-            <span
-              v-if="player.repeatMode === 'one'"
-              class="absolute -top-1 -right-3 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#1db954] text-[8px] font-bold text-black"
-              >1</span
-            >
-            Repeat
-          </button>
-
-          <button
-            type="button"
-            class="flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-white"
-            @click="showQueue = true"
-          >
-            <i aria-hidden="true" class="pi pi-list text-lg" />
-            Queue
-          </button>
+        <div class="space-y-2">
+          <SkeletonLoader v-for="i in 5" :key="i" variant="track" />
         </div>
       </div>
 
-      <!-- Waveform -->
-      <section class="mx-auto mt-16 w-full max-w-lg">
-        <div class="relative h-32 overflow-hidden rounded-2xl bg-white/[0.03]">
-          <div class="flex h-full items-end justify-center gap-[3px] px-4 pb-3">
-            <div
-              v-for="i in 80"
-              :key="i"
-              class="waveform-bar w-[3px] rounded-full"
-              :class="{
-                'bg-[#1db954]': isPlaying && i > 30 && i < 50,
-                'bg-white/20': !(isPlaying && i > 30 && i < 50),
-              }"
-              :style="{
-                height: `${getWaveHeight(i)}%`,
-                animationDelay: isPlaying ? `${i * 0.04}s` : '0s',
-              }"
-            />
-          </div>
-          <!-- Center play overlay on hover -->
-          <div
-            class="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition hover:opacity-100"
-          >
-            <div
-              class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954]/90 text-black shadow-xl backdrop-blur-sm"
-            >
-              <i aria-hidden="true" class="pi pi-play-fill text-lg" />
-            </div>
-          </div>
+      <!-- Error -->
+      <div v-else-if="error" class="flex flex-col items-center gap-4 py-24 text-center">
+        <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.04]">
+          <i aria-hidden="true" class="pi pi-exclamation-circle text-3xl text-slate-500" />
         </div>
-      </section>
-
-      <!-- Lyrics -->
-      <section class="mt-10">
-        <div class="mb-4 flex items-center justify-between">
-          <h2 class="text-lg font-bold text-white">Lyrics</h2>
-          <button
-            v-if="lyrics && lyrics.content"
-            type="button"
-            class="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold transition hover:bg-white/15"
-            :class="karaokeActive ? 'bg-[#1db954]/15 text-[#1db954]' : 'text-white/60'"
-            @click="karaokeActive = !karaokeActive"
-          >
-            <i aria-hidden="true" class="pi pi-mic text-[10px]" />
-            Karaoke
-          </button>
-        </div>
-        <div
-          v-if="karaokeActive && lyrics?.content"
-          class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl"
-          style="height: 400px"
-        >
-          <KaraokeLyrics
-            :content="lyrics.content"
-            :type="lyrics.type || 'plain'"
-            :current-time="player.currentTime.value"
-            :loading="loading"
-            :karaoke="true"
-            @seek="player.seek"
-          />
-        </div>
-        <div
-          v-else
-          class="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 backdrop-blur-xl"
-        >
-          <LyricsDisplay :lyrics="lyrics" :loading="loading" :error="!lyrics && !loading" />
-        </div>
-      </section>
-
-      <!-- Credits -->
-      <section v-if="trackArtists.length > 0 || trackCredits.length > 0" class="mt-14">
-        <div class="relative mb-8">
-          <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-white/[0.06]" />
-          </div>
-          <div class="relative flex justify-center">
-            <span class="bg-[#0A0A0F] px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
-              Credits
-            </span>
-          </div>
-        </div>
-        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <!-- Artists -->
-          <div v-if="trackArtists.length > 0">
-            <h3 class="mb-4 text-xs font-bold tracking-[0.2em] text-white/30 uppercase">Artists</h3>
-            <div class="space-y-2">
-              <div
-                v-for="a in trackArtists"
-                :key="a.artistId"
-                class="group flex items-center gap-3 rounded-2xl border border-white/[0.04] bg-white/[0.02] px-4 py-3 transition hover:border-white/[0.08] hover:bg-white/[0.04]"
-              >
-                <div
-                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white/[0.08] to-white/[0.02] text-sm font-bold text-white/70 ring-1 ring-white/[0.04]"
-                >
-                  {{ a.name.charAt(0).toUpperCase() }}
-                </div>
-                <div>
-                  <RouterLink
-                    :to="`/artist/${a.artistId}`"
-                    class="text-sm font-semibold text-white transition group-hover:text-[#1db954]"
-                  >
-                    {{ a.name }}
-                  </RouterLink>
-                  <p
-                    v-if="a.role && !['main', 'primary'].includes(a.role)"
-                    class="mt-0.5 text-xs text-white/40 capitalize"
-                  >
-                    {{ a.role }}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Credits -->
-          <div v-if="trackCredits.length > 0">
-            <h3 class="mb-4 text-xs font-bold tracking-[0.2em] text-white/30 uppercase">Production</h3>
-            <div class="space-y-2">
-              <div
-                v-for="c in trackCredits"
-                :key="c.id"
-                class="group flex items-center gap-3 rounded-2xl border border-white/[0.04] bg-white/[0.02] px-4 py-3 transition hover:border-white/[0.08] hover:bg-white/[0.04]"
-              >
-                <div
-                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white/[0.08] to-white/[0.02] text-sm font-bold text-white/70 ring-1 ring-white/[0.04]"
-                >
-                  {{ c.artistName.charAt(0).toUpperCase() }}
-                </div>
-                <div>
-                  <p class="text-sm font-semibold text-white">{{ c.artistName }}</p>
-                  <p class="mt-0.5 text-xs text-white/40 capitalize">{{ c.creditType }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section divider -->
-      <div v-if="trackArtists.length > 0 || trackCredits.length > 0 || similarTracks.length" class="relative mt-14">
-        <div class="absolute inset-0 flex items-center">
-          <div class="w-full border-t border-white/[0.06]" />
-        </div>
+        <h2 class="text-xl font-bold text-white">Track not found</h2>
+        <p class="text-sm text-slate-400">This track may have been removed or the link is invalid.</p>
+        <RouterLink to="/" class="mt-2 text-sm font-medium text-[#1db954] underline underline-offset-2">
+          Go home
+        </RouterLink>
       </div>
 
-      <!-- Similar Tracks -->
-      <section v-if="similarTracks.length" class="mt-14" aria-live="polite">
-        <div class="relative mb-8">
-          <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-white/[0.06]" />
-          </div>
-          <div class="relative flex justify-center">
-            <span class="bg-[#0A0A0F] px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
-              You might like
-            </span>
-          </div>
-        </div>
-        <div class="space-y-1">
+      <!-- Content -->
+      <template v-else-if="track">
+        <!-- ════════════════════════════════════════ -->
+        <!-- HERO SECTION                           -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="flex flex-col gap-10 md:flex-row md:items-end">
+          <!-- Left: Cover Art -->
+          <div class="group shrink-0">
             <div
-              v-for="(st, index) in similarTracks"
-              :key="st.id"
-              role="button"
-              tabindex="0"
-              class="group flex cursor-pointer items-center gap-4 rounded-2xl px-4 py-3 transition-all duration-200 hover:bg-white/[0.04]"
-              @click="playSimilar(st, index)"
-              @keydown.enter="playSimilar(st, index)"
-              @keydown.space.prevent="playSimilar(st, index)"
+              class="relative h-[300px] w-[300px] overflow-hidden rounded-2xl bg-white/[0.06] shadow-2xl ring-1 ring-white/10 transition-all duration-500 md:h-[340px] md:w-[340px]"
+              :style="coverGlowStyle"
             >
-            <span
-              class="flex w-8 items-center justify-center text-center text-sm tabular-nums text-white/20 group-hover:hidden"
-            >
-              {{ String(index + 1).padStart(2, '0') }}
-            </span>
-            <span class="hidden w-8 items-center justify-center group-hover:flex">
-              <i aria-hidden="true" class="pi pi-play-fill text-xs text-white" />
-            </span>
-            <div class="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white/10 ring-1 ring-white/[0.04]">
               <img
-                v-if="st.cover_url"
-                :src="st.cover_url"
-                :alt="st.title"
-                loading="lazy"
-                class="h-full w-full object-cover"
+                v-if="track.cover_url"
+                :src="track.cover_url"
+                :alt="track.title"
+                loading="eager"
+                class="h-full w-full select-none object-cover"
                 @error="onImgError"
               />
               <div v-else class="flex h-full items-center justify-center">
-                <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
+                <i aria-hidden="true" class="pi pi-compact-disc text-5xl text-slate-500" />
               </div>
+
+              <!-- Playing indicator overlay -->
+              <div
+                v-if="isPlaying"
+                class="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[1px]"
+              >
+                <div class="flex items-end gap-[3px]">
+                  <span class="now-playing-bar h-5 w-[3px] rounded-full bg-white" />
+                  <span class="now-playing-bar h-8 w-[3px] rounded-full bg-white" style="animation-delay: 0.15s" />
+                  <span class="now-playing-bar h-6 w-[3px] rounded-full bg-white" style="animation-delay: 0.3s" />
+                  <span class="now-playing-bar h-4 w-[3px] rounded-full bg-white" style="animation-delay: 0.45s" />
+                  <span class="now-playing-bar h-7 w-[3px] rounded-full bg-white" style="animation-delay: 0.2s" />
+                </div>
+              </div>
+
+              <!-- Admin edit overlay -->
+              <RouterLink
+                v-if="isAdmin"
+                :to="`/admin/catalog/tracks/${trackId}`"
+                class="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/70 group-hover:opacity-100"
+                title="Edit track in admin"
+                @click.stop
+              >
+                <i aria-hidden="true" class="pi pi-pencil text-xs" />
+              </RouterLink>
             </div>
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-semibold text-white">{{ st.title }}</p>
-              <p class="mt-0.5 truncate text-xs text-white/40">{{ st.artist_name }}</p>
+            <!-- Sleeve frame accent -->
+            <div
+              class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/[0.04]"
+              aria-hidden="true"
+            />
+          </div>
+
+          <!-- Right: Track Info + Controls -->
+          <div class="flex-1">
+            <!-- Eyebrow + Admin badge -->
+            <div class="flex items-center gap-3">
+              <p class="text-[10px] font-bold tracking-[0.35em] text-white/30 uppercase">Track</p>
+              <span
+                v-if="isAdmin"
+                class="rounded-full bg-amber-500/15 px-2 py-0.5 text-[9px] font-bold text-amber-400"
+              >Admin</span>
             </div>
-            <span class="text-xs tabular-nums text-white/25 group-hover:text-white/50">{{
-              formatTime(st.duration_seconds)
-            }}</span>
+
+            <!-- Title -->
+            <div class="mt-3 flex items-start gap-3">
+              <h1 class="text-3xl font-black leading-[1.1] text-white md:text-4xl lg:text-5xl">
+                {{ track.title }}
+              </h1>
+              <span
+                v-if="track.explicit"
+                class="mt-1.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded bg-white/15 text-[11px] font-bold tracking-wide text-white"
+                title="Explicit"
+              >E</span>
+            </div>
+
+            <!-- Artists (all) -->
+            <div class="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm">
+              <template v-for="(a, i) in trackArtists" :key="String(a.artistId || i)">
+                <RouterLink
+                  :to="`/artist/${a.artistId}`"
+                  class="inline-flex items-center gap-1.5 font-bold text-white underline underline-offset-4 decoration-white/20 transition hover:text-[#1db954] hover:decoration-[#1db954]"
+                >
+                  {{ a.name }}
+                </RouterLink>
+                <span
+                  v-if="a.role && !['main', 'primary'].includes(a.role as string)"
+                  class="rounded-full bg-purple-500/15 px-1.5 py-0.5 text-[9px] font-medium text-purple-400"
+                >feat.</span>
+                <span v-if="i < trackArtists.length - 1" class="text-white/30">,</span>
+              </template>
+              <span v-if="track.album_title" class="text-white/30">&middot;</span>
+              <RouterLink
+                v-if="track.album_title"
+                :to="`/album/${track.album_id}`"
+                class="text-white/70 transition hover:text-white"
+              >
+                {{ track.album_title }}
+              </RouterLink>
+            </div>
+
+            <!-- Genres -->
+            <div
+              v-if="genreList.length > 0"
+              class="mt-4 flex flex-wrap items-center gap-1.5"
+            >
+              <span
+                v-for="g in genreList"
+                :key="g.id"
+                class="rounded-full border border-white/10 bg-white/[0.06] px-3 py-0.5 text-xs font-medium text-slate-300 transition hover:border-[#1db954]/30 hover:text-white"
+              >
+                {{ g.name }}
+              </span>
+            </div>
+
+            <!-- Play count -->
+            <p v-if="track.play_count > 0" class="mt-3 text-xs text-slate-500">
+              {{ formatPlayCount(track.play_count) }} plays
+            </p>
+
+            <!-- Main Controls (prev / play / next) -->
+            <div class="mt-8 flex items-center gap-4">
+              <button
+                type="button"
+                aria-label="Previous track"
+                class="flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white"
+                @click="player.playPrevious"
+              >
+                <i aria-hidden="true" class="pi pi-step-backward text-lg" />
+              </button>
+
+              <button
+                type="button"
+                aria-label="Toggle play"
+                class="relative flex h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-2xl transition-all hover:scale-105 hover:bg-[#1db954] hover:text-white active:scale-95 md:h-16 md:w-16"
+                @click="togglePlay"
+              >
+                <i
+                  :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'"
+                  class="ml-0.5 text-xl md:text-2xl"
+                />
+              </button>
+
+              <button
+                type="button"
+                aria-label="Next track"
+                class="flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white"
+                @click="player.playNext"
+              >
+                <i aria-hidden="true" class="pi pi-step-forward text-lg" />
+              </button>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="mt-5 flex w-full max-w-md items-center gap-3">
+              <span class="min-w-[2.5rem] text-right text-xs font-medium text-slate-500 tabular-nums">
+                {{ formatTime(player.currentTime.value) }}
+              </span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="0.1"
+                aria-label="Seek"
+                class="player-range flex-1"
+                :style="{ '--range-progress': `${Number(player.progressPercent.value || 0)}%` }"
+                :value="player.progressPercent.value"
+                @input="onSeek"
+              />
+              <span class="min-w-[2.5rem] text-xs font-medium text-slate-500 tabular-nums">
+                {{ formatTime(player.duration.value || track.duration_seconds || 0) }}
+              </span>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-6 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                class="glow-green inline-flex items-center gap-2.5 rounded-full bg-[#1DB954] px-7 py-2.5 text-sm font-bold text-black transition hover:scale-105 hover:bg-[#1ed760]"
+                @click="togglePlay"
+              >
+                <i aria-hidden="true" :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" />
+                {{ isPlaying ? 'Pause' : 'Play' }}
+              </button>
+
+              <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-5 py-2.5 text-sm font-bold transition"
+                :class="isLiked ? 'border-[#1db954]/30 text-[#1db954]' : 'text-white/80 hover:border-white/30 hover:bg-white/[0.08] hover:text-white'"
+                @click="toggleLike"
+              >
+                <i aria-hidden="true" :class="isLiked ? 'pi pi-heart-fill' : 'pi pi-heart'" />
+                {{ isLiked ? 'Liked' : 'Like' }}
+              </button>
+
+              <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/[0.08] hover:text-white"
+                @click="showAddToPlaylist = true"
+              >
+                <i aria-hidden="true" class="pi pi-plus" />
+                Playlist
+              </button>
+
+              <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/[0.08] hover:text-white"
+                @click="shareTrack"
+              >
+                <i aria-hidden="true" class="pi pi-share-alt" />
+                Share
+              </button>
+
+              <!-- Admin edit button -->
+              <RouterLink
+                v-if="isAdmin"
+                :to="`/admin/catalog/tracks/${trackId}`"
+                class="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-5 py-2.5 text-sm font-bold text-amber-400 transition hover:bg-amber-500/20"
+              >
+                <i aria-hidden="true" class="pi pi-pencil text-sm" />
+                Edit
+              </RouterLink>
+
+              <!-- Create edit (always shown) -->
+              <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/[0.08] hover:text-white"
+                @click="goToCreateEdit"
+              >
+                <i aria-hidden="true" class="pi pi-video text-sm" />
+                Edit Video
+              </button>
+            </div>
+
+            <!-- Secondary Controls -->
+            <div class="mt-6 flex items-center gap-6">
+              <button
+                type="button"
+                class="flex items-center gap-2 text-sm font-medium transition"
+                :class="player.shuffleMode ? 'text-[#1db954]' : 'text-slate-400 hover:text-white'"
+                @click="player.toggleShuffle"
+              >
+                <i class="pi pi-sort-alt text-lg" />
+                Shuffle
+              </button>
+
+              <button
+                type="button"
+                class="relative flex items-center gap-2 text-sm font-medium transition"
+                :class="player.repeatMode !== 'off' ? 'text-[#1db954]' : 'text-slate-400 hover:text-white'"
+                @click="player.toggleRepeat"
+              >
+                <i aria-hidden="true" class="pi pi-refresh text-lg" />
+                <span
+                  v-if="player.repeatMode === 'one'"
+                  class="absolute -top-1 -right-3 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#1db954] text-[8px] font-bold text-black"
+                >1</span>
+                Repeat
+              </button>
+
+              <button
+                type="button"
+                class="flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-white"
+                @click="showQueue = true"
+              >
+                <i aria-hidden="true" class="pi pi-list text-lg" />
+                Queue
+              </button>
+            </div>
           </div>
         </div>
-      </section>
-    </template>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- MUSIC VISUALIZER                       -->
+        <!-- ════════════════════════════════════════ -->
+        <section class="mx-auto mt-16 w-full max-w-2xl">
+          <div class="relative h-28 overflow-hidden rounded-2xl border border-white/[0.04] bg-white/[0.02] backdrop-blur-sm">
+            <div class="flex h-full items-end justify-center gap-[2px] px-4 pb-3">
+              <div
+                v-for="i in 96"
+                :key="i"
+                class="visualizer-bar w-[2.5px] rounded-t-full"
+                :class="isPlaying ? 'bg-white/20' : 'bg-white/[0.04]'"
+                :style="{
+                  height: isPlaying ? `${getBarHeight(i)}%` : '8%',
+                  animationDelay: isPlaying ? `${i * 0.025}s` : '0s',
+                }"
+              />
+            </div>
+
+            <!-- Center play indicator -->
+            <div
+              class="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/10 opacity-0 transition hover:opacity-100"
+              @click="togglePlay"
+            >
+              <div
+                class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954]/90 text-black shadow-xl backdrop-blur-sm transition-transform hover:scale-110"
+              >
+                <i aria-hidden="true" :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" class="text-lg" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- MUSIC VIDEOS SECTION                   -->
+        <!-- ════════════════════════════════════════ -->
+        <section v-if="trackVideos.length > 0" class="mt-16">
+          <div class="relative mb-6">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-white/[0.06]" />
+            </div>
+            <div class="relative flex justify-between items-center">
+              <span class="bg-[#0A0A0F] px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
+                Music Videos
+              </span>
+              <RouterLink
+                to="/videos"
+                class="bg-[#0A0A0F] px-4 text-xs font-medium text-[#1db954] transition hover:text-[#1ed760]"
+              >
+                Browse all &rarr;
+              </RouterLink>
+            </div>
+          </div>
+          <!-- Mobile: horizontal snap scroll | Desktop: grid -->
+          <div class="flex gap-3 overflow-x-auto px-1 pb-2 snap-x snap-mandatory scrollbar-hidden sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 sm:snap-none md:grid-cols-4 lg:grid-cols-5">
+            <div
+              v-for="v in trackVideos"
+              :key="String(v.id)"
+              role="button"
+              tabindex="0"
+              class="group w-[45vw] shrink-0 snap-start cursor-pointer overflow-hidden rounded-xl bg-white/5 transition-all duration-150 hover:bg-white/[0.08] hover:shadow-lg hover:shadow-black/20 sm:w-auto sm:shrink"
+              @click="openVideo(v)"
+              @keydown.enter="openVideo(v)"
+              @keydown.space.prevent="openVideo(v)"
+            >
+              <div class="relative aspect-[9/16] w-full overflow-hidden">
+                <img
+                  v-if="v.thumbnail_url || v.thumbnail_path || v.track_cover_url"
+                  :src="v.thumbnail_url || v.thumbnail_path || v.track_cover_url"
+                  :alt="v.title"
+                  class="h-full w-full object-cover transition-transform duration-150 group-hover:scale-[1.03]"
+                  loading="lazy"
+                  @error="($event.target as HTMLImageElement).style.display='none'"
+                />
+                <div v-else class="flex h-full items-center justify-center bg-white/[0.03]">
+                  <i aria-hidden="true" class="pi pi-video text-2xl text-slate-500" />
+                </div>
+
+                <!-- Overlay gradient -->
+                <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+
+                <!-- Type badge -->
+                <div
+                  class="absolute top-2 right-2 rounded-full px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm"
+                  :class="v.type === 'official_mv' ? 'bg-[#1db954]/20 text-[#1db954]' : 'bg-blue-500/20 text-blue-400'"
+                >
+                  {{ v.type === 'official_mv' ? 'MV' : 'Edit' }}
+                </div>
+
+                <!-- Bottom stats -->
+                <div class="absolute right-2 bottom-2 left-2 flex items-center justify-between">
+                  <div class="flex items-center gap-2 text-[11px] font-medium text-white/80">
+                    <span class="flex items-center gap-1">
+                      <i aria-hidden="true" class="pi pi-eye text-[10px]" />
+                      {{ formatCount(v.view_count) }}
+                    </span>
+                    <span class="flex items-center gap-1">
+                      <i aria-hidden="true" class="pi pi-heart text-[10px]" />
+                      {{ formatCount(v.like_count) }}
+                    </span>
+                  </div>
+                  <div class="flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+                    <i aria-hidden="true" class="pi pi-play-fill text-xs" />
+                  </div>
+                </div>
+              </div>
+              <div class="p-2.5">
+                <p class="truncate text-xs font-semibold text-white/90">{{ v.title }}</p>
+                <p v-if="v.uploader" class="mt-0.5 truncate text-[10px] text-white/40">
+                  {{ v.uploader.username }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- LYRICS SECTION                         -->
+        <!-- ════════════════════════════════════════ -->
+        <section class="mt-16">
+          <div class="relative mb-6">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-white/[0.06]" />
+            </div>
+            <div class="relative flex justify-center">
+              <span class="bg-[#0A0A0F] px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
+                Lyrics
+              </span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-white">Lyrics</h2>
+            <button
+              v-if="lyrics && lyrics.content"
+              type="button"
+              class="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold transition hover:bg-white/15"
+              :class="karaokeActive ? 'bg-[#1db954]/15 text-[#1db954]' : 'text-white/60'"
+              @click="karaokeActive = !karaokeActive"
+            >
+              <i aria-hidden="true" class="pi pi-mic text-[10px]" />
+              Karaoke
+            </button>
+          </div>
+
+          <div
+            v-if="karaokeActive && lyrics?.content"
+            class="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl"
+            style="height: 400px"
+          >
+            <KaraokeLyrics
+              :content="lyrics.content"
+              :type="lyrics.type || 'plain'"
+              :current-time="player.currentTime.value"
+              :loading="loading"
+              :karaoke="true"
+              @seek="player.seek"
+            />
+          </div>
+          <div
+            v-else
+            class="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 backdrop-blur-xl"
+          >
+            <LyricsDisplay :lyrics="lyrics" :loading="loading" :error="!lyrics && !loading" />
+          </div>
+        </section>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- CREDITS SECTION                        -->
+        <!-- ════════════════════════════════════════ -->
+        <section v-if="trackArtists.length > 0 || trackCredits.length > 0" class="mt-16">
+          <div class="relative mb-8">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-white/[0.06]" />
+            </div>
+            <div class="relative flex justify-center">
+              <span class="bg-[#0A0A0F] px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
+                Credits
+              </span>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <!-- Artists -->
+            <div
+              v-for="(a, i) in trackArtists"
+              :key="String(a.artistId || i)"
+              class="group flex items-center gap-4 rounded-2xl border border-white/[0.04] bg-white/[0.02] px-5 py-4 transition hover:border-white/[0.08] hover:bg-white/[0.04]"
+            >
+              <div
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white/[0.08] to-white/[0.02] text-sm font-bold text-white/70 ring-1 ring-white/[0.04]"
+              >
+                {{ String(a.name).charAt(0).toUpperCase() }}
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <RouterLink
+                    :to="`/artist/${a.artistId}`"
+                    class="block truncate text-sm font-semibold text-white transition group-hover:text-[#1db954]"
+                  >
+                    {{ a.name }}
+                  </RouterLink>
+                  <span
+                    v-if="a.role && !['main', 'primary'].includes(a.role as string)"
+                    class="rounded-full bg-purple-500/15 px-1.5 py-0.5 text-[9px] font-medium text-purple-400"
+                  >feat.</span>
+                </div>
+                <p class="mt-0.5 text-xs text-white/30">
+                  {{ a.role && !['main', 'primary'].includes(a.role as string) ? a.role : 'Main artist' }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Credits -->
+            <div
+              v-for="c in trackCredits"
+              :key="String(c.id)"
+              class="group flex items-center gap-4 rounded-2xl border border-white/[0.04] bg-white/[0.02] px-5 py-4 transition hover:border-white/[0.08] hover:bg-white/[0.04]"
+            >
+              <div
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white/[0.08] to-white/[0.02] text-sm font-bold text-white/70 ring-1 ring-white/[0.04]"
+              >
+                {{ String(c.artistName).charAt(0).toUpperCase() }}
+              </div>
+              <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-white">{{ c.artistName }}</p>
+                <p class="mt-0.5 text-xs text-white/40 capitalize">{{ c.creditType }}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- YOU MIGHT LIKE                         -->
+        <!-- ════════════════════════════════════════ -->
+        <section v-if="similarTracks.length" class="mt-16" aria-live="polite">
+          <div class="relative mb-8">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-white/[0.06]" />
+            </div>
+            <div class="relative flex justify-center">
+              <span class="bg-[#0A0A0F] px-4 text-[10px] font-bold tracking-[0.3em] text-white/20 uppercase">
+                You might like
+              </span>
+            </div>
+          </div>
+          <div class="space-y-1">
+            <div
+              v-for="(st, index) in similarTracks"
+              :key="st.id"
+              class="group grid grid-cols-[48px_1fr_auto] items-center gap-4 rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-white/[0.08]"
+            >
+              <!-- Play button -->
+              <button
+                type="button"
+                aria-label="Play track"
+                class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white/10 text-white transition-all duration-200 hover:scale-105 hover:bg-[#1db954] hover:text-black"
+                :class="{ 'bg-[#1db954] text-black': isCurrentSimilarTrack(st) }"
+                @click="playSimilar(st, index)"
+              >
+                <img
+                  v-if="st.cover_url"
+                  :src="st.cover_url"
+                  :alt="st.title"
+                  class="absolute inset-0 h-full w-full object-cover opacity-60 transition group-hover:opacity-35"
+                  loading="lazy"
+                  @error="onImgError"
+                />
+                <span class="relative z-10 flex items-center justify-center">
+                  <template v-if="isCurrentSimilarTrack(st) && player.isPlaying.value">
+                    <span class="flex h-4 items-end gap-[2px]" aria-label="Playing">
+                      <span class="similar-eq-bar h-2" />
+                      <span class="similar-eq-bar animation-delay-150 h-4" />
+                      <span class="similar-eq-bar animation-delay-300 h-3" />
+                    </span>
+                  </template>
+                  <i v-else aria-hidden="true" class="pi pi-play text-sm" />
+                </span>
+              </button>
+
+              <div class="min-w-0">
+                <RouterLink
+                  :to="`/track/${st.id}`"
+                  class="truncate text-sm font-semibold transition hover:underline"
+                  :class="isCurrentSimilarTrack(st) ? 'text-[#1db954]' : 'text-white'"
+                  @click.stop
+                >
+                  {{ st.title }}
+                </RouterLink>
+                <p class="mt-0.5 truncate text-xs text-slate-400">{{ st.artist_name }}</p>
+              </div>
+
+              <div class="flex items-center gap-4 text-xs text-slate-400">
+                <span class="tabular-nums">{{ formatTime(st.duration_seconds) }}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </template>
+    </div>
 
     <!-- Queue Panel -->
     <QueuePanel v-model:visible="showQueue" />
+
+    <!-- Add to Playlist Dialog -->
+    <AddToPlaylistDialog
+      v-model:visible="showAddToPlaylist"
+      :track-id="trackId"
+      :track-title="track?.title ?? ''"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { SkeletonLoader } from '@/components/common'
 import { useTrack } from '@/composables/catalog/useTrack'
 import { usePlayer } from '@/composables/player'
 import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
+import { useAlbumColors } from '@/composables/useAlbumColors'
+import { useSocialShare } from '@/composables/social'
+import { useVideoApi } from '@/services/api/video'
+import { useUserAuthStore } from '@/stores'
 import { onImgError } from '@/utils/helpers'
-import { LyricsDisplay, QueuePanel, KaraokeLyrics } from '@/components/music'
+import { formatCount } from '@/utils/number'
+import { LyricsDisplay, QueuePanel, KaraokeLyrics, AddToPlaylistDialog } from '@/components/music'
+import type { VideoItem } from '@/services/api/video/types'
 
 const route = useRoute()
+const router = useRouter()
 const trackId = String(route.params.id)
+
 const {
   track,
   similarTracks,
@@ -449,19 +674,68 @@ const {
   toggleLike,
 } = useTrack(trackId)
 
-const trackArtists = _trackArtists as Record<string, unknown>[]
-const trackCredits = _trackCredits as Record<string, unknown>[]
+const trackArtists = computed(() => _trackArtists.value as unknown as Record<string, unknown>[])
+const trackCredits = computed(() => _trackCredits.value as unknown as Record<string, unknown>[])
 const player = usePlayer()
 const playerApi = usePlayerApi()
+const videoApi = useVideoApi()
+const authStore = useUserAuthStore()
 const showQueue = ref(false)
+const showAddToPlaylist = ref(false)
 const karaokeActive = ref(false)
+const trackVideos = ref<VideoItem[]>([])
 
+const isAdmin = computed(() => authStore.isAdmin)
 const isPlaying = player.isPlaying
 
-onMounted(() => {
-  fetchTrack()
+// ── Ambient background from cover art ──
+const coverUrl = computed(() => track.value?.cover_url || null)
+const { palette } = useAlbumColors(coverUrl)
+const accentColor = computed(() => palette.value.vibrant || '#1db954')
+
+const ambientBg = computed(() => {
+  if (!coverUrl.value) return { background: '#0A0A0F' }
+  const c = accentColor.value
+  return {
+    background: `
+      radial-gradient(ellipse 80% 50% at 50% 0%, ${c}1A 0%, transparent 70%),
+      radial-gradient(ellipse 60% 40% at 100% 100%, ${c}0D 0%, transparent 50%),
+      #0A0A0F
+    `,
+  }
 })
 
+const coverGlowStyle = computed(() => {
+  if (!coverUrl.value) return {}
+  const c = accentColor.value
+  return {
+    boxShadow: `0 0 40px ${c}40, 0 0 80px ${c}20, 0 0 120px ${c}10`,
+    transition: 'box-shadow 0.6s ease',
+  }
+})
+
+// ── Navigation ──
+function isCurrentSimilarTrack(st: { id: string }): boolean {
+  return player.currentTrack.value?.id === String(st.id)
+}
+
+function goBack() {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/')
+  }
+}
+
+function goToCreateEdit() {
+  router.push({ name: 'app.create-edit', query: { trackId } })
+}
+
+function openVideo(v: VideoItem) {
+  router.push(`/music-video/${v.id}`)
+}
+
+// ── Playback ──
 function togglePlay() {
   if (!track.value) return
   const pb: PlaybackTrack = {
@@ -509,6 +783,20 @@ function onSeek(event: Event) {
   player.seekPercent(Number(target.value))
 }
 
+// ── Share ──
+const { copyLink } = useSocialShare()
+function shareTrack() {
+  if (!track.value) return
+  copyLink({
+    id: trackId,
+    title: track.value.title,
+    type: 'track',
+    artistName: track.value.artist_name,
+    coverUrl: track.value.cover_url,
+  })
+}
+
+// ── Formatters ──
 function formatTime(seconds?: number | null) {
   if (!seconds) return '0:00'
   const m = Math.floor(seconds / 60)
@@ -522,42 +810,84 @@ function formatPlayCount(count: number) {
   return String(count)
 }
 
-const waveHeights = Array.from({ length: 80 }, () => Math.random())
-function getWaveHeight(i: number) {
-  return 15 + waveHeights[i]! * 60
+// ── Load track videos ──
+async function fetchTrackVideos() {
+  try {
+    const res = await videoApi.getTrackVideos(trackId)
+    trackVideos.value = (res?.items || []).slice(0, 10)
+  } catch {
+    trackVideos.value = []
+  }
 }
+
+// ── Visualizer bars ──
+const barHeights = Array.from({ length: 96 }, (_, i) => {
+  const center = 48
+  const distance = Math.abs(i - center) / center
+  return 15 + Math.cos(distance * Math.PI * 0.5) * 55 + Math.random() * 10
+})
+
+function getBarHeight(i: number) {
+  return barHeights[i] ?? 20
+}
+
+onMounted(() => {
+  fetchTrack()
+  fetchTrackVideos()
+})
 </script>
 
 <style scoped>
-@keyframes spin-slow {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* ── Now Playing bars (on cover art overlay) ── */
+.now-playing-bar {
+  animation: now-playing 1s ease-in-out infinite alternate;
+}
+@keyframes now-playing {
+  0% { transform: scaleY(0.3); opacity: 0.5; }
+  100% { transform: scaleY(1); opacity: 1; }
 }
 
-.animate-spin-slow {
-  animation: spin-slow 6s linear infinite;
+/* ── Visualizer bars ── */
+.visualizer-bar {
+  animation: viz-pulse 1.2s ease-in-out infinite alternate;
+}
+.visualizer-bar:nth-child(even) {
+  animation-delay: 0.1s;
+}
+.visualizer-bar:nth-child(3n) {
+  animation-delay: 0.25s;
+}
+.visualizer-bar:nth-child(5n+2) {
+  animation-delay: 0.05s;
+}
+.visualizer-bar:nth-child(7n+4) {
+  animation-delay: 0.35s;
+}
+/* ── Similar tracks equalizer bars ── */
+.similar-eq-bar {
+  width: 3px;
+  border-radius: 999px;
+  background: currentColor;
+  animation: similar-equalizer 850ms ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+.animation-delay-150 {
+  animation-delay: 150ms;
+}
+.animation-delay-300 {
+  animation-delay: 300ms;
+}
+@keyframes similar-equalizer {
+  from { transform: scaleY(0.45); opacity: 0.6; }
+  to { transform: scaleY(1); opacity: 1; }
 }
 
-@keyframes eq-ring-pulse {
-  0%,
-  100% {
-    opacity: 0.2;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.02);
-  }
+@keyframes viz-pulse {
+  0% { transform: scaleY(0.4); opacity: 0.3; }
+  100% { transform: scaleY(1); opacity: 0.7; }
 }
 
-.equalizer-ring {
-  animation: eq-ring-pulse 1.2s ease-in-out infinite alternate;
-}
-
+/* ── Player range slider ── */
 .player-range {
   --range-progress: 0%;
   width: 100%;
@@ -632,26 +962,12 @@ function getWaveHeight(i: number) {
   opacity: 1;
 }
 
-.waveform-bar {
-  animation: wave-pulse 800ms ease-in-out infinite alternate;
+/* ── Horizontal scroll carousel (mobile) ── */
+.scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
-
-.waveform-bar:nth-child(even) {
-  animation-delay: 0.2s;
-}
-
-.waveform-bar:nth-child(3n) {
-  animation-delay: 0.4s;
-}
-
-@keyframes wave-pulse {
-  0% {
-    transform: scaleY(0.6);
-    opacity: 0.5;
-  }
-  100% {
-    transform: scaleY(1);
-    opacity: 1;
-  }
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
 }
 </style>

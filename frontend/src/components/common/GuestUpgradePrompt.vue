@@ -14,7 +14,7 @@
     }"
   >
     <template #header>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3" lang="fa" dir="rtl">
         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
           <i aria-hidden="true" class="pi pi-headphones text-emerald-400" />
         </div>
@@ -29,7 +29,7 @@
       </div>
     </template>
 
-    <div class="mt-6 flex flex-col items-center gap-4 text-center">
+    <div class="mt-6 flex flex-col items-center gap-4 text-center" lang="fa" dir="rtl">
       <div class="flex flex-col gap-3 w-full">
         <Button
           label="ثبت‌نام رایگان"

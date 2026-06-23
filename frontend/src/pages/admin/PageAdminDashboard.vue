@@ -159,6 +159,27 @@
             :key="track.id ?? i"
             class="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/[0.02]"
           >
+            <button
+              type="button"
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-all hover:bg-[#1db954]/20 hover:text-[#1db954] disabled:opacity-30"
+              :disabled="loadingTrackId === String(track.id)"
+              :aria-label="'Play ' + track.title"
+              :title="isTrackPlaying(track) ? 'Now playing' : 'Play track'"
+              @click.stop="handlePlayTrack(track)"
+            >
+              <i
+                v-if="loadingTrackId === String(track.id)"
+                aria-hidden="true"
+                class="pi pi-spin pi-spinner text-sm"
+              />
+              <i
+                v-else
+                aria-hidden="true"
+                :class="getTrackPlayButtonIcon(track)"
+                class="text-sm"
+              />
+            </button>
+
             <span class="w-5 text-center text-xs text-slate-600 tabular-nums">
               {{ i + 1 }}
             </span>
@@ -290,13 +311,49 @@ import CatalogQuickActions from '@/components/admin/CatalogQuickActions.vue'
 import { useTracksApi, type Track } from '@/services/api/catalog/tracks'
 import { useIngestionApi } from '@/services/api/ingestion/routes'
 import type { IngestionStats } from '@/services/api/ingestion/types'
+import { usePlayer } from '@/composables/player'
+import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
 import { client } from '@/composables/useRequest'
 
-const { getTracks } = useTracksApi()
+const { adminGetTracks, getTracks } = useTracksApi()
 const ingestionApi = useIngestionApi()
 
 const loading = ref(false)
 const error = ref<unknown>(null)
+const loadingTrackId = ref<string | null>(null)
+const player = usePlayer()
+const playerApi = usePlayerApi()
+
+function buildPlaybackTrack(track: Track): PlaybackTrack {
+  const id = String(track.id)
+  return {
+    id,
+    title: track.title || 'Untitled',
+    artistName: track.artist_name || 'Unknown artist',
+    albumTitle: track.album_title || null,
+    coverUrl: track.cover_url || null,
+    durationSeconds: track.duration_seconds ?? null,
+    streamUrl: playerApi.getTrackStreamUrl(id),
+  }
+}
+
+async function handlePlayTrack(track: Track) {
+  loadingTrackId.value = String(track.id)
+  try {
+    await player.toggleTrack(buildPlaybackTrack(track))
+  } finally {
+    loadingTrackId.value = null
+  }
+}
+
+function isTrackPlaying(track: Track): boolean {
+  return player.currentTrack.value?.id === String(track.id)
+}
+
+function getTrackPlayButtonIcon(track: Track): string {
+  if (isTrackPlaying(track) && player.isPlaying.value) return 'pi pi-pause-fill'
+  return 'pi pi-play-fill'
+}
 
 const tracks = ref<Track[]>([])
 const ingestionStats = ref<IngestionStats | null>(null)
@@ -390,7 +447,7 @@ async function fetchDashboard(): Promise<void> {
   try {
     const [statsResult, tracksResult, ingestionResult] = await Promise.allSettled([
       client.get('/admin/dashboard/stats').then(r => r.data.data),
-      getTracks(),
+      adminGetTracks(),
       ingestionApi.getIngestionStats(),
     ])
 

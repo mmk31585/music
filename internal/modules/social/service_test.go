@@ -481,10 +481,12 @@ func TestCreateParty_Success(t *testing.T) {
 	svc := newSvc(m)
 	hostID := uuid.New().String()
 
+	m.On("CreateRoom", mock.Anything, mock.Anything).Return(nil)
 	m.On("CreateParty", mock.Anything, mock.MatchedBy(func(p *ListeningParty) bool {
 		return p.Title == "My Party" && p.IsPublic && p.Status == "active"
 	})).Return(nil)
 	m.On("JoinParty", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	m.On("JoinRoom", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	party, err := svc.CreateParty(context.Background(), CreatePartyRequest{
 		Title:    "My Party",
@@ -503,10 +505,12 @@ func TestCreateParty_WithOptionalTrack(t *testing.T) {
 	hostID := uuid.New().String()
 	trackID := uuid.New().String()
 
+	m.On("CreateRoom", mock.Anything, mock.Anything).Return(nil)
 	m.On("CreateParty", mock.Anything, mock.MatchedBy(func(p *ListeningParty) bool {
 		return p.CurrentTrackID != nil && p.Title == "Party with Track"
 	})).Return(nil)
 	m.On("JoinParty", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	m.On("JoinRoom", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	party, err := svc.CreateParty(context.Background(), CreatePartyRequest{
 		Title:    "Party with Track",

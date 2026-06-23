@@ -12,4 +12,5 @@ export enum IngestionApiRoutes {
   ADMIN_CLEANUP = '/admin/ingestion/cleanup',
   ADMIN_CONFIG = '/admin/ingestion/config',
   ADMIN_UPLOAD_IMAGE = '/admin/ingestion/drafts/:id/images/:entity',
+  ADMIN_UPDATE_METADATA = '/admin/ingestion/drafts/:id/metadata',
 }

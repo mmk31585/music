@@ -7,14 +7,15 @@ import (
 )
 
 type Playlist struct {
-	ID          uuid.UUID `json:"id"`
-	UserID      uuid.UUID `json:"user_id"`
-	Name        string    `json:"name"`
-	Description *string   `json:"description,omitempty"`
-	CoverURL    *string   `json:"cover_url,omitempty"`
-	IsPublic    bool      `json:"is_public"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID              uuid.UUID `json:"id"`
+	UserID          uuid.UUID `json:"user_id"`
+	Name            string    `json:"name"`
+	Description     *string   `json:"description,omitempty"`
+	CoverURL        *string   `json:"cover_url,omitempty"`
+	IsPublic        bool      `json:"is_public"`
+	IsCollaborative bool      `json:"is_collaborative"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 type PlaylistTrack struct {

@@ -20,16 +20,23 @@
       </div>
     </div>
 
-    <div v-else-if="error" class="flex flex-col items-center gap-4 py-24 text-center">
-      <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.04]">
-        <i aria-hidden="true" class="pi pi-exclamation-circle text-3xl text-slate-500" />
-      </div>
-      <h2 class="text-xl font-bold text-white">Album not found</h2>
-      <p class="text-sm text-slate-400">This album may have been removed or the link is invalid.</p>
-      <RouterLink to="/" class="mt-2 text-sm font-medium text-[#1db954] underline underline-offset-2">
-        Go home
-      </RouterLink>
-    </div>
+    <AppEmptyState
+      v-else-if="error"
+      variant="error"
+      icon="pi pi-exclamation-circle"
+      title="Album not found"
+      description="This album may have been removed or the link is invalid."
+    >
+      <template #action>
+        <RouterLink
+          to="/"
+          class="inline-flex items-center gap-2 rounded-full bg-[#1db954] px-5 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760]"
+        >
+          <i aria-hidden="true" class="pi pi-home" />
+          Go home
+        </RouterLink>
+      </template>
+    </AppEmptyState>
 
     <template v-else-if="album">
       <!-- Ambient gradient background from cover art -->
@@ -206,7 +213,7 @@
               <div class="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white/10 ring-1 ring-white/[0.04]">
                 <img
                   v-if="track.cover_url || album.cover_url"
-                  :src="track.cover_url || album.cover_url"
+                  :src="track.cover_url ?? album.cover_url ?? undefined"
                   :alt="track.title"
                   class="absolute inset-0 h-full w-full object-cover"
                   loading="lazy"
@@ -226,27 +233,24 @@
                   {{ track.title }}
                 </p>
                 <p class="mt-0.5 truncate text-xs text-white/40">
-                  {{ track.artist_name || track.artistName || artist?.name || '' }}
+                  {{ track.artist_name || artist?.name || '' }}
                 </p>
               </div>
 
               <!-- Duration -->
               <span class="text-xs tabular-nums text-white/25 transition group-hover:text-white/50">
-                {{ formatDuration(track.duration_seconds || track.durationSeconds) }}
+                {{ formatDuration(track.duration_seconds) }}
               </span>
             </div>
           </div>
 
-          <div
+          <AppEmptyState
             v-if="!tracks.length"
-            class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/[0.08] px-6 py-16 text-center"
-          >
-            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04]">
-              <i aria-hidden="true" class="pi pi-music text-xl text-slate-500" />
-            </div>
-            <p class="text-sm font-medium text-white/60">No tracks in this album</p>
-            <p class="text-xs text-white/30">Tracks will appear here once they're added.</p>
-          </div>
+            icon="pi pi-music"
+            title="No tracks in this album"
+            description="Tracks will appear here once they're added."
+            bordered
+          />
         </section>
 
         <!-- Credits -->
@@ -270,7 +274,7 @@
               <div
                 class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white/[0.08] to-white/[0.02] text-sm font-bold text-white/70 ring-1 ring-white/[0.04]"
               >
-                {{ aa.name.charAt(0).toUpperCase() }}
+                {{ aa.name?.charAt(0).toUpperCase() ?? '' }}
               </div>
               <div class="min-w-0">
                 <RouterLink
@@ -349,8 +353,8 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { SkeletonLoader } from '@/components/common'
+import { useRoute, useRouter } from 'vue-router'
+import { SkeletonLoader, AppEmptyState } from '@/components/common'
 import { useAlbum } from '@/composables/catalog/useAlbum'
 import { usePlayer } from '@/composables/player'
 import { usePlayerApi } from '@/services/api/player'
@@ -404,6 +408,11 @@ const coverGlowStyle = computed(() => {
 
 const player = usePlayer()
 const playerApi = usePlayerApi()
+const router = useRouter()
+
+function goBack() {
+  router.back()
+}
 
 onMounted(() => {
   fetchAlbum()
@@ -444,10 +453,10 @@ function buildQueue() {
   return tracks.value.map((t: Record<string, unknown>) => ({
     id: String(t.id),
     title: t.title as string,
-    artistName: (t.artist_name as string) || (t.artistName as string) || artist?.value?.name || 'Unknown',
+    artistName: (t.artist_name as string) || artist?.value?.name || 'Unknown',
     albumTitle: (t.album_title as string) || album.value?.title || null,
     coverUrl: (t.cover_url as string) || album.value?.cover_url || null,
-    durationSeconds: (t.duration_seconds as number) ?? (t.durationSeconds as number) ?? null,
+    durationSeconds: (t.duration_seconds as number) ?? null,
     streamUrl: playerApi.getTrackStreamUrl(String(t.id)),
   }))
 }
@@ -459,7 +468,7 @@ function shareAlbum() {
     id: album.value.id,
     title: album.value.title,
     type: 'album',
-    artistName: artist.value?.name || album.artist_name,
+    artistName: artist.value?.name || album.value?.artist_name,
     coverUrl: album.value.cover_url,
   })
 }

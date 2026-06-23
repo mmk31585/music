@@ -206,7 +206,7 @@ async function submit() {
   success.value = false
 
   try {
-    let data: unknown
+    let data: Record<string, any>
     if (selectedType.value === 'lyrics') {
       const lines = rawData.value.trim().split('\n')
       const hasTimestamps = lines.some((l) => /^\[\d{2}:\d{2}(\.\d+)?\]/.test(l.trim()))
@@ -234,12 +234,12 @@ async function submit() {
     })
 
     success.value = true
-    successStatus.value = (res as Record<string, unknown>)?.status as string || 'pending'
+    successStatus.value = res.status || 'pending'
     emit('submitted')
     setTimeout(reset, 2000)
   } catch (err) {
     console.error('Failed to submit contribution:', err)
-    error.value = (err as Record<string, unknown>)?.message as string || 'Failed to submit'
+    error.value = (err as Record<string, any>)?.message || 'Failed to submit'
   } finally {
     submitting.value = false
   }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch, onUnmounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -10,6 +11,10 @@ import Checkbox from 'primevue/checkbox'
 import Select from 'primevue/select'
 import { useToast } from 'primevue/usetoast'
 import { parseBlob } from 'music-metadata-browser'
+import { useLyricsApi } from '@/services/api/lyrics'
+import { useArtistsApi } from '@/services/api/catalog/artists'
+import { usePlayerApi } from '@/services/api/player'
+import { useTracksApi } from '@/services/api/catalog/tracks'
 
 type CatalogId = string | number
 
@@ -118,6 +123,7 @@ type ExistingTrack = Partial<{
   cover_url: string | null
 
   genre_ids: CatalogId[]
+  artist_id: CatalogId | null
   artist_ids: CatalogId[]
   featured_artist_ids: CatalogId[]
 
@@ -202,13 +208,34 @@ const audioFileName = ref('')
 const coverPreviewUrl = ref<string | null>(null)
 const metadataLoading = ref(false)
 const metadataError = ref('')
+const aiGenerating = ref(false)
+let aiPollTimer: ReturnType<typeof setInterval> | null = null
 
 const toast = useToast()
+const router = useRouter()
+const lyricsApi = useLyricsApi()
+const artistsApi = useArtistsApi()
+const playerApi = usePlayerApi()
+const tracksApi = useTracksApi()
 
 const detectedArtistNames = ref<string[]>([])
 const detectedAlbumName = ref('')
 const detectedGenreNames = ref<string[]>([])
 const detectedAlbumArtistName = ref('')
+
+// ── API-backed artist search ──
+const artistSearchLoading = ref(false)
+let artistSearchTimer: ReturnType<typeof setTimeout> | null = null
+
+// Track IDs whose artist data we've already fetched (hydration dedup)
+const hydratedArtistIds = ref<Set<string>>(new Set())
+
+// ── Audio preview (edit mode) ──
+const audioPreviewUrl = ref<string | null>(null)
+const audioPreviewPlaying = ref(false)
+const audioPreviewRef = ref<HTMLAudioElement | null>(null)
+const audioPreviewDuration = ref(0)
+const audioPreviewCurrent = ref(0)
 
 const creditRoleOptions = [
   { label: 'Producer', value: 'producer' },
@@ -271,6 +298,7 @@ watch(selectedAlbum, (album) => {
 watch(
   () => props.artistsOptions,
   () => {
+    // Start with local options; API search will supplement
     filteredArtists.value = props.artistsOptions.slice(0, 20)
   },
   { immediate: true },
@@ -331,6 +359,15 @@ function resetForm() {
   detectedAlbumName.value = ''
   detectedGenreNames.value = []
   detectedAlbumArtistName.value = ''
+
+  // Reset audio preview
+  audioPreviewUrl.value = null
+  audioPreviewPlaying.value = false
+  audioPreviewCurrent.value = 0
+  audioPreviewDuration.value = 0
+
+  // Reset hydration tracker
+  hydratedArtistIds.value = new Set()
 }
 
 function hydrateFromTrack(track: ExistingTrack) {
@@ -364,6 +401,7 @@ function hydrateFromTrack(track: ExistingTrack) {
     ? track.credits
     : normalizeLegacyArtistsToCredits(track)
 
+  // Try to find primary/featured artists in local options
   primaryArtistModels.value = credits
     .filter((item) => item.role === 'primary')
     .sort((a, b) => Number(a.position ?? 0) - Number(b.position ?? 0))
@@ -387,23 +425,75 @@ function hydrateFromTrack(track: ExistingTrack) {
   genreModels.value = (track.genre_ids ?? [])
     .map((id) => findOptionById(props.genresOptions, id))
     .filter((item): item is CatalogOption => Boolean(item))
+
+  // ── Fetch any artists not found in local options ──
+  const allCreditIds = credits.map((c) => c.artist_id)
+  hydrateMissingArtists(allCreditIds).then(() => {
+    // Re-hydrate from credits now that we have more artist data
+    const updatedCredits = credits
+
+    if (primaryArtistModels.value.length === 0) {
+      primaryArtistModels.value = updatedCredits
+        .filter((item) => item.role === 'primary')
+        .sort((a, b) => Number(a.position ?? 0) - Number(b.position ?? 0))
+        .map((item) => findOptionById([...props.artistsOptions, ...filteredArtists.value], item.artist_id))
+        .filter((item): item is CatalogOption => Boolean(item))
+    }
+
+    if (featuredArtistModels.value.length === 0) {
+      featuredArtistModels.value = updatedCredits
+        .filter((item) => item.role === 'featured')
+        .sort((a, b) => Number(a.position ?? 0) - Number(b.position ?? 0))
+        .map((item) => findOptionById([...props.artistsOptions, ...filteredArtists.value], item.artist_id))
+        .filter((item): item is CatalogOption => Boolean(item))
+    }
+
+    // Re-hydrate credit rows that are still null
+    creditRows.value = updatedCredits
+      .filter((item) => item.role !== 'primary' && item.role !== 'featured')
+      .map((item) => {
+        const existing = creditRows.value.find(
+          (r) => r.artist && String(r.artist.id) === String(item.artist_id),
+        )
+        return existing || {
+          artist: findOptionById([...props.artistsOptions, ...filteredArtists.value], item.artist_id),
+          role: item.role,
+        }
+      })
+      .filter((item) => item.artist)
+  })
+
+  // ── Set up audio preview URL ──
+  if (track.id) {
+    const streamUrl = playerApi.getTrackStreamUrl(String(track.id))
+    audioPreviewUrl.value = streamUrl
+    audioPreviewCurrent.value = 0
+    audioPreviewDuration.value = 0
+    audioPreviewPlaying.value = false
+  }
 }
 
 function normalizeLegacyArtistsToCredits(track: ExistingTrack) {
   const result: CreditPayload[] = []
 
+  // Handle full artist objects from the API — supports both
+  // camelCase (artistId) from the raw API and snake_case (artist_id)
+  // from the ExistingTrack type.
   if (track.artists?.length) {
     for (const item of track.artists) {
+      const artistId = (item as any).artist_id ?? (item as any).artistId
+      if (artistId == null) continue
       result.push({
-        artist_id: item.artist_id,
-        role: item.role || (item.is_primary ? 'primary' : 'featured'),
+        artist_id: artistId,
+        role: item.role || ((item as any).is_primary ? 'primary' : 'featured'),
         position: item.position,
       })
     }
 
-    return result
+    if (result.length > 0) return result
   }
 
+  // Handle snake_case plural arrays (ExistingTrack shape)
   if (track.artist_ids?.length) {
     track.artist_ids.forEach((artistId, index) => {
       result.push({
@@ -421,6 +511,17 @@ function normalizeLegacyArtistsToCredits(track: ExistingTrack) {
         role: 'featured',
         position: index,
       })
+    })
+  }
+
+  // Fallback: Track type uses singular artist_id + artist_name
+  // (Zod drops the artists array, so neither track.artists nor
+  // track.artist_ids are available).
+  if (result.length === 0 && track.artist_id != null) {
+    result.push({
+      artist_id: track.artist_id,
+      role: 'primary',
+      position: 0,
     })
   }
 
@@ -477,16 +578,105 @@ function searchOptions(options: CatalogOption[], query?: string) {
     .slice(0, 30)
 }
 
-function searchArtists(event: { query: string }) {
-  filteredArtists.value = searchOptions(props.artistsOptions, event.query)
-}
-
 function searchAlbums(event: { query: string }) {
   filteredAlbums.value = searchOptions(props.albumsOptions, event.query)
 }
 
 function searchGenres(event: { query: string }) {
   filteredGenres.value = searchOptions(props.genresOptions, event.query)
+}
+
+// ── Artist search with API fallback ──
+async function searchArtists(event: { query: string }) {
+  const q = (event.query || '').trim()
+  const normalized = normalizeForSearch(q)
+
+  // First, filter local options
+  let local = q
+    ? props.artistsOptions.filter((a) => normalizeForSearch(a.name).includes(normalized))
+    : props.artistsOptions
+
+  filteredArtists.value = local.slice(0, 30)
+
+  // If local search is empty or we want more results, query the API
+  if (q.length >= 2 || (!local.length && q.length > 0)) {
+    // Debounce API calls
+    if (artistSearchTimer) clearTimeout(artistSearchTimer)
+    artistSearchTimer = setTimeout(async () => {
+      artistSearchLoading.value = true
+      try {
+        const results = await artistsApi.searchArtists(q)
+        if (Array.isArray(results)) {
+          // Merge API results with local, deduplicate by ID
+          const merged = [...filteredArtists.value]
+          const seen = new Set(merged.map((a) => String(a.id)))
+          for (const artist of results) {
+            const opt = toCatalogOption(artist)
+            if (opt && !seen.has(String(opt.id))) {
+              merged.push(opt)
+              seen.add(String(opt.id))
+            }
+          }
+          filteredArtists.value = merged.slice(0, 30)
+        }
+      } catch {
+        // API search failed — local results are already shown
+      } finally {
+        artistSearchLoading.value = false
+      }
+    }, 300)
+  }
+}
+
+/** Convert raw Artist from API to CatalogOption */
+function toCatalogOption(artist: Record<string, any>): CatalogOption | null {
+  const id = artist.id ?? artist.artist_id
+  const name = artist.name ?? artist.artist_name
+  if (id == null || !name) return null
+  return {
+    id,
+    name,
+    slug: artist.slug,
+    image_url: artist.image_url ?? artist.avatar_url ?? artist.cover_url ?? null,
+    avatar_url: artist.avatar_url ?? artist.image_url ?? null,
+    cover_url: artist.cover_url ?? artist.image_url ?? null,
+  }
+}
+
+/** Fetch individual artists by ID to supplement the options during hydration */
+async function hydrateMissingArtists(creditArtistIds: CatalogId[]) {
+  const missingIds = creditArtistIds.filter(
+    (id) => !findOptionById(props.artistsOptions, id) && !hydratedArtistIds.value.has(String(id)),
+  )
+
+  if (!missingIds.length) return
+
+  const fetched: CatalogOption[] = []
+  for (const id of missingIds) {
+    try {
+      const artist = await artistsApi.getArtist(String(id), { silent: true })
+      if (artist) {
+        const opt = toCatalogOption(artist as unknown as Record<string, any>)
+        if (opt) {
+          fetched.push(opt)
+          hydratedArtistIds.value.add(String(id))
+        }
+      }
+    } catch {
+      // Artist may be deleted or inaccessible — skip silently
+    }
+  }
+
+  if (!fetched.length) return
+
+  // Add fetched artists to filtered artists for AutoComplete
+  const existing = new Set(filteredArtists.value.map((a) => String(a.id)))
+  for (const opt of fetched) {
+    if (!existing.has(String(opt.id))) {
+      filteredArtists.value.push(opt)
+      existing.add(String(opt.id))
+    }
+  }
 }
 
 function splitArtists(value?: string | null) {
@@ -832,6 +1022,27 @@ function submitForm() {
   emit('submit', payload)
 }
 
+function stopAiPolling() {
+  if (aiPollTimer) {
+    clearInterval(aiPollTimer)
+    aiPollTimer = null
+  }
+}
+
+async function fillLyricsFromResult(content: string, type: 'synced' | 'plain', trackName: string) {
+  form.lyrics = content
+  form.lyrics_type = type
+  toast.add({
+    severity: type === 'synced' ? 'success' : 'info',
+    summary: type === 'synced'
+      ? `Synced LRC fetched for "${trackName}"`
+      : `Plain lyrics fetched for "${trackName}"`,
+    life: 3000,
+  })
+}
+
+const LYRICS_TIMEOUT_MS = 8000
+
 async function fetchLRCLyrics() {
   const trackName = form.title?.trim()
   const artistName = primaryArtistModels.value[0]?.name || detectedArtistNames.value[0] || ''
@@ -841,88 +1052,225 @@ async function fetchLRCLyrics() {
   }
 
   metadataLoading.value = true
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), LYRICS_TIMEOUT_MS)
+
   try {
     const params = new URLSearchParams({ track_name: trackName })
     if (artistName) params.set('artist_name', artistName)
     if (form.duration_seconds) params.set('duration', String(Math.round(form.duration_seconds)))
 
     // Try exact /get first
-    let resp = await fetch(`https://lrclib.net/api/get?${params}`, {
-      headers: { Accept: 'application/json' },
-    })
     let data: any = null
-    if (resp.ok) {
-      data = await resp.json()
+    try {
+      const resp = await fetch(`https://lrclib.net/api/get?${params}`, {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      })
+      if (resp.ok) {
+        data = await resp.json()
+      }
+    } catch {
+      // /get failed (timeout / CORS / network) — clear data so we try /search
+      data = null
     }
 
     // Fallback to /search if exact fails
     if (!data || (!data.syncedLyrics && !data.plainLyrics)) {
       const q = artistName ? `${artistName} ${trackName}` : trackName
-      resp = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`, {
-        headers: { Accept: 'application/json' },
-      })
-      if (resp.ok) {
-        const results: any[] = await resp.json()
-        // Prefer synced, then any with lyrics
-        data = results.find((r: any) => r.syncedLyrics) || results.find((r: any) => r.plainLyrics) || null
+      try {
+        const searchController = new AbortController()
+        const searchTimeout = setTimeout(() => searchController.abort(), LYRICS_TIMEOUT_MS)
+        const resp = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`, {
+          headers: { Accept: 'application/json' },
+          signal: searchController.signal,
+        })
+        clearTimeout(searchTimeout)
+        if (resp.ok) {
+          const results: any[] = await resp.json()
+          // Prefer synced, then any with lyrics
+          data = results.find((r: any) => r.syncedLyrics) || results.find((r: any) => r.plainLyrics) || null
+        } else {
+          data = null
+        }
+      } catch {
+        data = null
       }
     }
 
-    if (!data || (!data.syncedLyrics && !data.plainLyrics)) {
-      toast.add({ severity: 'error', summary: 'No lyrics found on LRCLIB', life: 3000 })
+    if (data && (data.syncedLyrics || data.plainLyrics)) {
+      const synced = data.syncedLyrics as string | undefined
+      if (synced) {
+        await fillLyricsFromResult(synced, 'synced', trackName)
+      } else if (data.plainLyrics) {
+        await fillLyricsFromResult(data.plainLyrics, 'plain', trackName)
+      }
+
+      // Auto-select album from LRCLIB response
+      if (data.albumName) {
+        const matchedAlbum = findOptionByName(props.albumsOptions, data.albumName)
+        if (matchedAlbum) {
+          albumModel.value = matchedAlbum
+
+          // Auto-populate cover from the matched album if none set
+          if (!coverPreviewUrl.value && !form.coverFile) {
+            const albumCover = matchedAlbum.cover_url || matchedAlbum.image_url || null
+            if (albumCover) {
+              form.cover_url = albumCover
+              coverPreviewUrl.value = albumCover
+            }
+          }
+        } else {
+          detectedAlbumName.value = data.albumName
+        }
+      }
+
+      // Auto-select primary artist from LRCLIB response (only if none selected)
+      if (data.artistName && !primaryArtistModels.value.length) {
+        const matchedArtist = findOptionByName(props.artistsOptions, data.artistName)
+        if (matchedArtist) {
+          primaryArtistModels.value = [matchedArtist]
+        } else if (!detectedArtistNames.value.length) {
+          detectedArtistNames.value = [data.artistName]
+        }
+      }
+
+      // Try to fetch cover from iTunes API if we still don't have one
+      if (!coverPreviewUrl.value && !form.coverFile) {
+        fetchCoverFromiTunes().catch(() => {})
+      }
       return
     }
 
-    const synced = data.syncedLyrics as string | undefined
-    if (synced) {
-      form.lyrics = synced
-      form.lyrics_type = 'synced'
-      toast.add({ severity: 'success', summary: `Synced LRC fetched for "${trackName}"`, life: 3000 })
-    } else if (data.plainLyrics) {
-      form.lyrics = data.plainLyrics
-      form.lyrics_type = 'plain'
-      toast.add({ severity: 'info', summary: `Plain lyrics fetched (no synced LRC available)`, life: 3000 })
-    }
-
-    // Auto-select album from LRCLIB response
-    if (data.albumName) {
-      const matchedAlbum = findOptionByName(props.albumsOptions, data.albumName)
-      if (matchedAlbum) {
-        albumModel.value = matchedAlbum
-
-        // Auto-populate cover from the matched album if none set
-        if (!coverPreviewUrl.value && !form.coverFile) {
-          const albumCover = matchedAlbum.cover_url || matchedAlbum.image_url || null
-          if (albumCover) {
-            form.cover_url = albumCover
-            coverPreviewUrl.value = albumCover
-          }
-        }
-      } else {
-        detectedAlbumName.value = data.albumName
-      }
-    }
-
-    // Auto-select primary artist from LRCLIB response (only if none selected)
-    if (data.artistName && !primaryArtistModels.value.length) {
-      const matchedArtist = findOptionByName(props.artistsOptions, data.artistName)
-      if (matchedArtist) {
-        primaryArtistModels.value = [matchedArtist]
-      } else if (!detectedArtistNames.value.length) {
-        detectedArtistNames.value = [data.artistName]
-      }
-    }
-
-    // Try to fetch cover from iTunes API if we still don't have one
-    if (!coverPreviewUrl.value && !form.coverFile) {
-      fetchCoverFromiTunes().catch(() => {})
-    }
+    // ── LRCLIB returned nothing or timed out ── try server-side pipeline (LRCLIB → AI fallback)
+    await fetchLyricsViaPipeline(trackName)
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Failed to fetch lyrics', detail: String(err), life: 3000 })
+    // Only show error for non-abort (timeout) errors — timeouts go to pipeline
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      await fetchLyricsViaPipeline(trackName)
+    } else {
+      toast.add({ severity: 'error', summary: 'Failed to fetch lyrics', detail: String(err), life: 3000 })
+    }
   } finally {
+    clearTimeout(timeout)
     metadataLoading.value = false
   }
 }
+
+/**
+ * Calls the server-side fetch-or-generate endpoint.
+ * If the server enqueues an AI job, starts polling for the result.
+ */
+async function fetchLyricsViaPipeline(trackName: string) {
+  // If we're in edit mode and have a track ID, use the server pipeline
+  if (!props.track?.id) {
+    toast.add({ severity: 'warn', summary: 'Save the track first, then try Fetch LRC again for AI-powered lyrics', life: 5000 })
+    return
+  }
+
+  try {
+    const result = await lyricsApi.fetchOrGenerateLyrics(props.track.id)
+
+    if (result?.source === 'lrclib' && result?.data?.content) {
+      await fillLyricsFromResult(
+        result.data.content,
+        result.data.type === 'lrc' ? 'synced' : 'plain',
+        trackName,
+      )
+      return
+    }
+
+    if (result?.source === 'ai' && result?.job_id) {
+      // AI job enqueued — start polling the AI status endpoint for progress
+      aiGenerating.value = true
+      toast.add({
+        severity: 'info',
+        summary: 'AI lyrics generation started',
+        detail: 'This may take 30-60 seconds. We\'ll fill the form automatically when ready.',
+        life: 8000,
+      })
+
+      const trackId = result.track_id || String(props.track.id)
+      let attempts = 0
+      const maxAttempts = 30 // ~2.5 minutes at 5s intervals
+
+      stopAiPolling()
+      aiPollTimer = setInterval(async () => {
+        attempts++
+        try {
+          const statusResult = await lyricsApi.aiStatus(trackId)
+
+          if (statusResult?.status === 'completed') {
+            // AI finished — lyrics should be in DB now
+            stopAiPolling()
+            aiGenerating.value = false
+            // Fetch the actual lyrics
+            const lyricsResult = await lyricsApi.getTrackLyrics(trackId, undefined, { silent: true })
+            if (lyricsResult?.content) {
+              await fillLyricsFromResult(
+                lyricsResult.content,
+                lyricsResult.type === 'lrc' ? 'synced' : 'plain',
+                trackName,
+              )
+            }
+            toast.add({
+              severity: 'success',
+              summary: 'AI lyrics generated!',
+              life: 3000,
+            })
+            return
+          }
+
+          if (statusResult?.status === 'failed') {
+            stopAiPolling()
+            aiGenerating.value = false
+            toast.add({
+              severity: 'error',
+              summary: 'AI lyrics generation failed',
+              detail: statusResult?.message || 'Unknown error',
+              life: 5000,
+            })
+            return
+          }
+
+          // Still in progress — update status message
+          if (statusResult?.message) {
+            // The button already shows "AI Generating..." - update the toast
+            toast.add({
+              severity: 'info',
+              summary: statusResult.message,
+              life: 2000,
+            })
+          }
+        } catch (err) {
+          // Status endpoint unavailable — keep polling
+        }
+
+        if (attempts >= maxAttempts) {
+          stopAiPolling()
+          aiGenerating.value = false
+          toast.add({
+            severity: 'warn',
+            summary: 'AI lyrics generation taking longer than expected',
+            detail: 'The lyrics will be saved automatically. You can close this dialog and check back later.',
+            life: 5000,
+          })
+        }
+      }, 5000)
+      return
+    }
+
+    // source === "none"
+    toast.add({ severity: 'error', summary: result?.message || 'No lyrics found on LRCLIB and AI generation not available', life: 3000 })
+  } catch (err: any) {
+    toast.add({ severity: 'error', summary: 'Failed to fetch or generate lyrics', detail: String(err?.message || err), life: 3000 })
+  }
+}
+
+// Clean up polling on unmount
+onUnmounted(() => {
+  stopAiPolling()
+})
 
 async function fetchCoverFromiTunes() {
   const trackName = form.title?.trim()
@@ -953,8 +1301,61 @@ async function fetchCoverFromiTunes() {
 }
 
 function closeDialog() {
+  // Stop audio preview if playing
+  if (audioPreviewPlaying.value) {
+    audioPreviewPlaying.value = false
+  }
+  audioPreviewUrl.value = null
   emit('cancel')
   internalVisible.value = false
+}
+
+// ── Audio preview ──
+function toggleAudioPreview() {
+  const audio = audioPreviewRef.value
+  if (!audio || !audioPreviewUrl.value) return
+
+  if (audio.paused) {
+    audio.play().catch(() => {
+      audioPreviewPlaying.value = false
+    })
+    audioPreviewPlaying.value = true
+  } else {
+    audio.pause()
+    audioPreviewPlaying.value = false
+  }
+}
+
+function onAudioPreviewTimeUpdate(event: Event) {
+  const audio = event.target as HTMLAudioElement
+  audioPreviewCurrent.value = audio.currentTime
+}
+
+function onAudioPreviewMetadata(event: Event) {
+  const audio = event.target as HTMLAudioElement
+  audioPreviewDuration.value = audio.duration || 0
+}
+
+function onAudioPreviewEnded() {
+  audioPreviewPlaying.value = false
+  audioPreviewCurrent.value = 0
+}
+
+function seekAudioPreview(event: Event) {
+  const input = event.target as HTMLInputElement
+  const value = Number(input.value)
+  const audio = audioPreviewRef.value
+  if (audio) {
+    audio.currentTime = value
+    audioPreviewCurrent.value = value
+  }
+}
+
+function formatDuration(seconds: number): string {
+  if (!seconds || !isFinite(seconds)) return '0:00'
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return `${m}:${s.toString().padStart(2, '0')}`
 }
 </script>
 
@@ -968,8 +1369,9 @@ function closeDialog() {
     header-class="!bg-[#121212] !text-white"
   >
     <form class="space-y-6" @submit.prevent="submitForm">
-      <!-- Uploads -->
+      <!-- Uploads + Audio Preview -->
       <section class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <!-- Audio file upload -->
         <div class="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
           <label class="mb-2 block text-xs font-medium text-slate-400">
             Audio file
@@ -999,8 +1401,52 @@ function closeDialog() {
           <p v-if="metadataError" class="mt-2 text-xs text-red-400">
             {{ metadataError }}
           </p>
+
+          <!-- Audio preview (edit mode: existing track) -->
+          <div v-if="audioPreviewUrl" class="mt-4 border-t border-white/[0.06] pt-3">
+            <div class="mb-2 flex items-center gap-2">
+              <Button
+                type="button"
+                :icon="audioPreviewPlaying ? 'pi pi-pause-circle' : 'pi pi-play-circle'"
+                severity="secondary"
+                text
+                rounded
+                aria-label="Preview track audio"
+                class="!text-emerald-400 !text-xl"
+                @click="toggleAudioPreview"
+              />
+              <span class="text-xs text-slate-500">
+                Preview
+              </span>
+              <span class="ml-auto text-xs tabular-nums text-slate-500">
+                {{ formatDuration(audioPreviewCurrent) }} / {{ formatDuration(audioPreviewDuration) }}
+              </span>
+            </div>
+
+            <!-- Simple seek bar -->
+            <input
+              type="range"
+              :min="0"
+              :max="audioPreviewDuration || 0"
+              :value="audioPreviewCurrent"
+              class="h-1 w-full cursor-pointer appearance-none rounded-full bg-white/[0.08] accent-emerald-500"
+              @input="seekAudioPreview"
+              aria-label="Seek audio preview"
+            />
+
+            <audio
+              ref="audioPreviewRef"
+              :src="audioPreviewUrl"
+              preload="metadata"
+              hidden
+              @timeupdate="onAudioPreviewTimeUpdate"
+              @loadedmetadata="onAudioPreviewMetadata"
+              @ended="onAudioPreviewEnded"
+            />
+          </div>
         </div>
 
+        <!-- Cover image -->
         <div class="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
           <label class="mb-2 block text-xs font-medium text-slate-400">
             Cover image
@@ -1067,8 +1513,12 @@ function closeDialog() {
 
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label class="mb-1.5 block text-xs font-medium text-slate-400">
+            <label class="mb-1.5 flex items-center gap-2 text-xs font-medium text-slate-400">
               Primary artists
+              <i
+                v-if="artistSearchLoading"
+                class="pi pi-spin pi-spinner text-[10px] text-emerald-400"
+              />
             </label>
 
             <AutoComplete
@@ -1102,8 +1552,12 @@ function closeDialog() {
           </div>
 
           <div>
-            <label class="mb-1.5 block text-xs font-medium text-slate-400">
+            <label class="mb-1.5 flex items-center gap-2 text-xs font-medium text-slate-400">
               Featured artists
+              <i
+                v-if="artistSearchLoading"
+                class="pi pi-spin pi-spinner text-[10px] text-emerald-400"
+              />
             </label>
 
             <AutoComplete
@@ -1156,8 +1610,12 @@ function closeDialog() {
           </div>
 
           <div>
-            <label class="mb-1.5 block text-xs font-medium text-slate-400">
+            <label class="mb-1.5 flex items-center gap-2 text-xs font-medium text-slate-400">
               Album artist
+              <i
+                v-if="artistSearchLoading"
+                class="pi pi-spin pi-spinner text-[10px] text-emerald-400"
+              />
             </label>
 
             <AutoComplete
@@ -1454,10 +1912,10 @@ function closeDialog() {
             <Button
               type="button"
               icon="pi pi-cloud-download"
-              label="Fetch LRC"
+              :label="aiGenerating ? 'AI Generating...' : 'Fetch LRC'"
               size="small"
               text
-              :loading="metadataLoading"
+              :loading="metadataLoading || aiGenerating"
               class="!text-teal-400 hover:!text-teal-300"
               @click="fetchLRCLyrics"
             />

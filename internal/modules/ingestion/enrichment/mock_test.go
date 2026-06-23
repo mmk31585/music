@@ -6,9 +6,9 @@ import (
 )
 
 type mockMusicBrainz struct {
-	mu      sync.Mutex
-	result  *MusicBrainzResult
-	err     error
+	mu        sync.Mutex
+	result    *MusicBrainzResult
+	err       error
 	callCount int
 }
 
@@ -23,9 +23,9 @@ func (m *mockMusicBrainz) SearchRecording(ctx context.Context, query TrackQuery)
 }
 
 type mockLastFM struct {
-	mu      sync.Mutex
-	result  *LastFMResult
-	err     error
+	mu        sync.Mutex
+	result    *LastFMResult
+	err       error
 	callCount int
 }
 
@@ -40,9 +40,9 @@ func (m *mockLastFM) SearchTrack(ctx context.Context, query TrackQuery) (*LastFM
 }
 
 type mockSpotify struct {
-	mu      sync.Mutex
-	result  *SpotifyResult
-	err     error
+	mu        sync.Mutex
+	result    *SpotifyResult
+	err       error
 	callCount int
 }
 
@@ -72,18 +72,18 @@ func fullMusicBrainzResult() *MusicBrainzResult {
 
 func fullLastFMResult() *LastFMResult {
 	return &LastFMResult{
-		PlayCount:     1500000,
-		ListenerCount: 500000,
-		Tags:          []string{"rock", "alternative", "indie"},
-		ArtistBio:     "Test Artist is a fictional band created for testing purposes.",
+		PlayCount:      1500000,
+		ListenerCount:  500000,
+		Tags:           []string{"rock", "alternative", "indie"},
+		ArtistBio:      "Test Artist is a fictional band created for testing purposes.",
 		SimilarArtists: []string{"Similar Band 1", "Similar Band 2"},
 	}
 }
 
 type mockLRCLib struct {
-	mu      sync.Mutex
-	result  *LRCLibResult
-	err     error
+	mu        sync.Mutex
+	result    *LRCLibResult
+	err       error
 	callCount int
 }
 
@@ -107,6 +107,30 @@ func fullLRCLibResult() *LRCLibResult {
 		Synced:       true,
 		SyncedLyrics: "[00:00.00]Test lyric line\n[00:05.00]Another test line",
 	}
+}
+
+type mockMLClient struct {
+	mu     sync.Mutex
+	result *MLResult
+	err    error
+}
+
+func (m *mockMLClient) FetchLyrics(ctx context.Context, query TrackQuery) (*MLResult, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.err != nil {
+		return nil, m.err
+	}
+	return m.result, nil
+}
+
+func (m *mockMLClient) FetchCover(ctx context.Context, query TrackQuery) (*MLResult, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.err != nil {
+		return nil, m.err
+	}
+	return m.result, nil
 }
 
 func fullSpotifyResult() *SpotifyResult {

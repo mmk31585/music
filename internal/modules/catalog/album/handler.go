@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type Handler struct {
@@ -18,26 +19,33 @@ func NewHandler(service *Service) *Handler {
 
 // List godoc
 // @Summary List albums
-// @Description Returns a paginated list of albums.
+// @Description Returns a paginated list of albums. Supports optional filtering by artist_id.
 // @Tags albums
 // @Produce json
 // @Param limit query int false "Maximum number of items to return"
 // @Param offset query int false "Number of items to skip"
-// @Success 200 {array} Album
+// @Param artist_id query string false "Filter by artist ID"
+// @Success 200 {array} AlbumResponse
 // @Failure 500 {object} map[string]interface{}
 // @Router /albums [get]
 func (h *Handler) List(c *gin.Context) {
 	p := common.ParsePagination(c)
 
-	items, err := h.service.List(c.Request.Context(), p.Limit, p.Offset)
+	var opts ListOptions
+	if artistID := c.Query("artist_id"); artistID != "" {
+		uid, err := uuid.Parse(artistID)
+		if err == nil {
+			opts.ArtistID = &uid
+		}
+	}
+
+	items, err := h.service.List(c.Request.Context(), p.Limit, p.Offset, opts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list albums"})
 		return
 	}
-	if items == nil {
-		items = []Album{}
-	}
-	c.JSON(http.StatusOK, items)
+
+	c.JSON(http.StatusOK, AlbumListToResponse(items))
 }
 
 // Get godoc
@@ -46,7 +54,7 @@ func (h *Handler) List(c *gin.Context) {
 // @Tags albums
 // @Produce json
 // @Param albumID path string true "Album ID"
-// @Success 200 {object} Album
+// @Success 200 {object} AlbumResponse
 // @Failure 400 {object} map[string]interface{}
 // @Failure 404 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
@@ -65,7 +73,7 @@ func (h *Handler) Get(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get album"})
 		return
 	}
-	c.JSON(http.StatusOK, item)
+	c.JSON(http.StatusOK, AlbumToResponse(item))
 }
 
 // Create godoc
@@ -75,7 +83,7 @@ func (h *Handler) Get(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body CreateRequest true "Album creation payload"
-// @Success 201 {object} Album
+// @Success 201 {object} AlbumResponse
 // @Failure 400 {object} map[string]interface{}
 // @Failure 409 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
@@ -104,7 +112,7 @@ func (h *Handler) Create(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create album"})
 		return
 	}
-	c.JSON(http.StatusCreated, item)
+	c.JSON(http.StatusCreated, AlbumToResponse(item))
 }
 
 // Update godoc
@@ -115,7 +123,7 @@ func (h *Handler) Create(c *gin.Context) {
 // @Produce json
 // @Param albumID path string true "Album ID"
 // @Param request body UpdateRequest true "Album update payload"
-// @Success 200 {object} Album
+// @Success 200 {object} AlbumResponse
 // @Failure 400 {object} map[string]interface{}
 // @Failure 404 {object} map[string]interface{}
 // @Failure 409 {object} map[string]interface{}
@@ -145,7 +153,7 @@ func (h *Handler) Update(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update album"})
 		return
 	}
-	c.JSON(http.StatusOK, item)
+	c.JSON(http.StatusOK, AlbumToResponse(item))
 }
 
 // Delete godoc
@@ -175,6 +183,7 @@ func (h *Handler) Delete(c *gin.Context) {
 	}
 	c.Status(http.StatusNoContent)
 }
+
 func (h *Handler) Tracks(c *gin.Context) {
 	p := common.ParsePagination(c)
 
@@ -193,20 +202,18 @@ func (h *Handler) Tracks(c *gin.Context) {
 		return
 	}
 
-	if items == nil {
-		items = []AlbumTrack{}
-	}
-	c.JSON(http.StatusOK, items)
+	c.JSON(http.StatusOK, AlbumTrackListToResponse(items))
 }
+
 func (h *Handler) Artists(c *gin.Context) {
 	albumID := c.Param("albumID")
 
 	items, err := h.service.ListArtists(c.Request.Context(), albumID)
 	if err != nil {
-		switch err {
-		case common.ErrInvalidInput:
+		switch {
+		case errors.Is(err, common.ErrInvalidInput):
 			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
-		case common.ErrNotFound:
+		case errors.Is(err, common.ErrNotFound):
 			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": err.Error()})
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "failed to fetch album artists"})
@@ -231,10 +238,10 @@ func (h *Handler) ReplaceArtists(c *gin.Context) {
 
 	items, err := h.service.ReplaceArtists(c.Request.Context(), albumID, req)
 	if err != nil {
-		switch err {
-		case common.ErrInvalidInput:
+		switch {
+		case errors.Is(err, common.ErrInvalidInput):
 			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
-		case common.ErrNotFound:
+		case errors.Is(err, common.ErrNotFound):
 			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": err.Error()})
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "failed to replace album artists"})

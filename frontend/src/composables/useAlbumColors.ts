@@ -77,6 +77,10 @@ function extractPalette(imageData: ImageData): AlbumColorPalette {
   }
 }
 
+/**
+ * Module-level palette cache shared across all components.
+ * Keyed by cover URL so different components with the same URL share cached results.
+ */
 const paletteCache = new Map<string, AlbumColorPalette>()
 
 const defaultPalette: AlbumColorPalette = {
@@ -88,61 +92,66 @@ const defaultPalette: AlbumColorPalette = {
   dominant: '#1a1a2e',
 }
 
-let extractGeneration = 0
-const _globalPalette = ref<AlbumColorPalette>({ ...defaultPalette })
-const _globalLoading = ref(false)
+function createExtractFunction(palette: Ref<AlbumColorPalette>, loading: Ref<boolean>) {
+  let extractGeneration = 0
 
-async function _extract(url: string) {
-  if (!url) return
-  const gen = ++extractGeneration
-  const cached = paletteCache.get(url)
-  if (cached) {
-    _globalPalette.value = cached
-    return
-  }
+  return async function extract(url: string) {
+    if (!url) return
+    const gen = ++extractGeneration
+    const cached = paletteCache.get(url)
+    if (cached) {
+      palette.value = cached
+      return
+    }
 
-  _globalLoading.value = true
+    loading.value = true
 
-  try {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
+    try {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
 
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve()
-      img.onerror = () => reject(new Error('Failed to load image'))
-      img.src = url
-    })
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve()
+        img.onerror = () => reject(new Error('Failed to load image'))
+        img.src = url
+      })
 
-    if (gen !== extractGeneration) return
+      if (gen !== extractGeneration) return
 
-    const canvas = document.createElement('canvas')
-    const size = 64
-    canvas.width = size
-    canvas.height = size
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('No canvas context')
+      const canvas = document.createElement('canvas')
+      const size = 64
+      canvas.width = size
+      canvas.height = size
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('No canvas context')
 
-    ctx.drawImage(img, 0, 0, size, size)
-    const imageData = ctx.getImageData(0, 0, size, size)
+      ctx.drawImage(img, 0, 0, size, size)
+      const imageData = ctx.getImageData(0, 0, size, size)
 
-    const p = extractPalette(imageData)
-    paletteCache.set(url, p)
-    _globalPalette.value = p
-  } catch {
-    _globalPalette.value = { ...defaultPalette }
-  } finally {
-    _globalLoading.value = false
+      const p = extractPalette(imageData)
+      paletteCache.set(url, p)
+      palette.value = p
+    } catch {
+      palette.value = { ...defaultPalette }
+    } finally {
+      loading.value = false
+    }
   }
 }
 
 export function useAlbumColors(coverUrl: Ref<string | null | undefined>) {
+  // Each component gets its own palette + loading refs
+  const palette = ref<AlbumColorPalette>({ ...defaultPalette })
+  const loading = ref(false)
+  const extract = createExtractFunction(palette, loading)
+
   watchDebounced(coverUrl, (url) => {
-    if (url) void _extract(url)
+    if (url) void extract(url)
   }, { debounce: 300, maxWait: 1000 })
 
   return {
-    palette: _globalPalette,
-    loading: _globalLoading,
-    extract: _extract,
+    palette,
+    loading,
+    extract,
   }
 }

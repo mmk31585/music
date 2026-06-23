@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"mime"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -183,6 +184,43 @@ func (s *Service) ResolveAudioURL(ctx context.Context, audioURL string) (string,
 	log.Println("storage.GetURL result:", resolvedURL)
 
 	return resolvedURL, nil
+}
+
+// GetAudioContent reads the audio file directly from storage and returns the bytes
+// with the appropriate MIME type. This avoids the 302 redirect approach which
+// breaks when accessing the frontend from a remote machine (the redirect URL
+// may point to localhost or a path not proxied by the dev server).
+func (s *Service) GetAudioContent(ctx context.Context, audioURL string) ([]byte, string, error) {
+	if ctx.Err() != nil {
+		return nil, "", ctx.Err()
+	}
+
+	key, err := s.ResolveAudioStorageKey(audioURL)
+	if err != nil {
+		return nil, "", err
+	}
+
+	exists, err := s.storage.Exists(ctx, key)
+	if err != nil {
+		return nil, "", ErrAudioNotFound
+	}
+	if !exists {
+		return nil, "", ErrAudioNotFound
+	}
+
+	data, err := s.storage.Get(ctx, key)
+	if err != nil {
+		log.Println("storage.Get error:", err)
+		return nil, "", ErrAudioNotFound
+	}
+
+	ext := filepath.Ext(key)
+	contentType := mime.TypeByExtension(ext)
+	if contentType == "" {
+		contentType = "audio/mpeg"
+	}
+
+	return data, contentType, nil
 }
 
 func (s *Service) TrackPlayed(

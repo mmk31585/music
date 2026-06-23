@@ -41,6 +41,9 @@ type Repository interface {
 	GetTracksByIDs(ctx context.Context, trackIDs []string) ([]TrackItem, error)
 	GetPopularTrackIDs(ctx context.Context, limit int) ([]string, error)
 	GetUserAffinities(ctx context.Context, userID string, targetType string, limit int) ([]UserAffinity, error)
+	GetGenreNames(ctx context.Context, genreIDs []string) ([]string, error)
+	GetAllUserPlayedTrackIDs(ctx context.Context, userID string) ([]string, error)
+	GetPopularGenreIDs(ctx context.Context, limit int) ([]string, error)
 }
 
 type repository struct {
@@ -529,6 +532,59 @@ LIMIT $1
 	var ids []string
 	if err := r.db.SelectContext(ctx, &ids, query, limit); err != nil {
 		return nil, err
+	}
+	return ids, nil
+}
+
+func (r *repository) GetGenreNames(ctx context.Context, genreIDs []string) ([]string, error) {
+	if len(genreIDs) == 0 {
+		return nil, nil
+	}
+
+	inClause, args := buildInClause(1, genreIDs)
+	query := fmt.Sprintf(`SELECT name FROM genres WHERE id IN (%s)`, inClause)
+
+	var names []string
+	if err := r.db.SelectContext(ctx, &names, query, args...); err != nil {
+		return nil, err
+	}
+	return names, nil
+}
+
+func (r *repository) GetAllUserPlayedTrackIDs(ctx context.Context, userID string) ([]string, error) {
+	query := `
+		SELECT DISTINCT track_id::text
+		FROM listening_history
+		WHERE user_id = $1
+	`
+	var ids []string
+	if err := r.db.SelectContext(ctx, &ids, query, userID); err != nil {
+		return nil, err
+	}
+	if ids == nil {
+		ids = []string{}
+	}
+	return ids, nil
+}
+
+func (r *repository) GetPopularGenreIDs(ctx context.Context, limit int) ([]string, error) {
+	query := `
+		SELECT g.id::text
+		FROM genres g
+		JOIN track_genres tg ON tg.genre_id = g.id
+		JOIN tracks t ON t.id = tg.track_id
+		JOIN play_history ph ON ph.track_id = t.id
+		WHERE ph.played_at >= NOW() - INTERVAL '30 days'
+		GROUP BY g.id
+		ORDER BY COUNT(ph.id) DESC
+		LIMIT $1
+	`
+	var ids []string
+	if err := r.db.SelectContext(ctx, &ids, query, limit); err != nil {
+		return nil, err
+	}
+	if ids == nil {
+		ids = []string{}
 	}
 	return ids, nil
 }

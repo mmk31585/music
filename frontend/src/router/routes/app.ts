@@ -62,9 +62,7 @@ export const appRoutes: RouteRecordRaw[] = [
       },
       {
         path: 'playlists',
-        name: 'playlists',
-        component: () => import('@/pages/app/PagePlaylists.vue'),
-        meta: { title: 'Playlists', requiresAuth: true },
+        redirect: '/library',
       },
       {
         path: 'playlist/:id',
@@ -74,9 +72,7 @@ export const appRoutes: RouteRecordRaw[] = [
       },
       {
         path: 'recently-played',
-        name: 'recently-played',
-        component: () => import('@/pages/app/PageRecentlyPlayed.vue'),
-        meta: { title: 'Recently Played' },
+        redirect: '/library',
       },
       {
         path: 'track/:id',
@@ -95,6 +91,18 @@ export const appRoutes: RouteRecordRaw[] = [
         name: 'artist.detail',
         component: () => import('@/pages/app/PageArtist.vue'),
         meta: { title: 'Artist' },
+      },
+      {
+        path: 'explore',
+        name: 'app.explore',
+        component: () => import('@/pages/app/PageExplore.vue'),
+        meta: { title: 'Explore' },
+      },
+      {
+        path: 'create-edit',
+        name: 'app.create-edit',
+        component: () => import('@/pages/app/PageCreateEdit.vue'),
+        meta: { title: 'Create Edit', requiresAuth: true },
       },
       {
         path: 'notifications',
@@ -173,6 +181,12 @@ export const appRoutes: RouteRecordRaw[] = [
         meta: { title: 'Gamification', requiresAuth: true },
       },
       {
+        path: 'stats',
+        name: 'listening-stats',
+        component: () => import('@/pages/app/PageListeningStats.vue'),
+        meta: { title: 'Listening Stats', requiresAuth: true },
+      },
+      {
         path: 'ai/mood-explorer',
         name: 'ai.mood-explorer',
         component: () => import('@/pages/app/PageAIMoodExplorer.vue'),
@@ -183,6 +197,18 @@ export const appRoutes: RouteRecordRaw[] = [
         name: 'ai.playlist-generator',
         component: () => import('@/pages/app/PageAIPlaylistGenerator.vue'),
         meta: { title: 'AI Playlist Generator', requiresAuth: true },
+      },
+      {
+        path: 'videos',
+        name: 'app.videos',
+        component: () => import('@/pages/app/PageMusicVideos.vue'),
+        meta: { title: 'Music Videos' },
+      },
+      {
+        path: 'music-video/:videoId',
+        name: 'app.music-video',
+        component: () => import('@/pages/app/PageMusicVideo.vue'),
+        meta: { title: 'Music Video' },
       },
     ],
   },

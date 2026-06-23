@@ -1,6 +1,6 @@
 import z from 'zod'
 
-export const UserSchema = z.object({
+export const UserPropsSchema = z.object({
   id: z.number().int(),
   first_name: z.string().optional(),
   last_name: z.string().optional(),
@@ -10,4 +10,4 @@ export const UserSchema = z.object({
   updated_at: z.date().optional(),
 })
 
-export type UserProps = z.infer<typeof UserSchema>
+export type UserProps = z.infer<typeof UserPropsSchema>

@@ -16,8 +16,8 @@ export function useTrack(id: string | number) {
   const track = ref<Track | null>(null)
   const similarTracks = ref<RecommendationTrack[]>([])
   const lyrics = ref<Lyrics | null>(null)
-  interface TrackArtist { id: string | number; role?: string; name?: string }
-  interface TrackCredit { id: string | number; role?: string; name?: string }
+  interface TrackArtist { id: string | number; role?: string; name: string; artistId?: string | number }
+  interface TrackCredit { id: string | number; role?: string; name?: string; artistName?: string; creditType?: string }
   const trackArtists = ref<TrackArtist[]>([])
   const trackCredits = ref<TrackCredit[]>([])
   const isLiked = ref(false)

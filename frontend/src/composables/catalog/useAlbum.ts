@@ -13,7 +13,7 @@ export function useAlbum(id: string | number) {
   const album = ref<Album | null>(null)
   const tracks = ref<Track[]>([])
   const artist = ref<Artist | null>(null)
-  interface AlbumArtist { id: string | number; role?: string }
+  interface AlbumArtist { id: string | number; role?: string; name: string }
   const albumArtists = ref<AlbumArtist[]>([])
   const relatedAlbums = ref<Album[]>([])
   const isLiked = ref(false)
@@ -49,32 +49,25 @@ export function useAlbum(id: string | number) {
       const albumData = await albumsApi.getAlbum(id)
       album.value = albumData
 
-      const [allTracks, likedAlbums, allAlbums] = await Promise.all([
-        tracksApi.getTracks().catch(() => [] as Track[]),
+      const [tracksData, likedAlbums] = await Promise.all([
+        tracksApi.getTracks({ album_id: id }).catch(() => [] as Track[]),
         libraryApi.getLikedAlbums().catch(() => []),
-        albumsApi.getAlbums().catch(() => [] as Album[]),
       ])
 
       albumArtists.value = []
 
-      tracks.value = Array.isArray(allTracks)
-        ? allTracks.filter((t) => String(t.album_id) === String(id))
-        : []
+      tracks.value = Array.isArray(tracksData) ? tracksData : []
 
       const artistId = mainArtist.value?.id ?? albumData.artist_id
       if (artistId) {
-        artistsApi
-          .getArtist(artistId)
-          .then((a) => {
-            artist.value = a
-          })
-          .catch(() => {})
-
-        if (Array.isArray(allAlbums)) {
-          relatedAlbums.value = allAlbums.filter(
-            (a) => String(a.id) !== String(id) && String(a.artist_id) === String(artistId),
-          )
-        }
+        const [artistData, relatedAlbumsData] = await Promise.all([
+          artistsApi.getArtist(artistId).catch(() => null),
+          albumsApi.getAlbums({ artist_id: artistId }).catch(() => [] as Album[]),
+        ])
+        artist.value = artistData
+        relatedAlbums.value = Array.isArray(relatedAlbumsData)
+          ? relatedAlbumsData.filter((a) => String(a.id) !== String(id))
+          : []
       }
 
       isLiked.value = Array.isArray(likedAlbums)

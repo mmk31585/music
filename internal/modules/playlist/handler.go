@@ -401,8 +401,25 @@ func (h *Handler) ListCollaborators(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    CollaboratorsListResponse{Collaborators: collaborators},
+		"data":    collaborators,
 	})
+}
+
+func (h *Handler) SetCollaborative(c *gin.Context) {
+	playlistID := c.Param("id")
+
+	var req SetCollaborativeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid request body"})
+		return
+	}
+
+	if err := h.service.SetCollaborative(c.Request.Context(), playlistID, req.Collaborative); err != nil {
+		h.handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "playlist updated"})
 }
 
 func (h *Handler) handleError(c *gin.Context, err error) {

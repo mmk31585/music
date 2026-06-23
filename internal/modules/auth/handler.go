@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"strconv"
@@ -14,13 +15,29 @@ import (
 	"music/internal/common/validator"
 )
 
+// ServiceInterface defines the service methods needed by the HTTP handler.
+type ServiceInterface interface {
+	Register(ctx context.Context, req RegisterRequest, userAgent, ipAddress string) (AuthResponse, error)
+	Login(ctx context.Context, req LoginRequest, userAgent, ipAddress string) (AuthResponse, error)
+	Refresh(ctx context.Context, req RefreshRequest, userAgent, ipAddress string) (AuthResponse, error)
+	Logout(ctx context.Context, req LogoutRequest) error
+	Me(ctx context.Context, userID string) (MeResponse, error)
+	AdminListUsers(ctx context.Context, params ListUsersParams) (AdminListUsersResponse, error)
+	AdminGetUser(ctx context.Context, id string) (AdminUserItem, error)
+	AdminUpdateUser(ctx context.Context, id string, req AdminUpdateUserRequest) (AdminUserItem, error)
+	AdminDeleteUser(ctx context.Context, id string) error
+	UpdateProfile(ctx context.Context, userID string, req UpdateProfileRequest) error
+	ChangePassword(ctx context.Context, userID string, req ChangePasswordRequest) error
+	GetPublicProfile(ctx context.Context, id string) (*User, error)
+}
+
 type Handler struct {
-	service   *Service
+	service   ServiceInterface
 	validator *validator.Validator
 	logger    *zap.Logger
 }
 
-func NewHandler(service *Service, validator *validator.Validator) *Handler {
+func NewHandler(service ServiceInterface, validator *validator.Validator) *Handler {
 	return &Handler{
 		service:   service,
 		validator: validator,
@@ -78,12 +95,13 @@ func (h *Handler) Login(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warn("login bind error", zap.Error(err))
-		response.Error(c, err)
+		// Return 400 BadRequest for malformed/empty bodies, not 500
+		response.Error(c, apperrors.BadRequest("invalid request body: "+err.Error(), nil))
 		return
 	}
 
 	if err := h.validator.Struct(req); err != nil {
-		response.Error(c, err)
+		response.Error(c, apperrors.BadRequest("validation failed: "+err.Error(), nil))
 		return
 	}
 
@@ -335,6 +353,55 @@ func (h *Handler) AdminDeleteUser(c *gin.Context) {
 	}
 
 	response.Success[any](c, http.StatusOK, "user deleted", nil)
+}
+
+func (h *Handler) UpdateProfile(c *gin.Context) {
+	userID := UserIDFromContext(c)
+	if userID == "" {
+		response.Error(c, apperrors.Unauthorized("authentication required", nil))
+		return
+	}
+
+	var req UpdateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Error("update profile bind error", zap.Error(err), zap.Any("body", c.Request.Body))
+		response.Error(c, apperrors.BadRequest("invalid request body: "+err.Error(), nil))
+		return
+	}
+
+	if err := h.service.UpdateProfile(c.Request.Context(), userID, req); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	result, err := h.service.Me(c.Request.Context(), userID)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "profile updated", result)
+}
+
+func (h *Handler) ChangePassword(c *gin.Context) {
+	userID := UserIDFromContext(c)
+	if userID == "" {
+		response.Error(c, apperrors.Unauthorized("authentication required", nil))
+		return
+	}
+
+	var req ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, apperrors.BadRequest("invalid request body", nil))
+		return
+	}
+
+	if err := h.service.ChangePassword(c.Request.Context(), userID, req); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success[any](c, http.StatusOK, "password changed", nil)
 }
 
 func (h *Handler) GetPublicProfile(c *gin.Context) {

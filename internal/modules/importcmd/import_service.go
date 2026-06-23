@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"mime/multipart"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -104,12 +105,11 @@ func (s *ImportService) Import(ctx context.Context, url, source, title, artist s
 		candidate, err := s.resolver.Resolve(resolveCtx, resolveQuery)
 		cancel()
 		if err != nil {
-			s.logger.Warn("failed to resolve download URL",
+			s.logger.Warn("failed to resolve download URL via acquisition",
 				zap.String("title", title),
 				zap.String("artist", artist),
 				zap.Error(err),
 			)
-			// Fall through — the worker can also try resolution
 		} else if candidate != nil {
 			downloadURL = candidate.URL
 			source = candidate.Source
@@ -174,8 +174,12 @@ func (s *ImportService) importSync(ctx context.Context, url, userID string) (*Im
 		return nil, err
 	}
 
+	ext := ".mp3"
+	if idx := strings.LastIndex(localPath, "."); idx != -1 {
+		ext = localPath[idx:]
+	}
 	header := &multipart.FileHeader{
-		Filename: entry.Title + ".mp3",
+		Filename: entry.Title + ext,
 		Size:     stat.Size(),
 	}
 

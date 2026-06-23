@@ -123,11 +123,22 @@ export const LRCLibResultSchema = z.object({
 
 export type LRCLibResult = z.infer<typeof LRCLibResultSchema>
 
+export const MLResultSchema = z.object({
+  lyrics: z.string().optional(),
+  lyricsType: z.string().optional(),
+  albumCoverUrl: z.string().optional(),
+  artistImageUrl: z.string().optional(),
+  confidence: z.number().optional(),
+})
+
+export type MLResult = z.infer<typeof MLResultSchema>
+
 export const EnrichmentResultSchema = z.object({
   musicbrainz: MusicBrainzResultSchema.optional(),
   lastfm: LastFMResultSchema.optional(),
   spotify: SpotifyResultSchema.optional(),
   lrclib: LRCLibResultSchema.optional(),
+  ml: MLResultSchema.optional(),
   suggestions: z.array(EnrichedSuggestionSchema).catch([]),
   enrichment_attempted: z.boolean(),
 })
@@ -191,7 +202,7 @@ export const FinalTrackMetadataSchema = z.object({
 export type FinalTrackMetadata = z.infer<typeof FinalTrackMetadataSchema>
 
 export const SaveFinalMetadataRequestSchema = z.object({
-  artist: FinalArtistMetadataSchema,
+  artists: z.array(FinalArtistMetadataSchema).min(1),
   album: FinalAlbumMetadataSchema,
   track: FinalTrackMetadataSchema,
 })

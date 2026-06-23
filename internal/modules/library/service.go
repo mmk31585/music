@@ -3,16 +3,25 @@ package library
 import (
 	"context"
 	"errors"
+
+	"github.com/google/uuid"
+
+	"music/internal/platform/events"
 )
 
 var ErrInvalidLimit = errors.New("invalid limit")
 
 type Service struct {
-	repo *Repository
+	repo      *Repository
+	publisher events.Publisher
 }
 
 func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
+}
+
+func NewServiceWithPublisher(repo *Repository, publisher events.Publisher) *Service {
+	return &Service{repo: repo, publisher: publisher}
 }
 
 func (s *Service) LikeTrack(ctx context.Context, userID string, trackID string) error {
@@ -23,11 +32,37 @@ func (s *Service) LikeTrack(ctx context.Context, userID string, trackID string) 
 	if !exists {
 		return ErrTrackNotFound
 	}
-	return s.repo.LikeTrack(ctx, userID, trackID)
+
+	if err := s.repo.LikeTrack(ctx, userID, trackID); err != nil {
+		return err
+	}
+
+	// Auto-add to Liked Songs playlist (best-effort, don't fail the like)
+	_ = s.repo.AddTrackToFavorites(ctx, userID, trackID)
+
+	// Publish async event for taste profile signal enrichment
+	if s.publisher != nil {
+		parsedUserID, _ := uuid.Parse(userID)
+		parsedTrackID, _ := uuid.Parse(trackID)
+		_ = s.publisher.Publish(ctx, events.TrackLikedEvent{
+			BaseEvent: events.NewBaseEvent(),
+			UserID:    parsedUserID,
+			TrackID:   parsedTrackID,
+		})
+	}
+
+	return nil
 }
 
 func (s *Service) UnlikeTrack(ctx context.Context, userID string, trackID string) error {
-	return s.repo.UnlikeTrack(ctx, userID, trackID)
+	if err := s.repo.UnlikeTrack(ctx, userID, trackID); err != nil {
+		return err
+	}
+
+	// Auto-remove from Liked Songs playlist (best-effort)
+	_ = s.repo.RemoveTrackFromFavorites(ctx, userID, trackID)
+
+	return nil
 }
 
 func (s *Service) LikeAlbum(ctx context.Context, userID string, albumID string) error {

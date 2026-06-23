@@ -15,7 +15,9 @@ type PaginationResponse struct {
 // This is not exposed as a route yet.
 // It is useful for your playback/player module later.
 type RecordListeningRequest struct {
-	TrackID   string `json:"track_id" binding:"required"`
-	Duration  int    `json:"duration" binding:"min=0"`
-	Completed bool   `json:"completed"`
+	TrackID         string `json:"track_id" binding:"required"`
+	Duration        int    `json:"duration" binding:"min=0"`
+	Completed       bool   `json:"completed"`
+	SessionID       string `json:"session_id,omitempty"`
+	TrackDurationMs int64  `json:"track_duration_ms,omitempty"`
 }

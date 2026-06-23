@@ -10,6 +10,8 @@ type AuthConfig struct {
 }
 
 func loadAuthConfig() AuthConfig {
+	// NOTE: In production, JWT_ACCESS_SECRET and JWT_REFRESH_SECRET MUST be set
+	// to strong random values (at least 256 bits). Do NOT use defaults.
 	return AuthConfig{
 		JWTAccessSecret:  getEnv("JWT_ACCESS_SECRET", "change_me_access_secret"),
 		JWTRefreshSecret: getEnv("JWT_REFRESH_SECRET", "change_me_refresh_secret"),

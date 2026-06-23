@@ -1,39 +1,46 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import type { PlaybackTrack } from '@/services/api/player'
-import { usePlayerApi } from '@/services/api/player'
-import { useLibraryApi } from '@/services/api/library'
+import type { PlaybackTrack } from '@/services/api/player/types'
+import { usePlayerApi } from '@/services/api/player/routes'
 import { useTracksApi } from '@/services/api/catalog/tracks'
 import { useRecommendationsApi } from '@/services/api/recommendation'
+import { useLibraryApi } from '@/services/api/library'
+import { useVideoApi } from '@/services/api/video'
+import { useUserAuthStore } from '@/stores/user-auth'
 import {
-  audioEngine,
-  preloadManager,
-  queueManager,
-  setMediaSessionPlaybackState,
-  updateMediaSession,
+  PlayerEngine,
+  type ShuffleMode,
+  type RepeatMode,
 } from '@/services/player'
-import { useAppToast } from '@/composables/useAppToast'
+
+const QUEUE_STORAGE_KEY = 'player-queue-track-ids'
+
+interface QueuePersistData {
+  trackIds: string[]
+  hydratedAt: number
+}
 
 export const usePlayerStore = defineStore('player', () => {
   const playerApi = usePlayerApi()
+  const tracksApi = useTracksApi()
+  const recsApi = useRecommendationsApi()
+  const libraryApi = useLibraryApi()
 
-  const currentTrack = ref<PlaybackTrack | null>(null)
-  const queue = ref<PlaybackTrack[]>([])
+const currentTrack = ref<PlaybackTrack | null>(null)
+const queue = ref<PlaybackTrack[]>([])
 
-  const isPlaying = ref(false)
-  const isBuffering = ref(false)
-  const isLoadingTrack = ref(false)
+const isPlaying = ref(false)
+const isBuffering = ref(false)
+const isLoadingTrack = ref(false)
 
-  const currentTime = ref(0)
-  const duration = ref(0)
+const currentTime = ref(0)
+const duration = ref(0)
 
-  const volume = ref(Number(localStorage.getItem('player-volume') || 0.85))
-  const muted = ref(localStorage.getItem('player-muted') === 'true')
+const volume = ref(0.85)
+const muted = ref(false)
 
-  type ShuffleMode = 'off' | 'queue' | 'catalog' | 'similar'
-  const shuffleMode = ref<ShuffleMode>('off')
-  type RepeatMode = 'off' | 'one' | 'all'
-  const repeatMode = ref<RepeatMode>('off')
+const shuffleMode = ref<ShuffleMode>('off')
+const repeatMode = ref<RepeatMode>('off')
   const playbackRate = ref(1)
   const sleepTimerMinutes = ref(0)
   const crossfadeDuration = ref(0)
@@ -43,149 +50,335 @@ export const usePlayerStore = defineStore('player', () => {
 
   const error = ref<string | null>(null)
 
+  // Consecutive-failure guard for the player error handler.
+  // Defined at store top level so both initialize() (which sets up the
+  // engine.on('error') listener) and resetFailureGuard() (called from
+  // playTrack / toggleTrack / etc.) share the same closure scope.
+  let consecutiveFailures = 0
+  const maxConsecutiveFailures = 3
+  let playbackStopped = false
+
   const progressPercent = computed(() => {
     if (!duration.value) return 0
     return Math.min(100, Math.max(0, (currentTime.value / duration.value) * 100))
   })
 
-  const hasNext = computed(() => {
-    if (shuffleMode.value !== 'off') return true
-    return Boolean(queueManager.getNext())
-  })
-  const hasPrevious = computed(() => {
-    if (shuffleMode.value !== 'off') return true
-    return Boolean(queueManager.getPrevious())
+  const _currentTrackIndex = computed(() => {
+    if (!currentTrack.value) return -1
+    return queue.value.findIndex((t) => t.id === currentTrack.value?.id)
   })
 
+  const hasNext = computed(() => {
+    if (shuffleMode.value !== 'off') return true
+    if (_currentTrackIndex.value < 0) return false
+    return _currentTrackIndex.value + 1 < queue.value.length
+  })
+
+  const hasPrevious = computed(() => {
+    if (shuffleMode.value !== 'off') return true
+    return currentTime.value > 0
+  })
+
+  let engine: PlayerEngine | null = null
   let initialized = false
+  const unsubs: (() => void)[] = []
+
+  // ── Music Status (Now Playing) ─────────────────────────────────────
+  const videoApiRef = useVideoApi()
+  let musicStatusTimer: ReturnType<typeof setTimeout> | null = null
+  let pendingStatusTrackId: string | null = null
+  let _beforeUnloadHandler: (() => void) | null = null
+
+  /**
+   * Register the beforeunload handler — must be called from a component's
+   * onMounted (or from a composable used in a component) so it's properly
+   * tied to the component lifecycle.
+   */
+  function registerBeforeUnload() {
+    if (_beforeUnloadHandler || typeof window === 'undefined') return
+    _beforeUnloadHandler = () => {
+      if (musicStatusTimer && pendingStatusTrackId) {
+        clearTimeout(musicStatusTimer)
+        try {
+          const auth = useUserAuthStore()
+          if (auth.isAuthenticated && !auth.isGuest) {
+            const privacy = localStorage.getItem('music-status-privacy') || 'public'
+            if (privacy !== 'private') {
+              navigator.sendBeacon(
+                '/api/v1/users/me/music-status',
+                JSON.stringify({ track_id: pendingStatusTrackId }),
+              )
+            }
+          }
+        } catch {
+          // Best-effort flush
+        }
+      }
+    }
+    window.addEventListener('beforeunload', _beforeUnloadHandler)
+  }
+
+  function unregisterBeforeUnload() {
+    if (_beforeUnloadHandler && typeof window !== 'undefined') {
+      window.removeEventListener('beforeunload', _beforeUnloadHandler)
+      _beforeUnloadHandler = null
+    }
+  }
+
+  async function updateMusicStatus(trackId?: string) {
+    // Debounce: only send at most 1 update per 3 seconds
+    if (musicStatusTimer) {
+      clearTimeout(musicStatusTimer)
+    }
+
+    pendingStatusTrackId = trackId || null
+
+    musicStatusTimer = setTimeout(async () => {
+      musicStatusTimer = null
+      pendingStatusTrackId = null
+
+      try {
+        const auth = useUserAuthStore()
+        if (!auth.isAuthenticated || auth.isGuest) return
+
+        // Check cached privacy setting
+        const privacy = localStorage.getItem('music-status-privacy') || 'public'
+        if (privacy === 'private') return
+
+        if (trackId) {
+          await videoApiRef.updateMusicStatus({ track_id: trackId })
+        } else {
+          await videoApiRef.clearMusicStatus()
+        }
+      } catch {
+        // Silent fail — music status is best-effort
+      }
+    }, 3000)
+  }
+
+  /** Helper: map raw API track data to PlaybackTrack shape */
+  function mapToPlaybackTrack(t: {
+    id: string | number
+    title?: string
+    artist_name?: string | null
+    album_title?: string | null
+    cover_url?: string | null
+    duration_seconds?: number | null
+    audio_url?: string | null
+  }): PlaybackTrack {
+    return {
+      id: String(t.id),
+      title: t.title ?? 'Unknown Track',
+      artistName: t.artist_name ?? 'Unknown artist',
+      albumTitle: t.album_title ?? null,
+      coverUrl: t.cover_url ?? null,
+      durationSeconds: t.duration_seconds ?? null,
+      streamUrl: t.audio_url ?? '',
+    }
+  }
+
+  function mapItemToPlaybackTrack(item: {
+    id: string
+    title?: string
+    artist_name?: string | null
+    album_title?: string | null
+    cover_url?: string | null
+    duration_seconds?: number | null
+    audio_url?: string | null
+  }): PlaybackTrack {
+    return mapToPlaybackTrack(item)
+  }
 
   function initialize() {
     if (initialized) return
     initialized = true
 
-    audioEngine.setVolume(volume.value)
-    audioEngine.setMuted(muted.value)
-
-    audioEngine.on('play', () => {
-      isPlaying.value = true
-      setMediaSessionPlaybackState('playing')
+    engine = new PlayerEngine(undefined, undefined, undefined, {
+      fetchTrack: (id: string) => playerApi.getPlaybackTrack(id),
+      fetchRandomTracks: (limit: number) =>
+        tracksApi.getRandomTracks({ limit }).then((tracks) =>
+          tracks.map(mapToPlaybackTrack),
+        ),
+      fetchSimilarTracks: (trackId: string, limit: number) =>
+        recsApi.getSimilar(trackId, { limit }).then((res) =>
+          (res.items || []).map(mapItemToPlaybackTrack),
+        ),
+      onPlayHistory: (trackId: string, dur: number) => {
+        libraryApi.addPlayHistory({ track_id: trackId, duration: dur })
+      },
     })
 
-    audioEngine.on('pause', () => {
-      isPlaying.value = false
-      setMediaSessionPlaybackState('paused')
+    engine.setVolume(volume.value)
+    if (muted.value) engine.toggleMute()
+
+    // Restore persisted queue (async, best-effort)
+    restorePersistedQueue().then((restored) => {
+      if (restored.length > 0) {
+        queue.value = restored
+        engine?.updateQueue(restored)
+      }
     })
 
-    audioEngine.on('waiting', () => {
-      isBuffering.value = true
-    })
+    unsubs.push(
+      engine.on('trackchange', (track) => {
+        currentTrack.value = track ? { ...track } : null
+        updateMusicStatus(track?.id)
+      }),
+    )
 
-    audioEngine.on('playing', () => {
-      isBuffering.value = false
-    })
+    unsubs.push(
+      engine.on('playstate', (state) => {
+        isPlaying.value = state === 'playing'
+      }),
+    )
 
-    audioEngine.on('canplay', () => {
-      isBuffering.value = false
-    })
-
-    audioEngine.on('timeupdate', (payload) => {
-      currentTime.value = payload.currentTime
-      duration.value = payload.duration || duration.value
-    })
-
-    audioEngine.on('durationchange', (payload) => {
-      if (payload.duration) {
+    unsubs.push(
+      engine.on('timeupdate', (payload) => {
+        currentTime.value = payload.currentTime
         duration.value = payload.duration
+      }),
+    )
+
+    unsubs.push(
+      engine.on('buffering', (buffering) => {
+        isBuffering.value = buffering
+      }),
+    )
+
+    unsubs.push(
+      engine.on('queuechange', (q) => {
+        queue.value = q
+        persistQueue(q)
+      }),
+    )
+
+    unsubs.push(
+      engine.on('error', (msg) => {
+        // Ignore errors after we've already stopped — stale audio-element
+        // events (404 responses already in-flight) can keep firing.
+        if (playbackStopped) return
+
+        error.value = msg
+        isBuffering.value = false
+        isPlaying.value = false
+
+        // Increment failure counter BEFORE any action so recursive
+        // errors from next() don't bypass the guard.
+        consecutiveFailures++
+
+        if (consecutiveFailures >= maxConsecutiveFailures) {
+          playbackStopped = true
+          if (import.meta.env.DEV) {
+            console.warn('[Player] Too many consecutive failures — stopping playback')
+          }
+          error.value = 'Playback unavailable — the media server may be offline'
+          engine?.stop()
+          return
+        }
+
+        // Skip to the next track in queue (don't retry — if the backend
+        // is down every retry will fail and the queue advances anyway)
+        if (import.meta.env.DEV) {
+          console.warn(`[Player] Skipping track due to error: ${currentTrack.value?.title ?? msg}`)
+        }
+        engine?.next().catch(() => {})
+      }),
+    )
+
+    // Volume/mute: listen for audio engine changes and sync to store + localStorage
+    unsubs.push(
+      engine.on('volumechange', (payload) => {
+        volume.value = payload.volume
+        muted.value = payload.muted
+        localStorage.setItem('player-volume', String(payload.volume))
+        localStorage.setItem('player-muted', String(payload.muted))
+      }),
+    )
+  }
+
+  /** Extract error message from unknown error */
+  function getErrorMessage(err: unknown, fallback: string): string {
+    if (err instanceof Error) return err.message || fallback
+    if (typeof err === 'string') return err
+    if (err && typeof err === 'object' && 'message' in err) return String((err as { message: unknown }).message) || fallback
+    return fallback
+  }
+
+  // ── Queue persistence (track IDs only) ──────────────────────────────
+  function persistQueue(tracks: PlaybackTrack[]) {
+    try {
+      const data: QueuePersistData = {
+        trackIds: tracks.map((t) => t.id),
+        hydratedAt: Date.now(),
       }
-    })
+      localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(data))
+    } catch {
+      // Storage full or blocked — silently skip
+    }
+  }
 
-    audioEngine.on('volumechange', (payload) => {
-      volume.value = payload.volume
-      muted.value = payload.muted
+  /** Try to restore a previously persisted queue by fetching fresh metadata. */
+  async function restorePersistedQueue(): Promise<PlaybackTrack[]> {
+    try {
+      const raw = localStorage.getItem(QUEUE_STORAGE_KEY)
+      if (!raw) return []
+      const data = JSON.parse(raw) as QueuePersistData
+      if (!Array.isArray(data.trackIds) || data.trackIds.length === 0) return []
 
-      localStorage.setItem('player-volume', String(payload.volume))
-      localStorage.setItem('player-muted', String(payload.muted))
-    })
+      // Fetch fresh track data (handle missing tracks gracefully)
+      const results = await Promise.allSettled(
+        data.trackIds.map((id) => playerApi.getPlaybackTrack(id)),
+      )
 
-    audioEngine.on('ended', async () => {
-      if (repeatMode.value === 'one') {
-        currentTime.value = 0
-        audioEngine.seek(0)
-        await audioEngine.play()
-        return
+      const restored: PlaybackTrack[] = []
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value) {
+          restored.push(result.value)
+        }
+        // Silently skip tracks that no longer exist
       }
-      await playNext()
-    })
 
-    audioEngine.on('error', async (err) => {
-      error.value = err.message
-      isBuffering.value = false
-      isPlaying.value = false
-      setMediaSessionPlaybackState('none')
-      try {
-        const toast = useAppToast()
-        toast.error(err.message || 'Playback failed')
-      } catch { /* ignore */ }
-      const next = queueManager.getNext()
-      if (next) {
-        await playNext()
-      }
-    })
+      return restored
+    } catch {
+      return []
+    }
+  }
+
+  /** Reset the consecutive-failure guard so new playback can start fresh. */
+  function resetFailureGuard() {
+    consecutiveFailures = 0
+    playbackStopped = false
   }
 
   async function playTrack(track: PlaybackTrack) {
     initialize()
+    if (!engine) return
 
+    resetFailureGuard()
     error.value = null
     isLoadingTrack.value = true
-    isBuffering.value = true
 
     try {
-      currentTrack.value = track
-      queueManager.setCurrent(track)
-      queue.value = queueManager.all()
-
-      duration.value = track.durationSeconds || 0
-      currentTime.value = 0
-
-      updateMediaSession(track, {
-        play: resume,
-        pause,
-        next: playNext,
-        previous: playPrevious,
-        seek,
-      })
-
-      await audioEngine.play(track.streamUrl)
-
-      const libraryApi = useLibraryApi()
-      libraryApi.addPlayHistory({ track_id: track.id, duration: track.durationSeconds })
-
-      const nextTrack = queueManager.getNext()
-      if (nextTrack) {
-        preloadManager.preload(nextTrack.streamUrl)
-      }
-    } catch (err: any) {
-      const message = err instanceof Error ? err.message : String(err)
-      error.value = message || 'Could not play track'
+      await engine.play(track)
+    } catch (err: unknown) {
+      error.value = getErrorMessage(err, 'Could not play track')
     } finally {
       isLoadingTrack.value = false
-      isBuffering.value = false
     }
   }
 
   async function playTrackById(id: string) {
     initialize()
+    if (!engine) return
 
+    resetFailureGuard()
     isLoadingTrack.value = true
     error.value = null
 
     try {
-      const track = await playerApi.getPlaybackTrack(id)
-      await playTrack(track)
-    } catch (err: any) {
-      const message = err instanceof Error ? err.message : String(err)
-      error.value = message || 'Could not load track'
+      await engine.playById(id)
+    } catch (err: unknown) {
+      error.value = getErrorMessage(err, 'Could not load track')
     } finally {
       isLoadingTrack.value = false
     }
@@ -193,291 +386,122 @@ export const usePlayerStore = defineStore('player', () => {
 
   async function setQueueAndPlay(tracks: PlaybackTrack[], startIndex = 0) {
     initialize()
-
+    if (!engine) return
     if (!tracks.length) return
 
-    queueManager.setQueue(tracks, startIndex)
-    queue.value = queueManager.all()
+    resetFailureGuard()
+    shuffleMode.value = engine.shuffleModeValue
 
-    if (shuffleMode.value === 'queue') {
-      buildShuffleOrder()
-    }
-
-    const track = tracks[startIndex]
-    if (track) {
-      await playTrack(track)
-    }
+    await engine.setQueueAndPlay(tracks, startIndex)
   }
 
   async function toggleTrack(track: PlaybackTrack) {
     initialize()
+    if (!engine) return
 
     if (currentTrack.value?.id === track.id) {
       if (isPlaying.value) {
-        pause()
+        engine.pause()
       } else {
-        await resume()
+        await engine.resume()
       }
-
       return
     }
 
-    await playTrack(track)
+    resetFailureGuard()
+    await engine.play(track)
   }
 
   async function resume() {
-    initialize()
-
-    if (!currentTrack.value) return
+    if (!engine) return
 
     error.value = null
 
     try {
-      await audioEngine.play()
-    } catch (err: any) {
-      const message = err instanceof Error ? err.message : String(err)
-      error.value = message || 'Could not resume playback'
+      await engine.resume()
+    } catch (err: unknown) {
+      error.value = getErrorMessage(err, 'Could not resume playback')
     }
   }
 
   function pause() {
-    audioEngine.pause()
+    engine?.pause()
   }
 
   function stop() {
-    audioEngine.stop()
-    isPlaying.value = false
+    engine?.stop()
     currentTime.value = 0
   }
 
   function seek(seconds: number) {
-    audioEngine.seek(seconds)
+    engine?.seek(seconds)
     currentTime.value = seconds
   }
 
   function seekPercent(percent: number) {
     if (!duration.value) return
-
     const safePercent = Math.max(0, Math.min(100, percent))
     seek((safePercent / 100) * duration.value)
   }
 
   function setVolume(value: number) {
-    audioEngine.setVolume(value)
+    volume.value = value
+    muted.value = false
+    localStorage.setItem('player-volume', String(value))
+    localStorage.setItem('player-muted', 'false')
+    engine?.setVolume(value)
   }
 
   function toggleMute() {
-    audioEngine.setMuted(!muted.value)
+    muted.value = !muted.value
+    localStorage.setItem('player-muted', String(muted.value))
+    engine?.toggleMute()
   }
 
   async function playNext() {
-    if (shuffleMode.value === 'queue') {
-      const q = queueManager.all()
-      // advance position; if at -1 (first click after build) this becomes 0
-      shufflePosition.value++
+    initialize()
+    if (!engine) return
 
-      // skip the track that's already playing if it happens to be next in order
-      const currentId = currentTrack.value?.id
-      while (shufflePosition.value < shuffleOrder.value.length) {
-        const nextRealIdx = shuffleOrder.value[shufflePosition.value]
-        const candidate = q[nextRealIdx]
-        if (candidate && candidate.id !== currentId) break
-        shufflePosition.value++
-      }
+    shuffleMode.value = engine.shuffleModeValue
+    repeatMode.value = engine.repeatModeValue
 
-      if (shufflePosition.value < shuffleOrder.value.length) {
-        const nextRealIdx = shuffleOrder.value[shufflePosition.value]
-        const nextTrack = q[nextRealIdx]
-        if (nextTrack) {
-          queueManager.setCurrent(nextTrack)
-          await playTrack(nextTrack)
-          return
-        }
-      }
-
-      // exhausted shuffled order
-      if (repeatMode.value === 'all') {
-        buildShuffleOrder()
-        if (shuffleOrder.value.length > 0) {
-          shufflePosition.value = 0
-          const nextRealIdx = shuffleOrder.value[0]
-          const nextTrack = q[nextRealIdx]
-          if (nextTrack) {
-            queueManager.setCurrent(nextTrack)
-            await playTrack(nextTrack)
-            return
-          }
-        }
-      }
-
-      pause()
-      currentTime.value = 0
-      return
-    }
-
-    if (shuffleMode.value === 'catalog') {
-      const tracksApi = useTracksApi()
-      try {
-        const randomTracks = await tracksApi.getRandomTracks({ limit: 20 })
-        if (randomTracks && randomTracks.length > 0) {
-          const pick = randomTracks[Math.floor(Math.random() * randomTracks.length)]
-          await playTrackById(pick.id)
-          return
-        }
-      } catch {
-        // fall through to sequential
-      }
-    }
-
-    if (shuffleMode.value === 'similar' && currentTrack.value) {
-      const recsApi = useRecommendationsApi()
-      try {
-        const similar = await recsApi.getSimilar(currentTrack.value.id, { limit: 10 })
-        const tracks: any[] = (similar as any)?.items ?? []
-        if (tracks.length > 0) {
-          const pick = tracks[Math.floor(Math.random() * tracks.length)]
-          await playTrackById(pick.id)
-          return
-        }
-      } catch {
-        // fall through to sequential
-      }
-    }
-
-    // Default sequential
-    const nextTrack = queueManager.next()
-
-    if (!nextTrack) {
-      if (repeatMode.value === 'all') {
-        // loop back to beginning of queue
-        queueManager.setQueue(queueManager.all(), 0)
-        const firstTrack = queueManager.next()
-        if (firstTrack) {
-          await playTrack(firstTrack)
-          return
-        }
-      }
-      pause()
-      currentTime.value = 0
-      return
-    }
-
-    await playTrack(nextTrack)
+    await engine.next()
   }
 
   async function playPrevious() {
-    if (currentTime.value > 4) {
-      seek(0)
-      return
-    }
+    initialize()
+    if (!engine) return
 
-    if (shuffleMode.value === 'queue') {
-      shufflePosition.value--
+    shuffleMode.value = engine.shuffleModeValue
+    repeatMode.value = engine.repeatModeValue
 
-      // if we ended up at -1 and repeat is all, wrap to end
-      if (shufflePosition.value < 0 && repeatMode.value === 'all') {
-        shufflePosition.value = shuffleOrder.value.length - 1
-      }
-
-      if (shufflePosition.value >= 0) {
-        const q = queueManager.all()
-        const prevRealIdx = shuffleOrder.value[shufflePosition.value]
-        const prevTrack = q[prevRealIdx]
-        if (prevTrack) {
-          queueManager.setCurrent(prevTrack)
-          await playTrack(prevTrack)
-          return
-        }
-      }
-      seek(0)
-      return
-    }
-
-    if (shuffleMode.value === 'catalog') {
-      const tracksApi = useTracksApi()
-      try {
-        const randomTracks = await tracksApi.getRandomTracks({ limit: 20 })
-        if (randomTracks && randomTracks.length > 0) {
-          const pick = randomTracks[Math.floor(Math.random() * randomTracks.length)]
-          await playTrackById(pick.id)
-          return
-        }
-      } catch { /* fall through */ }
-      seek(0)
-      return
-    }
-
-    if (shuffleMode.value === 'similar' && currentTrack.value) {
-      const recsApi = useRecommendationsApi()
-      try {
-        const similar = await recsApi.getSimilar(currentTrack.value.id, { limit: 10 })
-        const tracks: any[] = (similar as any)?.items ?? []
-        if (tracks.length > 0) {
-          const pick = tracks[Math.floor(Math.random() * tracks.length)]
-          await playTrackById(pick.id)
-          return
-        }
-      } catch { /* fall through */ }
-      seek(0)
-      return
-    }
-
-    const previousTrack = queueManager.previous()
-
-    if (!previousTrack) {
-      seek(0)
-      return
-    }
-
-    await playTrack(previousTrack)
-  }
-
-  const shuffleOrder = ref<number[]>([])
-  const shufflePosition = ref(-1)
-
-  function buildShuffleOrder() {
-    const q = queueManager.all()
-    const indices = q.map((_, i) => i)
-    // Fisher-Yates
-    for (let i = indices.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[indices[i], indices[j]] = [indices[j], indices[i]]
-    }
-    shuffleOrder.value = indices
-    // Start before the first track — next click advances to shuffleOrder[0]
-    shufflePosition.value = -1
+    await engine.previous()
   }
 
   function setShuffleMode(mode: ShuffleMode) {
+    engine?.setShuffleMode(mode)
     shuffleMode.value = mode
-    if (mode === 'queue') {
-      buildShuffleOrder()
-    }
   }
 
   function toggleShuffle() {
-    const modes: ShuffleMode[] = ['off', 'queue', 'catalog', 'similar']
-    const idx = modes.indexOf(shuffleMode.value)
-    setShuffleMode(modes[(idx + 1) % modes.length])
+    engine?.toggleShuffle()
+    if (engine) shuffleMode.value = engine.shuffleModeValue
   }
 
   function toggleRepeat() {
-    if (repeatMode.value === 'off') repeatMode.value = 'all'
-    else if (repeatMode.value === 'all') repeatMode.value = 'one'
-    else repeatMode.value = 'off'
+    engine?.toggleRepeat()
+    if (engine) repeatMode.value = engine.repeatModeValue
   }
 
   function setPlaybackRate(rate: number) {
     playbackRate.value = rate
-    audioEngine.setPlaybackRate(rate)
+    engine?.setPlaybackRate(rate)
   }
 
   function updateQueue(newQueue: PlaybackTrack[]) {
     queue.value = newQueue
-    queueManager.replaceAll(newQueue)
-    if (shuffleMode.value === 'queue') {
-      buildShuffleOrder()
-    }
+    engine?.updateQueue(newQueue)
+    if (engine) shuffleMode.value = engine.shuffleModeValue
   }
 
   function setSleepTimer(minutes: number) {
@@ -545,5 +569,8 @@ export const usePlayerStore = defineStore('player', () => {
     updateQueue,
     setSleepTimer,
     clearSleepTimer,
+    registerBeforeUnload,
+    unregisterBeforeUnload,
+    restorePersistedQueue,
   }
 })

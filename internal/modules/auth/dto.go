@@ -10,8 +10,8 @@ type RegisterRequest struct {
 }
 
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
 }
 type RefreshRequest struct {
 	RefreshToken string `json:"refreshToken" validate:"required"`
@@ -57,4 +57,18 @@ type AdminUpdateUserRequest struct {
 	Role          *string `json:"role"`
 	IsActive      *bool   `json:"is_active"`
 	EmailVerified *bool   `json:"email_verified"`
+}
+
+type UpdateProfileRequest struct {
+	DisplayName *string `json:"displayName"`
+	Username    *string `json:"username"`
+	Bio         *string `json:"bio"`
+	Location    *string `json:"location"`
+	Website     *string `json:"website"`
+	Preferences *string `json:"preferences"`
+}
+
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"currentPassword" validate:"required"`
+	NewPassword     string `json:"newPassword" validate:"required,min=8,max=72"`
 }

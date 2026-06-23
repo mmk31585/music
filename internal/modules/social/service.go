@@ -9,14 +9,13 @@ import (
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
-	"music/internal/modules/playlist"
 )
 
 type Service struct {
 	repo             Repository
 	partyBroadcaster *PartyBroadcaster
 	roomBroadcaster  *RoomBroadcaster
-	playlistSvc      *playlist.Service
+	playlistSvc      PlaylistCollaborator
 	clubSvc          *ClubService
 	discussionSvc    *DiscussionService
 }
@@ -30,7 +29,7 @@ func NewService(repo Repository, partyBroadcaster *PartyBroadcaster, roomBroadca
 	}
 }
 
-func NewServiceWithPlaylist(repo Repository, partyBroadcaster *PartyBroadcaster, roomBroadcaster *RoomBroadcaster, playlistSvc *playlist.Service) *Service {
+func NewServiceWithPlaylist(repo Repository, partyBroadcaster *PartyBroadcaster, roomBroadcaster *RoomBroadcaster, playlistSvc PlaylistCollaborator) *Service {
 	svc := &Service{
 		repo:             repo,
 		partyBroadcaster: partyBroadcaster,
@@ -177,8 +176,13 @@ func (s *Service) UpdatePartyStatus(ctx context.Context, id, status string, trac
 	if err := s.repo.UpdatePartyStatus(ctx, uid, status, tid); err != nil {
 		return err
 	}
-	if s.partyBroadcaster != nil && status == "ended" {
-		s.partyBroadcaster.PartyEnded(uid)
+	if s.partyBroadcaster != nil {
+		switch status {
+		case "active", "paused":
+			s.partyBroadcaster.PartyStatusChanged(uid, status)
+		case "ended":
+			s.partyBroadcaster.PartyEnded(uid)
+		}
 	}
 	return nil
 }

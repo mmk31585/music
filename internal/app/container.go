@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"music/internal/common/middleware"
 	"music/internal/modules/ai"
 	"music/internal/modules/analytics"
 	"music/internal/modules/auth"
@@ -15,6 +16,7 @@ import (
 	"music/internal/modules/catalog/genre"
 	"music/internal/modules/catalog/track"
 	"music/internal/modules/contribution"
+	"music/internal/modules/covers"
 	"music/internal/modules/creator"
 	"music/internal/modules/dashboard"
 	"music/internal/modules/follow"
@@ -41,6 +43,7 @@ import (
 	"music/internal/modules/search"
 	"music/internal/modules/social"
 	"music/internal/modules/subscription"
+	"music/internal/modules/video"
 	"music/internal/platform/events"
 	platformstorage "music/internal/platform/storage"
 	"music/internal/platform/ws"
@@ -58,6 +61,11 @@ type Container struct {
 	Bus   *events.Bus
 	RDB   *redis.Client
 	WSHub *ws.Hub
+
+	// Lifecycle context for background goroutines managed by the container.
+	// These are wired from the App's context and WaitGroup.
+	enrichCtx  context.Context
+	enrichDone context.CancelFunc
 
 	Storage platformstorage.Storage
 
@@ -101,6 +109,14 @@ type Container struct {
 
 	RecommendationService recommendation.Service
 	RecommendationHandler *recommendation.Handler
+
+	TasteProfileService       *recommendation.TasteProfileService
+	ProfileEventHandler       *recommendation.ProfileEventHandler
+	OnboardingHandler         *recommendation.OnboardingHandler
+	HomeFeedService           *recommendation.HomeFeedService
+	HomeRecommendationService *recommendation.HomeRecommendationService
+	DiscoverWeeklyService     *recommendation.DiscoverWeeklyService
+	ListeningStatsService     *recommendation.ListeningStatsService
 
 	HistoryService *history.Service
 	HistoryHandler *history.Handler
@@ -153,7 +169,16 @@ type Container struct {
 	ImportWorker       *importworker.ImportWorker
 	ImportArtistSearch *importcmd.ArtistSearcher
 
+	VideoService      *video.Service
+	VideoHandler      *video.Handler
+	VideoEventHandler *video.EventHandler
+
 	AIHandler *ai.Handler
+
+	MLServiceClient *lyrics.MLServiceClient
+	MLServiceHMACMW gin.HandlerFunc
+
+	CoverHandler *covers.Handler
 
 	Enricher      *enrichment.Enricher
 	EnrichHandler *catalog.EnrichHandler
@@ -170,6 +195,10 @@ func NewContainer(a *App) *Container {
 		SQLX: sqlxDB,
 		Bus:  bus,
 		RDB:  a.Redis,
+
+		// Lifecycle: derive from the app's cancellable context
+		enrichCtx:  a.AddBackground(),
+		enrichDone: a.BackgroundDone,
 	}
 
 	c.buildHealth(a)
@@ -177,13 +206,17 @@ func NewContainer(a *App) *Container {
 	c.buildAuth(a)
 	c.buildMedia(a)
 	c.buildCatalog()
-	c.buildLyrics()
+	c.buildLyrics(a)
+	c.buildCovers(a)
 	c.buildPlaylist()
 	c.buildLibrary()
 	c.buildQueue()
 	c.buildFollow()
 	c.buildRecommendation()
+	c.buildRadio(a)
 	c.buildHistory()
+	c.buildTasteProfile(a)
+	c.buildHomeFeed(a)
 	c.buildAnalytics()
 	c.buildNotification()
 	c.buildSubscription()
@@ -200,7 +233,13 @@ func NewContainer(a *App) *Container {
 	c.buildContribution()
 	c.buildImport()
 	c.buildAI(a)
+	c.buildVideo()
 	c.subscribeEvents()
+
+	// Wire the transactional outbox store into the event bus for durable,
+	// at-least-once event delivery. The relay runs every 5 seconds.
+	outboxStore := events.NewSQLOutboxStore(sqlxDB)
+	bus.SetOutboxStore(outboxStore, 5*time.Second)
 
 	return c
 }
@@ -210,7 +249,7 @@ func (c *Container) buildHealth(a *App) {
 }
 
 func (c *Container) buildStorage(a *App) {
-	storageClient, err := platformstorage.New(context.Background(), platformstorage.Config{
+	storageClient, err := platformstorage.New(a.ctx, platformstorage.Config{
 		Driver: a.Config.Storage.Driver,
 		Local: platformstorage.LocalConfig{
 			BaseDir: a.Config.Storage.Local.BaseDir,
@@ -254,9 +293,10 @@ func (c *Container) buildMedia(a *App) {
 	mediaRepo := media.NewRepository(c.SQLX)
 
 	c.MediaService = media.NewService(c.Storage, mediaRepo, media.Config{
-		MaxFileSizeBytes:  60 << 20,
+		MaxFileSizeBytes:  200 << 20, // 200 MB general limit
 		MaxImageSizeBytes: 10 << 20,
 		MaxAudioSizeBytes: 60 << 20,
+		MaxVideoSizeBytes: 200 << 20,
 		AllowedImageMime: []string{
 			"image/jpeg",
 			"image/png",
@@ -272,6 +312,13 @@ func (c *Container) buildMedia(a *App) {
 			"audio/mp4",
 			"audio/aac",
 			"application/octet-stream",
+		},
+		AllowedVideoMime: []string{
+			"video/mp4",
+			"video/webm",
+			"video/quicktime",
+			"video/x-msvideo",
+			"video/x-matroska",
 		},
 		StorageProviderName: a.Config.Storage.Driver,
 	})
@@ -297,20 +344,35 @@ func (c *Container) buildCatalog() {
 }
 
 func (c *Container) buildEnrich() {
+	deezerClient := enrichment.NewDeezerClient()
+	coverArtClient := enrichment.NewCoverArtClient()
+
 	c.EnrichHandler = catalog.NewEnrichHandler(
 		c.Enricher,
 		c.TrackService,
 		c.ArtistService,
 		c.AlbumService,
 		c.LyricsService,
+		deezerClient,
+		coverArtClient,
 		zap.L(),
 	)
 }
 
-func (c *Container) buildLyrics() {
+func (c *Container) buildLyrics(a *App) {
 	lyricsRepo := lyrics.NewRepository(c.SQLX)
 	c.LyricsService = lyrics.NewService(lyricsRepo)
 	c.LyricsHandler = lyrics.NewHandler(c.LyricsService)
+
+	c.MLServiceClient = lyrics.NewMLServiceClient(a.Config.MLService)
+	c.MLServiceHMACMW = middleware.VerifyMLServiceWebhook(a.Config.MLService.WebhookHMACSecret)
+
+	c.LyricsHandler.SetMLClient(c.MLServiceClient)
+}
+
+func (c *Container) buildCovers(a *App) {
+	sqlDB := stdlib.OpenDBFromPool(a.DB)
+	c.CoverHandler = covers.NewHandler(sqlDB)
 }
 
 func (c *Container) buildPlaylist() {
@@ -321,7 +383,7 @@ func (c *Container) buildPlaylist() {
 
 func (c *Container) buildLibrary() {
 	libraryRepo := library.NewRepository(c.SQLX)
-	c.LibraryService = library.NewService(libraryRepo)
+	c.LibraryService = library.NewServiceWithPublisher(libraryRepo, c.Bus)
 	c.LibraryHandler = library.NewHandler(c.LibraryService)
 }
 
@@ -343,10 +405,55 @@ func (c *Container) buildRecommendation() {
 	c.RecommendationHandler = recommendation.NewHandler(c.RecommendationService)
 }
 
+func (c *Container) buildRadio(a *App) {
+	radioRepo := recommendation.NewRadioRepository(c.SQLX)
+	mlClient := recommendation.NewSimilarityMLClient(a.Config.MLService)
+	radioService := recommendation.NewRadioService(radioRepo, mlClient)
+	c.RecommendationHandler.SetRadioService(radioService)
+}
+
 func (c *Container) buildHistory() {
 	historyRepo := history.NewRepository(c.SQLX)
-	c.HistoryService = history.NewService(historyRepo)
+	c.HistoryService = history.NewServiceWithPublisher(historyRepo, c.Bus)
 	c.HistoryHandler = history.NewHandler(c.HistoryService)
+}
+
+func (c *Container) buildTasteProfile(a *App) {
+	tasteRepo := recommendation.NewTasteProfileRepository(c.SQLX)
+	mlClient := recommendation.NewSimilarityMLClient(a.Config.MLService)
+	c.TasteProfileService = recommendation.NewTasteProfileService(tasteRepo, c.HistoryService.GetRepo(), mlClient)
+	c.ProfileEventHandler = recommendation.NewProfileEventHandler(c.TasteProfileService, c.HistoryService)
+	c.OnboardingHandler = recommendation.NewOnboardingHandler(c.TasteProfileService)
+}
+
+func (c *Container) buildHomeFeed(a *App) {
+	mlClient := recommendation.NewSimilarityMLClient(a.Config.MLService)
+	c.HomeFeedService = recommendation.NewHomeFeedService(
+		recommendation.NewRepository(c.SQLX),
+		c.TasteProfileService,
+		mlClient,
+		c.RecommendationService,
+	)
+	c.RecommendationHandler.SetHomeFeedService(c.HomeFeedService)
+
+	c.HomeRecommendationService = recommendation.NewHomeRecommendationService(
+		c.TasteProfileService,
+		mlClient,
+		recommendation.NewRepository(c.SQLX),
+	)
+	c.RecommendationHandler.SetHomeRecommendationService(c.HomeRecommendationService)
+
+	dwRepo := recommendation.NewDiscoverWeeklyRepository(c.SQLX)
+	c.DiscoverWeeklyService = recommendation.NewDiscoverWeeklyService(
+		c.TasteProfileService,
+		mlClient,
+		recommendation.NewRepository(c.SQLX),
+		dwRepo,
+	)
+	c.RecommendationHandler.SetDiscoverWeeklyService(c.DiscoverWeeklyService)
+
+	c.ListeningStatsService = recommendation.NewListeningStatsService(c.SQLX)
+	c.RecommendationHandler.SetListeningStatsService(c.ListeningStatsService)
 }
 
 func (c *Container) buildAnalytics() {
@@ -384,8 +491,9 @@ func (c *Container) buildIngestion(a *App) {
 	lfmClient := enrichment.NewLastFMClient(enrichCfg.LastFM)
 	spotClient := enrichment.NewSpotifyClient(enrichCfg.Spotify)
 	lrcClient := enrichment.NewLRCLibClient()
+	mlClient := enrichment.NewMLEnrichmentClient(a.Config.MLService.BaseURL)
 
-	enricher := enrichment.NewEnricher(mbClient, lfmClient, spotClient, lrcClient, zap.L())
+	enricher := enrichment.NewEnricher(mbClient, lfmClient, spotClient, lrcClient, mlClient, zap.L())
 	c.Enricher = enricher
 
 	c.IngestionFinalization = finalization.NewService(c.SQLX, c.Storage, zap.L())
@@ -395,7 +503,13 @@ func (c *Container) buildIngestion(a *App) {
 
 	cleanupSvc := ingestion.NewCleanupService(ingestionRepo, zap.L())
 	c.IngestionHandler.SetCleanup(cleanupSvc)
-	cleanupSvc.StartPeriodicCleanup(context.Background(), 1*time.Hour, 24*time.Hour)
+	c.IngestionHandler.SetMLClient(c.MLServiceClient)
+	c.IngestionHandler.SetStorage(c.Storage, a.Config.Storage.Driver)
+	cleanupCtx := a.AddBackground()
+	go func() {
+		defer a.BackgroundDone()
+		cleanupSvc.StartPeriodicCleanup(cleanupCtx, 1*time.Hour, 24*time.Hour)
+	}()
 }
 
 func (c *Container) buildSearch(a *App) {
@@ -427,8 +541,14 @@ func (c *Container) buildModeration() {
 }
 
 func (c *Container) buildSocial(a *App) {
-	c.WSHub = ws.NewHub(a.Logger)
-	go c.WSHub.Run(context.Background())
+	c.WSHub = ws.NewHub(a.Logger, a.Config.CORS.AllowedOrigins)
+	wsCtx := a.AddBackground()
+	go func() {
+		defer a.BackgroundDone()
+		if err := c.WSHub.Run(wsCtx); err != nil && err != context.Canceled {
+			a.Logger.Error("ws hub exited with error", zap.Error(err))
+		}
+	}()
 
 	socialRepo := social.NewRepository(c.SQLX)
 	partyBroadcaster := social.NewPartyBroadcaster(c.WSHub)
@@ -468,6 +588,14 @@ func (c *Container) buildAI(a *App) {
 	c.AIHandler = ai.NewHandler(ai.NewService(aiRepo, aiClient, zap.L(), a.Config.AI.Enabled))
 }
 
+func (c *Container) buildVideo() {
+	videoRepo := video.NewRepository(c.SQLX)
+	c.VideoService = video.NewService(videoRepo, c.FollowService)
+	commentRepo := video.NewCommentRepository(c.SQLX)
+	c.VideoHandler = video.NewHandler(c.VideoService, commentRepo)
+	c.VideoEventHandler = video.NewEventHandler(c.VideoService)
+}
+
 func (c *Container) buildDashboard() {
 	c.DashboardHandler = dashboard.NewHandler(c.SQLX)
 }
@@ -490,6 +618,7 @@ func (c *Container) buildImport() {
 	// Build discovery providers
 	discoveryProviders := []importsearch.Provider{
 		importsearch.NewLocalProvider(c.SQLX),
+		importsearch.NewiTunesProvider(),
 		importsearch.NewDeezerProvider(),
 	}
 
@@ -547,6 +676,10 @@ func (c *Container) subscribeEvents() {
 	c.Bus.Subscribe(events.EventTrackPlayed, analyticsEvents.OnTrackPlayed)
 	c.Bus.Subscribe(events.EventTrackPlayed, historyEvents.OnTrackPlayed)
 	c.Bus.Subscribe(events.EventTrackPlayed, recommendationEvents.OnTrackPlayed)
+	c.Bus.Subscribe(events.EventTrackPlayed, c.VideoEventHandler.OnTrackPlayed)
+
+	c.Bus.Subscribe(events.EventPlaybackSignalRecorded, c.ProfileEventHandler.OnPlaybackSignalRecorded)
+	c.Bus.Subscribe(events.EventTrackLiked, c.ProfileEventHandler.OnTrackLiked)
 
 	c.Bus.Subscribe(events.EventPlaylistCreated, analyticsEvents.OnPlaylistCreated)
 	c.Bus.Subscribe(events.EventPlaylistCreated, notificationEvents.OnPlaylistCreated)

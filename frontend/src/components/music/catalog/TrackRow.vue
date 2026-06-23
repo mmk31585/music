@@ -37,12 +37,14 @@
     </button>
 
     <div class="min-w-0">
-      <div
-        class="truncate text-sm font-semibold transition"
+      <RouterLink
+        :to="`/track/${trackId}`"
+        class="truncate text-sm font-semibold transition hover:underline"
         :class="isCurrent ? 'text-[#1db954]' : 'text-white'"
+        @click.stop
       >
         {{ title }}
-      </div>
+      </RouterLink>
 
       <div class="mt-0.5 truncate text-xs text-slate-400">
         {{ artistName }}
@@ -74,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayer } from '@/composables/player'
 import { onImgError } from '@/utils/helpers'
@@ -93,6 +95,7 @@ interface TrackRowTrack {
   cover_url?: string | null
   cover?: string | null
   album?: { title?: string | null; coverUrl?: string | null; cover_url?: string | null; id?: string | number } | null
+  album_id?: string | number | null
   albumTitle?: string | null
   album_title?: string | null
   durationSeconds?: number | null
@@ -160,6 +163,9 @@ const router = useRouter()
 const menuVisible = ref(false)
 const menuX = ref(0)
 const menuY = ref(0)
+
+const openRadioFromTrack = inject<(trackId: string, seedLabel?: string) => void>('openRadio', () => {})
+
 const menuItems = [
   { label: 'Play Now', icon: 'pi pi-play', action: () => handlePlay() },
   { label: 'Play next', icon: 'pi pi-step-forward', action: () => {
@@ -172,12 +178,19 @@ const menuItems = [
     }
   }},
   { label: 'Add to queue', icon: 'pi pi-list', action: () => player.updateQueue([...player.queue.value, buildPlaybackTrack()]) },
+  { label: 'Start Radio', icon: 'pi pi-wave-pulse', separator: true, action: () => {
+    openRadioFromTrack(trackId.value, `${title.value} • ${artistName.value}`)
+  }},
+  { label: 'Go to track', icon: 'pi pi-music', separator: true, action: () => {
+    router.push(`/track/${trackId.value}`)
+  }},
   { label: 'Go to artist', icon: 'pi pi-user', action: () => {
     const artistId = props.track.artist_id
     if (artistId) router.push(`/artist/${artistId}`)
   }},
   { label: 'Go to album', icon: 'pi pi-book', action: () => {
-    if (props.track.album?.id) router.push(`/album/${props.track.album.id}`)
+    const albumId = props.track.album?.id || props.track.album_id
+    if (albumId) router.push(`/album/${albumId}`)
   }},
 ]
 

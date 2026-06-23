@@ -296,7 +296,7 @@ func (w *ImportWorker) processJob(ctx context.Context, job *Job) {
 			Artist: job.Artist,
 		}
 
-		if job.Source == "spotify" || job.Source == "deezer" || job.Source == "musicbrainz" || job.Source == "lastfm" {
+		if job.Source == "spotify" || job.Source == "deezer" || job.Source == "musicbrainz" || job.Source == "lastfm" || job.Source == "itunes" {
 			resolveStart := time.Now()
 			candidate, err := w.resolver.Resolve(ctx, resolveQuery)
 			metrics.ObserveImportJobStage("resolve", resolveStart)
@@ -345,6 +345,19 @@ func (w *ImportWorker) processJob(ctx context.Context, job *Job) {
 		return
 	}
 
+	// Override downloaded metadata with search result metadata when available.
+	// This is important for sources like iTunes where yt-dlp uses a generic
+	// filename instead of the actual track title.
+	if job.Title != "" {
+		result.Title = job.Title
+	}
+	if job.Artist != "" {
+		result.Uploader = job.Artist
+	}
+	if job.Source != "" {
+		// Use proper source attribution
+	}
+
 	w.setProgress(job.ID, StatusExtracting, 50, "extracting", "", "")
 	extractStart := time.Now()
 
@@ -368,8 +381,14 @@ func (w *ImportWorker) processJob(ctx context.Context, job *Job) {
 	w.setProgress(job.ID, StatusUploading, 75, "uploading", "", "")
 	uploadStart := time.Now()
 
+	// Use the actual file extension from the downloaded file
+	// instead of hardcoding .mp3 (iTunes previews are .m4a, etc.)
+	ext := ".mp3"
+	if idx := strings.LastIndex(result.LocalPath, "."); idx != -1 {
+		ext = result.LocalPath[idx:]
+	}
 	header := &multipart.FileHeader{
-		Filename: result.Title + ".mp3",
+		Filename: result.Title + ext,
 		Size:     stat.Size(),
 	}
 
@@ -385,6 +404,25 @@ func (w *ImportWorker) processJob(ctx context.Context, job *Job) {
 	}
 
 	job.DraftID = uploadRes.DraftID
+
+	// Override extracted metadata with the job's title/artist if available.
+	// This fixes the case where yt-dlp infers a garbage title from the URL
+	// (e.g., iTunes previews with generic mzaf_ filenames).
+	if job.Title != "" || job.Artist != "" {
+		if err := w.ingestionSvc.UpdateExtractedMetadata(ctx, uploadRes.DraftID, job.Title, job.Artist, ""); err != nil {
+			w.logger.Warn("failed to update extracted metadata",
+				zap.String("draft_id", uploadRes.DraftID),
+				zap.Error(err),
+			)
+		} else {
+			w.logger.Info("overrode extracted metadata",
+				zap.String("draft_id", uploadRes.DraftID),
+				zap.String("title", job.Title),
+				zap.String("artist", job.Artist),
+			)
+		}
+	}
+
 	w.setProgress(job.ID, StatusComplete, 100, "complete", uploadRes.DraftID, "")
 
 	metrics.ObserveImportJobStage("total", jobStart)

@@ -97,7 +97,9 @@
               <tr
                 class="border-b border-white/[0.06] text-left text-xs tracking-wider text-slate-500 uppercase"
               >
-                <th class="px-5 py-3 font-medium">#</th>
+                <th class="px-5 py-3 font-medium">
+                  <i aria-hidden="true" class="pi pi-play text-xs" />
+                </th>
                 <th class="px-5 py-3 font-medium">Title</th>
                 <th class="px-5 py-3 font-medium">Artists</th>
                 <th class="hidden px-5 py-3 font-medium lg:table-cell">Album</th>
@@ -115,8 +117,27 @@
                 :key="track.id"
                 class="group transition-colors hover:bg-white/[0.02]"
               >
-                <td class="px-5 py-3.5 text-sm text-slate-600 tabular-nums">
-                  {{ index + 1 }}
+                <td class="px-5 py-3.5">
+                  <button
+                    type="button"
+                    class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-all hover:bg-[#1db954]/20 hover:text-[#1db954] disabled:opacity-30"
+                    :disabled="isTrackLoading(track)"
+                    :aria-label="'Play ' + track.title"
+                    :title="isTrackPlaying(track) ? 'Now playing' : 'Play track'"
+                    @click="handlePlayTrack(track)"
+                  >
+                    <i
+                      v-if="isTrackLoading(track)"
+                      aria-hidden="true"
+                      class="pi pi-spin pi-spinner text-sm"
+                    />
+                    <i
+                      v-else
+                      aria-hidden="true"
+                      :class="getTrackPlayButtonIcon(track)"
+                      class="text-sm"
+                    />
+                  </button>
                 </td>
 
                 <td class="px-5 py-3.5">
@@ -263,7 +284,31 @@
             </div>
 
             <div
-              class="absolute inset-0 flex items-end justify-end gap-1 bg-gradient-to-t from-black/70 via-transparent p-2.5 opacity-0 transition-opacity group-hover:opacity-100"
+              class="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
+            >
+              <button
+                type="button"
+                class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1db954] text-black shadow-xl transition-all hover:scale-110 active:scale-90 disabled:opacity-40"
+                :disabled="isTrackLoading(track)"
+                aria-label="Play track"
+                @click="handlePlayTrack(track)"
+              >
+                <i
+                  v-if="isTrackLoading(track)"
+                  aria-hidden="true"
+                  class="pi pi-spin pi-spinner text-lg"
+                />
+                <i
+                  v-else
+                  aria-hidden="true"
+                  :class="getTrackPlayButtonIcon(track)"
+                  class="ml-0.5 text-lg"
+                />
+              </button>
+            </div>
+
+            <div
+              class="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100"
             >
               <Button
                 icon="pi pi-pencil"
@@ -364,6 +409,8 @@ import { useLyricsApi } from '@/services/api/lyrics'
 import { useAdminArtists } from '@/composables/admin/useAdminArtists'
 import { useAdminAlbums } from '@/composables/admin/useAdminAlbums'
 import { useAdminGenres } from '@/composables/admin/useAdminGenres'
+import { usePlayer } from '@/composables/player'
+import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
 
 import type { Track } from '@/services/api/catalog/tracks'
 
@@ -380,7 +427,7 @@ type CatalogOption = {
 
 // TODO HIGH: AnyTrack defeats TypeScript safety. The Track type should match actual API shape,
 // or normalizer functions should live in the API service layer. 10+ getter functions add 150+ fragile lines.
-type AnyTrack = Track & Record<string, unknown>
+type AnyTrack = Track & Record<string, any>
 
 const toast = useToast()
 
@@ -404,6 +451,9 @@ const { genres, fetchGenres } = useAdminGenres()
 
 const tracksApi = useTracksApi()
 const { getTrackLyrics } = useLyricsApi()
+const player = usePlayer()
+const playerApi = usePlayerApi()
+const loadingTrackId = ref<string | null>(null)
 const searchQuery = ref('')
 const viewMode = ref<'table' | 'card'>('table')
 const showForm = ref(false)
@@ -411,6 +461,40 @@ const showDelete = ref(false)
 const enrichingAll = ref(false)
 const selectedTrack = ref<Track | null>(null)
 const deleteTarget = ref<Track | null>(null)
+
+function buildPlaybackTrack(track: Track): PlaybackTrack {
+  const id = String(track.id)
+  return {
+    id,
+    title: track.title || 'Untitled',
+    artistName: getTrackPrimaryArtistDisplay(track),
+    coverUrl: getTrackCoverUrl(track),
+    durationSeconds: track.duration_seconds ?? null,
+    streamUrl: playerApi.getTrackStreamUrl(id),
+  }
+}
+
+async function handlePlayTrack(track: Track) {
+  loadingTrackId.value = String(track.id)
+  try {
+    await player.toggleTrack(buildPlaybackTrack(track))
+  } finally {
+    loadingTrackId.value = null
+  }
+}
+
+function isTrackPlaying(track: Track): boolean {
+  return player.currentTrack.value?.id === String(track.id)
+}
+
+function isTrackLoading(track: Track): boolean {
+  return loadingTrackId.value === String(track.id)
+}
+
+function getTrackPlayButtonIcon(track: Track): string {
+  if (isTrackPlaying(track) && player.isPlaying.value) return 'pi pi-pause-fill'
+  return 'pi pi-play-fill'
+}
 
 const artistOptions = computed(() => {
   return normalizeCatalogOptions(artists.value, 'artist').filter(Boolean) as CatalogOption[]
@@ -562,7 +646,8 @@ async function handleEnrichAll() {
 }
 
 function normalizeCatalogOptions(
-  items: Array<Record<string, unknown>> | undefined | null,
+  items: Array<Record<string, any>> | undefined | null,
+  _type?: string,
 ) {
   if (!Array.isArray(items)) return []
 
@@ -591,7 +676,7 @@ function normalizeSearch(value: string) {
   return value.toLowerCase().trim().replace(/\s+/g, ' ')
 }
 
-function compactStrings(values: Array<Record<string, unknown>>) {
+function compactStrings(values: (string | null | undefined)[]) {
   return values
     .filter((value) => value !== null && value !== undefined && String(value).trim().length > 0)
     .map((value) => String(value).trim())
@@ -647,7 +732,7 @@ function getTrackArtistNamesByRole(track: Track, roles: string[]) {
 
   const fromArtists = Array.isArray(t.artists)
     ? t.artists
-        .filter((item: Record<string, unknown>) => {
+        .filter((item: Record<string, any>) => {
           const role = String(item.role ?? '').toLowerCase()
 
           if (normalizedRoles.includes('primary')) {
@@ -656,17 +741,17 @@ function getTrackArtistNamesByRole(track: Track, roles: string[]) {
 
           return normalizedRoles.includes(role)
         })
-        .map((item: Record<string, unknown>) => {
-          const artist = item.artist as Record<string, unknown> | undefined
+        .map((item: Record<string, any>) => {
+          const artist = item.artist as Record<string, any> | undefined
           return item.name ?? item.artist_name ?? artist?.name ?? artist?.title
         })
     : []
 
   const fromCredits = Array.isArray(t.credits)
     ? t.credits
-        .filter((item: Record<string, unknown>) => normalizedRoles.includes(String(item.role ?? '').toLowerCase()))
-        .map((item: Record<string, unknown>) => {
-          const artist = item.artist as Record<string, unknown> | undefined
+        .filter((item: Record<string, any>) => normalizedRoles.includes(String(item.role ?? '').toLowerCase()))
+        .map((item: Record<string, any>) => {
+          const artist = item.artist as Record<string, any> | undefined
           return item.name ?? item.artist_name ?? artist?.name ?? artist?.title
         })
     : []
@@ -687,8 +772,8 @@ function getTrackPrimaryArtistNames(track: Track) {
       t.primary_artist_name,
       t.artist?.name,
       ...(Array.isArray(t.primary_artists)
-        ? t.primary_artists.map((item: Record<string, unknown>) => {
-            const artist = item.artist as Record<string, unknown> | undefined
+        ? t.primary_artists.map((item: Record<string, any>) => {
+            const artist = item.artist as Record<string, any> | undefined
             return item.name ?? item.artist_name ?? artist?.name
           })
         : []),
@@ -706,8 +791,8 @@ function getTrackFeaturedArtistNames(track: Track) {
   return uniqStrings(
     compactStrings([
       ...(Array.isArray(t.featured_artists)
-        ? t.featured_artists.map((item: Record<string, unknown>) => {
-            const artist = item.artist as Record<string, unknown> | undefined
+        ? t.featured_artists.map((item: Record<string, any>) => {
+            const artist = item.artist as Record<string, any> | undefined
             return item.name ?? item.artist_name ?? artist?.name
           })
         : []),
@@ -737,8 +822,8 @@ function getTrackGenreNames(track: Track) {
   const t = track as AnyTrack
 
   const fromGenres = Array.isArray(t.genres)
-    ? t.genres.map((item: Record<string, unknown>) => {
-        const genre = item.genre as Record<string, unknown> | undefined
+    ? t.genres.map((item: Record<string, any>) => {
+        const genre = item.genre as Record<string, any> | undefined
         return item.name ?? item.genre_name ?? genre?.name
       })
     : []
@@ -757,8 +842,8 @@ function getTrackCreditNames(track: Track) {
 
   return uniqStrings(
     compactStrings(
-      t.credits.map((item: Record<string, unknown>) => {
-        const artist = item.artist as Record<string, unknown> | undefined
+      t.credits.map((item: Record<string, any>) => {
+        const artist = item.artist as Record<string, any> | undefined
         return item.name ?? item.artist_name ?? artist?.name
       }),
     ),

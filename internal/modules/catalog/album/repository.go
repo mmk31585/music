@@ -3,6 +3,7 @@ package album
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"music/internal/modules/catalog/common"
 	"time"
 
@@ -177,9 +178,10 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*Album, error) 
 	return &item, nil
 }
 
-func (r *Repository) List(ctx context.Context, limit, offset int) ([]Album, error) {
+func (r *Repository) List(ctx context.Context, limit, offset int, opts ListOptions) ([]Album, error) {
 	var items []Album
-	err := r.db.SelectContext(ctx, &items, `
+
+	query := `
 		SELECT
 			id,
 			artist_id,
@@ -192,9 +194,19 @@ func (r *Repository) List(ctx context.Context, limit, offset int) ([]Album, erro
 			created_at,
 			updated_at
 		FROM albums
-		ORDER BY created_at DESC
-		LIMIT $1 OFFSET $2
-	`, limit, offset)
+	`
+	args := []any{}
+
+	if opts.ArtistID != nil {
+		query += fmt.Sprintf(` WHERE artist_id = $%d`, len(args)+1)
+		args = append(args, *opts.ArtistID)
+	}
+
+	query += ` ORDER BY created_at DESC`
+	args = append(args, limit, offset)
+	query += fmt.Sprintf(` LIMIT $%d OFFSET $%d`, len(args)-1, len(args))
+
+	err := r.db.SelectContext(ctx, &items, query, args...)
 	if err != nil {
 		return nil, err
 	}

@@ -279,6 +279,23 @@ func (r *Repository) ListUsers(ctx context.Context, params ListUsersParams) ([]U
 	return users, total, nil
 }
 
+// allowedUserUpdateColumns is the strict whitelist of column names that can be
+// dynamically referenced in UPDATE SET clauses. Any key not in this map is
+// rejected to prevent SQL injection via uncontrolled column names.
+var allowedUserUpdateColumns = map[string]string{
+	"role":           "role",
+	"is_active":      "is_active",
+	"email_verified": "email_verified_at",
+	"display_name":   "display_name",
+	"username":       "username",
+	"email":          "email",
+	"avatar_url":     "avatar_url",
+	"bio":            "bio",
+	"location":       "location",
+	"website":        "website",
+	"preferences":    "preferences",
+}
+
 func (r *Repository) UpdateUser(ctx context.Context, id string, updates map[string]any) error {
 	if len(updates) == 0 {
 		return nil
@@ -288,29 +305,29 @@ func (r *Repository) UpdateUser(ctx context.Context, id string, updates map[stri
 	args := make([]any, 0, len(updates)+1)
 	argIdx := 1
 
-	columnMap := map[string]string{
-		"role":            "role",
-		"is_active":       "is_active",
-		"email_verified":  "email_verified_at",
-		"display_name":    "display_name",
-		"username":        "username",
-		"email":           "email",
-		"avatar_url":      "avatar_url",
-	}
-
 	for key, value := range updates {
-		col, ok := columnMap[key]
+		col, ok := allowedUserUpdateColumns[key]
 		if !ok {
-			col = key
+			// Reject unknown keys instead of interpolating them raw (SQL injection prevention)
+			return apperrors.BadRequest("unknown user field: "+key, map[string]string{
+				"field":   key,
+				"allowed": "role, is_active, email_verified, display_name, username, email, avatar_url",
+			})
 		}
+
+		// Handle email_verified as a special boolean→SET NULL logic
 		if key == "email_verified" {
 			if b, ok := value.(bool); ok && b {
-				value = "NOW()"
-				setClauses = append(setClauses, fmt.Sprintf("%s = NOW()", col))
+				setClauses = append(setClauses, fmt.Sprintf("email_verified_at = NOW()"))
 				continue
 			}
-			value = nil
+			// Set to NULL when false
+			setClauses = append(setClauses, fmt.Sprintf("email_verified_at = $%d", argIdx))
+			args = append(args, nil)
+			argIdx++
+			continue
 		}
+
 		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", col, argIdx))
 		args = append(args, value)
 		argIdx++

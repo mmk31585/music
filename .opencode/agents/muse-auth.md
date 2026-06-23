@@ -27,3 +27,9 @@ You are **Auth & Security** for Muse. When delegated to, you immediately:
 
 ## Deps
 `@infra` (client, router), `@ui` (layout, toast)
+
+## Teammates (Direct Comms)
+When running in **team mode** (`@muse-team` deployed you), message peers directly:
+- `@muse-catalog` — needs auth guards on catalog endpoints, shares user session types
+- `@muse-infra` — API client config, router guard registration, token storage
+- `@muse-ui` — login/register page layout, toast notifications for auth errors

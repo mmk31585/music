@@ -120,16 +120,16 @@ func (s *Service) FetchFromLRC(ctx context.Context, trackID string) (Lyrics, err
 		return Lyrics{}, err
 	}
 	if info.Title == "" {
-		return Lyrics{}, errors.New("track has no title")
+		return Lyrics{}, ErrTrackNoTitle
 	}
 
 	// 2. Call LRCLIB
 	result, err := fetchLRCLib(ctx, info.Title, info.ArtistName, info.DurationSeconds)
 	if err != nil {
-		return Lyrics{}, fmt.Errorf("lrclib fetch failed: %w", err)
+		return Lyrics{}, ErrLRCLibNoLyrics
 	}
 	if result == nil {
-		return Lyrics{}, errors.New("no lyrics found on LRCLIB")
+		return Lyrics{}, ErrLRCLibNoLyrics
 	}
 
 	// Prefer synced lyrics
@@ -140,7 +140,7 @@ func (s *Service) FetchFromLRC(ctx context.Context, trackID string) (Lyrics, err
 		lrcType = "plain"
 	}
 	if content == "" {
-		return Lyrics{}, errors.New("lrclib returned empty lyrics")
+		return Lyrics{}, ErrLRCLibEmptyResponse
 	}
 
 	// 3. Remove existing lyrics for this track + "en" if they exist
@@ -296,4 +296,17 @@ func (s *Service) GetTrackLyrics(ctx context.Context, trackID, language string) 
 
 func (s *Service) LyricsExists(ctx context.Context, trackID, language string) (bool, error) {
 	return s.repo.LyricsExists(ctx, trackID, language)
+}
+
+// GetTrackInfo fetches track metadata needed for lyrics operations.
+func (s *Service) GetTrackInfo(ctx context.Context, trackID string) (*TrackInfo, error) {
+	return s.repo.GetTrackInfo(ctx, trackID)
+}
+
+// FetchOrGenerateResult describes the outcome of a fetch-or-generate attempt.
+type FetchOrGenerateResult struct {
+	Source  string  // "lrclib" | "ai" | "none"
+	Lyrics  *Lyrics // non-nil when source == "lrclib"
+	JobID   string  // non-empty when source == "ai"
+	TrackID string
 }

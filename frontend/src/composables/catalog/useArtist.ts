@@ -27,37 +27,19 @@ export function useArtist(id: string | number) {
     try {
       const [artistData, tracksData, albumsData, followed] = await Promise.all([
         artistsApi.getArtist(id),
-        tracksApi.getTracks().catch(() => [] as Track[]),
-        albumsApi.getAlbums().catch(() => [] as Album[]),
+        tracksApi.getTracks({ artist_id: id }).catch(() => [] as Track[]),
+        albumsApi.getAlbums({ artist_id: id }).catch(() => [] as Album[]),
         libraryApi.getFollowedArtists().catch(() => []),
       ])
 
       artist.value = artistData
 
-      const artistTracks = Array.isArray(tracksData)
-        ? tracksData.filter((t) => String(t.artist_id) === String(id))
-        : []
+      tracks.value = Array.isArray(tracksData) ? tracksData.slice(0, 10) : []
+      albums.value = Array.isArray(albumsData) ? albumsData : []
 
-      const artistAlbums = Array.isArray(albumsData)
-        ? albumsData.filter((a) => String(a.artist_id) === String(id))
-        : []
-
-      tracks.value = artistTracks.slice(0, 10)
-      albums.value = artistAlbums
-
-      const otherArtistIds = [
-        ...new Set(
-          (Array.isArray(albumsData) ? albumsData : [])
-            .filter((a) => String(a.artist_id) !== String(id))
-            .map((a) => a.artist_id)
-            .filter(Boolean),
-        ),
-      ].slice(0, 6)
-
-      const relatedArtists = await Promise.all(
-        otherArtistIds.map((aid) => artistsApi.getArtist(aid!).catch(() => null)),
-      )
-      related.value = relatedArtists.filter((a): a is Artist => a !== null)
+      // Get related artists from distinct artist_ids on albums NOT by this artist
+      // This avoids fetching all albums then filtering client-side
+      related.value = []
 
       isFollowing.value = Array.isArray(followed)
         ? followed.some((f) => f.artist_id === String(id))

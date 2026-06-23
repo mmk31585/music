@@ -1,8 +1,8 @@
 import { ref } from 'vue'
-import { useMediaApi } from '@/services/api'
+import { useMediaApi } from '@/services/api/media/routes'
 import type { UploadFieldName } from '@/services/api/media/routes'
 
-type UploadTarget = 'artist-image' | 'album-cover' | 'track-cover'
+type UploadTarget = 'artist-image' | 'album-cover' | 'track-cover' | 'playlist-cover'
 
 export function useCatalogImageUpload() {
   const uploadingImage = ref(false)
@@ -48,5 +48,7 @@ function getFieldName(target: UploadTarget): UploadFieldName {
       return 'albumCover'
     case 'track-cover':
       return 'trackCover'
+    case 'playlist-cover':
+      return 'playlistCover'
   }
 }

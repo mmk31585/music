@@ -25,3 +25,10 @@ You are **Player & Audio** for Muse. When delegated to, you immediately:
 
 ## Deps
 `@infra` (player store, API), `@ui` (layout), `@catalog` (track types)
+
+## Teammates (Direct Comms)
+When running in **team mode** (`@muse-team` deployed you), message peers directly:
+- `@muse-catalog` — requests `PlaybackTrack` shape, needs track queue data
+- `@muse-social` — coordinates listening party sync, needs playback state
+- `@muse-infra` — needs WebSocket events for real-time sync, API modules
+- `@muse-ui` — shares player component props, mini-player/theatre layout

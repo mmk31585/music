@@ -192,6 +192,52 @@ func (s *Service) AdminUpdateUser(ctx context.Context, id string, req AdminUpdat
 	return s.AdminGetUser(ctx, id)
 }
 
+func (s *Service) UpdateProfile(ctx context.Context, userID string, req UpdateProfileRequest) error {
+	updates := make(map[string]any)
+	if req.DisplayName != nil {
+		updates["display_name"] = *req.DisplayName
+	}
+	if req.Username != nil {
+		updates["username"] = strings.ToLower(strings.TrimSpace(*req.Username))
+	}
+	if req.Bio != nil {
+		updates["bio"] = *req.Bio
+	}
+	if req.Location != nil {
+		updates["location"] = *req.Location
+	}
+	if req.Website != nil {
+		updates["website"] = *req.Website
+	}
+	if req.Preferences != nil {
+		updates["preferences"] = *req.Preferences
+	}
+
+	if len(updates) == 0 {
+		return nil
+	}
+
+	return s.repo.UpdateUser(ctx, userID, updates)
+}
+
+func (s *Service) ChangePassword(ctx context.Context, userID string, req ChangePasswordRequest) error {
+	user, err := s.repo.FindUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if !CheckPassword(req.CurrentPassword, user.PasswordHash) {
+		return apperrors.Unauthorized("invalid credentials", nil)
+	}
+
+	hash, err := HashPassword(req.NewPassword)
+	if err != nil {
+		return err
+	}
+
+	return s.repo.UpdatePassword(ctx, userID, hash)
+}
+
 func (s *Service) GetPublicProfile(ctx context.Context, id string) (*User, error) {
 	user, err := s.repo.FindPublicUser(ctx, id)
 	if err != nil {

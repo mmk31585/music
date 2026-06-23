@@ -133,6 +133,12 @@
   --surface-raised: #121212;
   --surface-overlay: #1a1a1a;
 
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 30px rgba(29, 185, 84, 0.3);
+
   --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --duration-fast: 150ms;
@@ -234,16 +240,6 @@
   }
 }
 
-@keyframes glow-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 20px rgba(29, 185, 84, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 40px rgba(29, 185, 84, 0.6);
-  }
-}
-
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -261,46 +257,6 @@
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes slide-in-right {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-@keyframes slide-out-right {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(100%);
-  }
-}
-
-@keyframes progress-pulse {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
-  100% {
-    opacity: 1;
   }
 }
 
@@ -423,18 +379,6 @@
   }
 }
 
-/* Vinyl entrance animation */
-@keyframes art-pop {
-  from {
-    transform: scale(0.92);
-    opacity: 0.6;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
 /* Wave animation for equalizer */
 @keyframes eq-wave {
   0% {
@@ -444,16 +388,6 @@
   100% {
     transform: scaleY(1);
     opacity: 1;
-  }
-}
-
-/* Spring-like hover lift */
-@keyframes hover-lift {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(-4px);
   }
 }
 
@@ -899,26 +833,6 @@ body {
   color: #fff;
 }
 
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
-}
-
-*::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-*::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-}
-*::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.28);
-}
-
 /* ── Vue Transition Overrides ─────────────── */
 .page-enter-active {
   animation: fade-in-up 0.35s ease-out;
@@ -927,14 +841,10 @@ body {
   animation: fade-in-up 0.25s ease-in reverse;
 }
 
-/* ── PrimeVue Override Presets ────────────── */
+/* ── Dialog Animations ─────────────────────── */
 .p-dialog {
-  --p-dialog-background: rgba(0, 0, 0, 0.85) !important;
-  --p-dialog-border-color: rgba(255, 255, 255, 0.08) !important;
-  backdrop-filter: blur(32px) !important;
   animation: dialog-scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
-
 .p-dialog-mask {
   animation: dialog-fade-in 0.2s ease-out;
 }
@@ -953,27 +863,6 @@ body {
     opacity: 1;
     transform: scale(1);
   }
-}
-
-.p-button.p-button-primary {
-  --p-button-primary-background: #1db954 !important;
-  --p-button-primary-hover-background: #1ed760 !important;
-  --p-button-primary-active-background: #169c46 !important;
-  --p-button-primary-color: #000 !important;
-}
-
-.p-inputtext {
-  --p-inputtext-background: rgba(255, 255, 255, 0.06) !important;
-  --p-inputtext-border-color: rgba(255, 255, 255, 0.08) !important;
-  --p-inputtext-color: #fff !important;
-  --p-inputtext-placeholder-color: rgba(255, 255, 255, 0.3) !important;
-  --p-inputtext-focus-border-color: #1db954 !important;
-}
-
-.p-select {
-  --p-select-background: rgba(255, 255, 255, 0.06) !important;
-  --p-select-border-color: rgba(255, 255, 255, 0.08) !important;
-  --p-select-color: #fff !important;
 }
 
 /* ── Admin Tables ──────────────────────────── */
@@ -1075,7 +964,7 @@ body {
   appearance: none;
   background: #fff;
   box-shadow: 0 0 16px color-mix(in srgb, var(--accent-color) 50%, transparent);
-  opacity: 0;
+  opacity: 0.6;
   transition:
     opacity 160ms ease,
     transform 160ms ease;
@@ -1107,7 +996,7 @@ body {
   border-radius: 999px;
   background: #fff;
   box-shadow: 0 0 16px color-mix(in srgb, var(--accent-color) 50%, transparent);
-  opacity: 0;
+  opacity: 0.6;
   transition:
     opacity 160ms ease,
     transform 160ms ease;
@@ -1157,7 +1046,7 @@ body {
   appearance: none;
   background: #fff;
   box-shadow: 0 0 24px color-mix(in srgb, var(--accent-color) 50%, transparent);
-  opacity: 0;
+  opacity: 0.6;
   transition:
     opacity 160ms ease,
     transform 160ms ease;
@@ -1168,6 +1057,22 @@ body {
 }
 .fullscreen-range:active::-webkit-slider-thumb {
   transform: scale(1.35);
+}
+.fullscreen-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 24px color-mix(in srgb, var(--accent-color) 50%, transparent);
+  opacity: 0.6;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+.fullscreen-range:hover::-moz-range-thumb,
+.fullscreen-range:active::-moz-range-thumb {
+  opacity: 1;
 }
 
 .skip-link {
@@ -1186,6 +1091,31 @@ body {
 }
 .skip-link:focus {
   top: 0.75rem;
+}
+.skip-link:focus-visible {
+  top: 0.75rem;
+}
+
+/* Focus visible ring for keyboard navigation */
+.focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-400, #4ade80);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+/* Global focus-visible for all interactive elements */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+details summary:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 2px solid var(--color-primary-400, #4ade80);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -11,11 +11,36 @@ import (
 )
 
 type Handler struct {
-	service Service
+	service               Service
+	radioService          *RadioService
+	homeFeedSvc           *HomeFeedService
+	homeRecSvc            *HomeRecommendationService
+	discoverWeeklyService *DiscoverWeeklyService
+	listeningStatsService *ListeningStatsService
 }
 
 func NewHandler(service Service) *Handler {
 	return &Handler{service: service}
+}
+
+func (h *Handler) SetRadioService(rs *RadioService) {
+	h.radioService = rs
+}
+
+func (h *Handler) SetHomeFeedService(svc *HomeFeedService) {
+	h.homeFeedSvc = svc
+}
+
+func (h *Handler) SetHomeRecommendationService(svc *HomeRecommendationService) {
+	h.homeRecSvc = svc
+}
+
+func (h *Handler) SetDiscoverWeeklyService(svc *DiscoverWeeklyService) {
+	h.discoverWeeklyService = svc
+}
+
+func (h *Handler) SetListeningStatsService(svc *ListeningStatsService) {
+	h.listeningStatsService = svc
 }
 
 func parseLimit(c *gin.Context) (int, error) {
@@ -314,16 +339,78 @@ func (h *Handler) ForYou(c *gin.Context) {
 	})
 }
 
-// ForYou godoc
-// @Summary Get personalized recommendations for current user
-// @Description Returns personalized recommendations for the authenticated user
-// @Tags recommendation
-// @Accept json
-// @Produce json
-// @Param limit query int false "Maximum number of items"
-// @Success 200 {object} response.SuccessResponse{data=recommendation.RecommendationResponse}
-// @Failure 400 {object} response.ErrorResponse
-// @Failure 401 {object} response.ErrorResponse
-// @Failure 500 {object} response.ErrorResponse
-// @Security Bearer
-// @Router /recommendations/for_you [get]
+func (h *Handler) PersonalizedTracks(c *gin.Context) {
+	userID, ok := web.GetUserIDString(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "unauthorized"})
+		return
+	}
+
+	limit, err := parseLimit(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	items, err := h.homeRecSvc.GetPersonalizedTracks(c.Request.Context(), userID, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "failed to fetch personalized tracks"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": RecommendationResponse{
+			Type:  "personalized",
+			Items: items,
+			Limit: limit,
+		},
+	})
+}
+
+func (h *Handler) DiscoverWeekly(c *gin.Context) {
+	userID, ok := web.GetUserIDString(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "unauthorized"})
+		return
+	}
+
+	playlist, tracks, err := h.discoverWeeklyService.GetOrGenerateWeeklyPlaylist(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "failed to generate discover weekly"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"playlist": gin.H{
+				"generated_at": playlist.GeneratedAt,
+				"week_of":      playlist.WeekOf,
+				"track_count":  len(tracks),
+			},
+			"tracks": tracks,
+		},
+	})
+}
+
+func (h *Handler) ListeningStats(c *gin.Context) {
+	userID, ok := web.GetUserIDString(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "unauthorized"})
+		return
+	}
+
+	period := c.DefaultQuery("period", "month")
+
+	stats, err := h.listeningStatsService.GetStats(c.Request.Context(), userID, period)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "failed to get listening stats"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    stats,
+	})
+}

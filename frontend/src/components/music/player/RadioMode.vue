@@ -32,7 +32,7 @@
           <div class="glass flex items-center gap-2 rounded-full px-4 py-2 text-xs text-white/50">
             <span class="flex h-2 w-2 animate-pulse rounded-full bg-[#1db954]" />
             <span class="font-semibold tracking-wider uppercase">Radio</span>
-            <span v-if="seedLabel" class="text-white/30">· {{ seedLabel }}</span>
+            <span v-if="displaySeedLabel" class="text-white/30">· {{ displaySeedLabel }}</span>
           </div>
           <button
             type="button"
@@ -160,20 +160,12 @@
                 >
                   History
                 </button>
-                <button
-                  type="button"
-                  class="spring text-xs font-semibold tracking-wider uppercase transition-all"
-                  :class="subTab === 'similar' ? 'text-white' : 'text-white/40 hover:text-white/70'"
-                  @click="subTab = 'similar'; fetchSimilar()"
-                >
-                  Similar
-                </button>
               </div>
 
               <div class="mt-4 flex-1 scrollbar-thin space-y-1 overflow-y-auto pr-2">
                 <div v-show="subTab === 'upcoming'">
                   <div
-                    v-for="(track, idx) in upcomingTracks"
+                    v-for="(track, idx) in upcomingList"
                     :key="track.id"
                     role="button"
                     tabindex="0"
@@ -212,11 +204,11 @@
                       <i aria-hidden="true" class="pi pi-play-fill text-sm" />
                     </div>
                   </div>
-                  <div v-if="loadingUpcoming" class="flex justify-center py-4">
+                  <div v-if="isLoadingBatch" class="flex justify-center py-4">
                     <i aria-hidden="true" class="pi pi-spin pi-spinner text-white/30" />
                   </div>
                   <div
-                    v-else-if="upcomingTracks.length === 0"
+                    v-else-if="upcomingList.length === 0"
                     class="flex flex-col items-center gap-2 py-8 text-white/20"
                   >
                     <i aria-hidden="true" class="pi pi-wave-pulse text-2xl" />
@@ -226,12 +218,12 @@
 
                 <div v-show="subTab === 'history'">
                   <div
-                    v-for="(track, idx) in historyTracks"
+                    v-for="(track, idx) in historyList"
                     :key="track.id + '-' + idx"
                     class="flex items-center gap-3 rounded-xl px-3 py-2 text-white/40"
                   >
                     <span class="w-5 text-center text-xs text-white/15 tabular-nums">{{
-                      historyTracks.length - idx
+                      historyList.length - idx
                     }}</span>
                     <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg opacity-60">
                       <img
@@ -254,61 +246,11 @@
                     </div>
                   </div>
                   <div
-                    v-if="historyTracks.length === 0"
+                    v-if="historyList.length === 0"
                     class="flex flex-col items-center gap-2 py-8 text-white/20"
                   >
                     <i aria-hidden="true" class="pi pi-history text-2xl" />
                     <p class="text-xs">No history yet</p>
-                  </div>
-                </div>
-
-                <div v-show="subTab !== 'upcoming' && subTab !== 'history'">
-                  <div
-                    v-for="rec in similarTracks"
-                    :key="rec.id"
-                    role="button"
-                    tabindex="0"
-                    class="group spring flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition-all hover:bg-white/[0.06]"
-                    @click="addSimilar(rec)"
-                    @keydown.enter="addSimilar(rec)"
-                    @keydown.space.prevent="addSimilar(rec)"
-                  >
-                    <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg">
-                      <img
-                        v-if="rec.cover_url"
-                        :src="rec.cover_url"
-                        :alt="rec.title"
-                        class="h-full w-full object-cover"
-                        @error="onImgError"
-                      />
-                      <div
-                        v-else
-                        class="flex h-full w-full items-center justify-center bg-white/10"
-                      >
-                        <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
-                      </div>
-                    </div>
-                    <div class="min-w-0 flex-1">
-                      <p
-                        class="truncate text-sm font-medium text-white/80 transition-colors group-hover:text-white"
-                      >
-                        {{ rec.title }}
-                      </p>
-                      <p class="truncate text-xs text-white/40">{{ rec.artist_name }}</p>
-                    </div>
-                    <div class="text-[#1db954] opacity-0 group-hover:opacity-100">
-                      <i aria-hidden="true" class="pi pi-plus text-sm" />
-                    </div>
-                  </div>
-                  <div v-if="loadingSimilar" class="flex justify-center py-4">
-                    <i aria-hidden="true" class="pi pi-spin pi-spinner text-white/30" />
-                  </div>
-                  <div
-                    v-else-if="similarTracks.length === 0"
-                    class="flex flex-col items-center gap-2 py-8 text-white/20"
-                  >
-                    <i aria-hidden="true" class="pi pi-search text-2xl" />
-                    <p class="text-xs">No similar tracks found</p>
                   </div>
                 </div>
               </div>
@@ -323,8 +265,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { usePlayerControls } from '@/composables/player'
+import { useRadio } from '@/composables/recommendation/useRadio'
 import { useAlbumColors } from '@/composables/useAlbumColors'
-import { useRecommendationsApi, type RecommendationTrack } from '@/services/api/recommendation'
 import { onImgError } from '@/utils/helpers'
 import type { PlaybackTrack } from '@/services/api/player'
 
@@ -340,14 +282,11 @@ const emit = defineEmits<{
 }>()
 
 const rootEl = ref<HTMLElement | null>(null)
-const subTab = ref<'upcoming' | 'history' | 'similar'>('upcoming')
-const upcomingTracks = ref<PlaybackTrack[]>([])
-const historyTracks = ref<PlaybackTrack[]>([])
-const similarTracks = ref<RecommendationTrack[]>([])
-const loadingUpcoming = ref(false)
-const loadingSimilar = ref(false)
+const subTab = ref<'upcoming' | 'history'>('upcoming')
 
 const pc = usePlayerControls()
+const radio = useRadio()
+
 const currentTrack = pc.currentTrack
 const isPlaying = pc.isPlaying
 const isBuffering = pc.isBuffering
@@ -363,12 +302,37 @@ const seekPercent = pc.seekPercent
 const playNext = pc.playNext
 const playPrevious = pc.playPrevious
 
-const recsApi = useRecommendationsApi()
-
 const title = computed(() => currentTrack.value?.title || 'No track')
 const artistName = computed(() => currentTrack.value?.artistName || '')
 const coverUrl = computed(() => currentTrack.value?.coverUrl || '')
 const { palette: albumPalette } = useAlbumColors(coverUrl)
+
+const displaySeedLabel = computed(() => {
+  return radio.radioSeedLabel.value || props.seedLabel || ''
+})
+
+const upcomingList = computed<PlaybackTrack[]>(() => {
+  // Show upcoming tracks from the queue, skipping the current track
+  const q = pc.queue.value
+  const currentId = currentTrack.value?.id
+  const currentIdx = q.findIndex((t: PlaybackTrack) => t.id === currentId)
+  if (currentIdx >= 0) {
+    return q.slice(currentIdx + 1)
+  }
+  return q.slice(1)
+})
+
+const historyList = computed<PlaybackTrack[]>(() => {
+  const q = pc.queue.value
+  const currentId = currentTrack.value?.id
+  const currentIdx = q.findIndex((t: PlaybackTrack) => t.id === currentId)
+  if (currentIdx > 0) {
+    return q.slice(0, currentIdx).reverse()
+  }
+  return []
+})
+
+const isLoadingBatch = computed(() => radio.isLoadingBatch.value)
 
 const bgStyle = computed(() => {
   const p = albumPalette.value
@@ -384,7 +348,7 @@ const bgStyle = computed(() => {
   }
 })
 
-const canSkip = computed(() => upcomingTracks.value.length > 0 || hasNext.value)
+const canSkip = computed(() => upcomingList.value.length > 0 || hasNext.value)
 
 function fmtTime(s: number) {
   const total = Math.max(0, Math.floor(Number(s) || 0))
@@ -404,6 +368,7 @@ function onSeek(e: Event) {
 }
 
 function close() {
+  radio.endRadio()
   emit('update:visible', false)
 }
 
@@ -415,99 +380,38 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
-async function fetchUpcoming() {
-  if (upcomingTracks.value.length > 5) return
-  loadingUpcoming.value = true
-  try {
-    const res = await recsApi.getForYou({ limit: 10 })
-    const items: RecommendationTrack[] = res?.items ?? []
-    const mapped: PlaybackTrack[] = items.map((r) => ({
-      id: r.id,
-      title: r.title,
-      artistName: r.artist_name || '',
-      albumTitle: r.album_title || '',
-      coverUrl: r.cover_url || '',
-      durationSeconds: r.duration_seconds ?? null,
-      streamUrl: r.audio_url || '',
-    }))
-    upcomingTracks.value = [...upcomingTracks.value, ...mapped]
-  } catch {
-    // silent
-  } finally {
-    loadingUpcoming.value = false
-  }
-}
-
 function skipTrack() {
-  if (upcomingTracks.value.length > 0) {
-    const next = upcomingTracks.value[0]!
-    upcomingTracks.value = upcomingTracks.value.slice(1)
-    if (currentTrack.value) {
-      historyTracks.value = [currentTrack.value, ...historyTracks.value].slice(0, 50)
-    }
-    pc.setQueueAndPlay([next, ...upcomingTracks.value], 0)
-    upcomingTracks.value = pc.queue.value.slice(1) as PlaybackTrack[]
-  } else {
-    playNext()
-    if (currentTrack.value) {
-      historyTracks.value = [currentTrack.value, ...historyTracks.value].slice(0, 50)
-    }
-  }
+  playNext()
 }
 
 function playUpcoming(index: number) {
-  const track = upcomingTracks.value[index]
+  const track = upcomingList.value[index]
   if (!track) return
-  if (currentTrack.value) {
-    historyTracks.value = [currentTrack.value, ...historyTracks.value].slice(0, 50)
-  }
-  upcomingTracks.value = upcomingTracks.value.slice(index + 1)
-  pc.setQueueAndPlay([track, ...upcomingTracks.value], 0)
-  upcomingTracks.value = pc.queue.value.slice(1) as PlaybackTrack[]
+  pc.setQueueAndPlay(pc.queue.value, pc.queue.value.findIndex((t: PlaybackTrack) => t.id === track.id))
 }
 
-async function fetchSimilar() {
-  if (!currentTrack.value?.id) return
-  loadingSimilar.value = true
-  try {
-    const res = await recsApi.getSimilar(currentTrack.value.id, { limit: 20 })
-    similarTracks.value = res?.items ?? []
-  } catch {
-    similarTracks.value = []
-  } finally {
-    loadingSimilar.value = false
+async function startRadioSession() {
+  if (props.seedId) {
+    await radio.startFromTrack(props.seedId, props.seedLabel)
   }
 }
-
-function addSimilar(rec: RecommendationTrack) {
-  const track: PlaybackTrack = {
-    id: rec.id,
-    title: rec.title,
-    artistName: rec.artist_name || '',
-    albumTitle: rec.album_title || '',
-    coverUrl: rec.cover_url || '',
-    durationSeconds: rec.duration_seconds ?? null,
-    streamUrl: rec.audio_url || '',
-  }
-  upcomingTracks.value = [...upcomingTracks.value, track]
-  subTab.value = 'upcoming'
-}
-
-watch(
-  () => currentTrack.value?.id,
-  () => {
-    if (upcomingTracks.value.length < 3) {
-      void fetchUpcoming()
-    }
-  },
-)
 
 watch(
   () => props.visible,
   async (v) => {
     if (v) {
       await nextTick()
-      void fetchUpcoming()
+      await startRadioSession()
+    }
+  },
+)
+
+watch(
+  () => props.seedId,
+  async (seedId) => {
+    if (seedId && props.visible) {
+      await nextTick()
+      await startRadioSession()
     }
   },
 )
@@ -518,8 +422,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
-  upcomingTracks.value = []
-  historyTracks.value = []
+  radio.endRadio()
 })
 </script>
 

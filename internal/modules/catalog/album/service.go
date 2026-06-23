@@ -25,8 +25,20 @@ func (s *Service) GetByID(ctx context.Context, id string) (*Album, error) {
 	return s.repo.GetByID(ctx, uid)
 }
 
-func (s *Service) List(ctx context.Context, limit, offset int) ([]Album, error) {
-	return s.repo.List(ctx, limit, offset)
+func (s *Service) List(ctx context.Context, limit, offset int, opts ...ListOptions) ([]Album, error) {
+	var o ListOptions
+	if len(opts) > 0 {
+		o = opts[0]
+	}
+	return s.repo.List(ctx, limit, offset, o)
+}
+
+func (s *Service) ListByArtist(ctx context.Context, artistID string) ([]Album, error) {
+	uid, err := common.ParseUUID(artistID)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.List(ctx, 100, 0, ListOptions{ArtistID: &uid})
 }
 
 func (s *Service) ListTracks(ctx context.Context, id string, limit, offset int) ([]AlbumTrack, error) {

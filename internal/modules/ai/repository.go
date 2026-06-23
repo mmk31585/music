@@ -19,7 +19,7 @@ func NewRepository(db *sqlx.DB) *Repository {
 
 func (r *Repository) UpsertEmbedding(ctx context.Context, trackID uuid.UUID, embedding []float64, modelVersion string) error {
 	query := `
-		INSERT INTO track_embeddings (track_id, embedding, model_version, updated_at)
+		INSERT INTO track_embeddings_text (track_id, embedding, model_version, updated_at)
 		VALUES ($1, $2, $3, NOW())
 		ON CONFLICT (track_id)
 		DO UPDATE SET embedding = $2, model_version = $3, updated_at = NOW()
@@ -30,7 +30,7 @@ func (r *Repository) UpsertEmbedding(ctx context.Context, trackID uuid.UUID, emb
 
 func (r *Repository) GetEmbedding(ctx context.Context, trackID uuid.UUID) (*TrackEmbedding, error) {
 	var e TrackEmbedding
-	err := r.db.GetContext(ctx, &e, `SELECT track_id, embedding, model_version, updated_at FROM track_embeddings WHERE track_id = $1`, trackID)
+	err := r.db.GetContext(ctx, &e, `SELECT track_id, embedding, model_version, updated_at FROM track_embeddings_text WHERE track_id = $1`, trackID)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (r *Repository) GetEmbedding(ctx context.Context, trackID uuid.UUID) (*Trac
 func (r *Repository) GetTracksWithoutEmbeddings(ctx context.Context, limit int) ([]TrackMeta, error) {
 	query := `
 		SELECT t.id, t.title FROM tracks t
-		LEFT JOIN track_embeddings te ON te.track_id = t.id
+		LEFT JOIN track_embeddings_text te ON te.track_id = t.id
 		WHERE te.track_id IS NULL
 		LIMIT $1
 	`
@@ -178,9 +178,10 @@ func (r *Repository) GetTrackMetadata(ctx context.Context, trackID string) (*Tra
 	query := `
 		SELECT t.id::text, t.title, COALESCE(a.name, '') as artist,
 			COALESCE(al.title, '') as album, COALESCE(g.name, '') as genre,
-			COALESCE(t.duration_seconds, 0) as duration
+			COALESCE(t.duration_seconds, 0) as duration,
+			COALESCE(t.cover_url, '') as cover_url
 		FROM tracks t
-		LEFT JOIN track_artists ta ON ta.track_id = t.id AND ta.position = 0
+		LEFT JOIN track_artists ta ON ta.track_id = t.id AND ta.role = 'primary'
 		LEFT JOIN artists a ON a.id = ta.artist_id
 		LEFT JOIN albums al ON al.id = t.album_id
 		LEFT JOIN track_genres tg ON tg.track_id = t.id
@@ -203,9 +204,10 @@ func (r *Repository) GetTracksByIDs(ctx context.Context, ids []string) ([]TrackM
 	query := `
 		SELECT t.id::text, t.title, COALESCE(a.name, '') as artist,
 			COALESCE(al.title, '') as album, COALESCE(g.name, '') as genre,
-			COALESCE(t.duration_seconds, 0) as duration
+			COALESCE(t.duration_seconds, 0) as duration,
+			COALESCE(t.cover_url, '') as cover_url
 		FROM tracks t
-		LEFT JOIN track_artists ta ON ta.track_id = t.id AND ta.position = 0
+		LEFT JOIN track_artists ta ON ta.track_id = t.id AND ta.role = 'primary'
 		LEFT JOIN artists a ON a.id = ta.artist_id
 		LEFT JOIN albums al ON al.id = t.album_id
 		LEFT JOIN track_genres tg ON tg.track_id = t.id
@@ -221,7 +223,7 @@ func (r *Repository) GetTracksByIDs(ctx context.Context, ids []string) ([]TrackM
 	var results []TrackMeta
 	for rows.Next() {
 		var m TrackMeta
-		if err := rows.Scan(&m.ID, &m.Title, &m.Artist, &m.Album, &m.Genre, &m.Duration); err != nil {
+		if err := rows.Scan(&m.ID, &m.Title, &m.Artist, &m.Album, &m.Genre, &m.Duration, &m.CoverURL); err != nil {
 			return nil, err
 		}
 		results = append(results, m)
@@ -229,14 +231,20 @@ func (r *Repository) GetTracksByIDs(ctx context.Context, ids []string) ([]TrackM
 	return results, nil
 }
 
-func (r *Repository) GetSimilarByEmbedding(ctx context.Context, embedding []float64, limit int) ([]TrackMeta, error) {
-	query := `
+func (r *Repository) GetSimilarByEmbedding(ctx context.Context, embedding []float64, limit int, embeddingSpace string) ([]TrackMeta, error) {
+	tableName := "track_embeddings_audio"
+	if embeddingSpace == "text" {
+		tableName = "track_embeddings_text"
+	}
+
+	query := fmt.Sprintf(`
 		SELECT t.id::text, t.title, COALESCE(a.name, '') as artist,
 			COALESCE(al.title, '') as album, COALESCE(g.name, '') as genre,
-			COALESCE(t.duration_seconds, 0) as duration
-		FROM track_embeddings te
+			COALESCE(t.duration_seconds, 0) as duration,
+			COALESCE(t.cover_url, '') as cover_url
+		FROM %s te
 		JOIN tracks t ON t.id = te.track_id
-		LEFT JOIN track_artists ta ON ta.track_id = t.id AND ta.position = 0
+		LEFT JOIN track_artists ta ON ta.track_id = t.id AND ta.role = 'primary'
 		LEFT JOIN artists a ON a.id = ta.artist_id
 		LEFT JOIN albums al ON al.id = t.album_id
 		LEFT JOIN track_genres tg ON tg.track_id = t.id
@@ -244,7 +252,7 @@ func (r *Repository) GetSimilarByEmbedding(ctx context.Context, embedding []floa
 		WHERE NOT te.embedding IS NULL
 		ORDER BY cosine_distance(te.embedding, $1)
 		LIMIT $2
-	`
+	`, tableName)
 	rows, err := r.db.QueryContext(ctx, query, embedding, limit)
 	if err != nil {
 		return nil, err
@@ -254,7 +262,7 @@ func (r *Repository) GetSimilarByEmbedding(ctx context.Context, embedding []floa
 	var results []TrackMeta
 	for rows.Next() {
 		var m TrackMeta
-		if err := rows.Scan(&m.ID, &m.Title, &m.Artist, &m.Album, &m.Genre, &m.Duration); err != nil {
+		if err := rows.Scan(&m.ID, &m.Title, &m.Artist, &m.Album, &m.Genre, &m.Duration, &m.CoverURL); err != nil {
 			return nil, err
 		}
 		results = append(results, m)
@@ -266,9 +274,10 @@ func (r *Repository) GetTracks(ctx context.Context, limit int) ([]TrackMeta, err
 	query := `
 		SELECT t.id::text, t.title, COALESCE(a.name, '') as artist,
 			COALESCE(al.title, '') as album, COALESCE(g.name, '') as genre,
-			COALESCE(t.duration_seconds, 0) as duration
+			COALESCE(t.duration_seconds, 0) as duration,
+			COALESCE(t.cover_url, '') as cover_url
 		FROM tracks t
-		LEFT JOIN track_artists ta ON ta.track_id = t.id AND ta.position = 0
+		LEFT JOIN track_artists ta ON ta.track_id = t.id AND ta.role = 'primary'
 		LEFT JOIN artists a ON a.id = ta.artist_id
 		LEFT JOIN albums al ON al.id = t.album_id
 		LEFT JOIN track_genres tg ON tg.track_id = t.id
@@ -284,7 +293,7 @@ func (r *Repository) GetTracks(ctx context.Context, limit int) ([]TrackMeta, err
 	var results []TrackMeta
 	for rows.Next() {
 		var m TrackMeta
-		if err := rows.Scan(&m.ID, &m.Title, &m.Artist, &m.Album, &m.Genre, &m.Duration); err != nil {
+		if err := rows.Scan(&m.ID, &m.Title, &m.Artist, &m.Album, &m.Genre, &m.Duration, &m.CoverURL); err != nil {
 			return nil, err
 		}
 		results = append(results, m)
@@ -314,6 +323,6 @@ func (r *Repository) SaveSmartPlaylist(ctx context.Context, sp SmartPlaylist) (i
 
 func (r *Repository) EmbeddingExists(ctx context.Context, trackID uuid.UUID) (bool, error) {
 	var exists bool
-	err := r.db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM track_embeddings WHERE track_id = $1)`, trackID).Scan(&exists)
+	err := r.db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM track_embeddings_text WHERE track_id = $1)`, trackID).Scan(&exists)
 	return exists, err
 }

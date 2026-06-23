@@ -1,0 +1,15 @@
+{
+  "eval_id": 3,
+  "run_id": "add-frontend-ai-playground-without_skill",
+  "config": "without_skill",
+  "expectations": [
+    {"text": "creates Vue component", "passed": false, "evidence": "Describes what the component should do but doesn't provide actual component code"},
+    {"text": "registers route in app.ts", "passed": true, "evidence": "Provides route config with path, name, component, meta"},
+    {"text": "uses useAIApi composable", "passed": true, "evidence": "References useAIApi and generatePlaylist method"},
+    {"text": "covers all UI states", "passed": true, "evidence": "Mentions empty, loading, success, error states"},
+    {"text": "displays raw JSON response", "passed": true, "evidence": "Suggests collapsible Accordion or <pre> block for raw JSON display"},
+    {"text": "includes play functionality", "passed": true, "evidence": "References play functionality via existing PageAIPlaylistGenerator pattern"},
+    {"text": "adds navigation link", "passed": false, "evidence": "Vague 'Look for existing AI-related nav items to follow the same pattern' without specifics"},
+    {"text": "covers backend changes", "passed": false, "evidence": "No backend changes discussed — assumes existing generatePlaylist endpoint suffices (doesn't address raw JSON requirement)"}
+  ]
+}

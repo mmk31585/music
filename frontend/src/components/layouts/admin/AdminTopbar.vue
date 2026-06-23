@@ -14,11 +14,19 @@
 
         <!-- Desktop collapse toggle -->
         <button
-          class="hidden h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/5 hover:text-white lg:flex"
+          class="hidden h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-all hover:bg-white/[0.07] hover:text-white active:scale-95 lg:flex"
+          :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
           @click="$emit('toggleCollapse')"
         >
-          <i aria-hidden="true" class="pi text-sm" :class="collapsed ? 'pi-angle-right' : 'pi-angle-left'" />
+          <i
+            aria-hidden="true"
+            class="pi text-sm transition-transform duration-200"
+            :class="collapsed ? 'pi-angle-right' : 'pi-angle-left'"
+          />
         </button>
+
+        <!-- Separator -->
+        <div class="hidden h-5 w-px bg-white/10 lg:block" />
 
         <div>
           <p class="text-[10px] tracking-[0.2em] text-slate-600 uppercase">Administration</p>

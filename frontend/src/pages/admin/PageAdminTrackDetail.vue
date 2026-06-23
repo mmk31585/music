@@ -284,7 +284,7 @@ async function openEdit() {
 
   // Fetch lyrics — they aren't included in getTrack response
   try {
-    const lyrics = await lyricsApi.getTrackLyrics(augmented.id, undefined, { silent: true })
+    const lyrics = await lyricsApi.getTrackLyrics(augmented.id as string, undefined, { silent: true })
     if (lyrics?.content) {
       augmented.lyrics = lyrics.content
       augmented.lyrics_language = lyrics.language || 'en'
@@ -294,7 +294,7 @@ async function openEdit() {
     // No lyrics stored yet — that's fine
   }
 
-  editingTrack.value = augmented
+  editingTrack.value = augmented as Track
   showForm.value = true
 }
 
@@ -311,7 +311,7 @@ async function handleEditSubmit(payload: TrackFormPayload) {
   if (!track.value) return
   saving.value = true
   try {
-    const updated = await tracksApi.adminUpdateTrack(track.value.id, payload)
+    const updated = await tracksApi.adminUpdateTrack(track.value.id, { ...payload, isPublic: true })
     track.value = updated
     showForm.value = false
     toast.add({ severity: 'success', summary: 'Track updated', life: 2500 })
@@ -326,14 +326,52 @@ async function handleFetchLRC() {
   if (!track.value) return
   fetchingLrc.value = true
   try {
-    const result = await lyricsApi.fetchLrcLyrics(String(track.value.id))
-    toast.add({ severity: 'success', summary: 'LRC lyrics fetched and saved', life: 3000 })
-    // Refresh track to show updated lyrics
+    // Use fetch-or-generate pipeline: LRCLIB first, then AI fallback
+    const result = await lyricsApi.fetchOrGenerateLyrics(String(track.value.id))
+    if (result.source === 'lrclib') {
+      toast.add({ severity: 'success', summary: 'Lyrics found on LRCLIB and saved', life: 3000 })
+    } else if (result.source === 'ai') {
+      toast.add({
+        severity: 'info',
+        summary: 'AI lyrics generation started',
+        detail: 'No internet lyrics found. AI is generating from audio... This may take a minute.',
+        life: 5000,
+      })
+      // Poll until done
+      let attempts = 0
+      const maxAttempts = 30
+      const poll = async (): Promise<void> => {
+        attempts++
+        const status = await lyricsApi.aiStatus(String(track.value!.id))
+        if (status.status === 'completed') {
+          toast.add({ severity: 'success', summary: 'AI lyrics generated and saved!', life: 3000 })
+          await loadTrack()
+          return
+        }
+        if (status.status === 'failed') {
+          toast.add({
+            severity: 'warn',
+            summary: 'AI lyrics generation failed',
+            detail: status.message || 'Unknown error',
+            life: 5000,
+          })
+          return
+        }
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 3000)
+        } else {
+          toast.add({ severity: 'warn', summary: 'AI lyrics generation still in progress', detail: 'Check back later', life: 5000 })
+        }
+      }
+      await poll()
+    } else {
+      toast.add({ severity: 'warn', summary: 'No lyrics found', detail: result.message || 'Neither LRCLIB nor AI had results', life: 3000 })
+    }
     await loadTrack()
   } catch (err) {
     toast.add({
       severity: 'error',
-      summary: 'Failed to fetch LRC',
+      summary: 'Failed to fetch lyrics',
       detail: err instanceof Error ? err.message : 'Unknown error',
       life: 3000,
     })
@@ -375,7 +413,7 @@ async function handleDelete() {
   }
 }
 
-function normalizeCatalogOptions(items: Array<Record<string, unknown>> | undefined | null) {
+function normalizeCatalogOptions(items: Array<Record<string, unknown>> | undefined | null, _type?: string) {
   if (!Array.isArray(items)) return []
   return items.map(item => {
     const id = item.id ?? item.artist_id ?? item.album_id ?? item.genre_id

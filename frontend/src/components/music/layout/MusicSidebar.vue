@@ -1,6 +1,6 @@
 <template>
   <nav aria-label="Main navigation"
-    class="hidden h-screen shrink-0 border-r border-white/10 bg-black/40 backdrop-blur-2xl lg:block lg:overflow-y-auto transition-all duration-300 ease-out"
+    class="hidden h-screen shrink-0 border-r border-white/10 bg-black/40 backdrop-blur-2xl lg:block lg:overflow-y-auto transition-all duration-300 ease-out z-30"
     :class="collapsed ? 'w-14' : 'w-56'"
     style="backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.06) transparent;"
   >
@@ -100,9 +100,11 @@
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePlayerStore } from '@/stores/player'
+import { useUserAuthStore } from '@/stores'
 
 const route = useRoute()
 const playerStore = usePlayerStore()
+const authStore = useUserAuthStore()
 
 const collapsed = ref(localStorage.getItem('sidebar-collapsed') === 'true')
 function toggleCollapsed() {
@@ -116,29 +118,36 @@ const mainNav = [
   { label: 'Discover', icon: 'pi pi-compass', to: '/discover' },
   { label: 'Search', icon: 'pi pi-search', to: '/search' },
   { label: 'Recommendations', icon: 'pi pi-star', to: '/recommendations' },
+  { label: 'Music Videos', icon: 'pi pi-video', to: '/videos' },
 ]
 
 const libraryNav = [
   { label: 'Library', icon: 'pi pi-bookmark', to: '/library' },
-  { label: 'Playlists', icon: 'pi pi-list', to: '/playlists' },
-  { label: 'Recently Played', icon: 'pi pi-history', to: '/recently-played' },
 ]
 
 const socialNav = [
+  { label: 'Explore', icon: 'pi pi-compass', to: '/explore' },
   { label: 'Social Hub', icon: 'pi pi-users', to: '/social' },
   { label: 'Notifications', icon: 'pi pi-bell', to: '/notifications' },
 ]
 
-const moreNav = [
-  { label: 'Profile', icon: 'pi pi-user', to: '/profile' },
-  { label: 'Settings', icon: 'pi pi-cog', to: '/settings' },
-  { label: 'AI Mood Explorer', icon: 'pi pi-magic', to: '/ai/mood-explorer' },
-  { label: 'AI Playlist Generator', icon: 'pi pi-sync', to: '/ai/playlist-generator' },
-  { label: 'Subscription', icon: 'pi pi-credit-card', to: '/subscription' },
-  { label: 'Gamification', icon: 'pi pi-trophy', to: '/gamification' },
-  { label: 'Contributions', icon: 'pi pi-cloud-upload', to: '/contributions' },
-  { label: 'Creator Dashboard', icon: 'pi pi-chart-bar', to: '/creator-dashboard' },
-]
+const moreNav = computed(() => {
+  const items = [
+    { label: 'Profile', icon: 'pi pi-user', to: '/profile' },
+    { label: 'Settings', icon: 'pi pi-cog', to: '/settings' },
+    { label: 'AI Mood Explorer', icon: 'pi pi-magic', to: '/ai/mood-explorer' },
+    { label: 'AI Playlist Generator', icon: 'pi pi-sync', to: '/ai/playlist-generator' },
+    { label: 'Subscription', icon: 'pi pi-credit-card', to: '/subscription' },
+    { label: 'Gamification', icon: 'pi pi-trophy', to: '/gamification' },
+    { label: 'Contributions', icon: 'pi pi-cloud-upload', to: '/contributions' },
+    { label: 'Creator Dashboard', icon: 'pi pi-chart-bar', to: '/creator-dashboard' },
+  ]
+  // Admin users get a direct link to the admin panel
+  if (authStore.isAdmin) {
+    items.push({ label: 'Admin Panel', icon: 'pi pi-shield', to: '/admin' })
+  }
+  return items
+})
 
 const latestAlbum = computed(() => {
   const track = playerStore.currentTrack
@@ -150,7 +159,7 @@ const latestAlbum = computed(() => {
   }
 })
 
-const allNav = [...mainNav, ...libraryNav, ...socialNav, ...moreNav]
+const allNav = computed(() => [...mainNav, ...libraryNav, ...socialNav, ...moreNav.value])
 
 function isActive(to: string) {
   if (to === '/') return route.path === '/'

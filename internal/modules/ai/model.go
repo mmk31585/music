@@ -1,17 +1,69 @@
 package ai
 
 import (
+	"database/sql/driver"
 	"encoding/json"
+	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 )
 
+// Float64Array implements sql.Scanner and driver.Valuer for PostgreSQL
+// double precision[] arrays when using the pgx stdlib driver.
+type Float64Array []float64
+
+func (a *Float64Array) Scan(src any) error {
+	if src == nil {
+		*a = nil
+		return nil
+	}
+	var s string
+	switch v := src.(type) {
+	case string:
+		s = v
+	case []byte:
+		s = string(v)
+	default:
+		return fmt.Errorf("Float64Array.Scan: unexpected type %T", src)
+	}
+	// PostgreSQL array format: {val1,val2,val3}
+	s = strings.Trim(s, "{}")
+	if s == "" {
+		*a = Float64Array{}
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	result := make(Float64Array, len(parts))
+	for i, p := range parts {
+		f, err := strconv.ParseFloat(strings.TrimSpace(p), 64)
+		if err != nil {
+			return fmt.Errorf("Float64Array.Scan: parse %q: %w", p, err)
+		}
+		result[i] = f
+	}
+	*a = result
+	return nil
+}
+
+func (a Float64Array) Value() (driver.Value, error) {
+	if a == nil {
+		return nil, nil
+	}
+	parts := make([]string, len(a))
+	for i, f := range a {
+		parts[i] = strconv.FormatFloat(f, 'f', -1, 64)
+	}
+	return "{" + strings.Join(parts, ",") + "}", nil
+}
+
 type TrackEmbedding struct {
-	TrackID      uuid.UUID `db:"track_id" json:"track_id"`
-	Embedding    []float64 `db:"embedding" json:"embedding"`
-	ModelVersion string    `db:"model_version" json:"model_version"`
-	UpdatedAt    time.Time `db:"updated_at" json:"updated_at"`
+	TrackID      uuid.UUID    `db:"track_id" json:"track_id"`
+	Embedding    Float64Array `db:"embedding" json:"embedding"`
+	ModelVersion string       `db:"model_version" json:"model_version"`
+	UpdatedAt    time.Time    `db:"updated_at" json:"updated_at"`
 }
 
 type TrackMood struct {
@@ -65,6 +117,7 @@ type TrackMeta struct {
 	Genre    string  `json:"genre,omitempty"`
 	Year     int     `json:"year,omitempty"`
 	Duration int     `json:"duration,omitempty"`
+	CoverURL string  `db:"cover_url" json:"cover_url,omitempty"`
 	Energy   float64 `json:"energy,omitempty"`
 	Valence  float64 `json:"valence,omitempty"`
 }

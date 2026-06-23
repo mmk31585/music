@@ -12,6 +12,19 @@ func SecurityHeaders() gin.HandlerFunc {
 		c.Header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 		c.Header("Cross-Origin-Resource-Policy", "same-origin")
 		c.Header("Cross-Origin-Opener-Policy", "same-origin")
+		// Content-Security-Policy: restrict resources to same-origin by default.
+		// 'unsafe-inline' is required for style-src because Gin/Vue use inline styles.
+		// In production this should be tightened with a nonce-based approach.
+		c.Header("Content-Security-Policy",
+			"default-src 'self'; "+
+				"script-src 'self'; "+
+				"style-src 'self' 'unsafe-inline'; "+
+				"img-src 'self' data: blob:; "+
+				"font-src 'self' data:; "+
+				"connect-src 'self' ws: wss:; "+
+				"media-src 'self'; "+
+				"frame-ancestors 'none'",
+		)
 		c.Next()
 	}
 }

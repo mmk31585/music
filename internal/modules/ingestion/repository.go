@@ -146,17 +146,17 @@ type ListDraftsParams struct {
 }
 
 type ListDraftsRow struct {
-	ID                string     `db:"id"`
-	OriginalFilename  string     `db:"original_filename"`
-	FileSize          int64      `db:"file_size"`
-	Format            string     `db:"format"`
-	DurationSeconds   *float64   `db:"duration_seconds"`
+	ID                string      `db:"id"`
+	OriginalFilename  string      `db:"original_filename"`
+	FileSize          int64       `db:"file_size"`
+	Format            string      `db:"format"`
+	DurationSeconds   *float64    `db:"duration_seconds"`
 	Status            DraftStatus `db:"status"`
-	FileHash          string     `db:"file_hash"`
-	Stale             bool       `db:"stale"`
-	ExtractedMetadata string    `db:"extracted_metadata"`
-	CreatedAt         time.Time  `db:"created_at"`
-	CoverArtURL       *string    `db:"cover_art_url"`
+	FileHash          string      `db:"file_hash"`
+	Stale             bool        `db:"stale"`
+	ExtractedMetadata string      `db:"extracted_metadata"`
+	CreatedAt         time.Time   `db:"created_at"`
+	CoverArtURL       *string     `db:"cover_art_url"`
 }
 
 func (r *Repository) ListDrafts(ctx context.Context, params ListDraftsParams) ([]ListDraftsRow, int, error) {
@@ -211,6 +211,13 @@ func (r *Repository) UpdateDraftEnrichedMetadata(ctx context.Context, id string,
 	_, err := r.db.ExecContext(ctx, `
 		UPDATE ingestion_drafts SET enriched_metadata = $1::jsonb, status = $2, updated_at = NOW() WHERE id = $3
 	`, enrichedJSON, string(status), id)
+	return err
+}
+
+func (r *Repository) UpdateDraftExtractedMetadata(ctx context.Context, id string, extractedJSON string) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE ingestion_drafts SET extracted_metadata = $1::jsonb, updated_at = NOW() WHERE id = $2
+	`, extractedJSON, id)
 	return err
 }
 

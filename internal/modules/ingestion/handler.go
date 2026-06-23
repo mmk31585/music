@@ -1,7 +1,10 @@
 package ingestion
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -13,17 +16,35 @@ import (
 	"music/internal/common/pagination"
 	"music/internal/common/response"
 	"music/internal/modules/auth"
+	"music/internal/modules/ingestion/enrichment"
 	"music/internal/modules/ingestion/finalization"
+	"music/internal/modules/lyrics"
+	platformstorage "music/internal/platform/storage"
 )
 
 type Handler struct {
-	service   *Service
-	finalizer *finalization.Service
-	cleanup   *CleanupService
+	service       *Service
+	finalizer     *finalization.Service
+	cleanup       *CleanupService
+	mlClient      *lyrics.MLServiceClient
+	storage       platformstorage.Storage
+	storageDriver string
 }
 
 func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
+}
+
+// SetMLClient configures the optional ML service client for AI lyrics
+// generation. Set to nil to disable.
+func (h *Handler) SetMLClient(m *lyrics.MLServiceClient) {
+	h.mlClient = m
+}
+
+// SetStorage configures the storage backend for determining audio URLs.
+func (h *Handler) SetStorage(s platformstorage.Storage, driver string) {
+	h.storage = s
+	h.storageDriver = driver
 }
 
 func (h *Handler) SetCleanup(c *CleanupService) {
@@ -126,7 +147,23 @@ func (h *Handler) EnrichDraft(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.EnrichDraft(c.Request.Context(), id); err != nil {
+	// Parse optional scope from body (targeted re-enrichment).
+	// Body is optional — treat empty/missing body as full enrichment.
+	var req EnrichDraftRequest
+	if c.Request.ContentLength > 0 {
+		if err := c.ShouldBindJSON(&req); err != nil {
+			req = EnrichDraftRequest{}
+		}
+	}
+
+	var scope enrichment.EnrichScope
+	if len(req.Scope) > 0 {
+		for _, s := range req.Scope {
+			scope = append(scope, enrichment.Source(s))
+		}
+	}
+
+	if err := h.service.EnrichDraft(c.Request.Context(), id, scope); err != nil {
 		if errors.Is(err, ErrDraftNotFound) {
 			response.Error(c, appErr.NotFound("draft not found", nil))
 			return
@@ -135,7 +172,11 @@ func (h *Handler) EnrichDraft(c *gin.Context) {
 		return
 	}
 
-	response.OK(c, "enrichment started", gin.H{"draftId": id, "status": "enriching"})
+	status := "enriching"
+	if len(scope) > 0 {
+		status = "refetching"
+	}
+	response.OK(c, "enrichment started", gin.H{"draftId": id, "status": status})
 }
 
 func (h *Handler) GetDraftSuggestions(c *gin.Context) {
@@ -156,6 +197,33 @@ func (h *Handler) GetDraftSuggestions(c *gin.Context) {
 	}
 
 	response.OK(c, "suggestions retrieved successfully", suggestions)
+}
+
+// UpdateDraftMetadata updates a draft's extracted metadata fields (title, artist, album)
+// without changing its status. This allows saving in-progress edits before finalization.
+func (h *Handler) UpdateDraftMetadata(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		response.Error(c, appErr.BadRequest("draft ID is required", nil))
+		return
+	}
+
+	var req UpdateDraftMetadataRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, appErr.BadRequest("invalid request body", err))
+		return
+	}
+
+	if err := h.service.UpdateExtractedMetadata(c.Request.Context(), id, req.Title, req.Artist, req.Album); err != nil {
+		if errors.Is(err, ErrDraftNotFound) {
+			response.Error(c, appErr.NotFound("draft not found", nil))
+			return
+		}
+		response.Error(c, appErr.Internal("failed to update draft metadata", err))
+		return
+	}
+
+	response.OK(c, "draft metadata updated", gin.H{})
 }
 
 func (h *Handler) SaveFinalMetadata(c *gin.Context) {
@@ -263,7 +331,56 @@ func (h *Handler) FinalizeDraft(c *gin.Context) {
 		return
 	}
 
+	// Fire-and-forget AI lyrics generation if ML client is configured
+	if h.mlClient != nil && result.TrackID != "" {
+		h.enqueueAILyricsGeneration(c.Request.Context(), draft, result)
+	}
+
 	response.OK(c, "draft published successfully", result)
+}
+
+// enqueueAILyricsGeneration fires a non-blocking request to the ML service
+// to generate AI lyrics for tracks that don't already have them.
+func (h *Handler) enqueueAILyricsGeneration(ctx context.Context, draft *IngestionDraft, result *finalization.FinalizeResult) {
+	go func() {
+		// Parse final metadata for track info
+		title := ""
+		artist := ""
+		if draft.FinalMetadata != nil && *draft.FinalMetadata != "" {
+			var meta finalization.DraftMetadata
+			if err := json.Unmarshal([]byte(*draft.FinalMetadata), &meta); err == nil {
+				title = meta.Track.Title
+				artist = meta.Artist.Name
+			}
+		}
+
+		// Build the request to the ML service.
+		// For local storage: pass the relative storage key as AudioFilePath.
+		// For S3 storage: resolve a (pre)signed URL as AudioDownloadURL.
+		var audioFilePath, audioDownloadURL string
+		if h.storageDriver == "local" {
+			audioFilePath = draft.FilePath
+		} else if h.storage != nil {
+			if url, err := h.storage.GetURL(ctx, draft.FilePath); err == nil {
+				audioDownloadURL = url
+			}
+		}
+
+		req := lyrics.CreateLyricsJobRequest{
+			TrackID:          result.TrackID,
+			AudioFilePath:    audioFilePath,
+			AudioDownloadURL: audioDownloadURL,
+			TrackTitle:       title,
+			TrackArtist:      artist,
+		}
+
+		jobID, err := h.mlClient.EnqueueLyricsJob(ctx, req)
+		if err != nil {
+			log.Printf("[lyrics-ml] failed to enqueue lyrics job for track %s: %v", result.TrackID, err)
+			return
+		}
+		log.Printf("[lyrics-ml] enqueued job %s for track %s", jobID, result.TrackID)
+	}()
 }
 
 func (h *Handler) SearchAlbums(c *gin.Context) {

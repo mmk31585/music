@@ -32,8 +32,8 @@ const route = useRoute()
 const tabs = [
   { label: 'Home', icon: 'pi pi-home', to: '/' },
   { label: 'Search', icon: 'pi pi-search', to: '/search' },
+  { label: 'Videos', icon: 'pi pi-video', to: '/videos' },
   { label: 'Library', icon: 'pi pi-bookmark', to: '/library' },
-  { label: 'Social', icon: 'pi pi-users', to: '/social' },
   { label: 'Profile', icon: 'pi pi-user', to: '/profile' },
 ]
 

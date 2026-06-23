@@ -14,7 +14,7 @@
     >
       <img
         v-if="item.cover_url || item.coverUrl"
-        :src="item.cover_url || item.coverUrl"
+        :src="coverSrc"
         :alt="altText"
         class="h-full w-full object-cover transition duration-500 group-hover:scale-110"
         loading="lazy"
@@ -93,6 +93,8 @@ defineEmits<{
 const artistName = computed(() => {
   return props.item.artist_name || props.item.artistName || ''
 })
+
+const coverSrc = computed((): string | undefined => (props.item.cover_url || props.item.coverUrl) ?? undefined)
 
 const altText = computed(() => {
   const title = props.item.title || props.item.track_title || ''

@@ -279,11 +279,11 @@ const durationLabel = computed(() =>
   fmtTime(pc.duration.value || pc.currentTrack.value?.durationSeconds || 0),
 )
 
-function seekFromEvent(e: MouseEvent) {
+function seekFromEvent(e: MouseEvent | KeyboardEvent) {
   const el = progressRef.value
   if (!el) return
   const rect = el.getBoundingClientRect()
-  const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+  const ratio = Math.max(0, Math.min(1, ((e as MouseEvent).clientX - rect.left) / rect.width))
   pc.seek(ratio * (pc.duration.value || pc.currentTrack.value?.durationSeconds || 0))
 }
 

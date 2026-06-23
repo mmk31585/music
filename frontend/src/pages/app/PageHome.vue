@@ -59,12 +59,26 @@
       </template>
 
       <template v-else>
+        <section v-if="personalized.length" class="mt-6">
+          <HomeSectionHeader title="Based on Your Taste" eyebrow="Personalized picks" subtitle="Powered by your listening history" />
+          <HomeCarousel>
+            <HomeTrackCard
+              v-for="(item, i) in personalized"
+              :key="item.id"
+              :item="item"
+              :delay="i * 30"
+              :is-playing="isCurrentlyPlaying(item)"
+              @play="handlePlay"
+            />
+          </HomeCarousel>
+        </section>
+
         <section v-if="recentPlays.length" class="mt-6">
           <HomeSectionHeader title="Recently played" eyebrow="Jump back in" subtitle="Continue where you left off" see-all-route="/recently-played" />
           <HomeCarousel>
             <HomeTrackCard
               v-for="(item, i) in recentPlays"
-              :key="item.track_id"
+              :key="item.id"
               :item="item"
               :delay="i * 30"
               :is-playing="isCurrentlyPlaying(item)"
@@ -102,11 +116,39 @@
           </HomeCarousel>
         </section>
 
-        <section v-if="recent.length" class="mt-12">
-          <HomeSectionHeader title="New Releases" eyebrow="Latest additions" see-all-route="/recommendations/recent" />
+        <section v-if="fromYourArtists.length" class="mt-12">
+          <HomeSectionHeader title="More from your favorite artists" eyebrow="Based on your listening" />
           <HomeCarousel>
             <HomeTrackCard
-              v-for="(item, i) in recent"
+              v-for="(item, i) in fromYourArtists"
+              :key="item.id"
+              :item="item"
+              :delay="i * 30"
+              :is-playing="isCurrentlyPlaying(item)"
+              @play="handlePlay"
+            />
+          </HomeCarousel>
+        </section>
+
+        <section v-for="sec in becauseOfSections" :key="sec.id" class="mt-12">
+          <HomeSectionHeader :title="sec.title" eyebrow="Similar tracks" />
+          <HomeCarousel>
+            <HomeTrackCard
+              v-for="(item, i) in sec.items"
+              :key="item.id"
+              :item="item"
+              :delay="i * 30"
+              :is-playing="isCurrentlyPlaying(item)"
+              @play="handlePlay"
+            />
+          </HomeCarousel>
+        </section>
+
+        <section v-if="yourGenres.length" class="mt-12">
+          <HomeSectionHeader title="Popular in your genres" eyebrow="From genres you listen to" />
+          <HomeCarousel>
+            <HomeTrackCard
+              v-for="(item, i) in yourGenres"
               :key="item.id"
               :item="item"
               :delay="i * 30"
@@ -223,9 +265,11 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { useToast } from 'primevue/usetoast'
 import { useHomeFeed } from '@/composables/useHomeFeed'
 import { usePlayer } from '@/composables/player'
 import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
+import type { RecommendationTrack } from '@/services/api/recommendation'
 import { onImgError } from '@/utils/helpers'
 import {
   HomeHero,
@@ -236,8 +280,8 @@ import HomeSectionHeader from '@/components/music/home/HomeSectionHeader.vue'
 import type { HeroItem } from '@/components/music/home/HomeHero.vue'
 
 const {
-  popular, forYou, recent, albums, artists, recentPlays,
-  loading, hasData, fetchHomeFeed,
+  popular, forYou, personalized, recentPlays, fromYourArtists, becauseOfSections, yourGenres,
+  albums, artists, loading, hasData, fetchHomeFeed,
 } = useHomeFeed()
 
 const player = usePlayer()
@@ -256,33 +300,32 @@ const heroItems = computed<HeroItem[]>(() => {
   }))
 })
 
-function getScoreBadge(item: Record<string, unknown>): string | undefined {
-  if (item.score >= 90) return '🔥 Hot'
-  if (item.score >= 75) return 'Trending'
+function getScoreBadge(item: RecommendationTrack): string | undefined {
+  if (item.score != null && item.score >= 90) return '🔥 Hot'
+  if (item.score != null && item.score >= 75) return 'Trending'
   return undefined
 }
 
-function isCurrentlyPlaying(item: Record<string, unknown>): boolean {
+function isCurrentlyPlaying(item: RecommendationTrack): boolean {
   const currentId = player.currentTrack.value?.id
   if (!currentId) return false
-  return currentId === String(item.id) || currentId === String(item.track_id)
+  return currentId === item.id
 }
 
-function buildPlaybackTrack(item: Record<string, unknown>): PlaybackTrack {
-  const id = String(item.id || item.track_id)
+function buildPlaybackTrack(item: RecommendationTrack): PlaybackTrack {
   return {
-    id,
-    title: (item.title as string) || 'Untitled',
-    artistName: (item.artist_name as string) || (item.artistName as string) || 'Unknown artist',
-    albumTitle: (item.album_title as string) || (item.albumTitle as string) || null,
-    coverUrl: (item.cover_url as string) || (item.coverUrl as string) || null,
-    durationSeconds: (item.duration_seconds as number) ?? (item.durationSeconds as number) ?? null,
-    streamUrl: playerApi.getTrackStreamUrl(id),
+    id: item.id,
+    title: item.title || 'Untitled',
+    artistName: item.artist_name || 'Unknown artist',
+    albumTitle: item.album_title || null,
+    coverUrl: item.cover_url || null,
+    durationSeconds: item.duration_seconds ?? null,
+    streamUrl: playerApi.getTrackStreamUrl(item.id),
   }
 }
 
-async function handlePlay(item: Record<string, unknown>) {
-  await player.toggleTrack(buildPlaybackTrack(item))
+function handlePlay(item: any) {
+  void player.toggleTrack(buildPlaybackTrack(item))
 }
 
 function handleHeroPlay(item: HeroItem) {
@@ -292,8 +335,9 @@ function handleHeroPlay(item: HeroItem) {
   }
 }
 
+const toast = useToast()
 function handleHeroAddToLibrary() {
-  // Placeholder - library add would go here
+  toast.add({ severity: 'info', summary: 'Coming Soon', detail: 'Library management is coming soon!', life: 3000 })
 }
 
 onMounted(() => {

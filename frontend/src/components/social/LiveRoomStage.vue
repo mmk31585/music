@@ -1,5 +1,6 @@
 <template>
-  <div class="rounded-2xl bg-white/[0.04] p-6 ring-1 ring-white/[0.07]">
+  <!-- Glass border at 0.10 for 3:1 non-text contrast (WCAG 1.4.11) -->
+  <div class="rounded-2xl bg-white/[0.06] p-6 ring-1 ring-white/[0.10]">
     <h2 class="mb-4 text-xs font-bold uppercase tracking-wider text-white/30">Stage</h2>
 
     <div class="flex flex-col items-center gap-6">
@@ -15,8 +16,12 @@
             :alt="stageState.host?.username || 'Host'"
             class="h-full w-full object-cover"
           />
-          <div v-else class="flex h-full w-full items-center justify-center bg-white/10 text-2xl">
-            👑
+          <!-- Lucide Crown SVG icon (replaces 👑 emoji — emoji-as-icon anti-pattern) -->
+          <div v-else class="flex h-full w-full items-center justify-center bg-white/10">
+            <svg class="h-7 w-7 text-yellow-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z" />
+              <path d="M3 20h18" />
+            </svg>
           </div>
           <!-- Speaking pulse ring (stub) -->
           <div
@@ -33,9 +38,12 @@
         <div
           v-for="speaker in stageState.speakers"
           :key="speaker.user_id"
+          :data-speaker-id="speaker.user_id"
           class="group relative flex flex-col items-center gap-2"
           @mouseenter="hoveredSpeaker = speaker.user_id"
           @mouseleave="hoveredSpeaker = null"
+          @focusin="hoveredSpeaker = speaker.user_id"
+          @focusout="onSpeakerFocusOut(speaker.user_id)"
         >
           <div
             class="relative h-16 w-16 overflow-hidden rounded-full ring-2"
@@ -63,24 +71,28 @@
             <div
               v-if="speakingUserIds.has(speaker.user_id)"
               class="absolute inset-0 animate-pulse rounded-full ring-2 ring-[#1db954] ring-offset-2 ring-offset-transparent"
+              role="status"
+              aria-label="Currently speaking"
             />
           </div>
 
           <p class="truncate text-xs font-medium text-white">{{ speaker?.username || 'Unknown' }}</p>
 
-          <!-- Host actions on hover (only visible to host) -->
+          <!-- Host actions: visible on hover OR when any child is focused (keyboard accessible) -->
           <div
             v-if="showHostActions && hoveredSpeaker === speaker.user_id"
             class="absolute -bottom-12 left-1/2 z-10 flex -translate-x-1/2 gap-1 rounded-xl bg-[#1a1a1a] px-2 py-1.5 shadow-lg ring-1 ring-white/10"
+            role="toolbar"
+            :aria-label="`Actions for ${speaker?.username || 'speaker'}`"
           >
             <button
-              class="rounded-lg px-2 py-1 text-[10px] text-white/60 transition hover:bg-white/10 hover:text-white"
+              class="rounded-lg px-3 py-1.5 text-[10px] text-white/60 transition hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-[#1db954]"
               @click="$emit('toggle-mute', { userId: speaker.user_id, muted: !speaker.muted })"
             >
               {{ speaker.muted ? 'رفع بی‌صوتی' : 'بی‌صدا کردن' }}
             </button>
             <button
-              class="rounded-lg px-2 py-1 text-[10px] text-red-400 transition hover:bg-red-500/10"
+              class="rounded-lg px-3 py-1.5 text-[10px] text-red-400 transition hover:bg-red-500/10 focus-visible:outline-2 focus-visible:outline-red-400"
               @click="$emit('remove-speaker', speaker.user_id)"
             >
               حذف از استیج
@@ -121,6 +133,22 @@ defineEmits<{
 }>()
 
 const hoveredSpeaker = ref<string | null>(null)
+
+/**
+ * On focusout, check if focus moved to a child button inside this speaker's host-actions.
+ * If so, keep hoveredSpeaker set so the toolbar stays visible.
+ * If focus left the entire speaker container, clear hoveredSpeaker.
+ */
+function onSpeakerFocusOut(speakerId: string) {
+  // Use requestAnimationFrame to let the browser update document.activeElement first
+  requestAnimationFrame(() => {
+    const focused = document.activeElement
+    const container = focused?.closest(`[data-speaker-id="${speakerId}"]`)
+    if (!container) {
+      hoveredSpeaker.value = null
+    }
+  })
+}
 </script>
 
 <style scoped>

@@ -43,11 +43,12 @@ export function useLoginForm() {
     loading.value = true
     apiError.value = ''
     try {
-    console.log(form)
       await login(form.email, form.password)
-      console.log(form)
     } catch (err) {
-      apiError.value = err instanceof Error ? err.message : 'Login failed'
+      const errMsg = (err as Record<string, unknown>)?.message as string | undefined
+      // Backend validation errors carry a more specific message inside .data
+      const errData = (err as Record<string, unknown>)?.data as Record<string, unknown> | undefined
+      apiError.value = (errData?.message as string) || errMsg || 'Login failed'
     } finally {
       loading.value = false
     }

@@ -1,3 +1,10 @@
+export function formatCount(count?: number | null): string {
+  if (!count && count !== 0) return '0'
+  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
+  if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`
+  return String(count)
+}
+
 export const numberUtil = {
   clamp: (n: number, min: number, max: number): number => {
     if (!Number.isFinite(n) || !Number.isFinite(min) || !Number.isFinite(max)) {

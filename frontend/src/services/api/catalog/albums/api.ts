@@ -6,10 +6,10 @@ import { AlbumSchema, type Album, type AlbumCreatePayload, type AlbumUpdatePaylo
 export const useAlbumsApi = () => {
   // ==================== PUBLIC ====================
 
-  const getAlbums = async (config?: UseRequestConfig<Album[]>) => {
+  const getAlbums = async (params?: Record<string, string | number>, config?: UseRequestConfig<Album[]>) => {
     return useRequest<Album, true>(
       AlbumApiRoutes.LIST,
-      { method: 'GET' },
+      { method: 'GET', params },
       {
         schema: AlbumSchema,
         silent: true,
@@ -54,8 +54,8 @@ export const useAlbumsApi = () => {
         method: 'POST',
         data: {
           title: payload.title,
-          cover_url: payload.cover_url ?? null,
-          artist_id: payload.artist_id ?? null,
+          coverUrl: payload.coverUrl ?? null,
+          artistId: payload.artistId ?? null,
         },
       },
       {
@@ -77,8 +77,8 @@ export const useAlbumsApi = () => {
         method: 'PATCH',
         data: {
           title: payload.title,
-          cover_url: payload.cover_url ?? null,
-          artist_id: payload.artist_id ?? null,
+          coverUrl: payload.coverUrl ?? null,
+          artistId: payload.artistId ?? null,
         },
       },
       {

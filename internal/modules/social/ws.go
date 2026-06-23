@@ -61,6 +61,16 @@ func (b *PartyBroadcaster) TrackChanged(partyID uuid.UUID, trackID uuid.UUID, po
 	}, uuid.Nil)
 }
 
+func (b *PartyBroadcaster) PartyStatusChanged(partyID uuid.UUID, status string) {
+	b.hub.BroadcastToChannel("party:"+partyID.String(), ws.Message{
+		Type: "party.status_changed",
+		Payload: map[string]interface{}{
+			"status": status,
+		},
+		Timestamp: time.Now().UTC(),
+	}, uuid.Nil)
+}
+
 func (b *PartyBroadcaster) PartyEnded(partyID uuid.UUID) {
 	b.hub.BroadcastToChannel("party:"+partyID.String(), ws.Message{
 		Type:      "party.ended",

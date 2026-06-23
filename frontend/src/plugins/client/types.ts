@@ -42,7 +42,10 @@ export interface MetaProps {
 
 export interface PaginatedProps<T = unknown> {
   items: T[]
-  meta: MetaProps
+  meta?: MetaProps
+  total?: number
+  page?: number
+  limit?: number
 }
 
 /**

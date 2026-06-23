@@ -91,6 +91,61 @@ export const useLyricsApi = () => {
     )
   }
 
+  /**
+   * Fetches lyrics using a pipeline:
+   * 1. Tries LRCLIB (internet)
+   * 2. If not found, falls back to AI generation via ML service
+   *
+   * Response sources:
+   * - `lrclib` — lyrics were found on LRCLIB and saved
+   * - `ai` — AI generation enqueued (poll track lyrics after ~30s)
+   * - `none` — neither source had results
+   */
+  const fetchOrGenerateLyrics = async (
+    trackId: string | number,
+    config?: UseRequestConfig,
+  ) => {
+    return useRequest<{
+      success: boolean
+      source: 'lrclib' | 'ai' | 'none'
+      data?: Lyrics
+      job_id?: string
+      track_id?: string
+      message?: string
+    }>(
+      LyricsApiRoutes.ADMIN_FETCH_OR_GENERATE.replace(':trackId', String(trackId)),
+      { method: 'POST' },
+      {
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
+  /**
+   * Polls the AI lyrics generation status for a track.
+   * Returns progress info while AI is working, or completed lyrics when done.
+   */
+  const aiStatus = async (trackId: string | number, config?: UseRequestConfig) => {
+    return useRequest<{
+      success: boolean
+      status: 'queued' | 'downloading' | 'transcribing' | 'formatting' | 'callback_pending' | 'completed' | 'failed' | 'not_found' | 'unavailable'
+      source?: string
+      lyrics?: Lyrics
+      job_id?: string
+      track_id?: string
+      message?: string
+      progress_pct?: number
+    }>(
+      LyricsApiRoutes.ADMIN_AI_STATUS.replace(':trackId', String(trackId)),
+      { method: 'GET' },
+      {
+        silent: true,
+        ...config,
+      },
+    )
+  }
+
   const adminDeleteLyrics = async (id: string | number, config?: UseRequestConfig<void>) => {
     return useRequest<void>(
       LyricsApiRoutes.ADMIN_DELETE.replace(':id', String(id)),
@@ -107,6 +162,8 @@ export const useLyricsApi = () => {
     getLyricsByTrackID,
     adminCreateLyrics,
     fetchLrcLyrics,
+    fetchOrGenerateLyrics,
+    aiStatus,
     adminUpdateLyrics,
     adminDeleteLyrics,
   }

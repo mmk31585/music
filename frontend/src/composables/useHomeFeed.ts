@@ -2,9 +2,8 @@ import { ref, computed } from 'vue'
 import { useRecommendationsApi } from '@/services/api/recommendation'
 import { useAlbumsApi } from '@/services/api/catalog/albums'
 import { useArtistsApi } from '@/services/api/catalog/artists'
-import { useLibraryApi } from '@/services/api/library'
 import { useUserAuthStore } from '@/stores'
-import type { RecommendationTrack } from '@/services/api/recommendation'
+import type { RecommendationTrack, HomeFeedSection } from '@/services/api/recommendation'
 import type { Album } from '@/services/api/catalog/albums'
 import type { Artist } from '@/services/api/catalog/artists'
 
@@ -12,25 +11,37 @@ export function useHomeFeed() {
   const recsApi = useRecommendationsApi()
   const albumsApi = useAlbumsApi()
   const artistsApi = useArtistsApi()
-  const libraryApi = useLibraryApi()
   const auth = useUserAuthStore()
 
-  const popular = ref<RecommendationTrack[]>([])
-  const forYou = ref<RecommendationTrack[]>([])
-  const recent = ref<RecommendationTrack[]>([])
+  const sections = ref<HomeFeedSection[]>([])
   const albums = ref<Album[]>([])
   const artists = ref<Artist[]>([])
-  const recentPlays = ref<any[]>([])
   const loading = ref(false)
-  const error = ref<any>(null)
+  const error = ref<unknown>(null)
 
   const hasData = computed(() =>
-    popular.value.length > 0 ||
-    forYou.value.length > 0 ||
-    recent.value.length > 0 ||
+    sections.value.length > 0 ||
     albums.value.length > 0 ||
     artists.value.length > 0
   )
+
+  const personalized = ref<RecommendationTrack[]>([])
+  const sectionMap = computed(() => {
+    const map: Record<string, HomeFeedSection> = {}
+    for (const s of sections.value) {
+      map[s.id] = s
+    }
+    return map
+  })
+
+  const recentPlays = computed(() => sectionMap.value.recently_played?.items ?? [])
+  const popular = computed(() => sectionMap.value.trending?.items ?? [])
+  const forYou = computed(() => sectionMap.value.for_you?.items ?? [])
+  const fromYourArtists = computed(() => sectionMap.value.from_your_artists?.items ?? [])
+  const becauseOfSections = computed(() =>
+    sections.value.filter(s => s.id.startsWith('because_of_'))
+  )
+  const yourGenres = computed(() => sectionMap.value.your_genres?.items ?? [])
 
   async function fetchHomeFeed() {
     loading.value = true
@@ -38,29 +49,25 @@ export function useHomeFeed() {
 
     try {
       const results = await Promise.allSettled([
-        recsApi.getPopular({ limit: 10 }).catch(() => null),
-        recsApi.getForYou({ limit: 10 }).catch(() => null),
-        recsApi.getRecent({ limit: 10 }).catch(() => null),
+        auth.isAuthenticated
+          ? recsApi.getHomeFeed().catch(() => null)
+          : Promise.resolve(null),
+        auth.isAuthenticated
+          ? recsApi.getPersonalized({ limit: 10 }).catch(() => null)
+          : Promise.resolve(null),
         albumsApi.getAlbums().catch(() => [] as Album[]),
         artistsApi.getArtists().catch(() => [] as Artist[]),
-        auth.isAuthenticated
-          ? libraryApi.getRecentlyPlayed().catch(() => [])
-          : Promise.resolve([]),
       ])
 
-      const popResult = results[0].status === 'fulfilled' ? results[0].value : null
-      popular.value = popResult?.items ?? []
+      const homeResult = results[0].status === 'fulfilled' ? results[0].value : null
+      sections.value = homeResult?.sections ?? []
 
-      const forYouResult = results[1].status === 'fulfilled' ? results[1].value : null
-      forYou.value = forYouResult?.items ?? []
+      const personalizedResult = results[1].status === 'fulfilled' ? results[1].value : null
+      personalized.value = personalizedResult?.items ?? []
 
-      const recentResult = results[2].status === 'fulfilled' ? results[2].value : null
-      recent.value = recentResult?.items ?? []
-
-      albums.value = results[3].status === 'fulfilled' ? results[3].value ?? [] : []
-      artists.value = results[4].status === 'fulfilled' ? results[4].value ?? [] : []
-      recentPlays.value = results[5].status === 'fulfilled' ? results[5].value ?? [] : []
-    } catch (err) {
+      albums.value = results[2].status === 'fulfilled' ? results[2].value ?? [] : []
+      artists.value = results[3].status === 'fulfilled' ? results[3].value ?? [] : []
+    } catch (err: unknown) {
       error.value = err
     } finally {
       loading.value = false
@@ -68,12 +75,16 @@ export function useHomeFeed() {
   }
 
   return {
+    sections,
     popular,
     forYou,
-    recent,
+    personalized,
+    recentPlays,
+    fromYourArtists,
+    becauseOfSections,
+    yourGenres,
     albums,
     artists,
-    recentPlays,
     loading,
     error,
     hasData,

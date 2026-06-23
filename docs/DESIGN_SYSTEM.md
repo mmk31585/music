@@ -55,7 +55,8 @@ The design system uses a tokenized color architecture defined in `assets/css/mai
 --color-aurora-blue:       #60A5FA  (depth, calm)
 --color-aurora-pink:       #F472B6  (warmth, emotion)
 --color-aurora-purple:     #A855F7  (mystery, creativity)
---color-primary-main:      #B646FF  (electric purple, primary brand)
+--color-primary-main:      #1DB954  (vibrant green, primary brand)
+--color-accent-main:       #B646FF  (electric purple, creative energy)
 
 Surface Dark:     #050505  (deepest background, <html>)
 Surface Base:     #0A0A0A  (main background)

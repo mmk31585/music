@@ -4,9 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gin-gonic/gin"
-
-	"music/internal/common/middleware"
 	"music/internal/common/validator"
 	"music/internal/config"
 	"music/internal/platform/cache"
@@ -15,6 +12,12 @@ import (
 	platformLogger "music/internal/platform/logger"
 )
 
+// Bootstrap creates the App with all core dependencies (config, logger, DB, Redis,
+// validator, event bus) but does NOT create the Gin engine or register routes.
+//
+// Route registration and HTTP server creation are handled by main.go via
+// SetupRouter() and app.NewHTTPServer(), ensuring routes are registered exactly
+// once and middleware choices are explicit at the call site.
 func Bootstrap(ctx context.Context) (*App, error) {
 	cfg, err := config.Load()
 	if err != nil {
@@ -24,10 +27,6 @@ func Bootstrap(ctx context.Context) (*App, error) {
 	log, err := platformLogger.New(cfg.App.Env, cfg.Log.Level)
 	if err != nil {
 		return nil, fmt.Errorf("init logger: %w", err)
-	}
-
-	if cfg.App.Env == "production" {
-		gin.SetMode(gin.ReleaseMode)
 	}
 
 	log.Info("running database migrations")
@@ -49,28 +48,16 @@ func Bootstrap(ctx context.Context) (*App, error) {
 
 	eventBus := events.NewBus(log)
 
-	app := &App{
+	appCtx, appCancel := context.WithCancel(context.Background())
+
+	return &App{
 		Config:    cfg,
 		Logger:    log,
 		DB:        db,
 		Redis:     redisClient,
 		Validator: v,
 		Events:    eventBus,
-	}
-
-	router := gin.New()
-	router.Use(middleware.SecurityHeaders())
-	router.Use(middleware.CORS(cfg.CORS.AllowedOrigins))
-	router.Use(middleware.GinZapLogger(log))
-	router.Use(middleware.GinZapRecovery(log))
-	//router.Use(gin.BodyLimitMiddleware(cfg.Media.MaxFileSizeMB * 1024 * 1024))
-	registerMediaRoutes(router, app.Config.Storage.Local.BaseDir)
-
-	app.RegisterRoutes(router)
-
-	app.Router = router
-	app.HTTPServer = app.NewHTTPServer()
-	app.HTTPServer.Handler = app.Router
-
-	return app, nil
+		ctx:       appCtx,
+		cancel:    appCancel,
+	}, nil
 }

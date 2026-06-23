@@ -4,9 +4,9 @@ import { v4 as uuidv4 } from 'uuid'
 import Cookie from 'js-cookie'
 
 import { safeLocalStorage } from '@/services/storage'
-import { useAuthApi } from '@/services/api'
+import { useAuthApi } from '@/services/api/auth/routes'
+import type { User, LoginPayload, AuthResponse } from '@/services/api/auth/types'
 import type { UseRequestConfig } from '@/plugins/client/types'
-import type { User, LoginPayload, AuthResponse } from '@/services/api'
 
 interface TokenState {
   access_token: string
@@ -15,7 +15,7 @@ interface TokenState {
 
 function createSafeNamespace<T>(key: string) {
   return {
-    get: (): T | null => safeLocalStorage.getItem<T>(key) as T | null,
+    get: (): T | null => safeLocalStorage.getItem<T>(key),
     set: (value: T): void => safeLocalStorage.setItem<T>(key, value),
     remove: (): void => safeLocalStorage.removeItem(key),
   }
@@ -177,7 +177,10 @@ export const useUserAuthStore = defineStore('auth', () => {
     }
   }
 
-  function restore(): void {
+  let _readyPromise: Promise<void> | null = null
+  let _readyResolve: (() => void) | null = null
+
+  async function restore(): Promise<void> {
     const storedToken = tokenStorage.get()
     const storedUser = storage.get()
     const storedDevice = deviceStorage.get()
@@ -199,15 +202,22 @@ export const useUserAuthStore = defineStore('auth', () => {
     if (token.value) {
       loading.value = true
 
-      me()
-        .catch((error) => {
-          console.warn('Failed to restore auth session:', error)
-          $reset()
-        })
-        .finally(() => {
-          loading.value = false
-        })
+      try {
+        await me()
+      } catch (error) {
+        console.warn('Failed to restore auth session:', error)
+        $reset()
+      } finally {
+        loading.value = false
+      }
     }
+
+    _readyResolve?.()
+  }
+
+  /** Returns a promise that resolves when the initial auth restore completes. */
+  function ready(): Promise<void> {
+    return _readyPromise ?? Promise.resolve()
   }
 
   function $reset(): void {
@@ -215,6 +225,12 @@ export const useUserAuthStore = defineStore('auth', () => {
     clearToken()
   }
 
+  // Set up the ready promise
+  _readyPromise = new Promise<void>((resolve) => {
+    _readyResolve = resolve
+  })
+
+  // Fire restore asynchronously (don't block app mount)
   restore()
 
   return {
@@ -233,6 +249,7 @@ export const useUserAuthStore = defineStore('auth', () => {
     logout,
     me,
     restore,
+    ready,
     setToken,
     setRefreshToken,
     setSession,

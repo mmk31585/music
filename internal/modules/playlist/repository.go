@@ -116,7 +116,7 @@ func (r *Repository) DeletePlaylist(ctx context.Context, playlistID, userID uuid
 
 func (r *Repository) GetPlaylistByID(ctx context.Context, playlistID uuid.UUID) (Playlist, error) {
 	query := `
-		SELECT id, user_id, name, description, cover_url, is_public, created_at, updated_at
+		SELECT id, user_id, name, description, cover_url, is_public, is_collaborative, created_at, updated_at
 		FROM playlists
 		WHERE id = $1
 	`
@@ -129,6 +129,7 @@ func (r *Repository) GetPlaylistByID(ctx context.Context, playlistID uuid.UUID) 
 		&p.Description,
 		&p.CoverURL,
 		&p.IsPublic,
+		&p.IsCollaborative,
 		&p.CreatedAt,
 		&p.UpdatedAt,
 	)
@@ -197,13 +198,14 @@ func (r *Repository) ListPublicPlaylists(ctx context.Context) ([]PlaylistListIte
 			p.description,
 			p.cover_url,
 			p.is_public,
+			p.is_collaborative,
 			COUNT(pt.id) AS track_count,
 			p.created_at,
 			p.updated_at
 		FROM playlists p
 		LEFT JOIN playlist_tracks pt ON pt.playlist_id = p.id
 		WHERE p.is_public = TRUE
-		GROUP BY p.id
+		GROUP BY p.id, p.is_collaborative
 		ORDER BY p.created_at DESC
 	`
 
@@ -223,6 +225,7 @@ func (r *Repository) ListPublicPlaylists(ctx context.Context) ([]PlaylistListIte
 			&item.Description,
 			&item.CoverURL,
 			&item.IsPublic,
+			&item.IsCollaborative,
 			&item.TrackCount,
 			&item.CreatedAt,
 			&item.UpdatedAt,
@@ -244,13 +247,14 @@ func (r *Repository) ListUserPlaylists(ctx context.Context, userID uuid.UUID) ([
 			p.description,
 			p.cover_url,
 			p.is_public,
+			p.is_collaborative,
 			COUNT(pt.id) AS track_count,
 			p.created_at,
 			p.updated_at
 		FROM playlists p
 		LEFT JOIN playlist_tracks pt ON pt.playlist_id = p.id
 		WHERE p.user_id = $1
-		GROUP BY p.id
+		GROUP BY p.id, p.is_collaborative
 		ORDER BY p.created_at DESC
 	`
 
@@ -270,6 +274,7 @@ func (r *Repository) ListUserPlaylists(ctx context.Context, userID uuid.UUID) ([
 			&item.Description,
 			&item.CoverURL,
 			&item.IsPublic,
+			&item.IsCollaborative,
 			&item.TrackCount,
 			&item.CreatedAt,
 			&item.UpdatedAt,

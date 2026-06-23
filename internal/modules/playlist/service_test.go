@@ -61,6 +61,36 @@ func (m *mockRepo) ReorderTrack(ctx context.Context, playlistID, trackID uuid.UU
 	return m.Called(ctx, playlistID, trackID, newPosition).Error(0)
 }
 
+func (m *mockRepo) IsCollaborator(ctx context.Context, playlistID, userID string) (bool, error) {
+	args := m.Called(ctx, playlistID, userID)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *mockRepo) IsCollaborativePlaylist(ctx context.Context, playlistID string) (bool, error) {
+	args := m.Called(ctx, playlistID)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *mockRepo) SetCollaborative(ctx context.Context, playlistID string, collab bool) error {
+	return m.Called(ctx, playlistID, collab).Error(0)
+}
+
+func (m *mockRepo) AddCollaborator(ctx context.Context, playlistID, userID string) error {
+	return m.Called(ctx, playlistID, userID).Error(0)
+}
+
+func (m *mockRepo) RemoveCollaborator(ctx context.Context, playlistID, userID string) error {
+	return m.Called(ctx, playlistID, userID).Error(0)
+}
+
+func (m *mockRepo) ListCollaborators(ctx context.Context, playlistID string) ([]CollaboratorResponse, error) {
+	args := m.Called(ctx, playlistID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]CollaboratorResponse), args.Error(1)
+}
+
 var (
 	uid1 = uuid.MustParse("00000000-0000-0000-0000-000000000001")
 	uid2 = uuid.MustParse("00000000-0000-0000-0000-000000000002")
@@ -68,7 +98,7 @@ var (
 	uid4 = uuid.MustParse("00000000-0000-0000-0000-000000000004")
 )
 
-func TestCreatePlaylist_Success(t *testing.T) {
+func TestCreatePlaylist_ByName_Success(t *testing.T) {
 	m := new(mockRepo)
 	svc := NewService(m)
 
@@ -121,7 +151,7 @@ func TestUpdatePlaylist_EmptyName(t *testing.T) {
 	m.AssertNotCalled(t, "UpdatePlaylist")
 }
 
-func TestDeletePlaylist_Success(t *testing.T) {
+func TestDeletePlaylist_ByOwner_Success(t *testing.T) {
 	m := new(mockRepo)
 	svc := NewService(m)
 

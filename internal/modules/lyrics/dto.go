@@ -22,7 +22,7 @@ type AdminCreateLyricsRequest struct {
 
 type AdminUpdateLyricsRequest struct {
 	Language *string `json:"language"`
-	Type     *string `json:"type,oneof=plain lrc"`
+	Type     *string `json:"type" binding:"omitempty,oneof=plain lrc"`
 	Content  *string `json:"content"`
 }
 

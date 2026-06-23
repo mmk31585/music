@@ -256,6 +256,7 @@ import { TrackPickerDialog, RoomNowPlayingHero, RoomQueueList, LiveRoomStage, Ra
 import { useRoomQueueSocket } from '@/composables/social/useRoomQueueSocket'
 import { useStageSocket } from '@/composables/social/useStageSocket'
 import type { LiveRoom } from '@/services/api/social'
+import type { Track } from '@/services/api/catalog/tracks'
 
 const router = useRouter()
 const route = useRoute()
@@ -460,7 +461,7 @@ function goBack() {
   router.push({ name: 'social' })
 }
 
-async function onTrackSelected(track: { id: string }) {
+async function onTrackSelected(track: Track) {
   showTrackPicker.value = false
   try {
     await queueSocket.suggest(String(track.id))

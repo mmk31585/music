@@ -9,7 +9,7 @@
     <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white/10">
       <img
         v-if="item.cover_url || item.coverUrl"
-        :src="item.cover_url || item.coverUrl"
+        :src="coverSrc"
         :alt="item.title || item.track_title || ''"
         class="h-full w-full object-cover"
         loading="lazy"
@@ -38,6 +38,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 interface QuickPlayItem {
   cover_url?: string | null
   coverUrl?: string | null
@@ -47,7 +49,7 @@ interface QuickPlayItem {
   artistName?: string | null
 }
 
-defineProps<{
+const props = defineProps<{
   item: QuickPlayItem
   isPlaying?: boolean
   delay?: number
@@ -56,4 +58,6 @@ defineProps<{
 defineEmits<{
   play: [item: QuickPlayItem]
 }>()
+
+const coverSrc = computed((): string | undefined => (props.item.cover_url || props.item.coverUrl) ?? undefined)
 </script>

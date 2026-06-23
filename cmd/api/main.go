@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"music/internal/app"
+	"music/internal/common/middleware"
 
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
@@ -39,6 +41,25 @@ func main() {
 	docs.SwaggerInfo.Host = "localhost:8080"
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	docs.SwaggerInfo.Schemes = []string{"http"}
+
+	// ── Router setup (exactly once, all middleware explicit) ──
+	router := gin.New()
+	router.Use(
+		middleware.SecurityHeaders(),
+		middleware.CORS(application.Config.CORS.AllowedOrigins),
+		middleware.GinZapLogger(log),
+		middleware.GinZapRecovery(log),
+	)
+
+	// Serve uploaded media from local storage
+	app.RegisterMediaRoutes(router, application.Config.Storage.Local.BaseDir)
+
+	// Register all application routes (exactly one call)
+	application.RegisterRoutes(router)
+
+	application.Router = router
+	application.HTTPServer = application.NewHTTPServer()
+	application.HTTPServer.Handler = application.Router
 
 	go func() {
 		log.Info("starting server",

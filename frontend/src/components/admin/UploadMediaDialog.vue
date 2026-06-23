@@ -40,6 +40,7 @@ import FileUpload, { type FileUploadUploaderEvent } from 'primevue/fileupload'
 import ProgressBar from 'primevue/progressbar'
 import { useToast } from 'primevue/usetoast'
 import { useMediaApi, type UploadResponse } from '@/services/api/media'
+import type { UploadFieldName } from '@/services/api/media/routes'
 
 type UploadKind = 'track-audio' | 'track-cover' | 'album-cover' | 'artist-image'
 
@@ -148,7 +149,7 @@ async function onCustomUpload(event: FileUploadUploaderEvent) {
 
   try {
     const response: UploadResponse = await mediaApi.uploadAdminMedia(
-      fieldName.value,
+      fieldName.value as UploadFieldName,
       file,
       {
         silent: false,

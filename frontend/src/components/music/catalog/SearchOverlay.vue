@@ -134,15 +134,15 @@
                   role="button"
                   tabindex="0"
                   class="group spring flex cursor-pointer items-center gap-4 rounded-xl bg-white/[0.04] p-3 transition-all hover:bg-white/[0.08]"
-                  @click="selectTrack(results.tracks[0])"
-                  @keydown.enter="selectTrack(results.tracks[0])"
-                  @keydown.space.prevent="selectTrack(results.tracks[0])"
+    @click="selectTrack(results.tracks[0]!)"
+                    @keydown.enter="selectTrack(results.tracks[0]!)"
+                    @keydown.space.prevent="selectTrack(results.tracks[0]!)"
                 >
                   <div class="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-white/10 shadow-lg">
                     <img
-                      v-if="results.tracks[0].cover_url"
-                      :src="results.tracks[0].cover_url"
-                      :alt="results.tracks[0].title"
+                      v-if="results.tracks[0]?.cover_url"
+                      :src="results.tracks[0]?.cover_url"
+                      :alt="results.tracks[0]?.title"
                       loading="lazy"
                       class="h-full w-full object-cover"
                       @error="onImgError"
@@ -153,10 +153,10 @@
                   </div>
                   <div class="min-w-0 flex-1">
                     <p class="truncate text-base font-bold text-white">
-                      {{ results.tracks[0].title }}
+                      {{ results.tracks[0]?.title }}
                     </p>
                     <p class="truncate text-sm text-slate-400">
-                      {{ results.tracks[0].artist_name || 'Unknown' }}
+                      {{ results.tracks[0]?.artist_name || 'Unknown' }}
                     </p>
                   </div>
                   <div
@@ -423,7 +423,7 @@ watch(
     _visible.value = v
     if (v) {
       query.value = ''
-      results.value = {}
+      results.value = { tracks: [], artists: [], albums: [], playlists: [] }
       noResults.value = false
       highlightedIndex.value = null
       loadRecent()
@@ -442,7 +442,7 @@ function close() {
 }
 function clearQuery() {
   query.value = ''
-  results.value = {}
+  results.value = { tracks: [], artists: [], albums: [], playlists: [] }
   noResults.value = false
   highlightedIndex.value = null
   nextTick(() => inputRef.value?.focus())
@@ -474,15 +474,15 @@ function clearRecent() {
   recentSearches.value = []
 }
 
-function setItemRef(group: string, index: number, el: Element | null) {
-  if (el) itemRefs[`${group}-${index}`] = el as HTMLElement
+function setItemRef(group: string, index: number, el: unknown) {
+  if (el instanceof HTMLElement) itemRefs[`${group}-${index}`] = el
 }
 
 let abortController: AbortController | null = null
 async function doSearch() {
   const term = query.value.trim()
   if (!term) {
-    results.value = {}
+    results.value = { tracks: [], artists: [], albums: [], playlists: [] }
     noResults.value = false
     searching.value = false
     return

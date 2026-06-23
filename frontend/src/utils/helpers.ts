@@ -66,9 +66,39 @@ export function cn(...inputs: ClassValue[]) {
 
 export function onImgError(e: Event) {
   const img = e.currentTarget as HTMLImageElement | null
-  if (img) {
-    img.src = 'data:image/svg+xml,' + encodeURIComponent(
-      '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" fill="%231a1a1a"><rect width="200" height="200"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" fill="%23666" font-size="14">No Image</text></svg>'
-    )
+  if (!img) return
+
+  // If the failed URL is absolute pointing to localhost, retry with relative path
+  if (!img.dataset?.retried && img.src.includes('localhost:8080')) {
+    img.dataset.retried = 'true'
+    try {
+      const url = new URL(img.src)
+      img.src = url.pathname + url.search
+      return
+    } catch {
+      // fall through to placeholder
+    }
   }
+
+  img.src = 'data:image/svg+xml,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" fill="%231a1a1a"><rect width="200" height="200"/><text x="50%" y="50%" dominant-anchor="central" text-anchor="middle" fill="%23666" font-size="14">No Image</text></svg>'
+  )
+}
+
+/**
+ * Normalize media URLs returned by the API. If the URL is an absolute URL
+ * pointing to the local backend (localhost:8080), convert it to a relative
+ * path so it works through the Vite proxy or current origin.
+ */
+export function normalizeMediaUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+  try {
+    const parsed = new URL(url)
+    if (parsed.hostname === 'localhost' && parsed.port === '8080') {
+      return parsed.pathname + parsed.search
+    }
+  } catch {
+    // Already a relative URL or invalid — return as-is
+  }
+  return url
 }

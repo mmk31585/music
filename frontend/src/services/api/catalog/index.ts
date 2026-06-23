@@ -36,6 +36,7 @@ export const useCatalogApi = () => {
     adminCreateArtist: artists.adminCreateArtist,
     adminUpdateArtist: artists.adminUpdateArtist,
     adminDeleteArtist: artists.adminDeleteArtist,
+    searchArtists: artists.searchArtists,
 
     // Albums
     getAlbums: albums.getAlbums,

@@ -44,7 +44,8 @@ src/
 
 ## CI/CD
 
-GitLab CI pipeline in `.gitlab-ci.yml`. Stages: prepare → quality (typecheck, lint, prettier) → test (vitest) → build → docs → security (npm audit).
+GitHub Actions pipeline in `.github/workflows/ci.yml`. Stages: go-lint → go-test → frontend-lint → frontend-test → frontend-build → security-scan → docker-build.
+Also includes deploy workflow in `.github/workflows/deploy.yml` triggered on version tags.
 
 ## Docs
 

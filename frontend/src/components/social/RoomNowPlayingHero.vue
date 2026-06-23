@@ -32,6 +32,7 @@
                 v-if="nowPlaying.track.cover_url"
                 :src="nowPlaying.track.cover_url"
                 :alt="nowPlaying.track.title"
+                @error="onImgError"
               />
               <div v-else class="flex h-full w-full items-center justify-center">
                 <i aria-hidden="true" class="pi pi-headphones text-2xl text-white/40" />
@@ -86,6 +87,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { RoomNowPlaying } from '@/services/api/social/room-queue'
+import { onImgError } from '@/utils/helpers'
 
 const props = defineProps<{
   nowPlaying: RoomNowPlaying | null

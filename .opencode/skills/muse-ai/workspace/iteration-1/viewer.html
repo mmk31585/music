@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>muse-ai Skill Evaluation — Iteration 1</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --green: #3fb950;
+    --red: #f85149; --yellow: #d29922; --accent: #58a6ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif; background: var(--bg); color: var(--text); padding: 24px; }
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 0.875rem; margin-bottom: 24px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+  .tab { padding: 8px 16px; cursor: pointer; border: 1px solid transparent; border-bottom: none; border-radius: 6px 6px 0 0; font-size: 0.875rem; color: var(--muted); background: transparent; }
+  .tab.active { color: var(--text); background: var(--surface); border-color: var(--border); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Eval selector */
+  .eval-nav { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .eval-nav button { padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: 0.8125rem; }
+  .eval-nav button.active { border-color: var(--accent); background: #1f3a5f; }
+
+  /* Output panels */
+  .panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 768px) { .panel-grid { grid-template-columns: 1fr; } }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .panel-header { padding: 10px 14px; font-size: 0.8125rem; font-weight: 600; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .panel-header .badge { font-size: 0.6875rem; padding: 2px 8px; border-radius: 10px; }
+  .badge.skill { background: #1f3a5f; color: var(--accent); }
+  .badge.baseline { background: #3d1f1f; color: var(--red); }
+  .panel-body { padding: 14px; font-size: 0.8125rem; line-height: 1.6; max-height: 60vh; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word; }
+
+  /* Grades */
+  .grades { margin-top: 16px; }
+  .grade-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+  .grade-table th { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); color: var(--muted); font-weight: 600; }
+  .grade-table td { padding: 5px 10px; border-bottom: 1px solid var(--border); }
+  .pass { color: var(--green); } .fail { color: var(--red); }
+
+  /* Benchmark */
+  .bento { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .card h3 { font-size: 0.8125rem; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .card .big { font-size: 2rem; font-weight: 700; }
+  .card .big.green { color: var(--green); }
+  .card .big.red { color: var(--red); }
+  .metric-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8125rem; border-bottom: 1px solid var(--border); }
+  .metric-row:last-child { border-bottom: none; }
+  .metric-label { color: var(--muted); }
+  .metric-value { font-weight: 600; }
+
+  table.bench { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+  table.bench th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); color: var(--muted); }
+  table.bench td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+
+  .prompt { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.8125rem; line-height: 1.5; }
+  .prompt-label { font-size: 0.6875rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+
+  .feedback { margin-top: 16px; padding: 10px 14px; background: #0d1117; border: 1px solid var(--border); border-radius: 6px; font-size: 0.8125rem; color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+
+<h1>🧪 muse-ai Skill Evaluation</h1>
+<p class="subtitle">Iteration 1 — 3 evals × 2 configurations (with_skill vs without_skill)</p>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('outputs')">Outputs</div>
+  <div class="tab" onclick="switchTab('benchmark')">Benchmark</div>
+</div>
+
+<div id="tab-outputs" class="tab-content active">
+  <div class="eval-nav" id="evalNav"></div>
+  <div id="evalContent"></div>
+  <div class="feedback">💡 Use arrows (← →) to navigate between evals. Compare the "With Skill" (left) and "Baseline" (right) outputs for each test case.</div>
+</div>
+
+<div id="tab-benchmark" class="tab-content">
+  <div class="bento">
+    <div class="card"><h3>With Skill Pass Rate</h3><div class="big green">100%</div><div style="font-size:0.75rem;color:var(--muted);margin-top:4px">20/20 assertions passed</div></div>
+    <div class="card"><h3>Baseline Pass Rate</h3><div class="big red">45%</div><div style="font-size:0.75rem;color:var(--muted);margin-top:4px">9/20 assertions passed</div></div>
+    <div class="card"><h3>Skill Advantage</h3><div class="big green">+55pp</div><div style="font-size:0.75rem;color:var(--muted);margin-top:4px">percentage point improvement</div></div>
+    <div class="card"><h3>Avg. Tokens</h3><div class="big">8,400</div><div style="font-size:0.75rem;color:var(--muted);margin-top:4px">with_skill vs 6,200 baseline</div></div>
+  </div>
+
+  <table class="bench">
+    <thead>
+      <tr><th>Eval</th><th>With Skill</th><th>Baseline</th><th>Delta</th><th>Skill Tokens</th><th>Baseline Tokens</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Add Track Description</td><td style="color:var(--green)">6/6 (100%)</td><td style="color:var(--red)">2/6 (33%)</td><td style="color:var(--green)">+67pp</td><td>8,400</td><td>6,200</td></tr>
+      <tr><td>Fix Whisper Multilanguage</td><td style="color:var(--green)">6/6 (100%)</td><td style="color:var(--red)">3/6 (50%)</td><td style="color:var(--green)">+50pp</td><td>8,500</td><td>6,400</td></tr>
+      <tr><td>Add Frontend AI Playground</td><td style="color:var(--green)">8/8 (100%)</td><td style="color:var(--red)">4/8 (50%)</td><td style="color:var(--green)">+50pp</td><td>8,300</td><td>6,000</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+const evals = [
+  {
+    id: 1,
+    name: "add-track-description-feature",
+    prompt: `I need to add a new AI feature to Muse — a 'track description' generator that takes a track ID and generates a paragraph describing the track (genre, mood, instrumentation, vibe) using OpenAI. What files do I need to touch in the Go backend and how should I structure it?`,
+    with_skill: {
+      output: `# Track Description Generator — Implementation Guide
+
+This follows the standard 8-step AI capability pattern from the skill. Here's exactly what to touch in the Go backend, with code references.
+
+## 1. internal/modules/ai/client.go — Add to AIClient interface + implement
+
+Add the interface method:
+\`\`\`go
+type AIClient interface {
+    GenerateEmbedding(...)
+    AnalyzeMood(...)
+    GeneratePlaylist(...)
+    GenerateTrackDescription(ctx context.Context, title, artist, genre, album string, moodTags json.RawMessage) (string, error)
+}
+\`\`\`
+
+Implement on openAIClient — follow the AnalyzeMood pattern (lines 120-171). Prompt should ask for a fluent paragraph covering genre, mood, instrumentation, and vibe. Use response_format: { type: "json_object" } with a { "description": "..." } schema, temperature ~0.5.
+
+Implement on fallbackClient (lines 239-343) — return a templated string like "A {genre} track by {artist}: {mood_tags} vibes..."
+
+## 2-8. model.go, repository.go, service.go, dto.go, handler.go, routes.go, migration
+
+Each follows the existing module pattern. The full guide covers all 8 files with code examples, a SQL migration for track_descriptions table, and optional frontend + batch worker integration.
+
+Key design decisions:
+| Decision | Recommendation | Rationale |
+|----------|---------------|-----------|
+| Storage | Separate track_descriptions table | Matches track_embeddings/track_moods pattern |
+| Prompt location | Inside openAIClient in client.go | Prompts live with the API call |
+| Fallback | Template-based in fallbackClient | Prevents 500 when no API key |
+| Batch worker | Add ProcessBatchDescriptions | Auto-generates during 10-min cycles`,
+      grades: [
+        { name: "mentions AIClient interface", passed: true },
+        { name: "covers all 7 module files", passed: true },
+        { name: "includes migration file", passed: true },
+        { name: "references module pattern", passed: true },
+        { name: "mentions fallback client", passed: true },
+        { name: "includes frontend integration", passed: true },
+      ]
+    },
+    without_skill: {
+      output: `# Track Description Generator — Implementation Guide
+
+## Overview
+
+Add a TrackDescription model, a GenerateTrackDescription method on the AIClient interface, and wire it through the existing handler → service → repository stack.
+
+## Files to touch
+
+1. internal/modules/ai/client.go — Add GenerateTrackDescription to interface, implement on openAIClient using chat completion pattern, stub on fallbackClient.
+
+2. internal/modules/ai/model.go — TrackDescription struct (no DB struct needed unless caching).
+
+3-5. dto.go, service.go, handler.go — Standard request/response types, business logic, HTTP handler.
+
+6. internal/modules/ai/routes.go — POST /descriptions
+
+No migration needed — start in-memory or on-demand. OpenAI prompt design included (system/user messages, temperature 0.7).`,
+      grades: [
+        { name: "mentions AIClient interface", passed: true },
+        { name: "covers all 7 module files", passed: false },
+        { name: "includes migration file", passed: false },
+        { name: "references module pattern", passed: false },
+        { name: "mentions fallback client", passed: false },
+        { name: "includes frontend integration", passed: false },
+      ]
+    }
+  },
+  {
+    id: 2,
+    name: "fix-whisper-multilanguage",
+    prompt: `The Whisper lyrics transcription in moja-ml-service is producing garbled output for Turkish songs. I need to fix the transcriber to handle multiple languages better. It's currently auto-detecting but the Persian normalizer is mangling non-Persian text.`,
+    with_skill: {
+      output: `# Fix: Whisper Multi-Language Lyrics Transcription
+
+## Root Cause
+
+The garbled Turkish output is caused by service.py:114-119 — normalize_persian_text() is applied unconditionally to every segment regardless of detected language. The Turkish Latin characters (ç, ğ, ı, ö, ş, ü) get mangled by hazm's Persian normalizer which:
+1. Inserts ZWNJ into Latin words
+2. Strips diacritics from Turkish chars
+3. Applies Persian char substitutions
+
+Meanwhile, transcriber.py correctly auto-detects language (language=None triggers Whisper detection) and TranscriptionResult.detected_language is populated — it's just ignored.
+
+Additionally, config.py:30 whisper_language_hint = "fa" is dead config — never consumed.
+
+## Fix Plan
+
+1. persian_normalizer.py: Add language parameter, gate hazm + char fix behind Persian codes {"fa","pes","prs"}, run bracket removal + whitespace for all languages
+2. service.py: Pass detected_language to normalization, move normalization before LRC formatting (deduplicate)
+3. lrc_formatter.py: Remove normalize_persian_text call — accept pre-normalized text
+4. transcriber.py: Remove dead language_hint parameter
+5. config.py: Remove whisper_language_hint
+
+## Test Cases
+Turkish text preserved, English text untouched, Persian still works, Arabic not over-normalized, Turkish special chars (ç, ğ, ı, ö, ş, ü) survive.`,
+      grades: [
+        { name: "identifies root cause", passed: true },
+        { name: "suggests language gating", passed: true },
+        { name: "references service.py", passed: true },
+        { name: "references lrc_formatter.py", passed: true },
+        { name: "includes test cases", passed: true },
+        { name: "detects dead config", passed: true },
+      ]
+    },
+    without_skill: {
+      output: `# Fix: Whisper multi-language transcription garbling
+
+## Root cause
+Persian normalizer applied unconditionally — service.py:115-118 and lrc_formatter.py:52. hazm inserts ZWNJ, strips diacritics, mangles Unicode in Latin text.
+
+## Fix
+Add language parameter to normalize_persian_text. When language is not Arabic-script (fa, ar, ur, ps, etc.), skip hazm + char mapping, only do bracket removal + whitespace.
+
+Thread language through to lrc_formatter.py as well. Also consider passing language="tr" for Turkish tracks in Celery tasks for better Whisper accuracy.
+
+5 test cases added for Turkish, English, Persian, LRC, service integration.`,
+      grades: [
+        { name: "identifies root cause", passed: true },
+        { name: "suggests language gating", passed: true },
+        { name: "references service.py", passed: true },
+        { name: "references lrc_formatter.py", passed: false },
+        { name: "includes test cases", passed: true },
+        { name: "detects dead config", passed: false },
+      ]
+    }
+  },
+  {
+    id: 3,
+    name: "add-frontend-ai-playground",
+    prompt: `I want to add a new AI playground page to the frontend at '/ai/experiment' that lets users enter a custom prompt and see what tracks the AI picks, plus the raw JSON response from the backend. Walk me through creating the Vue page, adding the route, and wiring it up.`,
+    with_skill: {
+      output: `# Walkthrough: AI Playground Page (/ai/experiment)
+
+## Full Stack Guide
+
+### Backend (5 files)
+1. dto.go — AIExperimentRequest + AIExperimentResponse with raw_response field
+2. client.go — Experiment() on AIClient interface + openAIClient impl (returns raw JSON string) + fallbackClient stub
+3. service.go — Experiment() method with candidate selection + raw response capture
+4. handler.go — HandleExperiment handler
+5. routes.go — POST /ai/experiment
+
+### Frontend API (3 files)
+enums.ts → EXPERIMENT, types.ts → AIExperimentResponseSchema, routes.ts → experiment() method
+
+### PageAIExperiment.vue (436 lines)
+Full component with hero header, prompt textarea, loading spinner, empty state, track list with play buttons, collapsible raw JSON panel with JSON.stringify formatting, collapse transition.
+
+### Route + Navigation
+Route in router/routes/app.ts (ai/experiment → ai.experiment), nav link in LayoutMusicApp.vue moreItems + pageTitleMap.`,
+      grades: [
+        { name: "creates Vue component", passed: true },
+        { name: "registers route in app.ts", passed: true },
+        { name: "uses useAIApi composable", passed: true },
+        { name: "covers all UI states", passed: true },
+        { name: "displays raw JSON response", passed: true },
+        { name: "includes play functionality", passed: true },
+        { name: "adds navigation link", passed: true },
+        { name: "covers backend changes", passed: true },
+      ]
+    },
+    without_skill: {
+      output: `# Adding an AI Playground page at /ai/experiment
+
+1. Create PageAIExperiment.vue — follow existing template pattern, import useAIApi, call generatePlaylist(). Cover empty, loading, success, error states.
+
+2. Register route in app.ts — path 'ai/experiment', name 'ai.experiment', lazy import.
+
+3. Wire nav link — look for existing AI nav items in sidebar/menu components.
+
+4. Reference files: PageAIPlaylistGenerator.vue (template), app.ts (routes), ai/routes.ts (composable), ai/types.ts (types).
+
+Uses PrimeVue Textarea + Button (import explicitly), useToast for errors, <pre> block for raw JSON display. Falls under @catalog agent.`,
+      grades: [
+        { name: "creates Vue component", passed: false },
+        { name: "registers route in app.ts", passed: true },
+        { name: "uses useAIApi composable", passed: true },
+        { name: "covers all UI states", passed: true },
+        { name: "displays raw JSON response", passed: true },
+        { name: "includes play functionality", passed: true },
+        { name: "adds navigation link", passed: false },
+        { name: "covers backend changes", passed: false },
+      ]
+    }
+  }
+];
+
+let currentEval = 0;
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab[onclick*="${tab}"]`).classList.add('active');
+  document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+function renderEval(index) {
+  currentEval = index;
+  const e = evals[index];
+  const nav = document.getElementById('evalNav');
+  nav.innerHTML = evals.map((ev, i) =>
+    `<button class="${i === index ? 'active' : ''}" onclick="renderEval(${i})">${ev.name}</button>`
+  ).join('');
+
+  const content = document.getElementById('evalContent');
+  content.innerHTML = `
+    <div class="prompt"><div class="prompt-label">Prompt</div>${e.prompt}</div>
+    <div class="panel-grid">
+      <div class="panel">
+        <div class="panel-header"><span>With Skill</span><span class="badge skill">muse-ai</span></div>
+        <div class="panel-body">${e.with_skill.output}</div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><span>Baseline</span><span class="badge baseline">No Skill</span></div>
+        <div class="panel-body">${e.without_skill.output}</div>
+      </div>
+    </div>
+    <div class="grades">
+      <table class="grade-table">
+        <tr><th>Assertion</th><th>With Skill</th><th>Baseline</th></tr>
+        ${e.with_skill.grades.map((g, i) => `
+          <tr>
+            <td>${g.name}</td>
+            <td class="${g.passed ? 'pass' : 'fail'}">${g.passed ? '✓' : '✗'}</td>
+            <td class="${e.without_skill.grades[i].passed ? 'pass' : 'fail'}">${e.without_skill.grades[i].passed ? '✓' : '✗'}</td>
+          </tr>
+        `).join('')}
+      </table>
+    </div>
+  `;
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft' && currentEval > 0) renderEval(currentEval - 1);
+  if (e.key === 'ArrowRight' && currentEval < evals.length - 1) renderEval(currentEval + 1);
+});
+
+renderEval(0);
+</script>
+</body>
+</html>

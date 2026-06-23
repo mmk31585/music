@@ -5,3 +5,5 @@ uploads
 /docs/swagger.json
 /docs/swagger.yaml
 .env
+# Copilot session audit logs
+logs/

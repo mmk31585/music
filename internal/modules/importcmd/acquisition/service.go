@@ -17,10 +17,9 @@ type Service struct {
 
 func NewService(logger *zap.Logger, proxy string) *Service {
 	resolvers := []Resolver{
-		newBandcampResolver(proxy),
 		newSoundCloudResolver(proxy),
-		newArchiveResolver(proxy),
 		newYTMusicResolver(proxy),
+		newiTunesResolver(),
 	}
 
 	return &Service{

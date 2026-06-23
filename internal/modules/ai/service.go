@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"regexp"
 	"strings"
 	"time"
 
@@ -128,9 +129,12 @@ func (s *Service) GetSimilarByMood(ctx context.Context, trackID string, mood str
 	)
 }
 
-func (s *Service) GetSimilarByEmbedding(ctx context.Context, trackID string, limit int) ([]TrackMeta, error) {
+func (s *Service) GetSimilarByEmbedding(ctx context.Context, trackID string, limit int, embeddingSpace string) ([]TrackMeta, error) {
 	if limit <= 0 || limit > 100 {
 		limit = 20
+	}
+	if embeddingSpace == "" {
+		embeddingSpace = "audio"
 	}
 
 	uid, err := uuid.Parse(trackID)
@@ -143,7 +147,7 @@ func (s *Service) GetSimilarByEmbedding(ctx context.Context, trackID string, lim
 		return nil, fmt.Errorf("embedding not found: %w", err)
 	}
 
-	tracks, err := s.repo.GetSimilarByEmbedding(ctx, emb.Embedding, limit+1)
+	tracks, err := s.repo.GetSimilarByEmbedding(ctx, []float64(emb.Embedding), limit+1, embeddingSpace)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +164,7 @@ func (s *Service) GetSimilarByEmbedding(ctx context.Context, trackID string, lim
 	return filtered, nil
 }
 
-func (s *Service) GeneratePlaylist(ctx context.Context, req GeneratePlaylistRequest) (*AIPlaylistResponse, error) {
+func (s *Service) GeneratePlaylist(ctx context.Context, req GeneratePlaylistRequest, userID uuid.UUID) (*AIPlaylistResponse, error) {
 	if !s.enabled {
 		return nil, fmt.Errorf("AI features are disabled")
 	}
@@ -184,7 +188,7 @@ func (s *Service) GeneratePlaylist(ctx context.Context, req GeneratePlaylistRequ
 		uid, err := uuid.Parse(req.SeedTrackID)
 		if err == nil {
 			if emb, err := s.repo.GetEmbedding(ctx, uid); err == nil {
-				candidates, err = s.repo.GetSimilarByEmbedding(ctx, emb.Embedding, 50)
+				candidates, err = s.repo.GetSimilarByEmbedding(ctx, []float64(emb.Embedding), 50, "audio")
 				if err != nil {
 					s.logger.Warn("embedding similarity failed, falling back to mood", zap.Error(err))
 				}
@@ -238,6 +242,7 @@ func (s *Service) GeneratePlaylist(ctx context.Context, req GeneratePlaylistRequ
 			Title:    t.Title,
 			Artist:   t.Artist,
 			Duration: t.Duration,
+			CoverURL: t.CoverURL,
 		}
 	}
 
@@ -245,15 +250,12 @@ func (s *Service) GeneratePlaylist(ctx context.Context, req GeneratePlaylistRequ
 
 	playlistID := uuid.New()
 	log := GenerationLog{
-		UserID:     uuid.Nil,
+		UserID:     userID,
 		PlaylistID: &playlistID,
-		Prompt:     prompt,
+		Prompt:     redactPII(prompt),
 		TrackCount: len(items),
 		ModelUsed:  "ai-v1",
 		LatencyMs:  latency,
-	}
-	if uid, ok := ctx.Value("user_id").(uuid.UUID); ok {
-		log.UserID = uid
 	}
 	_ = s.repo.LogGeneration(ctx, log)
 
@@ -266,6 +268,24 @@ func (s *Service) GeneratePlaylist(ctx context.Context, req GeneratePlaylistRequ
 		Tracks:      items,
 		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
 	}, nil
+}
+
+func (s *Service) CleanupOldLogs(ctx context.Context) error {
+	_, err := s.repo.db.ExecContext(ctx, `DELETE FROM ai_generation_log WHERE created_at < NOW() - INTERVAL '90 days'`)
+	return err
+}
+
+func redactPII(input string) string {
+	if input == "" {
+		return input
+	}
+	re := regexp.MustCompile(`[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}`)
+	input = re.ReplaceAllString(input, "[EMAIL REDACTED]")
+	re = regexp.MustCompile(`(\+98|0)?9\d{9}`)
+	input = re.ReplaceAllString(input, "[PHONE REDACTED]")
+	re = regexp.MustCompile(`\b\d{10}\b`)
+	input = re.ReplaceAllString(input, "[ID REDACTED]")
+	return input
 }
 
 func (s *Service) fallbackSelect(tracks []TrackMeta, limit int) []string {
@@ -327,6 +347,10 @@ func (s *Service) ProcessBatchEmbeddings(ctx context.Context, limit int) (int, e
 		default:
 		}
 
+		rateLimit := time.NewTicker(200 * time.Millisecond)
+		<-rateLimit.C
+		rateLimit.Stop()
+
 		_, err := s.GenerateEmbedding(ctx, t.ID)
 		if err != nil {
 			s.logger.Warn("embedding generation failed", zap.String("track_id", t.ID), zap.Error(err))
@@ -351,6 +375,10 @@ func (s *Service) ProcessBatchMoods(ctx context.Context, limit int) (int, error)
 			return processed, ctx.Err()
 		default:
 		}
+
+		rateLimit := time.NewTicker(500 * time.Millisecond)
+		<-rateLimit.C
+		rateLimit.Stop()
 
 		_, err := s.AnalyzeMood(ctx, t.ID)
 		if err != nil {

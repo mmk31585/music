@@ -259,6 +259,7 @@ func (e *QueueEngine) broadcastQueueState(ctx context.Context, roomID uuid.UUID)
 
 // TrackEnded is called when a track finishes playing in a room context.
 // It validates that the ended track matches what's currently playing, then advances.
+// If no track is currently playing, it auto-starts the first candidate or auto-fills.
 func (e *QueueEngine) TrackEnded(ctx context.Context, roomID, trackID string) error {
 	rid, err := uuid.Parse(roomID)
 	if err != nil {
@@ -269,9 +270,11 @@ func (e *QueueEngine) TrackEnded(ctx context.Context, roomID, trackID string) er
 		return fmt.Errorf("invalid track id: %w", err)
 	}
 
-	np, err := e.repo.GetNowPlaying(ctx, rid)
-	if err != nil {
-		return fmt.Errorf("no track currently playing in room: %w", err)
+	np, npErr := e.repo.GetNowPlaying(ctx, rid)
+	if npErr != nil {
+		// No track currently playing — auto-start the first candidate or auto-fill.
+		_, advanceErr := e.AdvanceQueue(ctx, roomID)
+		return advanceErr
 	}
 
 	if np.TrackID != tid {

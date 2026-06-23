@@ -11,9 +11,9 @@
         <div class="absolute inset-0 backdrop-blur-2xl" :style="{ background: bgGradient }" />
         <div class="absolute inset-0 bg-black/40" />
 
-        <!-- Drag handle -->
+        <!-- Drag handle (44px min touch target for WCAG 2.5.8) -->
         <div
-          class="absolute top-0 left-1/2 z-20 flex w-full -translate-x-1/2 flex-col items-center gap-1 pt-3 pb-2"
+          class="absolute top-0 left-1/2 z-20 flex w-full -translate-x-1/2 flex-col items-center justify-center min-h-[44px] gap-1"
           @touchstart.prevent="onDragStart"
           @mousedown.prevent="onDragStart"
         >
@@ -61,7 +61,7 @@
           <div class="mt-3 flex items-center gap-3">
             <button
               type="button"
-              class="spring flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-all active:scale-95"
+              class="spring flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-all active:scale-95 min-h-[44px]"
               :class="liked ? '' : 'text-white/40 hover:bg-white/5'"
               :style="liked ? { color: accentColor, backgroundColor: `${accentColor}15` } : {}"
               @click="liked = !liked"
@@ -341,7 +341,7 @@ function onDragStart(e: TouchEvent | MouseEvent) {
     const match = el.style.transform.match(/translateY\((\d+(?:\.\d+)?)px\)/)
     el.style.transition = ''
     el.style.transform = ''
-    if (match && parseFloat(match[1]!) > SHEET_HEIGHT * 0.35) {
+    if (match && parseFloat(match[1]!) > sheetHeight.value * 0.35) {
       emit('update:visible', false)
     }
     cleanupListeners?.()
@@ -417,14 +417,18 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* WCAG 2.5.8: minimum target 24×24 CSS px.
+   We keep the visual track thin but make the hit area 44px tall for touch. */
 .sheet-range {
   --range-progress: 0%;
   --accent-color: #1db954;
   width: 100%;
-  height: 18px;
+  height: 44px;
   cursor: pointer;
   appearance: none;
   background: transparent;
+  padding: 14px 0;    /* vertically center the 3px track inside 44px */
+  box-sizing: border-box;
 }
 .sheet-range::-webkit-slider-runnable-track {
   height: 3px;
@@ -438,13 +442,29 @@ onUnmounted(() => {
   );
 }
 .sheet-range::-webkit-slider-thumb {
-  width: 12px;
-  height: 12px;
-  margin-top: -4.5px;
+  width: 24px;
+  height: 24px;
+  margin-top: -10.5px;   /* (track 3px - thumb 24px) / 2 = -10.5px */
   border-radius: 999px;
   appearance: none;
   background: #fff;
   box-shadow: 0 0 16px color-mix(in srgb, var(--accent-color) 50%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.sheet-range::-webkit-slider-thumb:hover,
+.sheet-range::-webkit-slider-thumb:focus-visible {
+  transform: scale(1.2);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--accent-color) 70%, transparent);
+}
+/* Firefox thumb */
+.sheet-range::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent-color) 50%, transparent);
+  cursor: pointer;
 }
 .sheet-slide-enter-active {
   transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);

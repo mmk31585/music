@@ -17,7 +17,22 @@ func RegisterRoutes(api *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
 	{
 		admin.POST("/lyrics", h.CreateLyrics)
 		admin.POST("/lyrics/fetch/:trackId", h.FetchFromLRC)
+		admin.POST("/lyrics/fetch-or-generate/:trackId", h.FetchOrGenerateLyrics)
+		admin.GET("/lyrics/ai-status/:trackId", h.AILyricsStatus)
 		admin.PUT("/lyrics/:id", h.UpdateLyrics)
 		admin.DELETE("/lyrics/:id", h.DeleteLyrics)
+	}
+}
+
+// RegisterInternalRoutes registers internal service-to-service endpoints
+// protected by HMAC signature verification (not user JWT auth).
+// These are mounted under the /api/v1 prefix so the Python ML service
+// can reach them via “{callback_base_url}/internal/v1/lyrics/callback“
+// where callback_base_url typically includes /api/v1.
+func RegisterInternalRoutes(api *gin.RouterGroup, h *Handler, hmacMW gin.HandlerFunc) {
+	internal := api.Group("/internal/v1/lyrics")
+	internal.Use(hmacMW)
+	{
+		internal.POST("/callback", h.HandleLyricsCallback)
 	}
 }

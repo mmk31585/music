@@ -9,8 +9,6 @@ function getApiOrigin() {
 
 function buildStreamUrl(path: string) {
   const origin = getApiOrigin()
-console.log(origin)
-console.log(path)
 
   return `${origin}${path}`
 }

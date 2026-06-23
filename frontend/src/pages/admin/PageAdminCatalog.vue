@@ -93,6 +93,27 @@
             :key="track.id"
             class="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/[0.02]"
           >
+            <button
+              type="button"
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-all hover:bg-[#1db954]/20 hover:text-[#1db954] disabled:opacity-30"
+              :disabled="loadingTrackId === String(track.id)"
+              :aria-label="'Play ' + track.title"
+              :title="isTrackPlaying(track) ? 'Now playing' : 'Play track'"
+              @click.stop="handlePlayTrack(track)"
+            >
+              <i
+                v-if="loadingTrackId === String(track.id)"
+                aria-hidden="true"
+                class="pi pi-spin pi-spinner text-sm"
+              />
+              <i
+                v-else
+                aria-hidden="true"
+                :class="getTrackPlayButtonIcon(track)"
+                class="text-sm"
+              />
+            </button>
+
             <span class="w-5 text-center text-xs tabular-nums text-slate-600">{{ i + 1 }}</span>
 
             <div class="h-9 w-9 shrink-0 overflow-hidden rounded-md bg-white/[0.04]">
@@ -288,6 +309,8 @@ import { useTracksApi, type Track } from '@/services/api/catalog/tracks'
 import { useArtistsApi, type Artist } from '@/services/api/catalog/artists'
 import { useAlbumsApi, type Album } from '@/services/api/catalog/albums'
 import { useGenresApi, type Genre } from '@/services/api/catalog/genres'
+import { usePlayer } from '@/composables/player'
+import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
 
 const { getTracks } = useTracksApi()
 const { getArtists } = useArtistsApi()
@@ -295,10 +318,44 @@ const { getAlbums } = useAlbumsApi()
 const { getGenres } = useGenresApi()
 
 const loading = ref(false)
+const loadingTrackId = ref<string | null>(null)
 const tracks = ref<Track[]>([])
 const artists = ref<Artist[]>([])
 const albums = ref<Album[]>([])
 const genres = ref<Genre[]>([])
+const player = usePlayer()
+const playerApi = usePlayerApi()
+
+function buildPlaybackTrack(track: Track): PlaybackTrack {
+  const id = String(track.id)
+  return {
+    id,
+    title: track.title || 'Untitled',
+    artistName: track.artist_name || 'Unknown artist',
+    albumTitle: track.album_title || null,
+    coverUrl: track.cover_url || null,
+    durationSeconds: track.duration_seconds ?? null,
+    streamUrl: playerApi.getTrackStreamUrl(id),
+  }
+}
+
+async function handlePlayTrack(track: Track) {
+  loadingTrackId.value = String(track.id)
+  try {
+    await player.toggleTrack(buildPlaybackTrack(track))
+  } finally {
+    loadingTrackId.value = null
+  }
+}
+
+function isTrackPlaying(track: Track): boolean {
+  return player.currentTrack.value?.id === String(track.id)
+}
+
+function getTrackPlayButtonIcon(track: Track): string {
+  if (isTrackPlaying(track) && player.isPlaying.value) return 'pi pi-pause-fill'
+  return 'pi pi-play-fill'
+}
 
 // TODO HIGH: Fetching ALL catalog items just for preview counts is wasteful.
 // Use a dedicated stats endpoint when available. Also, Promise.all will crash all on single failure — use Promise.allSettled instead.

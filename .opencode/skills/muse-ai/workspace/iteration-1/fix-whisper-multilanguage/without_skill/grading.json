@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "run_id": "fix-whisper-multilanguage-without_skill",
+  "config": "without_skill",
+  "expectations": [
+    {"text": "identifies root cause", "passed": true, "evidence": "Correctly identifies that Persian normalizer is applied unconditionally, references service.py:115-118 and lrc_formatter.py:52"},
+    {"text": "suggests language gating", "passed": true, "evidence": "Adds language parameter to normalize_persian_text, uses broader _PERSO_ARABIC_SCRIPTS set"},
+    {"text": "references service.py", "passed": true, "evidence": "References service.py and provides code changes"},
+    {"text": "references lrc_formatter.py", "passed": false, "evidence": "Threads language through lrc_formatter.py but keeps normalization inside it rather than moving it to service.py for deduplication"},
+    {"text": "includes test cases", "passed": true, "evidence": "5 test cases covering Turkish, English, Persian, LRC format, service integration"},
+    {"text": "detects dead config", "passed": false, "evidence": "Does not identify the dead whisper_language_hint config or dead code in transcriber.py"}
+  ]
+}

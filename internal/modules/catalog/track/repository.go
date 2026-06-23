@@ -3,8 +3,10 @@ package track
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"music/internal/modules/catalog/common"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -309,37 +311,56 @@ func (r *Repository) Random(ctx context.Context, limit int) ([]Track, error) {
 	return items, nil
 }
 
-func (r *Repository) List(ctx context.Context, limit, offset int, publicOnly bool) ([]Track, error) {
+func (r *Repository) List(ctx context.Context, limit, offset int, publicOnly bool, opts ListOptions) ([]Track, error) {
 	var items []Track
 
 	query := `
 		SELECT
-			id,
-			artist_id,
-			album_id,
-			title,
-			slug,
-			duration_seconds,
-			track_number,
-			explicit,
-			audio_url,
-			cover_url,
-			audio_media_id,
-			cover_media_id,
-			play_count,
-			is_public,
-			created_at,
-			updated_at
-		FROM tracks
+			t.id,
+			t.artist_id,
+			t.album_id,
+			t.title,
+			t.slug,
+			t.duration_seconds,
+			t.track_number,
+			t.explicit,
+			t.audio_url,
+			t.cover_url,
+			t.audio_media_id,
+			t.cover_media_id,
+			t.play_count,
+			t.is_public,
+			t.created_at,
+			t.updated_at
+		FROM tracks t
 	`
 
 	args := []any{}
+	where := []string{}
+
 	if publicOnly {
-		query += ` WHERE is_public = TRUE`
+		where = append(where, "t.is_public = TRUE")
+	}
+	if opts.AlbumID != nil {
+		where = append(where, fmt.Sprintf("t.album_id = $%d", len(args)+1))
+		args = append(args, *opts.AlbumID)
+	}
+	if opts.ArtistID != nil {
+		where = append(where, fmt.Sprintf("t.artist_id = $%d", len(args)+1))
+		args = append(args, *opts.ArtistID)
+	}
+	if opts.Query != "" {
+		where = append(where, fmt.Sprintf("(t.title ILIKE $%d OR EXISTS (SELECT 1 FROM track_artists ta2 JOIN artists a2 ON a2.id = ta2.artist_id WHERE ta2.track_id = t.id AND a2.name ILIKE $%d))", len(args)+1, len(args)+1))
+		args = append(args, "%"+opts.Query+"%")
 	}
 
-	query += ` ORDER BY created_at DESC LIMIT $1 OFFSET $2`
+	if len(where) > 0 {
+		query += ` WHERE ` + strings.Join(where, " AND ")
+	}
+
+	query += ` ORDER BY created_at DESC`
 	args = append(args, limit, offset)
+	query += fmt.Sprintf(` LIMIT $%d OFFSET $%d`, len(args)-1, len(args))
 
 	err := r.db.SelectContext(ctx, &items, query, args...)
 	if err != nil {
@@ -361,6 +382,12 @@ func (r *Repository) Update(ctx context.Context, id uuid.UUID, req UpdateRequest
 		return nil, err
 	}
 
+	// Build the clearFields set for O(1) lookup
+	clearSet := make(map[string]bool, len(req.ClearFields))
+	for _, f := range req.ClearFields {
+		clearSet[f] = true
+	}
+
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -373,22 +400,60 @@ func (r *Repository) Update(ctx context.Context, id uuid.UUID, req UpdateRequest
 	}
 	slug := common.Slugify(title)
 
-	var item Track
-	err = tx.GetContext(ctx, &item, `
+	// Build dynamic SET clause to handle nullable field clearing
+	// Each nullable field gets a CASE: if in clearFields → NULL, else if provided → value, else → current
+	args := []any{id}
+	argIdx := 2
+	setClauses := []string{}
+	setClauses = append(setClauses, fmt.Sprintf("title = $%d", argIdx), fmt.Sprintf("slug = $%d", argIdx+1))
+	if req.Title != nil {
+		args = append(args, *req.Title, slug)
+	} else {
+		args = append(args, current.Title, slug)
+	}
+	argIdx += 2
+
+	// Helper to build a nullable field SET clause (column allows NULL)
+	addNullableField := func(field, fieldName string, value interface{}) {
+		if clearSet[fieldName] {
+			setClauses = append(setClauses, fmt.Sprintf("%s = NULL", field))
+		} else if value != nil {
+			setClauses = append(setClauses, fmt.Sprintf("%s = $%d", field, argIdx))
+			args = append(args, value)
+			argIdx++
+		}
+		// If value is nil and field not in clearSet, keep current value — no SET clause needed
+	}
+
+	// Helper for non-nullable fields (bool, int) — can't SET NULL
+	addValueField := func(field string, value interface{}) {
+		if value != nil {
+			setClauses = append(setClauses, fmt.Sprintf("%s = $%d", field, argIdx))
+			args = append(args, value)
+			argIdx++
+		}
+	}
+
+	addNullableField("album_id", "albumId", req.AlbumID)
+	addValueField("duration_seconds", req.DurationSeconds)
+	addNullableField("track_number", "trackNumber", req.TrackNumber)
+	addValueField("explicit", req.Explicit)
+	addNullableField("audio_url", "audioUrl", req.AudioURL)
+	addNullableField("cover_url", "coverUrl", req.CoverURL)
+	addNullableField("audio_media_id", "audioMediaId", req.AudioMediaID)
+	addNullableField("cover_media_id", "coverMediaId", req.CoverMediaID)
+	addValueField("is_public", req.IsPublic)
+
+	if len(setClauses) == 0 {
+		return nil, common.ErrInvalidInput
+	}
+
+	setClauses = append(setClauses, "updated_at = NOW()")
+	setSQL := strings.Join(setClauses, ", ")
+
+	query := fmt.Sprintf(`
 		UPDATE tracks
-		SET
-			album_id = COALESCE($2, album_id),
-			title = COALESCE($3, title),
-			slug = $4,
-			duration_seconds = COALESCE($5, duration_seconds),
-			track_number = COALESCE($6, track_number),
-			explicit = COALESCE($7, explicit),
-			audio_url = COALESCE($8, audio_url),
-			cover_url = COALESCE($9, cover_url),
-			audio_media_id = COALESCE($10, audio_media_id),
-			cover_media_id = COALESCE($11, cover_media_id),
-			is_public = COALESCE($12, is_public),
-			updated_at = NOW()
+		SET %s
 		WHERE id = $1
 		RETURNING
 			id,
@@ -407,20 +472,10 @@ func (r *Repository) Update(ctx context.Context, id uuid.UUID, req UpdateRequest
 			is_public,
 			created_at,
 			updated_at
-	`,
-		id,
-		req.AlbumID,
-		req.Title,
-		slug,
-		req.DurationSeconds,
-		req.TrackNumber,
-		req.Explicit,
-		req.AudioURL,
-		req.CoverURL,
-		req.AudioMediaID,
-		req.CoverMediaID,
-		req.IsPublic,
-	)
+	`, setSQL)
+
+	var item Track
+	err = tx.GetContext(ctx, &item, query, args...)
 	if err == sql.ErrNoRows {
 		return nil, common.ErrNotFound
 	}

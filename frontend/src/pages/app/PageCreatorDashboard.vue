@@ -108,18 +108,18 @@
             <div v-else class="space-y-2">
               <div
                 v-for="day in dailyStats.slice(0, 14)"
-                :key="day.id"
+                :key="String(day.id)"
                 class="flex items-center gap-3"
               >
-                <span class="w-24 shrink-0 text-xs text-slate-400">{{ formatDate(day.date) }}</span>
+                <span class="w-24 shrink-0 text-xs text-slate-400">{{ formatDate(String(day.date)) }}</span>
                 <div class="h-6 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
                   <div
                     class="h-full rounded-full bg-gradient-to-r from-[#1db954] to-[#1ed760] transition-all duration-500"
-                    :style="{ width: barWidth(day.plays) + '%' }"
+                    :style="{ width: barWidth(Number(day.plays)) + '%' }"
                   />
                 </div>
                 <span class="w-12 text-right text-xs font-medium text-white tabular-nums">{{
-                  day.plays
+                  Number(day.plays)
                 }}</span>
               </div>
             </div>
@@ -479,7 +479,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { SkeletonLoader } from '@/components/common'
 import { useCreatorApi } from '@/services/api/creator'
-import { usePlayerApi } from '@/services/api/player'
+import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
 import { usePlayer } from '@/composables/player'
 import { onImgError } from '@/utils/helpers'
 import CreatorMetricCard from '@/components/creator/CreatorMetricCard.vue'
@@ -618,14 +618,14 @@ async function refreshStats() {
 }
 
 function playTrack(track: Record<string, unknown>) {
-  const pb = {
-    id: String(track.track_id),
-    title: track.title,
-    artistName: track.artist_name || 'Unknown',
+  const pb: PlaybackTrack = {
+    id: String(track.track_id ?? ''),
+    title: String(track.title ?? ''),
+    artistName: String(track.artist_name || 'Unknown'),
     albumTitle: null,
-    coverUrl: track.cover_url || null,
-    durationSeconds: track.duration ?? null,
-    streamUrl: playerApi.getTrackStreamUrl(String(track.track_id)),
+    coverUrl: String(track.cover_url ?? ''),
+    durationSeconds: Number(track.duration ?? 0),
+    streamUrl: playerApi.getTrackStreamUrl(String(track.track_id ?? '')),
   }
   player.playTrack(pb)
 }

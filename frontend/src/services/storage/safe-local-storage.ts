@@ -12,7 +12,7 @@ const encryptionToken = Cookie.get(COOKIE_NAME) ?? uuidv4()
 Cookie.set(COOKIE_NAME, encryptionToken, { secure: false, expires: 180, sameSite: 'lax' })
 
 export const safeLocalStorage = {
-  getItem<T = unknown>(key: string): T | string | null {
+  getItem<T = unknown>(key: string): T | null {
     if (!window) return null
 
     const store = window.localStorage.getItem(key)
@@ -32,7 +32,8 @@ export const safeLocalStorage = {
     try {
       return JSON.parse(decrypted) as T
     } catch {
-      return decrypted
+      // If stored value is a plain string (not JSON), return it only when T is string-compatible
+      return decrypted as unknown as T
     }
   },
 

@@ -1,26 +1,18 @@
 <template>
   <aside
-    class="fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-white/10 bg-[#0a0a0a] transition-all duration-300 lg:static"
+    class="fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-white/10 bg-[#0a0a0a] transition-all duration-300 lg:static lg:h-screen"
     :class="collapsed ? 'w-[68px]' : 'w-72'"
   >
     <!-- Brand -->
-    <div class="flex shrink-0 items-center gap-3 px-3 pt-4 pb-3" :class="collapsed ? 'justify-center' : 'px-4 pt-4 pb-3'">
-      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1db954] font-bold text-black text-sm">
-        A
+    <div class="flex shrink-0 items-center gap-3" :class="collapsed ? 'justify-center px-2 pt-5 pb-4' : 'px-4 pt-5 pb-4'">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-[#1db954] to-[#169c46] font-bold text-black text-sm shadow-lg shadow-[#1db954]/20">
+        <i aria-hidden="true" class="pi pi-shield text-sm" />
       </div>
       <div v-if="!collapsed" class="overflow-hidden">
-        <h1 class="text-base font-bold text-white truncate">Admin Panel</h1>
-        <p class="text-[10px] text-slate-500 truncate">Catalog & media control</p>
+        <h1 class="text-sm font-bold text-white truncate leading-tight">Admin Panel</h1>
+        <p class="text-[10px] text-slate-500 truncate leading-tight mt-0.5">Catalog & media control</p>
       </div>
     </div>
-
-    <!-- Toggle button (desktop) -->
-    <button
-      class="mx-2 flex items-center justify-center rounded-lg py-2 text-slate-500 hover:bg-white/5 hover:text-white transition-colors hidden lg:flex"
-      @click="$emit('toggle')"
-    >
-      <i aria-hidden="true" class="pi text-xs" :class="collapsed ? 'pi-chevron-right' : 'pi-chevron-left'" />
-    </button>
 
     <!-- Nav items -->
     <nav class="mt-2 flex-1 overflow-y-auto scroll-bar px-2">
@@ -123,6 +115,8 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Users', icon: 'pi pi-user', to: '/admin/users' },
       { label: 'Media', icon: 'pi pi-upload', to: '/admin/media' },
+      { label: 'Videos', icon: 'pi pi-video', to: '/admin/videos' },
+      { label: 'Video Upload', icon: 'pi pi-cloud-upload', to: '/admin/video-upload' },
       { label: 'Import from Internet', icon: 'pi pi-globe', to: '/admin/import' },
       { label: 'Import by Artist', icon: 'pi pi-user-plus', to: '/admin/import/artist' },
       { label: 'Music Ingestion', icon: 'pi pi-cloud-upload', to: '/admin/ingestion' },

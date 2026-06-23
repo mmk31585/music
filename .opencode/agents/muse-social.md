@@ -21,3 +21,11 @@ Social API modules, notification composable
 
 ## Deps
 `@infra` (API, socket), `@ui` (common components)
+
+## Teammates (Direct Comms)
+When running in **team mode** (`@muse-team` deployed you), message peers directly:
+- `@muse-player` — requests playback state for party sync, shares real-time events
+- `@muse-catalog` — needs track/album data for activity feed posts
+- `@muse-auth` — needs user identity for notification targeting
+- `@muse-infra` — needs WebSocket channels registered, API modules
+- `@muse-ui` — shares notification/toast component integration

@@ -5,17 +5,17 @@ import (
 )
 
 type UploadResponse struct {
-	DraftID           string            `json:"draftId"`
-	OriginalFilename  string            `json:"originalFilename"`
-	FileSize          int64             `json:"fileSize"`
-	Format            string            `json:"format"`
-	DurationSeconds   *float64          `json:"durationSeconds,omitempty"`
-	Bitrate           *int              `json:"bitrate,omitempty"`
-	Status            DraftStatus       `json:"status"`
-	ExtractedMetadata *ExtractedTags    `json:"extractedMetadata"`
-	CoverArtURL       *string           `json:"coverArtUrl,omitempty"`
-	Assets            []AssetResponse   `json:"assets,omitempty"`
-	CreatedAt         time.Time         `json:"createdAt"`
+	DraftID           string          `json:"draftId"`
+	OriginalFilename  string          `json:"originalFilename"`
+	FileSize          int64           `json:"fileSize"`
+	Format            string          `json:"format"`
+	DurationSeconds   *float64        `json:"durationSeconds,omitempty"`
+	Bitrate           *int            `json:"bitrate,omitempty"`
+	Status            DraftStatus     `json:"status"`
+	ExtractedMetadata *ExtractedTags  `json:"extractedMetadata"`
+	CoverArtURL       *string         `json:"coverArtUrl,omitempty"`
+	Assets            []AssetResponse `json:"assets,omitempty"`
+	CreatedAt         time.Time       `json:"createdAt"`
 }
 
 type AssetResponse struct {
@@ -27,40 +27,40 @@ type AssetResponse struct {
 }
 
 type ExtractedTags struct {
-	Title       string `json:"title,omitempty"`
-	Artist      string `json:"artist,omitempty"`
-	Album       string `json:"album,omitempty"`
-	AlbumArtist string `json:"albumArtist,omitempty"`
-	TrackNumber int    `json:"trackNumber,omitempty"`
-	TrackTotal  int    `json:"trackTotal,omitempty"`
-	DiscNumber  int    `json:"discNumber,omitempty"`
-	DiscTotal   int    `json:"discTotal,omitempty"`
-	Year        int    `json:"year,omitempty"`
-	Genre       string `json:"genre,omitempty"`
-	Comment     string `json:"comment,omitempty"`
-	Composer    string `json:"composer,omitempty"`
-	Lyrics      string `json:"lyrics,omitempty"`
-	Duration    float64  `json:"duration,omitempty"`
-	Bitrate     int      `json:"bitrate,omitempty"`
-	Format      string   `json:"format,omitempty"`
-	HasCoverArt bool     `json:"hasCoverArt"`
+	Title       string  `json:"title,omitempty"`
+	Artist      string  `json:"artist,omitempty"`
+	Album       string  `json:"album,omitempty"`
+	AlbumArtist string  `json:"albumArtist,omitempty"`
+	TrackNumber int     `json:"trackNumber,omitempty"`
+	TrackTotal  int     `json:"trackTotal,omitempty"`
+	DiscNumber  int     `json:"discNumber,omitempty"`
+	DiscTotal   int     `json:"discTotal,omitempty"`
+	Year        int     `json:"year,omitempty"`
+	Genre       string  `json:"genre,omitempty"`
+	Comment     string  `json:"comment,omitempty"`
+	Composer    string  `json:"composer,omitempty"`
+	Lyrics      string  `json:"lyrics,omitempty"`
+	Duration    float64 `json:"duration,omitempty"`
+	Bitrate     int     `json:"bitrate,omitempty"`
+	Format      string  `json:"format,omitempty"`
+	HasCoverArt bool    `json:"hasCoverArt"`
 }
 
 type DraftListItem struct {
-	ID               string       `json:"id"`
-	OriginalFilename string       `json:"originalFilename"`
-	FileSize         int64        `json:"fileSize"`
-	Format           string       `json:"format"`
-	DurationSeconds  *float64     `json:"durationSeconds,omitempty"`
-	Status           DraftStatus  `json:"status"`
-	FileHash         string       `json:"fileHash,omitempty"`
-	Stale            bool         `json:"stale"`
-	Title            string       `json:"title,omitempty"`
-	Artist           string       `json:"artist,omitempty"`
-	Album            string       `json:"album,omitempty"`
-	CoverArtURL      *string      `json:"coverArtUrl,omitempty"`
-	HasCoverArt      bool         `json:"hasCoverArt"`
-	CreatedAt        time.Time    `json:"createdAt"`
+	ID               string      `json:"id"`
+	OriginalFilename string      `json:"originalFilename"`
+	FileSize         int64       `json:"fileSize"`
+	Format           string      `json:"format"`
+	DurationSeconds  *float64    `json:"durationSeconds,omitempty"`
+	Status           DraftStatus `json:"status"`
+	FileHash         string      `json:"fileHash,omitempty"`
+	Stale            bool        `json:"stale"`
+	Title            string      `json:"title,omitempty"`
+	Artist           string      `json:"artist,omitempty"`
+	Album            string      `json:"album,omitempty"`
+	CoverArtURL      *string     `json:"coverArtUrl,omitempty"`
+	HasCoverArt      bool        `json:"hasCoverArt"`
+	CreatedAt        time.Time   `json:"createdAt"`
 }
 
 type DraftDetailResponse struct {
@@ -88,9 +88,9 @@ type ListDraftsResponse struct {
 }
 
 type SaveFinalMetadataRequest struct {
-	Artist FinalArtistMetadata `json:"artist" validate:"required"`
-	Album  FinalAlbumMetadata  `json:"album" validate:"required"`
-	Track  FinalTrackMetadata  `json:"track" validate:"required"`
+	Artists []FinalArtistMetadata `json:"artists" validate:"required,min=1,dive"`
+	Album   FinalAlbumMetadata    `json:"album" validate:"required"`
+	Track   FinalTrackMetadata    `json:"track" validate:"required"`
 }
 
 type FinalArtistMetadata struct {
@@ -114,18 +114,30 @@ type FinalAlbumMetadata struct {
 }
 
 type FinalTrackMetadata struct {
-	Title            string `json:"title"`
-	TrackNumber      int    `json:"trackNumber,omitempty"`
-	DurationSeconds  int    `json:"durationSeconds"`
-	Genre            string `json:"genre,omitempty"`
-	Lyrics           string `json:"lyrics,omitempty"`
-	Explicit         bool   `json:"explicit"`
+	Title             string `json:"title"`
+	TrackNumber       int    `json:"trackNumber,omitempty"`
+	DurationSeconds   int    `json:"durationSeconds"`
+	Genre             string `json:"genre,omitempty"`
+	Lyrics            string `json:"lyrics,omitempty"`
+	Explicit          bool   `json:"explicit"`
 	SpotifyPreviewURL string `json:"spotifyPreviewUrl,omitempty"`
-	CoverURL         string `json:"coverUrl,omitempty"`
+	CoverURL          string `json:"coverUrl,omitempty"`
 }
 
 type RejectDraftRequest struct {
 	Reason string `json:"reason,omitempty"`
+}
+
+// UpdateDraftMetadataRequest allows partial updates to a draft's extracted
+// metadata fields (title, artist, album). Empty fields are not updated.
+type UpdateDraftMetadataRequest struct {
+	Title  string `json:"title,omitempty"`
+	Artist string `json:"artist,omitempty"`
+	Album  string `json:"album,omitempty"`
+}
+
+type EnrichDraftRequest struct {
+	Scope []string `json:"scope,omitempty"` // optional: ["spotify", "lastfm", "musicbrainz", "lrclib"]
 }
 
 type ArtistSearchResult struct {
@@ -138,11 +150,11 @@ type ArtistSearchResult struct {
 }
 
 type AlbumSearchResult struct {
-	ID         string  `json:"id"`
-	Title      string  `json:"title"`
-	Slug       string  `json:"slug"`
-	ArtistName string  `json:"artistName"`
-	CoverURL   string  `json:"coverUrl,omitempty"`
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Slug        string `json:"slug"`
+	ArtistName  string `json:"artistName"`
+	CoverURL    string `json:"coverUrl,omitempty"`
 	ReleaseYear *int   `json:"releaseYear,omitempty"`
 }
 
@@ -154,6 +166,6 @@ type IngestionStats struct {
 }
 
 type IngestionConfigResponse struct {
-	MaxUploadSize      int64 `json:"maxUploadSize"`
-	EnrichmentEnabled  bool  `json:"enrichmentEnabled"`
+	MaxUploadSize     int64 `json:"maxUploadSize"`
+	EnrichmentEnabled bool  `json:"enrichmentEnabled"`
 }

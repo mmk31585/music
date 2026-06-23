@@ -2,6 +2,8 @@
 .gitignore
 .github
 .idea
+.env
+.env.*
 *.log
 *.toml
 Makefile

@@ -2,12 +2,8 @@ package catalog
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
-	"net/url"
-	"strings"
 	"sync"
 	"time"
 
@@ -23,13 +19,15 @@ import (
 
 // EnrichHandler handles enrichment requests for published catalog items.
 type EnrichHandler struct {
-	enricher      *enrichment.Enricher
-	trackSvc      *track.Service
-	artistSvc     *artistpkg.Service
-	albumSvc      *album.Service
-	lyricsService *lyricsMod.Service
-	logger        *zap.Logger
-	enrichMutex   sync.Mutex
+	enricher       *enrichment.Enricher
+	trackSvc       *track.Service
+	artistSvc      *artistpkg.Service
+	albumSvc       *album.Service
+	lyricsService  *lyricsMod.Service
+	deezerClient   enrichment.DeezerClient
+	coverArtClient enrichment.CoverArtClient
+	logger         *zap.Logger
+	enrichMutex    sync.Mutex
 }
 
 func NewEnrichHandler(
@@ -38,15 +36,19 @@ func NewEnrichHandler(
 	artistSvc *artistpkg.Service,
 	albumSvc *album.Service,
 	lyricsService *lyricsMod.Service,
+	deezerClient enrichment.DeezerClient,
+	coverArtClient enrichment.CoverArtClient,
 	logger *zap.Logger,
 ) *EnrichHandler {
 	return &EnrichHandler{
-		enricher:      enricher,
-		trackSvc:      trackSvc,
-		artistSvc:     artistSvc,
-		albumSvc:      albumSvc,
-		lyricsService: lyricsService,
-		logger:        logger,
+		enricher:       enricher,
+		trackSvc:       trackSvc,
+		artistSvc:      artistSvc,
+		albumSvc:       albumSvc,
+		lyricsService:  lyricsService,
+		deezerClient:   deezerClient,
+		coverArtClient: coverArtClient,
+		logger:         logger,
 	}
 }
 
@@ -260,7 +262,7 @@ func (h *EnrichHandler) EnrichArtist(c *gin.Context) {
 
 	// 1. Deezer lookup for image
 	go func() {
-		imgURL, err := h.searchDeezerArtistImage(c.Request.Context(), artist.Name)
+		imgURL, err := h.deezerClient.SearchArtistImage(c.Request.Context(), artist.Name)
 		deezerCh <- deezerResult{imageURL: imgURL, err: err}
 	}()
 
@@ -413,9 +415,9 @@ func (h *EnrichHandler) EnrichAlbum(c *gin.Context) {
 		lastfmCh <- coverResult{}
 	}()
 
-	// 2. MusicBrainz / Cover Art Archive (via ArtistSearcher-like approach)
+	// 2. MusicBrainz / Cover Art Archive (via CoverArtClient)
 	go func() {
-		coverURL, err := h.searchAlbumCoverCAA(c.Request.Context(), al.Title, artistName)
+		coverURL, err := h.coverArtClient.SearchAlbumCover(c.Request.Context(), al.Title, artistName)
 		mbCh <- coverResult{url: coverURL, err: err}
 	}()
 
@@ -477,138 +479,6 @@ func (h *EnrichHandler) EnrichAlbum(c *gin.Context) {
 		"success": true,
 		"data":    updated,
 	})
-}
-
-// searchDeezerArtistImage searches Deezer for an artist and returns their image URL.
-func (h *EnrichHandler) searchDeezerArtistImage(ctx context.Context, name string) (string, error) {
-	type deezerArtist struct {
-		ID      int    `json:"id"`
-		Name    string `json:"name"`
-		Picture string `json:"picture_medium"`
-	}
-	type deezerSearch struct {
-		Data []deezerArtist `json:"data"`
-	}
-
-	searchURL := fmt.Sprintf("https://api.deezer.com/search/artist?q=%s&limit=3", urlQueryEscape(name))
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, searchURL, nil)
-	if err != nil {
-		return "", err
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("deezer: status %d", resp.StatusCode)
-	}
-
-	var sr deezerSearch
-	if err := json.NewDecoder(resp.Body).Decode(&sr); err != nil {
-		return "", err
-	}
-
-	if len(sr.Data) == 0 {
-		return "", nil
-	}
-
-	// Find best match
-	nameLower := strings.ToLower(name)
-	for _, a := range sr.Data {
-		if strings.EqualFold(a.Name, name) || strings.Contains(strings.ToLower(a.Name), nameLower) {
-			if a.Picture != "" {
-				return a.Picture, nil
-			}
-		}
-	}
-
-	// Fallback to first result
-	if sr.Data[0].Picture != "" {
-		return sr.Data[0].Picture, nil
-	}
-
-	return "", nil
-}
-
-// searchAlbumCoverCAA searches Cover Art Archive for album cover via MusicBrainz.
-func (h *EnrichHandler) searchAlbumCoverCAA(ctx context.Context, albumTitle, artistName string) (string, error) {
-	if albumTitle == "" {
-		return "", nil
-	}
-
-	// Search MusicBrainz for the release
-	mbURL := fmt.Sprintf(
-		"https://musicbrainz.org/ws/2/release?query=release:\"%s\"%%20AND%%20artist:\"%s\"&fmt=json&limit=5",
-		urlQueryEscape(albumTitle),
-		urlQueryEscape(artistName),
-	)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, mbURL, nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("User-Agent", "MuseMusic/1.0 (music@muse.app)")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", nil
-	}
-
-	var mbResp struct {
-		Releases []struct {
-			ID string `json:"id"`
-		} `json:"releases"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&mbResp); err != nil {
-		return "", err
-	}
-
-	if len(mbResp.Releases) == 0 {
-		return "", nil
-	}
-
-	// Try CAA for each release
-	caaClient := &http.Client{Timeout: 5 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
-		return http.ErrUseLastResponse
-	}}
-
-	for _, rel := range mbResp.Releases {
-		caaURL := fmt.Sprintf("https://coverartarchive.org/release/%s/front", rel.ID)
-		caaReq, err := http.NewRequestWithContext(ctx, http.MethodGet, caaURL, nil)
-		if err != nil {
-			continue
-		}
-		caaResp, err := caaClient.Do(caaReq)
-		if err != nil {
-			continue
-		}
-		caaResp.Body.Close()
-
-		if caaResp.StatusCode == http.StatusSeeOther || caaResp.StatusCode == http.StatusTemporaryRedirect || caaResp.StatusCode == http.StatusFound {
-			if loc := caaResp.Header.Get("Location"); loc != "" {
-				return loc, nil
-			}
-		}
-		if caaResp.StatusCode == http.StatusOK {
-			return caaURL, nil
-		}
-	}
-
-	return "", nil
-}
-
-// urlQueryEscape escapes a string for use in a URL query parameter.
-func urlQueryEscape(s string) string {
-	return url.QueryEscape(s)
 }
 
 // uuidNil is a helper for zero UUID comparison

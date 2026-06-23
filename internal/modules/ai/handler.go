@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -11,11 +13,38 @@ import (
 )
 
 type Handler struct {
-	service *Service
+	service     *Service
+	rateLimiter map[string]int
+	rateMu      sync.Mutex
 }
 
 func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+	h := &Handler{
+		service:     service,
+		rateLimiter: make(map[string]int),
+	}
+	go h.cleanupRateLimits()
+	return h
+}
+
+func (h *Handler) cleanupRateLimits() {
+	ticker := time.NewTicker(1 * time.Minute)
+	for range ticker.C {
+		h.rateMu.Lock()
+		h.rateLimiter = make(map[string]int)
+		h.rateMu.Unlock()
+	}
+}
+
+func (h *Handler) checkRateLimit(userID string) bool {
+	h.rateMu.Lock()
+	defer h.rateMu.Unlock()
+	count := h.rateLimiter[userID]
+	if count >= 20 {
+		return false
+	}
+	h.rateLimiter[userID] = count + 1
+	return true
 }
 
 func (h *Handler) GenerateEmbedding(c *gin.Context) {
@@ -120,11 +149,23 @@ func (h *Handler) GeneratePlaylist(c *gin.Context) {
 	if req.Limit <= 0 || req.Limit > 100 {
 		req.Limit = 20
 	}
+	if len(req.Prompt) > 500 {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "prompt too long (max 500 characters)"})
+		return
+	}
 
-	userID, _ := web.GetRequiredUserUUID(c)
-	ctx := c.Request.Context()
+	userID, ok := web.GetRequiredUserUUID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "user not authenticated"})
+		return
+	}
 
-	playlist, err := h.service.GeneratePlaylist(ctx, req)
+	if !h.checkRateLimit(userID.String()) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"success": false, "message": "rate limit exceeded (max 20 generations per minute)"})
+		return
+	}
+
+	playlist, err := h.service.GeneratePlaylist(c.Request.Context(), req, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
 		return
@@ -134,7 +175,6 @@ func (h *Handler) GeneratePlaylist(c *gin.Context) {
 		playlist.Tracks = playlist.Tracks[:req.Limit]
 	}
 
-	_ = userID
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": playlist})
 }
 
@@ -155,8 +195,9 @@ func (h *Handler) SimilarByMood(c *gin.Context) {
 func (h *Handler) SimilarByEmbedding(c *gin.Context) {
 	trackID := c.Param("trackId")
 	limit := 20
+	embeddingSpace := c.DefaultQuery("space", "audio")
 
-	results, err := h.service.GetSimilarByEmbedding(c.Request.Context(), trackID, limit)
+	results, err := h.service.GetSimilarByEmbedding(c.Request.Context(), trackID, limit, embeddingSpace)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
 		return

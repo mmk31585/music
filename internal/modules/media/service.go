@@ -1,7 +1,6 @@
 package media
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -24,9 +23,11 @@ type Config struct {
 
 	MaxImageSizeBytes int64
 	MaxAudioSizeBytes int64
+	MaxVideoSizeBytes int64
 
-	AllowedImageMime   []string
-	AllowedAudioMime   []string
+	AllowedImageMime    []string
+	AllowedAudioMime    []string
+	AllowedVideoMime    []string
 	StorageProviderName string
 }
 
@@ -47,10 +48,13 @@ func NewService(storage platformstorage.Storage, repo *Repository, cfg Config) *
 type UploadCategory string
 
 const (
-	UploadCategoryArtistImage UploadCategory = "artist-images"
-	UploadCategoryAlbumCover  UploadCategory = "album-covers"
-	UploadCategoryTrackCover  UploadCategory = "track-covers"
-	UploadCategoryTrackAudio  UploadCategory = "track-audio"
+	UploadCategoryArtistImage   UploadCategory = "artist-images"
+	UploadCategoryAlbumCover    UploadCategory = "album-covers"
+	UploadCategoryTrackCover    UploadCategory = "track-covers"
+	UploadCategoryTrackAudio    UploadCategory = "track-audio"
+	UploadCategoryPlaylistCover UploadCategory = "playlist-covers"
+	UploadCategoryVideo         UploadCategory = "video"
+	UploadCategoryVideoAudio    UploadCategory = "video-audio"
 )
 
 func (s *Service) Upload(
@@ -90,57 +94,40 @@ func (s *Service) Upload(
 		return nil, ErrInvalidMimeType
 	}
 
-	if seeker, ok := file.(io.Seeker); ok {
-		if _, err := seeker.Seek(0, io.SeekStart); err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrStorageFailed, err)
-		}
-	}
-
-	content, err := io.ReadAll(file)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrStorageFailed, err)
-	}
-
-	if len(content) == 0 {
-		return nil, ErrEmptyFile
-	}
-
-	hashBytes := sha256.Sum256(content)
-	hash := hex.EncodeToString(hashBytes[:])
-
-	existing, err := s.repo.FindByChecksum(ctx, hash)
-	if err != nil {
-		log.Printf("[MEDIA FIND BY CHECKSUM FAIL] hash=%s err=%+v", hash, err)
-		return nil, err
-	}
-
-	if existing != nil {
-		return uploadResponseFromMedia(existing, true), nil
-	}
-
-	ext := extensionForMime(mimeType)
-	if ext == "" {
-		ext = sanitizeExtension(strings.ToLower(filepath.Ext(header.Filename)))
-	}
-	if ext == "" {
-		ext = ".bin"
-	}
+	// Streaming upload with inline SHA256 computation
+	hasher := sha256.New()
+	teeReader := io.TeeReader(file, hasher)
 
 	original := sanitizeFilename(header.Filename)
 	key := buildObjectKey(category, original)
 
+	// Upload directly from the tee reader (streams to storage AND hasher simultaneously)
 	err = s.storage.Upload(
 		ctx,
 		key,
-		bytes.NewReader(content),
-		int64(len(content)),
+		teeReader,
+		header.Size,
 		mimeType,
 	)
 	if err != nil {
-		log.Printf("[UPLOAD STORAGE FAIL] key=%s size=%d mime=%s err=%+v",
-			key, len(content), mimeType, err,
-		)
+		log.Printf("[UPLOAD STORAGE FAIL] key=%s mime=%s err=%+v", key, mimeType, err)
 		return nil, fmt.Errorf("%w: %v", ErrStorageFailed, err)
+	}
+
+	hash := hex.EncodeToString(hasher.Sum(nil))
+
+	// Check for duplicate after streaming (file is already stored, which is fine for dedup check)
+	existing, err := s.repo.FindByChecksum(ctx, hash)
+	if err != nil {
+		log.Printf("[MEDIA FIND BY CHECKSUM FAIL] hash=%s err=%+v", hash, err)
+		_ = s.storage.Delete(ctx, key)
+		return nil, err
+	}
+
+	if existing != nil {
+		// Duplicate found — remove the uploaded file and return existing
+		_ = s.storage.Delete(ctx, key)
+		return uploadResponseFromMedia(existing, true), nil
 	}
 
 	url, err := s.storage.GetURL(ctx, key)
@@ -149,7 +136,7 @@ func (s *Service) Upload(
 		return nil, fmt.Errorf("%w: %v", ErrStorageFailed, err)
 	}
 
-	size := int64(len(content))
+	size := header.Size
 	metadata := buildUploadMetadata(category, header.Filename)
 
 	providerName := s.cfg.StorageProviderName
@@ -274,6 +261,8 @@ func mediaTypeForCategory(category UploadCategory) string {
 		return "image"
 	case UploadCategoryTrackAudio:
 		return "audio"
+	case UploadCategoryVideo, UploadCategoryVideoAudio:
+		return "video"
 	default:
 		return "other"
 	}
@@ -292,7 +281,10 @@ func (s *Service) isKnownCategory(category UploadCategory) bool {
 	case UploadCategoryArtistImage,
 		UploadCategoryAlbumCover,
 		UploadCategoryTrackCover,
-		UploadCategoryTrackAudio:
+		UploadCategoryTrackAudio,
+		UploadCategoryPlaylistCover,
+		UploadCategoryVideo,
+		UploadCategoryVideoAudio:
 		return true
 	default:
 		return false
@@ -301,13 +293,17 @@ func (s *Service) isKnownCategory(category UploadCategory) bool {
 
 func (s *Service) maxSizeForCategory(category UploadCategory) int64 {
 	switch category {
-	case UploadCategoryArtistImage, UploadCategoryAlbumCover, UploadCategoryTrackCover:
+	case UploadCategoryArtistImage, UploadCategoryAlbumCover, UploadCategoryTrackCover, UploadCategoryPlaylistCover:
 		if s.cfg.MaxImageSizeBytes > 0 {
 			return s.cfg.MaxImageSizeBytes
 		}
 	case UploadCategoryTrackAudio:
 		if s.cfg.MaxAudioSizeBytes > 0 {
 			return s.cfg.MaxAudioSizeBytes
+		}
+	case UploadCategoryVideo, UploadCategoryVideoAudio:
+		if s.cfg.MaxVideoSizeBytes > 0 {
+			return s.cfg.MaxVideoSizeBytes
 		}
 	}
 
@@ -321,10 +317,12 @@ func (s *Service) isAllowedMime(category UploadCategory, mimeType string) bool {
 	}
 
 	switch category {
-	case UploadCategoryArtistImage, UploadCategoryAlbumCover, UploadCategoryTrackCover:
+	case UploadCategoryArtistImage, UploadCategoryAlbumCover, UploadCategoryTrackCover, UploadCategoryPlaylistCover:
 		return containsMime(s.cfg.AllowedImageMime, mimeType)
 	case UploadCategoryTrackAudio:
 		return containsMime(s.cfg.AllowedAudioMime, mimeType)
+	case UploadCategoryVideo, UploadCategoryVideoAudio:
+		return containsMime(s.cfg.AllowedVideoMime, mimeType)
 	default:
 		return false
 	}

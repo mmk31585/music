@@ -53,7 +53,11 @@ type BroadcastMessage struct {
 	Exclude uuid.UUID
 }
 
-func NewHub(logger *zap.Logger) *Hub {
+// NewHub creates a WebSocket hub.
+// If allowedOrigins is empty, only same-origin requests are permitted (Origin header must be empty).
+func NewHub(logger *zap.Logger, allowedOrigins []string) *Hub {
+	originChecker := buildOriginChecker(allowedOrigins)
+
 	return &Hub{
 		clients:       make(map[uuid.UUID]*Client),
 		subscriptions: make(map[string]map[*Client]bool),
@@ -65,8 +69,39 @@ func NewHub(logger *zap.Logger) *Hub {
 			ReadBufferSize:    4096,
 			WriteBufferSize:   4096,
 			EnableCompression: true,
-			CheckOrigin:       func(r *http.Request) bool { return true },
+			CheckOrigin:       originChecker,
 		},
+	}
+}
+
+// buildOriginChecker returns a CheckOrigin func that validates against the allowed origins list.
+// It supports:
+//   - Exact match against each allowed origin
+//   - Same-origin requests (empty Origin header) are allowed when the list is non-empty
+//   - If allowedOrigins is empty, only same-origin (no Origin header) is permitted
+func buildOriginChecker(allowedOrigins []string) func(r *http.Request) bool {
+	allowed := make(map[string]struct{}, len(allowedOrigins))
+	for _, o := range allowedOrigins {
+		if o != "" {
+			allowed[o] = struct{}{}
+		}
+	}
+
+	return func(r *http.Request) bool {
+		origin := r.Header.Get("Origin")
+
+		// No Origin header = same-origin request (browser doesn't send it for same-origin)
+		if origin == "" {
+			return true
+		}
+
+		// Empty allowed list means only same-origin
+		if len(allowed) == 0 {
+			return false
+		}
+
+		_, ok := allowed[origin]
+		return ok
 	}
 }
 
