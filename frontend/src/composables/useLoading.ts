@@ -54,14 +54,14 @@ export function useLoading<
   const pending = ref(false)
   const error = ref<Error | ApiResponseProps | null>(null)
 
-  const items = computed(() => {
+  const items: Ref<TData extends PaginatedProps<infer U> ? U[] : TData extends Array<infer U> ? U[] : TData[]> = computed(() => {
     const val = data.value
     if (val && typeof val === 'object' && 'items' in val) {
       return (val as PaginatedProps<unknown>).items as TData extends PaginatedProps<infer U> ? U[] : TData[]
     }
     if (Array.isArray(val)) return val as unknown as TData[]
     return val ? [val] : []
-  })
+  }) as any
 
   const meta = computed<MetaProps>(() => {
     const val = data.value
@@ -89,7 +89,7 @@ export function useLoading<
           } as AxiosRequestConfig,
           {
             schema: options?.schema,
-            allowEmptyArray: options?.allowEmptyArray ?? true,
+            allowEmptyArray: true,
           },
         )
       } else {

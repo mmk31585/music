@@ -223,6 +223,7 @@
                     :duration="duration"
                     :active-color="palette.vibrant"
                     :muted-color="palette.muted"
+                    :language="lyricsLanguage"
                     @seek="seekTo"
                   />
 
@@ -776,6 +777,7 @@ const activeLineText = computed(() => {
 const lyricsApi = useLyricsApi()
 const lyricsContent = ref<string | null>(null)
 const lyricsType = ref<'lrc' | 'plain'>('plain')
+const lyricsLanguage = ref<string>('en')
 const lyricsLoading = ref(false)
 const noLyrics = ref(false)
 
@@ -795,13 +797,16 @@ watch(() => currentTrack.value?.id, async (id) => {
     if (data?.content) {
       lyricsContent.value = data.content
       lyricsType.value = data.type === 'lrc' ? 'lrc' : 'plain'
+      lyricsLanguage.value = data.language || 'en'
     } else {
       lyricsContent.value = null
       noLyrics.value = true
+      lyricsLanguage.value = 'en'
     }
   } catch {
     noLyrics.value = true
     lyricsContent.value = null
+    lyricsLanguage.value = 'en'
   } finally {
     lyricsLoading.value = false
   }

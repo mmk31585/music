@@ -98,9 +98,6 @@ func ArtistToResponse(a *Artist) *ArtistResponse {
 }
 
 func ArtistListToResponse(items []Artist) []ArtistResponse {
-	if items == nil {
-		return nil
-	}
 	res := make([]ArtistResponse, len(items))
 	for i := range items {
 		res[i] = *ArtistToResponse(&items[i])

@@ -20,7 +20,7 @@
         v-else
         class="flex h-full w-full items-center justify-center bg-white/10 text-[10px] font-bold text-white"
       >
-        {{ (discussion.userName || discussion.user_id || '?')[0].toUpperCase() }}
+        {{ String(discussion.userName || discussion.user_id || '?')[0].toUpperCase() }}
       </div>
     </RouterLink>
 

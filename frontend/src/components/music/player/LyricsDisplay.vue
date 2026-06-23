@@ -38,6 +38,7 @@
       <div
         class="text-sm leading-relaxed whitespace-pre-line text-slate-300"
         :class="{ 'text-center': centered }"
+        :dir="isRtl ? 'rtl' : 'ltr'"
       >
         {{ lyrics.content }}
       </div>
@@ -54,13 +55,19 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { Lyrics } from '@/services/api/lyrics'
 
-defineProps<{
+const props = defineProps<{
   lyrics: Lyrics | null
   loading?: boolean
   error?: boolean
   centered?: boolean
   onAddLyrics?: () => void
 }>()
+
+const isRtl = computed(() => {
+  const lang = props.lyrics?.language?.toLowerCase()
+  return lang === 'fa' || lang === 'far' || lang?.startsWith('fa-') || lang?.startsWith('fa_')
+})
 </script>

@@ -320,6 +320,7 @@
             <KaraokeLyrics
               :content="lyricsContent"
               :type="lyricsType"
+              :language="lyricsLanguage"
               :current-time="currentTime"
               :loading="lyricsLoading"
               :karaoke="karaokeMode"
@@ -807,6 +808,7 @@ watch(
 
 const lyricsContent = computed(() => lyricsData.value?.content || '')
 const lyricsType = computed(() => lyricsData.value?.type || 'plain')
+const lyricsLanguage = computed(() => lyricsData.value?.language || 'en')
 
 async function fetchLyrics(trackId: string) {
   lyricsLoading.value = true

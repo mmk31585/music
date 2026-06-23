@@ -48,6 +48,7 @@ export interface ListeningParty {
   is_public: boolean
   status: 'active' | 'paused' | 'ended'
   current_track_id?: string
+  currentTrackCover?: string
   current_position_ms: number
   started_at: string
   ended_at?: string

@@ -127,7 +127,7 @@
             >
               <img
                 v-if="v.thumbnail_url || v.thumbnail_path"
-                :src="v.thumbnail_url || v.thumbnail_path"
+                :src="(v.thumbnail_url || v.thumbnail_path) ?? undefined"
                 :alt="v.title"
                 class="h-full w-full object-cover"
                 loading="lazy"
@@ -148,7 +148,7 @@
               >
                 <img
                   v-if="v.thumbnail_url || v.thumbnail_path"
-                  :src="v.thumbnail_url || v.thumbnail_path"
+                  :src="(v.thumbnail_url || v.thumbnail_path) ?? undefined"
                   :alt="v.title"
                   class="h-full w-full object-cover"
                   loading="lazy"
@@ -292,7 +292,7 @@
           <div class="flex h-16 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white/[0.06]">
             <img
               v-if="editingVideo.thumbnail_url || editingVideo.thumbnail_path"
-              :src="editingVideo.thumbnail_url || editingVideo.thumbnail_path"
+              :src="(editingVideo.thumbnail_url || editingVideo.thumbnail_path) ?? undefined"
               :alt="editingVideo.title"
               class="h-full w-full object-cover"
               loading="lazy"
@@ -672,7 +672,7 @@ async function handleSaveComment(commentId: string) {
   try {
     await videoApi.adminUpdateComment(commentId, { content: editingCommentContent.value.trim() })
     const idx = commentItems.value.findIndex((c) => c.id === commentId)
-    if (idx !== -1) commentItems.value[idx].content = editingCommentContent.value.trim()
+    if (idx !== -1) commentItems.value[idx]!.content = editingCommentContent.value.trim()
     editingCommentId.value = null
     toast.add({ severity: 'success', summary: 'Comment updated', life: 3000 })
   } catch {

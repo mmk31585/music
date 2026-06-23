@@ -103,7 +103,7 @@ export function useAIRecommendations() {
   async function fetchMoodPlaylist(mood: string, limit = 20): Promise<void> {
     loadingMoodPlaylist.value = true
     try {
-      const res = await aiApi.generatePlaylist({ mood, limit })
+      const res = await aiApi.generatePlaylist({ prompt: `mood: ${mood}`, mood, limit })
       moodPlaylist.value = res
     } catch {
       moodPlaylist.value = null
@@ -178,7 +178,7 @@ export function useAIRecommendations() {
     if (!listeningStats.value) return 'chill'
     const genres = listeningStats.value.top_genres
     if (!genres.length) return 'chill'
-    const top = genres[0].genre_name.toLowerCase()
+    const top = genres[0]!.genre_name.toLowerCase()
     if (/rock|metal|dubstep|drum/.test(top)) return 'energetic'
     if (/pop|dance|edm|house/.test(top)) return 'happy'
     if (/jazz|soul|r&b|ambient/.test(top)) return 'chill'

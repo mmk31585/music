@@ -140,7 +140,7 @@ export function useAdminTracks() {
     adminDeleteTrack,
   } = useTracksApi()
 
-  const { getTrackLyrics, adminCreateLyrics, adminUpdateLyrics, adminDeleteLyrics } = useLyricsApi()
+  const { getTrackLyrics, getLyricsByTrackID, adminCreateLyrics, adminUpdateLyrics, adminDeleteLyrics } = useLyricsApi()
 
   const tracks = ref<Track[]>([])
   const loading = ref(false)
@@ -167,21 +167,25 @@ export function useAdminTracks() {
   async function syncTrackLyrics(trackId: string | number, payload: TrackFormPayload) {
     const content = payload.lyrics?.trim()
 
-    try {
-      const existing = await getTrackLyrics(trackId, payload.lyrics_language ?? undefined, {
-        silent: true,
-      })
-
-      if (!content) {
-        if (existing?.id) {
-          await adminDeleteLyrics(existing.id)
+    // If no content, delete all existing lyrics and bail
+    if (!content) {
+      try {
+        const allLyrics = await getLyricsByTrackID(trackId, { silent: true })
+        for (const l of allLyrics) {
+          if (l?.id) await adminDeleteLyrics(l.id)
         }
-        return
+      } catch {
+        // no lyrics to delete — fine
       }
+      return
+    }
 
-      const language = payload.lyrics_language || 'en'
-      const type = payload.lyrics_type || 'plain'
+    const language = payload.lyrics_language || 'en'
+    const type = payload.lyrics_type || 'plain'
 
+    // Try to find existing lyrics with the SAME language first (update path)
+    try {
+      const existing = await getTrackLyrics(trackId, language, { silent: true })
       if (existing?.id) {
         await adminUpdateLyrics(existing.id, {
           track_id: trackId,
@@ -192,16 +196,25 @@ export function useAdminTracks() {
         return
       }
     } catch {
-      // missing lyrics -> create
+      // no existing lyrics with this language — will delete old ones and create
     }
 
-    if (!content) return
+    // Language changed (or first-time create): delete any old lyrics first,
+    // then create fresh ones to avoid duplicates
+    try {
+      const allLyrics = await getLyricsByTrackID(trackId, { silent: true })
+      for (const l of allLyrics) {
+        if (l?.id) await adminDeleteLyrics(l.id)
+      }
+    } catch {
+      // no old lyrics to delete
+    }
 
     await adminCreateLyrics({
       track_id: trackId,
       content,
-      language: payload.lyrics_language || 'en',
-      type: payload.lyrics_type || 'plain',
+      language,
+      type,
     })
   }
 

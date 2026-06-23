@@ -119,9 +119,9 @@
               <!-- Cover art -->
               <div class="aspect-square overflow-hidden">
                 <img
-                  v-if="track.cover_url || track.coverUrl"
-                  :src="(track.cover_url || track.coverUrl)!"
-                  :alt="track.track_title || track.title"
+                  v-if="track.cover_url"
+                  :src="track.cover_url"
+                  :alt="track.track_title"
                   loading="lazy"
                   class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />
@@ -168,8 +168,8 @@
             >
               <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
                 <img
-                  v-if="track.cover_url || track.coverUrl"
-                  :src="(track.cover_url || track.coverUrl)!"
+                  v-if="track.cover_url"
+                  :src="track.cover_url"
                   alt=""
                   class="h-full w-full object-cover"
                   loading="lazy"
@@ -179,8 +179,8 @@
                 </div>
               </div>
               <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-medium text-white">{{ track.track_title || track.title }}</p>
-                <p class="truncate text-xs text-white/40">{{ track.artist_name || track.artistName || '' }}</p>
+                <p class="truncate text-sm font-medium text-white">{{ track.track_title }}</p>
+                <p class="truncate text-xs text-white/40">{{ track.artist_name || '' }}</p>
               </div>
               <button
                 v-if="isOwnProfile"

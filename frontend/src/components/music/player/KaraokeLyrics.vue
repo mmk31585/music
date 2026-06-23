@@ -25,7 +25,7 @@
       <p class="text-xs text-white/15">Lyrics will appear here when available</p>
     </div>
 
-    <div v-else ref="containerRef" class="relative z-10 h-full scrollbar-none overflow-y-auto px-6">
+    <div v-else ref="containerRef" class="relative z-10 h-full scrollbar-none overflow-y-auto px-6" :dir="isRtl ? 'rtl' : 'ltr'">
       <div class="flex min-h-full flex-col items-center justify-center py-12">
         <div
           v-for="(line, idx) in parsedCache"
@@ -93,6 +93,7 @@ const props = withDefaults(
   defineProps<{
     content?: string
     type?: string
+    language?: string
     currentTime?: number
     loading?: boolean
     karaoke?: boolean
@@ -100,11 +101,17 @@ const props = withDefaults(
   {
     content: '',
     type: 'plain',
+    language: 'en',
     currentTime: 0,
     loading: false,
     karaoke: false,
   },
 )
+
+const isRtl = computed(() => {
+  const lang = props.language?.toLowerCase()
+  return lang === 'fa' || lang === 'far' || lang?.startsWith('fa-') || lang?.startsWith('fa_')
+})
 
 const emit = defineEmits<{
   seek: [seconds: number]

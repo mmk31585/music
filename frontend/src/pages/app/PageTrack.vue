@@ -396,7 +396,7 @@
               <div class="relative aspect-[9/16] w-full overflow-hidden">
                 <img
                   v-if="v.thumbnail_url || v.thumbnail_path || v.track_cover_url"
-                  :src="v.thumbnail_url || v.thumbnail_path || v.track_cover_url"
+                  :src="(v.thumbnail_url || v.thumbnail_path || v.track_cover_url) ?? undefined"
                   :alt="v.title"
                   class="h-full w-full object-cover transition-transform duration-150 group-hover:scale-[1.03]"
                   loading="lazy"
@@ -481,6 +481,7 @@
             <KaraokeLyrics
               :content="lyrics.content"
               :type="lyrics.type || 'plain'"
+              :language="lyrics.language || 'en'"
               :current-time="player.currentTime.value"
               :loading="loading"
               :karaoke="true"

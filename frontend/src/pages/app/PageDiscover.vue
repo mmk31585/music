@@ -456,7 +456,7 @@ import { onImgError } from '@/utils/helpers'
 import { HomeCarousel, ActivityItem } from '@/components/music'
 import type { RecommendationTrack } from '@/services/api/recommendation/types'
 import type { HistoryItem } from '@/services/api/history/types'
-import type { ActivityFeedItem } from '@/services/api/social/types'
+import type { ActivityItemData } from '@/components/music/ActivityItem.vue'
 
 const socialApi = useSocialApi()
 const recsApi = useRecommendationsApi()
@@ -467,7 +467,7 @@ const playerApi = usePlayerApi()
 const popular = ref<RecommendationTrack[]>([])
 const forYou = ref<RecommendationTrack[]>([])
 const recent = ref<RecommendationTrack[]>([])
-const feed = ref<ActivityFeedItem[]>([])
+const feed = ref<ActivityItemData[]>([])
 const recentlyPlayed = ref<HistoryItem[]>([])
 const loading = ref(true)
 
@@ -499,7 +499,18 @@ async function fetchDiscover() {
     if (popularData?.items) popular.value = popularData.items
     if (forYouData?.items) forYou.value = forYouData.items
     if (recentData?.items) recent.value = recentData.items
-    if (feedData?.items) feed.value = feedData.items
+    if (feedData?.items) {
+      feed.value = feedData.items.map((item: any) => ({
+        id: item.id,
+        userId: item.user_id,
+        userName: item.user_display_name,
+        avatarUrl: item.user_avatar_url,
+        action: item.type,
+        targetName: item.target_name,
+        targetUrl: item.target_id ? `/${item.target_type}/${item.target_id}` : null,
+        createdAt: item.created_at,
+      }))
+    }
     if (historyData?.items) recentlyPlayed.value = historyData.items
   } catch (err) {
     console.error('Failed to fetch discover data:', err)

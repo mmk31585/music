@@ -305,7 +305,7 @@
                 <div class="aspect-video w-40 shrink-0 overflow-hidden rounded-lg bg-white/10">
                   <img
                     v-if="rel.thumbnail_url || rel.thumbnail_path || rel.track_cover_url"
-                    :src="rel.thumbnail_url || rel.thumbnail_path || rel.track_cover_url"
+                    :src="(rel.thumbnail_url || rel.thumbnail_path || rel.track_cover_url) ?? undefined"
                     :alt="rel.title"
                     class="h-full w-full object-cover transition-transform group-hover:scale-[1.03]"
                     loading="lazy"

@@ -61,6 +61,55 @@ func primaryArtistID(artists []TrackArtistRequest, fallback uuid.UUID) uuid.UUID
 	return uuid.Nil
 }
 
+// generateUniqueSlug creates a slug from the title and ensures it's unique
+// for the given artist_id by appending -2, -3, etc. if needed.
+// excludeID can be set to a non-nil UUID to exclude a specific track (for updates).
+func (r *Repository) generateUniqueSlug(ctx context.Context, q sqlx.ExtContext, artistID uuid.UUID, baseSlug string, excludeID *uuid.UUID) (string, error) {
+	slug := baseSlug
+
+	// Build the query — count existing slugs matching the pattern
+	query := `SELECT slug FROM tracks WHERE artist_id = $1 AND slug LIKE $2`
+	args := []any{artistID, slug + "%"}
+	if excludeID != nil {
+		query += ` AND id != $3`
+		args = append(args, *excludeID)
+	}
+
+	rows, err := q.QueryxContext(ctx, query, args...)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	existing := make(map[string]bool)
+	for rows.Next() {
+		var s string
+		if err := rows.Scan(&s); err != nil {
+			return "", err
+		}
+		existing[s] = true
+	}
+
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+
+	// If the base slug doesn't exist, use it as-is
+	if !existing[slug] {
+		return slug, nil
+	}
+
+	// Find the next available suffix
+	for n := 2; n <= 1000; n++ {
+		candidate := fmt.Sprintf("%s-%d", baseSlug, n)
+		if !existing[candidate] {
+			return candidate, nil
+		}
+	}
+
+	return "", fmt.Errorf("unable to generate unique slug for %q: too many collisions", baseSlug)
+}
+
 func (r *Repository) Create(ctx context.Context, req CreateRequest) (*Track, error) {
 	slog.InfoContext(ctx, "creating track",
 		"title", req.Title,
@@ -101,7 +150,16 @@ func (r *Repository) Create(ctx context.Context, req CreateRequest) (*Track, err
 		return nil, common.ErrInvalidInput
 	}
 
-	slug := common.Slugify(req.Title)
+	baseSlug := common.Slugify(req.Title)
+	slug, err := r.generateUniqueSlug(ctx, tx, mainArtistID, baseSlug, nil)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to generate unique slug",
+			"title", req.Title,
+			"base_slug", baseSlug,
+			"error", err,
+		)
+		return nil, common.ErrInternal
+	}
 
 	explicit := false
 	if req.Explicit != nil {
@@ -398,7 +456,29 @@ func (r *Repository) Update(ctx context.Context, id uuid.UUID, req UpdateRequest
 	if req.Title != nil {
 		title = *req.Title
 	}
-	slug := common.Slugify(title)
+
+	// Compute the effective artist_id for slug uniqueness.
+	// If artists are being updated, extract the primary from the new list;
+	// otherwise keep the current artist_id.
+	slugArtistID := current.ArtistID
+	if req.Artists != nil {
+		effectiveArtists := normalizeTrackArtists(req.Artists, uuid.Nil)
+		if newPrimary := primaryArtistID(effectiveArtists, uuid.Nil); newPrimary != uuid.Nil {
+			slugArtistID = newPrimary
+		}
+	}
+
+	baseSlug := common.Slugify(title)
+	slug, err := r.generateUniqueSlug(ctx, tx, slugArtistID, baseSlug, &id)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to generate unique slug for update",
+			"title", title,
+			"base_slug", baseSlug,
+			"track_id", id,
+			"error", err,
+		)
+		return nil, common.ErrInternal
+	}
 
 	// Build dynamic SET clause to handle nullable field clearing
 	// Each nullable field gets a CASE: if in clearFields → NULL, else if provided → value, else → current

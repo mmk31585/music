@@ -151,11 +151,16 @@ func TestRepository_Update(t *testing.T) {
 	// Begin transaction
 	mock.ExpectBegin()
 
+	// generateUniqueSlug: check for existing slugs
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT slug FROM tracks WHERE artist_id = $1 AND slug LIKE $2 AND id != $3`)).
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnRows(sqlmock.NewRows([]string{"slug"}))
+
 	// UPDATE with title and explicit fields
 	title := "Updated Title"
 	explicit := true
 	mock.ExpectQuery(`UPDATE tracks`).
-		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{
 			"id", "artist_id", "album_id", "title", "slug",
 			"duration_seconds", "track_number", "explicit",
@@ -167,6 +172,28 @@ func TestRepository_Update(t *testing.T) {
 
 	// Commit
 	mock.ExpectCommit()
+
+	// GetByID reload after update
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT`)).
+		WithArgs(trackID).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"id", "artist_id", "album_id", "title", "slug",
+			"duration_seconds", "track_number", "explicit",
+			"audio_url", "cover_url", "audio_media_id", "cover_media_id",
+			"play_count", "is_public", "created_at", "updated_at",
+		}).AddRow(trackID, nil, nil, title, "updated-title",
+			240, 1, explicit, nil, nil, nil, nil,
+			0, true, now, now))
+
+	// hydrate: listArtistsByTrack
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT`)).
+		WithArgs(trackID).
+		WillReturnRows(sqlmock.NewRows([]string{"artist_id", "name", "slug", "role", "position"}))
+
+	// hydrate: listGenresByTrack
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT`)).
+		WithArgs(trackID).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "slug", "created_at"}))
 
 	_, err = repo.Update(context.Background(), trackID, UpdateRequest{
 		Title:    &title,

@@ -363,7 +363,7 @@
                         <InputIcon><i aria-hidden="true" class="pi pi-search"></i></InputIcon>
                         <InputText
                           :model-value="artistSearchQuery"
-                          @update:model-value="(v: string) => { artistSearchQuery = v; debouncedArtistSearch() }"
+                          @update:model-value="(v: string | undefined) => { if (v !== undefined) { artistSearchQuery = v; debouncedArtistSearch() } }"
                           placeholder="Type artist name..."
                           class="w-full"
                         />
@@ -401,7 +401,7 @@
                       </label>
                       <InputText
                         :model-value="artist.name"
-                        @update:model-value="(v: string) => { artist.name = v; hasUnsavedChanges = true }"
+                        @update:model-value="(v: string | undefined) => { if (v !== undefined) { artist.name = v; hasUnsavedChanges = true } }"
                         dir="auto"
                         class="w-full"
                         :placeholder="aIdx === 0 ? 'Primary artist name' : 'Featured artist name'"
@@ -411,7 +411,7 @@
                       <label class="mb-1 block text-xs font-medium text-surface-500">Country</label>
                       <InputText
                         :model-value="artist.country"
-                        @update:model-value="(v: string) => { artist.country = v; hasUnsavedChanges = true }"
+                        @update:model-value="(v: string | undefined) => { if (v !== undefined) { artist.country = v; hasUnsavedChanges = true } }"
                         maxlength="2"
                         class="w-20 uppercase"
                         placeholder="IR"
@@ -422,7 +422,7 @@
                     <label class="mb-1 block text-xs font-medium text-surface-500">Bio</label>
                     <Textarea
                       :model-value="artist.bio"
-                      @update:model-value="(v: string) => { artist.bio = v; hasUnsavedChanges = true }"
+                      @update:model-value="(v: string | undefined) => { if (v !== undefined) { artist.bio = v; hasUnsavedChanges = true } }"
                       dir="auto"
                       :auto-resize="true"
                       class="w-full"
@@ -434,7 +434,7 @@
                     <label class="mb-1 block text-xs font-medium text-surface-500">Image URL</label>
                     <InputText
                       :model-value="artist.imageUrl"
-                      @update:model-value="(v: string) => { artist.imageUrl = v; hasUnsavedChanges = true }"
+                      @update:model-value="(v: string | undefined) => { if (v !== undefined) { artist.imageUrl = v; hasUnsavedChanges = true } }"
                       class="w-full font-mono text-xs"
                       placeholder="https://..."
                     />
@@ -1349,7 +1349,7 @@ let artistSearchTimer: ReturnType<typeof setTimeout> | null = null
 let albumSearchTimer: ReturnType<typeof setTimeout> | null = null
 
 const canProceed = computed(() => {
-  if (step.value === 0) return finalMetadata.artists[0]?.name.trim().length > 0
+  if (step.value === 0) return (finalMetadata.artists[0]?.name?.trim().length ?? 0) > 0
   if (step.value === 1) return finalMetadata.album.title.trim().length > 0
   if (step.value === 2) return finalMetadata.track.title.trim().length > 0
   return true
@@ -1357,7 +1357,7 @@ const canProceed = computed(() => {
 
 const isValid = computed(() => {
   return (
-    finalMetadata.artists[0]?.name.trim().length > 0 &&
+    (finalMetadata.artists[0]?.name?.trim().length ?? 0) > 0 &&
     finalMetadata.album.title.trim().length > 0 &&
     finalMetadata.track.title.trim().length > 0
   )
@@ -1442,9 +1442,9 @@ function removeFeaturedArtist(index: number) {
 function moveFeaturedArtist(fromIndex: number, direction: -1 | 1) {
   const toIndex = fromIndex + direction
   if (toIndex < 1 || toIndex >= finalMetadata.artists.length) return
-  const temp = finalMetadata.artists[fromIndex]
-  finalMetadata.artists[fromIndex] = finalMetadata.artists[toIndex]
-  finalMetadata.artists[toIndex] = temp!
+  const temp = finalMetadata.artists[fromIndex]!
+  finalMetadata.artists[fromIndex] = finalMetadata.artists[toIndex]!
+  finalMetadata.artists[toIndex] = temp
   hasUnsavedChanges.value = true
 }
 

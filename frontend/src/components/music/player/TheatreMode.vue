@@ -187,6 +187,7 @@
                 <KaraokeLyrics
                   :content="lyricsContent"
                   :type="lyricsType"
+                  :language="lyricsLanguage ?? undefined"
                   :current-time="currentTime"
                   :loading="lyricsLoading"
                   :karaoke="karaokeMode"

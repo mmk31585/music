@@ -441,14 +441,16 @@ const newIsPublic = ref(true)
 
 // ── Filtered tracks ──
 const filteredTracks = computed(() => {
-  if (!trackFilter.value.trim()) return likedTracks.value
-  const q = trackFilter.value.toLowerCase()
-  return likedTracks.value.filter(
-    (t) =>
-      t.title.toLowerCase().includes(q) ||
-      (t.artist_name || '').toLowerCase().includes(q) ||
-      (t.album_title || '').toLowerCase().includes(q),
-  )
+  const items = likedTracks.value
+  const filtered = trackFilter.value.trim()
+    ? items.filter(
+        (t) =>
+          t.title.toLowerCase().includes(trackFilter.value.toLowerCase()) ||
+          (t.artist_name || '').toLowerCase().includes(trackFilter.value.toLowerCase()) ||
+          (t.album_title || '').toLowerCase().includes(trackFilter.value.toLowerCase()),
+      )
+    : items
+  return filtered.map((t) => ({ ...t, id: t.track_id }))
 })
 
 // ── Tab definitions ──

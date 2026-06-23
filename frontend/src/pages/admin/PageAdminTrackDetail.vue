@@ -184,7 +184,7 @@ import AdminEmptyState from '@/components/admin/AdminEmptyState.vue'
 import TrackFormDialog from '@/components/admin/TrackFormDialog.vue'
 import type { TrackFormPayload } from '@/components/admin/TrackFormDialog.vue'
 import AdminDeleteConfirm from '@/components/admin/AdminDeleteConfirm.vue'
-import { useTracksApi } from '@/services/api/catalog/tracks'
+import { useTracksApi, type TrackArtistRequest } from '@/services/api/catalog/tracks'
 import { useArtistsApi } from '@/services/api/catalog/artists'
 import { useAlbumsApi } from '@/services/api/catalog/albums'
 import { useLyricsApi } from '@/services/api/lyrics'
@@ -311,8 +311,93 @@ async function handleEditSubmit(payload: TrackFormPayload) {
   if (!track.value) return
   saving.value = true
   try {
-    const updated = await tracksApi.adminUpdateTrack(track.value.id, { ...payload, isPublic: true })
+    // Build artists array from credits/artist_ids/featured_artist_ids
+    let artists: TrackArtistRequest[] | undefined
+    if (payload.credits?.length) {
+      artists = payload.credits.map((credit, index) => ({
+        artistId: credit.artist_id,
+        role: credit.role,
+        position: index,
+      }))
+    } else if (payload.artists?.length) {
+      artists = payload.artists.map((artist, index) => ({
+        artistId: artist.artist_id,
+        role: artist.role || (index === 0 ? 'primary' : 'featured'),
+        position: artist.position ?? index,
+      }))
+    } else {
+      const primaryId = payload.artist_ids?.[0] ?? payload.artist_id
+      if (primaryId) {
+        artists = [{ artistId: primaryId, role: 'primary', position: 0 }]
+        // Add featured artists
+        if (payload.featured_artist_ids?.length) {
+          artists.push(
+            ...payload.featured_artist_ids.map((id, index) => ({
+              artistId: id,
+              role: 'featured' as const,
+              position: index + 1,
+            })),
+          )
+        }
+      }
+    }
+
+    // Build the update payload — only send fields that exist in TrackUpdatePayload
+    const updatePayload = {
+      title: payload.title,
+      artistId: payload.artist_ids?.[0] ?? payload.artist_id ?? null,
+      artists,
+      albumId: payload.album_id ?? null,
+      durationSeconds: payload.duration_seconds ?? null,
+      audioUrl: payload.audio_url ?? null,
+      coverUrl: payload.cover_url ?? null,
+      genreIds: payload.genre_ids ?? [],
+      trackNumber: payload.track_number ?? null,
+      explicit: payload.explicit ?? false,
+      isPublic: true,
+    }
+
+    const updated = await tracksApi.adminUpdateTrack(track.value.id, updatePayload)
     track.value = updated
+
+    // Sync lyrics — use existing lyric's ID if available, otherwise create fresh
+    const content = payload.lyrics?.trim()
+    if (content) {
+      const language = payload.lyrics_language || 'en'
+      const type = payload.lyrics_type || 'plain'
+
+      // Find if there's already a lyric row for this track (of any language)
+      let existingId: string | number | null = null
+      try {
+        const allLyrics = await lyricsApi.getLyricsByTrackID(track.value.id, { silent: true })
+        // Prefer a lyric with the target language; fall back to the first one
+        const target = allLyrics.find((l) => l.language === language) ?? allLyrics[0]
+        existingId = target?.id ?? null
+      } catch {
+        // no existing lyrics
+      }
+
+      if (existingId) {
+        // Update the existing row with new language, content, and type
+        await lyricsApi.adminUpdateLyrics(existingId, {
+          track_id: track.value.id,
+          content,
+          language,
+          type,
+        })
+      } else {
+        await lyricsApi.adminCreateLyrics({ track_id: track.value.id, content, language, type })
+      }
+    } else if (content === '') {
+      // Lyrics cleared — delete all existing lyrics
+      try {
+        const allLyrics = await lyricsApi.getLyricsByTrackID(track.value.id, { silent: true })
+        for (const l of allLyrics) {
+          if (l?.id) await lyricsApi.adminDeleteLyrics(l.id)
+        }
+      } catch { /* nothing to delete */ }
+    }
+
     showForm.value = false
     toast.add({ severity: 'success', summary: 'Track updated', life: 2500 })
   } catch (err) {

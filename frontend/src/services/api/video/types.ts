@@ -27,6 +27,7 @@ export const UploaderSchema = z.object({
 export const VideoItemSchema = z.object({
   id: IdSchema,
   type: z.enum(['official_mv', 'user_edit']),
+  track_id: z.string().optional(),
   track: TrackSummarySchema.optional(),
   uploader: UploaderSchema.optional(),
   /** Backend may send uploader_id (string) instead of uploader object */

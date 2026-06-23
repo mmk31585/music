@@ -274,6 +274,8 @@ const playerStore = usePlayerStore()
 const ff = useFeatureFlagsStore()
 const { logout } = useAuth()
 const mobileOpen = ref(false)
+const fullscreenOpen = ref(false)
+const showQueue = ref(false)
 const searchOpen = ref(false)
 
 const radioVisible = ref(false)

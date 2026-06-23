@@ -23,7 +23,8 @@
         :ref="(el) => { if (el) lineRefs[idx] = el as HTMLElement }"
         role="button"
         tabindex="0"
-        class="w-full max-w-2xl cursor-pointer px-8 py-1.5 text-left select-none"
+        class="w-full max-w-2xl cursor-pointer px-8 py-1.5 select-none"
+        :class="isRtl?'text-right':'text-left'"
         :style="lineStyle(idx)"
         @click="emit('seek', line.timeSeconds)"
         @keydown.enter="emit('seek', line.timeSeconds)"
@@ -43,16 +44,20 @@
           <div
             v-if="idx === activeIdx"
             class="absolute -inset-x-6 -inset-y-2 rounded-2xl transition-all duration-700 ease-out"
+            :class="isRtl ? 'glow-rtl' : 'glow-ltr'"
             :style="{
-              background: `radial-gradient(ellipse, ${props.activeColor || '#a855f7'}18 0%, transparent 65%)`,
+              background: `radial-gradient(ellipse at ${isRtl ? '80% 50%' : '20% 50%'}, ${props.activeColor || '#a855f7'}18 0%, transparent 65%)`,
               opacity: 1,
               transform: 'scale(1)',
             }"
           />
-          <!-- Label for line number (karaoke-style marker) -->
+          <!-- Label for line number (karaoke-style marker) — flips for RTL -->
           <span
             v-if="idx === activeIdx"
-            class="absolute -left-8 top-1/2 -translate-y-1/2 text-[10px] font-bold tracking-wider transition-all duration-500"
+            :class="[
+              'absolute top-1/2 -translate-y-1/2 text-[10px] font-bold tracking-wider transition-all duration-500',
+              isRtl ? '-right-8' : '-left-8',
+            ]"
             :style="{ color: props.activeColor || '#a855f7', opacity: 0.6 }"
           >♪</span>
 
@@ -78,13 +83,16 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { ParsedLine } from '@/composables/lyrics'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   lines: ParsedLine[]
   currentTime: number
   duration: number
   activeColor?: string
   mutedColor?: string
-}>()
+  language?: string
+}>(), {
+  language: 'en',
+})
 
 const emit = defineEmits<{
   seek: [seconds: number]
@@ -111,7 +119,6 @@ const activeIdx = computed(() => {
 watch(() => props.lines, () => {
   lineRefs.value = []
 }, { flush: 'post' })
-
 const scrollRef = ref<HTMLElement | null>(null)
 
 // ── Auto-scroll to active line (smooth, with debounce) ─────────
@@ -208,6 +215,12 @@ function wordStyle(line: ParsedLine, wordIdx: number): Record<string, string> {
     transition: 'color 80ms ease-out, text-shadow 80ms ease-out',
   }
 }
+const isRtl = computed(() => {
+  const lang = props.language?.toLowerCase()
+  return lang === 'fa' || lang === 'far' || lang?.startsWith('fa-') || lang?.startsWith('fa_')
+})
+console.log(isRtl)
+console.log(props)
 </script>
 
 <style scoped>
@@ -217,6 +230,31 @@ function wordStyle(line: ParsedLine, wordIdx: number): Record<string, string> {
 }
 .scrollbar-none::-webkit-scrollbar {
   display: none;
+}
+
+/* RTL vs LTR glow pill shifting */
+.glow-ltr {
+  transform-origin: left center;
+}
+.glow-rtl {
+  transform-origin: right center;
+}
+.glow-rtl {
+  /* Slightly wider glow for Persian text which can be more expansive */
+  --glow-scale: 1.02;
+}
+
+/* Active line text in RTL gets a different shadow direction */
+.glow-rtl + .line-text,
+[dir="rtl"] .line-active-text {
+  text-shadow: 0 0 50px var(--glow-color, rgba(168,85,247,0.35)), 0 0 100px var(--glow-color, rgba(168,85,247,0.12));
+}
+
+/* Word karaoke highlight RTL adjustment */
+:deep(.rtl-word-highlight) {
+  background: linear-gradient(to left, currentColor 0%, transparent 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
 @media (prefers-reduced-motion: reduce) {

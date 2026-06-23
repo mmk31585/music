@@ -83,9 +83,6 @@ func AlbumToResponse(a *Album) *AlbumResponse {
 }
 
 func AlbumListToResponse(items []Album) []AlbumResponse {
-	if items == nil {
-		return nil
-	}
 	res := make([]AlbumResponse, len(items))
 	for i := range items {
 		res[i] = *AlbumToResponse(&items[i])

@@ -16,8 +16,8 @@ export function useUserProfile(userId?: string) {
   const targetUserId = computed(() => String(userId || auth.user?.id || ''))
   const isOwnProfile = computed(() => !userId || String(userId) === String(auth.user?.id))
 
-  const followers = ref<User[]>([])
-  const following = ref<User[]>([])
+  const followers = ref<any[]>([])
+  const following = ref<any[]>([])
   const followerCount = ref(0)
   const followingCount = ref(0)
   const isFollowing = ref(false)
