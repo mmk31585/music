@@ -13,51 +13,51 @@ type ArtistResponse struct {
 	Name     string    `json:"name"`
 	Slug     string    `json:"slug"`
 	Bio      *string   `json:"bio,omitempty"`
-	ImageURL *string   `json:"imageUrl,omitempty"`
+	ImageURL *string   `json:"image_url,omitempty"`
 
-	AvatarMediaID *uuid.UUID `json:"avatarMediaId,omitempty"`
-	BannerMediaID *uuid.UUID `json:"bannerMediaId,omitempty"`
+	AvatarMediaID *uuid.UUID `json:"avatar_media_id,omitempty"`
+	BannerMediaID *uuid.UUID `json:"banner_media_id,omitempty"`
 	Country       *string    `json:"country,omitempty"`
 
-	IsVerified       bool       `json:"isVerified"`
-	MonthlyListeners int64      `json:"monthlyListeners"`
-	CreatedAt        time.Time  `json:"createdAt"`
-	UpdatedAt        *time.Time `json:"updatedAt,omitempty"`
+	IsVerified       bool       `json:"is_verified"`
+	MonthlyListeners int64      `json:"monthly_listeners"`
+	CreatedAt        time.Time  `json:"created_at"`
+	UpdatedAt        *time.Time `json:"updated_at,omitempty"`
 }
 
 type ArtistTrackResponse struct {
 	ID              uuid.UUID  `json:"id"`
 	Title           string     `json:"title"`
 	Slug            string     `json:"slug"`
-	AlbumID         *uuid.UUID `json:"albumId,omitempty"`
-	DurationSeconds int        `json:"durationSeconds"`
-	TrackNumber     *int       `json:"trackNumber,omitempty"`
+	AlbumID         *uuid.UUID `json:"album_id,omitempty"`
+	DurationSeconds int        `json:"duration_seconds"`
+	TrackNumber     *int       `json:"track_number,omitempty"`
 	Explicit        bool       `json:"explicit"`
-	AudioURL        *string    `json:"audioUrl,omitempty"`
-	CoverURL        *string    `json:"coverUrl,omitempty"`
-	PlayCount       int64      `json:"playCount"`
-	ArtistRole      string     `json:"artistRole"`
-	ArtistPosition  int        `json:"artistPosition"`
-	CreatedAt       time.Time  `json:"createdAt"`
+	AudioURL        *string    `json:"audio_url,omitempty"`
+	CoverURL        *string    `json:"cover_url,omitempty"`
+	PlayCount       int64      `json:"play_count"`
+	ArtistRole      string     `json:"artist_role"`
+	ArtistPosition  int        `json:"artist_position"`
+	CreatedAt       time.Time  `json:"created_at"`
 }
 
 type ArtistAlbumResponse struct {
 	ID          uuid.UUID  `json:"id"`
 	Title       string     `json:"title"`
 	Slug        string     `json:"slug"`
-	CoverURL    *string    `json:"coverUrl,omitempty"`
-	ReleaseDate *time.Time `json:"releaseDate,omitempty"`
-	AlbumType   string     `json:"albumType"`
-	ArtistRole  string     `json:"artistRole"`
-	CreatedAt   time.Time  `json:"createdAt"`
+	CoverURL    *string    `json:"cover_url,omitempty"`
+	ReleaseDate *time.Time `json:"release_date,omitempty"`
+	AlbumType   string     `json:"album_type"`
+	ArtistRole  string     `json:"artist_role"`
+	CreatedAt   time.Time  `json:"created_at"`
 }
 
 type ArtistOverviewResponse struct {
 	Artist    *ArtistResponse       `json:"artist"`
-	TopTracks []ArtistTrackResponse `json:"topTracks"`
+	TopTracks []ArtistTrackResponse `json:"top_tracks"`
 	Albums    []ArtistAlbumResponse `json:"albums"`
 	Singles   []ArtistAlbumResponse `json:"singles"`
-	AppearsOn []ArtistTrackResponse `json:"appearsOn"`
+	AppearsOn []ArtistTrackResponse `json:"appears_on"`
 }
 
 type RelatedArtistResponse struct {
@@ -65,14 +65,14 @@ type RelatedArtistResponse struct {
 	Name             string     `json:"name"`
 	Slug             string     `json:"slug"`
 	Bio              *string    `json:"bio,omitempty"`
-	ImageURL         *string    `json:"imageUrl,omitempty"`
-	AvatarMediaID    *uuid.UUID `json:"avatarMediaId,omitempty"`
-	BannerMediaID    *uuid.UUID `json:"bannerMediaId,omitempty"`
-	IsVerified       bool       `json:"isVerified"`
-	MonthlyListeners int64      `json:"monthlyListeners"`
-	RelatedScore     float64    `json:"relatedScore"`
-	RelatedSource    string     `json:"relatedSource"`
-	RelatedAt        time.Time  `json:"relatedAt"`
+	ImageURL         *string    `json:"image_url,omitempty"`
+	AvatarMediaID    *uuid.UUID `json:"avatar_media_id,omitempty"`
+	BannerMediaID    *uuid.UUID `json:"banner_media_id,omitempty"`
+	IsVerified       bool       `json:"is_verified"`
+	MonthlyListeners int64      `json:"monthly_listeners"`
+	RelatedScore     float64    `json:"related_score"`
+	RelatedSource    string     `json:"related_source"`
+	RelatedAt        time.Time  `json:"related_at"`
 }
 
 // Mapper functions

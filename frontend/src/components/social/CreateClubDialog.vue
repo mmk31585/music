@@ -59,7 +59,7 @@
           </button>
           <button
             class="flex-1 rounded-xl bg-spotify py-3 text-sm font-bold text-black transition hover:bg-spotify/90 disabled:opacity-40"
-            :disabled="name.trim!() || creating"
+            :disabled="!name.trim() || creating"
             @click="handleCreate"
           >
             {{ creating ? '...' : 'ساختن' }}
@@ -103,7 +103,7 @@ const genres = [
 ]
 
 async function handleCreate() {
-  if (name.value.trim!() || creating.value) return
+  if (!name.value.trim() || creating.value) return
   creating.value = true
   try {
     const slug = name.value

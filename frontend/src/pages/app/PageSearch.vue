@@ -479,7 +479,15 @@ import { HomeCarousel, HomeTrackCard, ActivityItem } from '@/components/music'
 import HomeSectionHeader from '@/components/music/home/HomeSectionHeader.vue'
 import { MOOD_OPTIONS } from '@/services/api/ai/types'
 import { useRecentSearches } from '@/composables/search/useRecentSearches'
+import { formatDuration } from '@/utils/format'
 import type { RecommendationTrack } from '@/services/api/recommendation/types'
+interface TrackCardItem {
+  [key: string]: unknown
+  id?: string | number
+  cover_url?: string | null; coverUrl?: string | null; track_cover_url?: string | null
+  title?: string | null; track_title?: string | null; artist_name?: string | null; artistName?: string | null
+  album_title?: string | null; duration_seconds?: number | null
+}
 import type { HistoryItem } from '@/services/api/history/types'
 import type { ActivityItemData } from '@/components/music/ActivityItem.vue'
 import type { ActivityFeedItem } from '@/services/api/social/types'
@@ -639,7 +647,7 @@ async function fetchDiscover() {
   }
 }
 
-function playTrack(track: Record<string, unknown>) {
+function playTrack(track: TrackCardItem) {
   void player.setQueueAndPlay(
     [{
       id: String(track.id),
@@ -654,26 +662,19 @@ function playTrack(track: Record<string, unknown>) {
   )
 }
 
-function playHistoryItem(item: HistoryItem) {
+function playHistoryItem(item: TrackCardItem) {
   player.setQueueAndPlay(
     [{
-      id: item.track_id,
-      title: item.track_title || 'Unknown',
-      artistName: item.artist_name || 'Unknown',
+      id: String(item.track_id),
+      title: (item.track_title as string) || 'Unknown',
+      artistName: (item.artist_name as string) || 'Unknown',
       albumTitle: null,
-      coverUrl: item.track_cover_url || null,
-      durationSeconds: item.track_duration ?? null,
-      streamUrl: playerApi.getTrackStreamUrl(item.track_id),
+      coverUrl: (item.track_cover_url as string) || null,
+      durationSeconds: (item.track_duration as number) ?? null,
+      streamUrl: playerApi.getTrackStreamUrl(String(item.track_id)),
     }],
     0,
   )
-}
-
-function formatDuration(value?: number | null): string {
-  if (!value) return '\u2014'
-  const mins = Math.floor(value / 60)
-  const secs = value % 60
-  return `${mins}:${String(secs).padStart(2, '0')}`
 }
 
 onMounted(fetchDiscover)

@@ -197,7 +197,7 @@ function confirmDelete(item: Media) {
 }
 
 async function handleDelete() {
-  if (deleteTarget.value!) return
+  if (!deleteTarget.value) return
   deleting.value = true
   try {
     await mediaApi.deleteAdminMedia(String(deleteTarget.value.id))
@@ -224,7 +224,7 @@ function formatFileSize(bytes?: number | null): string {
 }
 
 function formatDate(dateStr?: string | null): string {
-  if (dateStr!) return '—'
+  if (!dateStr) return '—'
   return new Date(dateStr).toLocaleDateString()
 }
 </script>

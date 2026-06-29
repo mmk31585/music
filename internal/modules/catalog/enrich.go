@@ -26,6 +26,8 @@ type EnrichHandler struct {
 	lyricsService  *lyricsMod.Service
 	deezerClient   enrichment.DeezerClient
 	coverArtClient enrichment.CoverArtClient
+	lastFMClient   enrichment.LastFMClient
+	spotifyClient  enrichment.SpotifyClient
 	logger         *zap.Logger
 	enrichMutex    sync.Mutex
 }
@@ -38,6 +40,8 @@ func NewEnrichHandler(
 	lyricsService *lyricsMod.Service,
 	deezerClient enrichment.DeezerClient,
 	coverArtClient enrichment.CoverArtClient,
+	lastFMClient enrichment.LastFMClient,
+	spotifyClient enrichment.SpotifyClient,
 	logger *zap.Logger,
 ) *EnrichHandler {
 	return &EnrichHandler{
@@ -48,6 +52,8 @@ func NewEnrichHandler(
 		lyricsService:  lyricsService,
 		deezerClient:   deezerClient,
 		coverArtClient: coverArtClient,
+		lastFMClient:   lastFMClient,
+		spotifyClient:  spotifyClient,
 		logger:         logger,
 	}
 }
@@ -239,95 +245,150 @@ func (h *EnrichHandler) EnrichArtist(c *gin.Context) {
 		zap.String("name", artist.Name),
 	)
 
-	// We enrich artist by looking up their discography via ArtistSearcher (Deezer/MusicBrainz)
-	// which returns artist info (image). For bio, we run a track enrichment as a proxy
-	// since the Last.fm client returns artist bio in track enrichment results.
-	//
-	// Run both lookups in parallel:
-	// 1. Deezer search for artist image
-	// 2. Last.fm track search (via enricher) for bio
+	// Normalize name to strip invisible characters (soft hyphens, zero-width spaces)
+	// that can break matching with external APIs
+	artistName := enrichment.NormalizeName(artist.Name)
 
-	type deezerResult struct {
-		imageURL string
-		err      error
+	// We enrich artist by looking up their info from multiple external sources.
+	// Run lookups in parallel:
+	// 1. Deezer search for artist image
+	// 2. Last.fm artist.getInfo for bio, image, tags, similar artists
+	// 3. Spotify search for artist image (high quality)
+
+	type imgResult struct {
+		url string
+		err error
 	}
-	type enrichmentResult struct {
+	type lastFMResult struct {
 		bio *string
 		img *string
 		err error
 	}
 
-	deezerCh := make(chan deezerResult, 1)
-	enrichCh := make(chan enrichmentResult, 1)
+	deezerCh := make(chan imgResult, 1)
+	spotifyCh := make(chan imgResult, 1)
+	lastfmCh := make(chan lastFMResult, 1)
 
-	// 1. Deezer lookup for image
+	// 1. Deezer lookup for image (with 15s timeout)
 	go func() {
-		imgURL, err := h.deezerClient.SearchArtistImage(c.Request.Context(), artist.Name)
-		deezerCh <- deezerResult{imageURL: imgURL, err: err}
-	}()
-
-	// 2. Enricher with Last.fm for bio
-	go func() {
-		// Use a dummy track query — Last.fm returns artist info in track responses
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
 		defer cancel()
-		result, err := h.enricher.Enrich(ctx, "", artist.Name, "", 0)
-		if err != nil || result == nil || !result.Attempted {
-			enrichCh <- enrichmentResult{err: err}
+		imgURL, err := h.deezerClient.SearchArtistImage(ctx, artistName)
+		deezerCh <- imgResult{url: imgURL, err: err}
+	}()
+
+	// 2. Spotify lookup for high-res artist image
+	go func() {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
+		defer cancel()
+		imgURL, err := h.spotifyClient.SearchArtistImage(ctx, artistName)
+		spotifyCh <- imgResult{url: imgURL, err: err}
+	}()
+
+	// 3. Last.fm artist.getInfo for bio and image
+	go func() {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
+		defer cancel()
+		result, err := h.lastFMClient.SearchArtist(ctx, artistName)
+		if err != nil || result == nil {
+			lastfmCh <- lastFMResult{err: err}
 			return
 		}
 
 		var bio *string
 		var img *string
-		for _, s := range result.Suggestions {
-			if s.Field == "artist_bio" {
-				if v, ok := s.Value.(string); ok && v != "" {
-					bio = &v
-				}
-			}
-			if s.Field == "artist_image_url" {
-				if v, ok := s.Value.(string); ok && v != "" {
-					img = &v
-				}
-			}
+		if result.ArtistBio != "" {
+			bio = &result.ArtistBio
 		}
-		enrichCh <- enrichmentResult{bio: bio, img: img}
+		if result.ArtistImageURL != "" {
+			img = &result.ArtistImageURL
+		}
+		lastfmCh <- lastFMResult{bio: bio, img: img}
 	}()
 
-	// Wait for both
-	var deezerResp deezerResult
-	var enrichResp enrichmentResult
-	for i := 0; i < 2; i++ {
+	// Wait for all three
+	var deezerResp, spotifyResp imgResult
+	var lastfmResp lastFMResult
+	for i := 0; i < 3; i++ {
 		select {
 		case dr := <-deezerCh:
 			deezerResp = dr
-		case er := <-enrichCh:
-			enrichResp = er
+		case sr := <-spotifyCh:
+			spotifyResp = sr
+		case lr := <-lastfmCh:
+			lastfmResp = lr
 		case <-c.Request.Context().Done():
 			c.JSON(http.StatusGatewayTimeout, gin.H{"success": false, "message": "enrichment timed out"})
 			return
 		}
 	}
 
-	// Merge results
-	imageURL := deezerResp.imageURL
-	if imageURL == "" && enrichResp.img != nil {
-		imageURL = *enrichResp.img
-	}
-	if imageURL == "" && artist.ImageURL != nil {
-		imageURL = *artist.ImageURL
+	// Merge results: Spotify > Deezer > Last.fm > existing
+	// Log what each source returned for debugging
+	if spotifyResp.err != nil {
+		h.logger.Warn("spotify enrichment failed",
+			zap.String("artist", artistName),
+			zap.Error(spotifyResp.err),
+		)
+	} else {
+		h.logger.Info("spotify enrichment result",
+			zap.String("artist", artistName),
+			zap.String("image_url", spotifyResp.url),
+		)
 	}
 
-	// Build update request
+	if deezerResp.err != nil {
+		h.logger.Warn("deezer enrichment failed",
+			zap.String("artist", artistName),
+			zap.Error(deezerResp.err),
+		)
+	} else {
+		h.logger.Info("deezer enrichment result",
+			zap.String("artist", artistName),
+			zap.String("image_url", deezerResp.url),
+		)
+	}
+
+	if lastfmResp.err != nil {
+		h.logger.Warn("lastfm enrichment failed",
+			zap.String("artist", artistName),
+			zap.Error(lastfmResp.err),
+		)
+	} else {
+		h.logger.Info("lastfm enrichment result",
+			zap.String("artist", artistName),
+			zap.Any("image_url", lastfmResp.img),
+			zap.Any("bio", lastfmResp.bio != nil),
+		)
+	}
+
+	imageURL := spotifyResp.url
+	if imageURL == "" {
+		imageURL = deezerResp.url
+	}
+	if imageURL == "" && lastfmResp.img != nil {
+		imageURL = *lastfmResp.img
+	}
+
+	h.logger.Info("final image selection",
+		zap.String("artist", artistName),
+		zap.String("selected_url", imageURL),
+		zap.String("current_url", derefStr(artist.ImageURL)),
+	)
+
+	// Build update request — only set ImageURL when we have a new image
+	// to avoid overwriting an existing image with empty string
 	updateReq := artistpkg.UpdateRequest{
-		ImageURL:         &imageURL,
 		IsVerified:       &artist.IsVerified,
 		MonthlyListeners: &artist.MonthlyListeners,
 	}
+	if imageURL != "" {
+		updateReq.ImageURL = &imageURL
+	}
 
-	// Apply bio from enrichment
-	if enrichResp.bio != nil {
-		updateReq.Bio = enrichResp.bio
+	// Apply bio from Last.fm
+	if lastfmResp.bio != nil {
+		updateReq.Bio = lastfmResp.bio
 	}
 
 	updated, err := h.artistSvc.Update(c.Request.Context(), artistID, updateReq)
@@ -343,11 +404,12 @@ func (h *EnrichHandler) EnrichArtist(c *gin.Context) {
 	h.logger.Info("artist enriched successfully",
 		zap.String("artist_id", artistID),
 		zap.String("name", artist.Name),
+		zap.String("new_image_url", derefStr(updated.ImageURL)),
 	)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    updated,
+		"data":    artistpkg.ArtistToResponse(updated),
 	})
 }
 
@@ -370,20 +432,20 @@ func (h *EnrichHandler) EnrichAlbum(c *gin.Context) {
 		zap.String("title", al.Title),
 	)
 
-	// Get artist name for external lookups
+	// Get artist name for external lookups, normalize to strip invisible characters
 	artistName := ""
 	artists, listErr := h.albumSvc.ListArtists(c.Request.Context(), albumID)
 	if listErr == nil && len(artists) > 0 {
-		artistName = artists[0].Name
+		artistName = enrichment.NormalizeName(artists[0].Name)
 	} else {
-		// Fallback: try to get the artist by the old artist_id field
 		if al.ArtistID != uuidNil {
 			art, artErr := h.artistSvc.GetByID(c.Request.Context(), al.ArtistID.String())
 			if artErr == nil && art != nil {
-				artistName = art.Name
+				artistName = enrichment.NormalizeName(art.Name)
 			}
 		}
 	}
+	albumTitle := enrichment.NormalizeName(al.Title)
 
 	// Look for cover art from multiple sources in parallel
 	type coverResult struct {
@@ -393,13 +455,21 @@ func (h *EnrichHandler) EnrichAlbum(c *gin.Context) {
 
 	lastfmCh := make(chan coverResult, 1)
 	mbCh := make(chan coverResult, 1)
+	deezerCh := make(chan coverResult, 1)
 
-	// 1. Last.fm album search for cover
+	// 1. Deezer album search for cover (fast, free, no API key)
 	go func() {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
 		defer cancel()
-		// Run enrichment with track info — Last.fm may return album cover
-		result, err := h.enricher.Enrich(ctx, al.Title, artistName, al.Title, 0)
+		coverURL, err := h.deezerClient.SearchAlbumCover(ctx, albumTitle, artistName)
+		deezerCh <- coverResult{url: coverURL, err: err}
+	}()
+
+	// 2. Last.fm album search for cover (via track enrichment)
+	go func() {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
+		defer cancel()
+		result, err := h.enricher.Enrich(ctx, albumTitle, artistName, albumTitle, 0)
 		if err != nil || result == nil {
 			lastfmCh <- coverResult{err: err}
 			return
@@ -415,16 +485,18 @@ func (h *EnrichHandler) EnrichAlbum(c *gin.Context) {
 		lastfmCh <- coverResult{}
 	}()
 
-	// 2. MusicBrainz / Cover Art Archive (via CoverArtClient)
+	// 3. MusicBrainz / Cover Art Archive (via CoverArtClient)
 	go func() {
-		coverURL, err := h.coverArtClient.SearchAlbumCover(c.Request.Context(), al.Title, artistName)
+		coverURL, err := h.coverArtClient.SearchAlbumCover(c.Request.Context(), albumTitle, artistName)
 		mbCh <- coverResult{url: coverURL, err: err}
 	}()
 
-	// Wait for both
-	var lfmRes, mbRes coverResult
-	for i := 0; i < 2; i++ {
+	// Wait for all three
+	var deezerRes, lfmRes, mbRes coverResult
+	for i := 0; i < 3; i++ {
 		select {
+		case r := <-deezerCh:
+			deezerRes = r
 		case r := <-lastfmCh:
 			lfmRes = r
 		case r := <-mbCh:
@@ -435,8 +507,11 @@ func (h *EnrichHandler) EnrichAlbum(c *gin.Context) {
 		}
 	}
 
-	// Pick best cover URL (CAA > Last.fm > existing)
-	coverURL := mbRes.url
+	// Pick best cover URL (Deezer > CAA > Last.fm > existing)
+	coverURL := deezerRes.url
+	if coverURL == "" {
+		coverURL = mbRes.url
+	}
 	if coverURL == "" {
 		coverURL = lfmRes.url
 	}
@@ -450,7 +525,7 @@ func (h *EnrichHandler) EnrichAlbum(c *gin.Context) {
 		)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
-			"data":    al,
+			"data":    album.AlbumToResponse(al),
 			"message": "no new cover found",
 		})
 		return
@@ -477,12 +552,19 @@ func (h *EnrichHandler) EnrichAlbum(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    updated,
+		"data":    album.AlbumToResponse(updated),
 	})
 }
 
 // uuidNil is a helper for zero UUID comparison
 var uuidNil = [16]byte{}
+
+func derefStr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
 
 var (
 	ErrEnrichInProgress = errors.New("enrichment already in progress")

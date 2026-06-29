@@ -475,7 +475,7 @@
                 size="small"
                 class="rounded-lg! bg-emerald-500! px-3! text-black! hover:bg-emerald-400! text-xs!"
                 :loading="savingComment"
-                :disabled="editingCommentContent.trim!()"
+                :disabled="!editingCommentContent.trim()"
                 @click="handleSaveComment(cm.id)"
               />
             </div>
@@ -516,7 +516,7 @@ const {
 const searchQuery = ref('')
 
 const filteredVideos = computed(() => {
-  if (searchQuery.value!) return videos.value
+  if (!searchQuery.value) return videos.value
   const q = searchQuery.value.toLowerCase()
   return videos.value.filter((v) => v.title.toLowerCase().includes(q))
 })
@@ -556,7 +556,7 @@ function openEdit(v: VideoItem) {
 }
 
 async function handleSaveEdit() {
-  if (editingVideo.value!) return
+  if (!editingVideo.value) return
   try {
     await updateVideo(String(editingVideo.value.id), {
       title: editForm.title,
@@ -583,7 +583,7 @@ function confirmDelete(v: VideoItem) {
 }
 
 async function handleDelete() {
-  if (deleteTarget.value!) return
+  if (!deleteTarget.value) return
   try {
     await deleteVideo(String(deleteTarget.value.id))
     deleteDialogVisible.value = false
@@ -666,7 +666,7 @@ async function handleSaveComment(commentId: string) {
   try {
     await videoApi.adminUpdateComment(commentId, { content: editingCommentContent.value.trim() })
     const idx = commentItems.value.findIndex((c) => c.id === commentId)
-    if (idx !== -1) commentItems.value[idx].content! = editingCommentContent.value.trim()
+    if (idx !== -1) commentItems.value[idx]!.content = editingCommentContent.value.trim()
     editingCommentId.value = null
     toast.add({ severity: 'success', summary: 'Comment updated', life: 3000 })
   } catch {

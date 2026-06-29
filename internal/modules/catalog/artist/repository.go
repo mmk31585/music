@@ -24,6 +24,7 @@ func (r *Repository) Create(ctx context.Context, req CreateRequest) (*Artist, er
 	var item Artist
 	err := r.db.GetContext(ctx, &item, `
 		INSERT INTO artists (
+			id,
 			name,
 			slug,
 			bio,
@@ -34,7 +35,7 @@ func (r *Repository) Create(ctx context.Context, req CreateRequest) (*Artist, er
 			is_verified,
 			monthly_listeners
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8, FALSE), COALESCE($9, 0))
+		VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, COALESCE($8, FALSE), COALESCE($9, 0))
 		RETURNING
 			id,
 			name,

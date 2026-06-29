@@ -144,7 +144,7 @@
                 type="button"
                 aria-label="Play or pause"
                 class="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-black shadow-lg transition hover:bg-white active:scale-95 disabled:opacity-40"
-                :disabled="currentTrack!"
+                :disabled="!currentTrack"
                 @click="togglePlayPause"
               >
                 <i aria-hidden="true" v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-sm" />
@@ -462,7 +462,7 @@ function onVolume(e: Event) {
 }
 
 function formatTime(seconds?: number | null) {
-  if (seconds! || isFinite!(seconds)) return '0:00'
+  if (typeof seconds !== 'number' || !isFinite(seconds)) return '0:00'
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${String(s).padStart(2, '0')}`

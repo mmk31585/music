@@ -30,9 +30,9 @@ Level sticks until changed or session end.
 | **ponytail-gain** | `/ponytail-gain` | Measured-impact scoreboard: less code, less cost, more speed. |
 | **ponytail-help** | `/ponytail-help` | This card. |
 
-Codex uses `@ponytail`, `@ponytail-review`, and `@ponytail-help`; Claude Code
-and OpenCode use the slash-command forms above (OpenCode ships `/ponytail` and
-`/ponytail-review`).
+Codex uses `@ponytail`, `@ponytail-review`, and `@ponytail-help`; other
+AI coding hosts use the slash-command forms above
+(OpenCode ships `/ponytail` and `/ponytail-review`).
 
 ## Deactivate
 
@@ -60,9 +60,9 @@ Resolution: env var > config file > `full`.
 
 ## Update
 
-Enable auto-update once: open `/plugin`, go to Marketplaces, pick ponytail, Enable auto-update. Claude Code then pulls new versions at startup (run `/reload-plugins` when it prompts). Manual refresh: `/plugin marketplace update ponytail` then `/reload-plugins`.
+Enable auto-update once: open `/plugin`, go to Marketplaces, pick ponytail, Enable auto-update. Your host then pulls new versions at startup (run `/reload-plugins` when it prompts). Manual refresh: `/plugin marketplace update ponytail` then `/reload-plugins`.
 
-If `/plugin` is not recognized, your Claude Code is out of date. Update it (`npm install -g @anthropic-ai/claude-code@latest`, or `brew upgrade claude-code`) and restart. Other hosts use their own update flow.
+If `/plugin` is not recognized, your AI coding host may be out of date or use a different plugin system. Check its documentation for the latest version and restart. Other hosts use their own update flow.
 
 ## More
 

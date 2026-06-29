@@ -80,7 +80,7 @@ func (s *ImportService) fallbackSearch(ctx context.Context, query string) ([]sea
 	return converted, nil
 }
 
-func (s *ImportService) Import(ctx context.Context, url, source, title, artist string, externalIDs map[string]string, userID string) (*ImportResponse, error) {
+func (s *ImportService) Import(ctx context.Context, url, source, title, artist, album string, externalIDs map[string]string, userID string) (*ImportResponse, error) {
 	if s.importWorker == nil {
 		return s.importSync(ctx, url, userID)
 	}
@@ -88,6 +88,7 @@ func (s *ImportService) Import(ctx context.Context, url, source, title, artist s
 	// If no URL, try to resolve one via the acquisition layer.
 	// This handles metadata-only sources like MusicBrainz.
 	downloadURL := url
+	var resolveWarning string
 	if downloadURL == "" && title != "" && artist != "" {
 		resolveQuery := acquisition.ResolveQuery{
 			Title:  title,
@@ -110,6 +111,7 @@ func (s *ImportService) Import(ctx context.Context, url, source, title, artist s
 				zap.String("artist", artist),
 				zap.Error(err),
 			)
+			resolveWarning = fmt.Sprintf("Could not find a downloadable copy of '%s - %s'. The worker will retry with advanced resolution. Try providing a direct YouTube or SoundCloud URL for faster results.", artist, title)
 		} else if candidate != nil {
 			downloadURL = candidate.URL
 			source = candidate.Source
@@ -134,6 +136,7 @@ func (s *ImportService) Import(ctx context.Context, url, source, title, artist s
 		Source: source,
 		Title:  title,
 		Artist: artist,
+		Album:  album,
 		UserID: userID,
 	}
 
@@ -141,10 +144,14 @@ func (s *ImportService) Import(ctx context.Context, url, source, title, artist s
 		if err := s.importWorker.Enqueue(ctx, job); err != nil {
 			return nil, err
 		}
-		return &ImportResponse{
+		resp := &ImportResponse{
 			JobID:   jobID,
 			Message: "import job queued. check progress endpoint for status.",
-		}, nil
+		}
+		if resolveWarning != "" {
+			resp.Warning = resolveWarning
+		}
+		return resp, nil
 	}
 
 	// No worker — run sync
@@ -221,7 +228,7 @@ func (s *ImportService) BatchImport(ctx context.Context, items []BatchImportItem
 		downloadURL := item.URL
 
 		// Enqueue directly without pre-resolution (worker handles it)
-		resp, err := s.enqueueJob(ctx, item.Title, item.Artist, downloadURL, item.Source, extIDs, userID)
+		resp, err := s.enqueueJob(ctx, item.Title, item.Artist, item.Album, downloadURL, item.Source, extIDs, userID)
 		result := BatchJobResult{
 			Title:  item.Title,
 			Artist: item.Artist,
@@ -252,7 +259,7 @@ func (s *ImportService) BatchImport(ctx context.Context, items []BatchImportItem
 
 // enqueueJob directly enqueues a job for the worker without pre-resolution.
 // If url is empty, the worker will resolve the download URL during processing.
-func (s *ImportService) enqueueJob(ctx context.Context, title, artist, url, source string, externalIDs map[string]string, userID string) (*ImportResponse, error) {
+func (s *ImportService) enqueueJob(ctx context.Context, title, artist, album, url, source string, externalIDs map[string]string, userID string) (*ImportResponse, error) {
 	jobID := uuid.New().String()
 	job := &worker.Job{
 		ID:     jobID,
@@ -260,6 +267,7 @@ func (s *ImportService) enqueueJob(ctx context.Context, title, artist, url, sour
 		Source: source,
 		Title:  title,
 		Artist: artist,
+		Album:  album,
 		UserID: userID,
 	}
 

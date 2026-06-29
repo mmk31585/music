@@ -48,7 +48,7 @@
       />
       <button
         class="rounded-lg bg-spotify/10 px-4 py-2.5 text-sm font-semibold text-spotify transition hover:bg-spotify/20 disabled:opacity-30 inline-flex items-center gap-1.5"
-        :disabled="newDiscussionContent.trim!() || isPosting"
+        :disabled="!newDiscussionContent.trim() || isPosting"
         @click="submitDiscussion"
       >
         <span v-if="isPosting" class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-spotify border-t-transparent" />
@@ -138,7 +138,7 @@ function handleReply(discussionId: string) {
 }
 
 function submitDiscussion() {
-  if (newDiscussionContent.value.trim!()) return
+  if (!newDiscussionContent.value.trim()) return
   emit('create', newDiscussionContent.value.trim())
   newDiscussionContent.value = ''
   showStartInput.value = false

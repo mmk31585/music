@@ -193,6 +193,7 @@ import { useAdminGenres } from '@/composables/admin/useAdminGenres'
 import type { Track } from '@/services/api/catalog/tracks'
 import type { Artist } from '@/services/api/catalog/artists'
 import type { Album } from '@/services/api/catalog/albums'
+import { formatDuration } from '@/utils/format'
 
 type CatalogId = string | number
 
@@ -307,32 +308,32 @@ function openDeleteConfirm() {
 }
 
 async function handleEditSubmit(payload: TrackFormPayload) {
-  if (track.value!) return
+  if (!track.value) return
   saving.value = true
   try {
     // Build artists array from credits/artist_ids/featured_artist_ids
     let artists: TrackArtistRequest[] | undefined
     if (payload.credits?.length) {
       artists = payload.credits.map((credit, index) => ({
-        artistId: credit.artist_id,
+        artist_id: credit.artist_id,
         role: credit.role,
         position: index,
       }))
-    } else if (payload.artists?.length) {
-      artists = payload.artists.map((artist, index) => ({
-        artistId: artist.artist_id,
+    } else if ((payload as any).artists?.length) {
+      artists = (payload as any).artists.map((artist: any, index: any) => ({
+        artist_id: artist.artist_id,
         role: artist.role || (index === 0 ? 'primary' : 'featured'),
         position: artist.position ?? index,
       }))
     } else {
-      const primaryId = payload.artist_ids?.[0] ?? payload.artist_id
+      const primaryId = payload.artist_ids?.[0]
       if (primaryId) {
-        artists = [{ artistId: primaryId, role: 'primary', position: 0 }]
+        artists = [{ artist_id: primaryId, role: 'primary', position: 0 }]
         // Add featured artists
         if (payload.featured_artist_ids?.length) {
           artists.push(
             ...payload.featured_artist_ids.map((id, index) => ({
-              artistId: id,
+              artist_id: id,
               role: 'featured' as const,
               position: index + 1,
             })),
@@ -342,19 +343,26 @@ async function handleEditSubmit(payload: TrackFormPayload) {
     }
 
     // Build the update payload — only send fields that exist in TrackUpdatePayload
-    const updatePayload = {
+    const clearFields: string[] = []
+    if (payload.album_id === null && track.value.album_id) clearFields.push('album_id')
+    if (payload.duration_seconds === null && track.value.duration_seconds != null) clearFields.push('duration_seconds')
+    if (payload.track_number === null && track.value.track_number != null) clearFields.push('track_number')
+    if (payload.cover_url === null && track.value.cover_url) clearFields.push('cover_url')
+
+    const updatePayload: Record<string, unknown> = {
       title: payload.title,
-      artistId: payload.artist_ids?.[0] ?? payload.artist_id ?? null,
+      artist_id: payload.artist_ids?.[0] ?? null,
       artists,
-      albumId: payload.album_id ?? null,
-      durationSeconds: payload.duration_seconds ?? null,
-      audioUrl: payload.audio_url ?? null,
-      coverUrl: payload.cover_url ?? null,
-      genreIds: payload.genre_ids ?? [],
-      trackNumber: payload.track_number ?? null,
+      genre_ids: payload.genre_ids ?? [],
       explicit: payload.explicit ?? false,
-      isPublic: true,
+      is_public: true,
     }
+    // Only include nullable fields if they have a value or are explicitly being cleared
+    if (payload.album_id !== null || clearFields.includes('album_id')) updatePayload.album_id = payload.album_id ?? null
+    if (payload.duration_seconds !== null || clearFields.includes('duration_seconds')) updatePayload.duration_seconds = payload.duration_seconds ?? null
+    if (payload.track_number !== null || clearFields.includes('track_number')) updatePayload.track_number = payload.track_number ?? null
+    if (payload.cover_url !== null || clearFields.includes('cover_url')) updatePayload.cover_url = payload.cover_url ?? null
+    if (clearFields.length > 0) updatePayload.clear_fields = clearFields
 
     const updated = await tracksApi.adminUpdateTrack(track.value.id, updatePayload)
     track.value = updated
@@ -407,7 +415,7 @@ async function handleEditSubmit(payload: TrackFormPayload) {
 }
 
 async function handleFetchLRC() {
-  if (track.value!) return
+  if (!track.value) return
   fetchingLrc.value = true
   try {
     // Use fetch-or-generate pipeline: LRCLIB first, then AI fallback
@@ -465,7 +473,7 @@ async function handleFetchLRC() {
 }
 
 async function handleEnrichTrack() {
-  if (track.value!) return
+  if (!track.value) return
   enriching.value = true
   try {
     await tracksApi.adminEnrichTrack(track.value.id)
@@ -484,7 +492,7 @@ async function handleEnrichTrack() {
 }
 
 async function handleDelete() {
-  if (track.value!) return
+  if (!track.value) return
   deleting.value = true
   try {
     await tracksApi.adminDeleteTrack(track.value.id)
@@ -498,11 +506,11 @@ async function handleDelete() {
 }
 
 function normalizeCatalogOptions(items: Array<Record<string, unknown>> | undefined | null, _type?: string) {
-  if (Array.isArray!(items)) return []
-  return items.map(item => {
+  if (!Array.isArray(items)) return []
+  return (items ?? []).map(item => {
     const id = item.id ?? item.artist_id ?? item.album_id ?? item.genre_id
     const name = item.name ?? item.title ?? item.artist_name ?? item.album_title ?? item.genre_name
-    if (id === undefined || id === null || name!) return null
+    if (id === undefined || id === null || !name) return null
     return { id, name, slug: item.slug, image_url: item.image_url ?? item.avatar_url ?? item.cover_url ?? null, avatar_url: item.avatar_url ?? item.image_url ?? null, cover_url: item.cover_url ?? item.image_url ?? null } as CatalogOption
   })
 }
@@ -513,9 +521,4 @@ function formatPlayCount(count: number): string {
   return String(count)
 }
 
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
 </script>

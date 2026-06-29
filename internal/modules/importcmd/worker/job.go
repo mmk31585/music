@@ -18,6 +18,7 @@ type Job struct {
 	Source   string `json:"source"`
 	Title    string `json:"title"`
 	Artist   string `json:"artist"`
+	Album    string `json:"album,omitempty"`
 	Query    string `json:"query"`
 	UserID   string `json:"user_id"`
 	Status   Status `json:"status"`

@@ -380,6 +380,22 @@
       :genres-options="genreOptions"
       @submit="handleSubmit"
       @cancel="closeForm"
+      @create-artist="handleCreateArtist"
+      @create-album="handleCreateAlbum"
+    />
+
+    <ArtistFormDialog
+      v-model="showArtistForm"
+      :saving="artistSaving"
+      :prefill-name="artistPrefill"
+      @submit="handleArtistSubmit"
+    />
+
+    <AlbumFormDialog
+      v-model="showAlbumForm"
+      :saving="albumSaving"
+      :prefill-title="albumPrefill"
+      @submit="handleAlbumSubmit"
     />
 
     <AdminDeleteConfirm
@@ -399,6 +415,8 @@ import { useToast } from 'primevue/usetoast'
 import AdminSectionHeader from '@/components/admin/AdminSectionHeader.vue'
 import AdminEmptyState from '@/components/admin/AdminEmptyState.vue'
 import TrackFormDialog from '@/components/admin/TrackFormDialog.vue'
+import ArtistFormDialog from '@/components/admin/ArtistFormDialog.vue'
+import AlbumFormDialog from '@/components/admin/AlbumFormDialog.vue'
 import AdminDeleteConfirm from '@/components/admin/AdminDeleteConfirm.vue'
 
 import { useAdminTracks, type TrackFormPayload } from '@/composables/admin/useAdminTracks'
@@ -411,6 +429,9 @@ import { usePlayer } from '@/composables/player'
 import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
 
 import type { Track } from '@/services/api/catalog/tracks'
+import type { ArtistFormPayload } from '@/composables/admin/useAdminArtists'
+import type { AlbumFormPayload } from '@/composables/admin/useAdminAlbums'
+import { formatDuration } from '@/utils/format'
 
 type CatalogId = string | number
 
@@ -441,9 +462,21 @@ const { tracks, loading, saving, deleting, fetchTracks, createTrack, updateTrack
  * - genres: array of genre records
  * - fetchArtists/fetchAlbums/fetchGenres: loaders
  */
-const { artists, fetchArtists } = useAdminArtists()
+const {
+  artists: adminArtistsList,
+  fetchArtists,
+  createArtist,
+  saving: artistSaving,
+  error: artistError,
+} = useAdminArtists()
 
-const { albums, fetchAlbums } = useAdminAlbums()
+const {
+  albums: adminAlbumsList,
+  fetchAlbums,
+  createAlbum,
+  saving: albumSaving,
+  error: albumError,
+} = useAdminAlbums()
 
 const { genres, fetchGenres } = useAdminGenres()
 
@@ -459,6 +492,10 @@ const showDelete = ref(false)
 const enrichingAll = ref(false)
 const selectedTrack = ref<Track | null>(null)
 const deleteTarget = ref<Track | null>(null)
+const showArtistForm = ref(false)
+const showAlbumForm = ref(false)
+const artistPrefill = ref('')
+const albumPrefill = ref('')
 
 function buildPlaybackTrack(track: Track): PlaybackTrack {
   const id = String(track.id)
@@ -495,11 +532,11 @@ function getTrackPlayButtonIcon(track: Track): string {
 }
 
 const artistOptions = computed(() => {
-  return normalizeCatalogOptions(artists.value, 'artist').filter(Boolean) as CatalogOption[]
+  return normalizeCatalogOptions(adminArtistsList.value, 'artist').filter(Boolean) as CatalogOption[]
 })
 
 const albumOptions = computed(() => {
-  return normalizeCatalogOptions(albums.value, 'album').filter(Boolean) as CatalogOption[]
+  return normalizeCatalogOptions(adminAlbumsList.value, 'album').filter(Boolean) as CatalogOption[]
 })
 
 const genreOptions = computed(() => {
@@ -509,7 +546,7 @@ const genreOptions = computed(() => {
 const filteredTracks = computed(() => {
   const q = normalizeSearch(searchQuery.value)
 
-  if (q!) return tracks.value
+  if (!q) return tracks.value
 
   return tracks.value.filter((track) => {
     return getTrackSearchText(track).includes(q)
@@ -558,7 +595,7 @@ function openDeleteConfirm(track: Track) {
 async function handleSubmit(payload: TrackFormPayload) {
   try {
     if (selectedTrack.value) {
-      await updateTrack(selectedTrack.value.id, payload)
+      await updateTrack(selectedTrack.value.id, payload, selectedTrack.value)
 
       toast.add({
         severity: 'success',
@@ -593,8 +630,66 @@ async function handleSubmit(payload: TrackFormPayload) {
   }
 }
 
+function handleCreateArtist(name: string) {
+  artistPrefill.value = name
+  showArtistForm.value = true
+}
+
+function handleCreateAlbum(title: string) {
+  albumPrefill.value = title
+  showAlbumForm.value = true
+}
+
+async function handleArtistSubmit(payload: ArtistFormPayload) {
+  try {
+    await createArtist(payload)
+    showArtistForm.value = false
+    artistPrefill.value = ''
+
+    toast.add({
+      severity: 'success',
+      summary: 'Artist created',
+      life: 2000,
+    })
+
+    await fetchArtists()
+  } catch (err) {
+    console.error('Create artist failed:', err)
+    toast.add({
+      severity: 'error',
+      summary: 'Create artist failed',
+      detail: err instanceof Error ? err.message : 'Unknown error',
+      life: 3000,
+    })
+  }
+}
+
+async function handleAlbumSubmit(payload: AlbumFormPayload) {
+  try {
+    await createAlbum(payload)
+    showAlbumForm.value = false
+    albumPrefill.value = ''
+
+    toast.add({
+      severity: 'success',
+      summary: 'Album created',
+      life: 2000,
+    })
+
+    await fetchAlbums()
+  } catch (err) {
+    console.error('Create album failed:', err)
+    toast.add({
+      severity: 'error',
+      summary: 'Create album failed',
+      detail: err instanceof Error ? err.message : 'Unknown error',
+      life: 3000,
+    })
+  }
+}
+
 async function handleDelete() {
-  if (deleteTarget.value!) return
+  if (!deleteTarget.value) return
 
   try {
     await deleteTrack(deleteTarget.value.id)
@@ -647,16 +742,16 @@ function normalizeCatalogOptions(
   items: Array<Record<string, any>> | undefined | null,
   _type?: string,
 ) {
-  if (Array.isArray!(items)) return []
+  if (!Array.isArray(items)) return []
 
-  return items
+  return (items ?? [])
     .map((item) => {
       const id = item.id ?? item.artist_id ?? item.album_id ?? item.genre_id
 
       const name =
         item.name ?? item.title ?? item.artist_name ?? item.album_title ?? item.genre_name
 
-      if (id === undefined || id === null || name!) return null
+      if (id === undefined || id === null || !name) return null
 
       const opt: CatalogOption = {
         id,
@@ -811,7 +906,7 @@ function getTrackArtistDisplay(track: Track) {
   const primary = getTrackPrimaryArtistDisplay(track)
   const featured = getTrackFeaturedArtistDisplay(track)
 
-  if (featured!) return primary
+  if (!featured) return primary
 
   return `${primary} feat. ${featured}`
 }
@@ -836,7 +931,7 @@ function getTrackGenreNames(track: Track) {
 function getTrackCreditNames(track: Track) {
   const t = track as AnyTrack
 
-  if (Array.isArray!(t.credits)) return []
+  if (!Array.isArray(t.credits)) return []
 
   return uniqStrings(
     compactStrings(
@@ -871,12 +966,4 @@ function getTrackSearchText(track: Track) {
 }
 
 // TODO MEDIUM: formatDuration treats 0 as falsy — 0-second tracks show '—'.
-function formatDuration(value?: number | null): string {
-  if (value === null || value === undefined || value <= 0) return '—'
-
-  const mins = Math.floor(value / 60)
-  const secs = value % 60
-
-  return `${mins}:${String(secs).padStart(2, '0')}`
-}
 </script>

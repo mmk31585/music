@@ -10,6 +10,8 @@ import (
 	"music/internal/platform/database"
 	"music/internal/platform/events"
 	platformLogger "music/internal/platform/logger"
+
+	"go.uber.org/zap"
 )
 
 // Bootstrap creates the App with all core dependencies (config, logger, DB, Redis,
@@ -28,6 +30,9 @@ func Bootstrap(ctx context.Context) (*App, error) {
 	if err != nil {
 		return nil, fmt.Errorf("init logger: %w", err)
 	}
+	// Set the global logger so zap.L() and all packages that use it
+	// (enrichment, import, etc.) get the configured logger instead of the nop default.
+	_ = zap.ReplaceGlobals(log)
 
 	log.Info("running database migrations")
 	if err := database.RunMigrations(cfg.Postgres.URL, "migrations"); err != nil {

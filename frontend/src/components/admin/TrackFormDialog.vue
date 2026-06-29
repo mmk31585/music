@@ -2,11 +2,22 @@
 import { computed, reactive, ref, watch, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
-import { parseBlob } from 'music-metadata-browser'
 import { useLyricsApi } from '@/services/api/lyrics'
 import { useArtistsApi } from '@/services/api/catalog/artists'
+import { useAlbumsApi } from '@/services/api/catalog/albums'
 import { usePlayerApi } from '@/services/api/player'
 import { useTracksApi } from '@/services/api/catalog/tracks'
+import { formatDuration } from '@/utils/format'
+
+let _parseBlob: typeof import('music-metadata-browser').parseBlob | null = null
+
+async function getParseBlob() {
+  if (!_parseBlob) {
+    const mod = await import('music-metadata-browser')
+    _parseBlob = mod.parseBlob
+  }
+  return _parseBlob!
+}
 
 type CatalogId = string | number
 
@@ -148,6 +159,8 @@ const emit = defineEmits<{
   'update:visible': [value: boolean]
   submit: [payload: TrackFormPayload]
   cancel: []
+  'create-artist': [name: string]
+  'create-album': [title: string]
 }>()
 
 const internalVisible = computed({
@@ -177,9 +190,12 @@ const form = reactive({
   release_date: '' as string | null,
   label: '' as string | null,
 
-  audioFile: null as File | null,
-  coverFile: null as File | null,
-})
+    audioFile: null as File | null,
+    coverFile: null as File | null,
+
+    /** Blob URL for uploaded audio preview (create mode) */
+    uploadedAudioPreviewUrl: null as string | null,
+  })
 
 const primaryArtistModels = ref<CatalogOption[]>([])
 const featuredArtistModels = ref<CatalogOption[]>([])
@@ -202,11 +218,14 @@ const metadataLoading = ref(false)
 const metadataError = ref('')
 const aiGenerating = ref(false)
 let aiPollTimer: ReturnType<typeof setInterval> | null = null
+const aiSyncing = ref(false)
+const aiReviewing = ref(false)
 
 const toast = useToast()
 const router = useRouter()
 const lyricsApi = useLyricsApi()
 const artistsApi = useArtistsApi()
+const albumsApi = useAlbumsApi()
 const playerApi = usePlayerApi()
 const tracksApi = useTracksApi()
 
@@ -248,7 +267,7 @@ const canSubmit = computed(() => {
 
 const unresolvedAlbumName = computed(() => {
   const typed = getModelText(albumModel.value) || detectedAlbumName.value
-  if (typed!) return ''
+  if (!typed) return ''
   if (selectedAlbum.value) return ''
   if (findOptionByName(props.albumsOptions, typed)) return ''
   return typed
@@ -256,16 +275,22 @@ const unresolvedAlbumName = computed(() => {
 
 const unresolvedAlbumArtistName = computed(() => {
   const typed = getModelText(albumArtistModel.value) || detectedAlbumArtistName.value
-  if (typed!) return ''
+  if (!typed) return ''
   if (selectedAlbumArtist.value) return ''
   if (findOptionByName(props.artistsOptions, typed)) return ''
   return typed
 })
 
+const unresolvedPrimaryArtistNames = computed(() => {
+  return detectedArtistNames.value.filter(
+    (name) => !findOptionByName(props.artistsOptions, name),
+  )
+})
+
 watch(
   () => props.visible,
   (visible) => {
-    if (visible!) return
+    if (!visible) return
 
     resetForm()
 
@@ -278,7 +303,7 @@ watch(
 
 watch(selectedAlbum, (album) => {
   // Auto-populate cover from the selected album if no cover is set yet
-  if (album && coverPreviewUrl.value! && form.coverFile!) {
+  if (album && !coverPreviewUrl.value && !form.coverFile) {
     const albumCover = album.cover_url || album.image_url || null
     if (albumCover) {
       form.cover_url = albumCover
@@ -334,6 +359,7 @@ function resetForm() {
 
   form.audioFile = null
   form.coverFile = null
+  form.uploadedAudioPreviewUrl = null
 
   primaryArtistModels.value = []
   featuredArtistModels.value = []
@@ -468,16 +494,13 @@ function hydrateFromTrack(track: ExistingTrack) {
 function normalizeLegacyArtistsToCredits(track: ExistingTrack) {
   const result: CreditPayload[] = []
 
-  // Handle full artist objects from the API — supports both
-  // camelCase (artistId) from the raw API and snake_case (artist_id)
-  // from the ExistingTrack type.
   if (track.artists?.length) {
     for (const item of track.artists) {
-      const artistId = (item as any).artist_id ?? (item as any).artistId
+      const artistId = item.artist_id
       if (artistId == null) continue
       result.push({
         artist_id: artistId,
-        role: item.role || ((item as any).is_primary ? 'primary' : 'featured'),
+        role: item.role || (item.is_primary ? 'primary' : 'featured'),
         position: item.position,
       })
     }
@@ -528,20 +551,20 @@ function normalizeForSearch(value: string) {
 }
 
 function normalizeText(value?: string | null) {
-  if (value!) return undefined
+  if (!value) return undefined
 
   const normalized = value.trim().replace(/\s+/g, ' ')
   return normalized.length ? normalized : undefined
 }
 
 function getModelText(model: AutoCompleteModel) {
-  if (model!) return ''
+  if (model == null) return ''
   if (typeof model === 'string') return model.trim()
   return model.name.trim()
 }
 
 function optionFromModel(model: AutoCompleteModel) {
-  if (model!) return null
+  if (model == null) return null
   if (typeof model === 'string') return null
   return model
 }
@@ -552,7 +575,7 @@ function findOptionById(options: CatalogOption[], id?: CatalogId | null) {
 }
 
 function findOptionByName(options: CatalogOption[], name?: string | null) {
-  if (name!) return null
+  if (name == null) return null
 
   const normalized = normalizeForSearch(name)
   return options.find((item) => normalizeForSearch(item.name) === normalized) ?? null
@@ -561,7 +584,7 @@ function findOptionByName(options: CatalogOption[], name?: string | null) {
 function searchOptions(options: CatalogOption[], query?: string) {
   const normalized = normalizeForSearch(query ?? '')
 
-  if (normalized!) {
+  if (!normalized) {
     return options.slice(0, 20)
   }
 
@@ -584,7 +607,7 @@ async function searchArtists(event: { query: string }) {
   const normalized = normalizeForSearch(q)
 
   // First, filter local options
-  let local = q
+  const local = q
     ? props.artistsOptions.filter((a) => normalizeForSearch(a.name).includes(normalized))
     : props.artistsOptions
 
@@ -604,7 +627,7 @@ async function searchArtists(event: { query: string }) {
           const seen = new Set(merged.map((a) => String(a.id)))
           for (const artist of results) {
             const opt = toCatalogOption(artist)
-            if (opt && seen.has!(String(opt.id))) {
+            if (opt && !seen.has(String(opt.id))) {
               merged.push(opt)
               seen.add(String(opt.id))
             }
@@ -624,7 +647,7 @@ async function searchArtists(event: { query: string }) {
 function toCatalogOption(artist: Record<string, any>): CatalogOption | null {
   const id = artist.id ?? artist.artist_id
   const name = artist.name ?? artist.artist_name
-  if (id == null || name!) return null
+  if (id == null || !name) return null
   return {
     id,
     name,
@@ -638,10 +661,10 @@ function toCatalogOption(artist: Record<string, any>): CatalogOption | null {
 /** Fetch individual artists by ID to supplement the options during hydration */
 async function hydrateMissingArtists(creditArtistIds: CatalogId[]) {
   const missingIds = creditArtistIds.filter(
-    (id) => findOptionById!(props.artistsOptions, id) && hydratedArtistIds.value.has!(String(id)),
+    (id) => !findOptionById(props.artistsOptions, id) && !hydratedArtistIds.value.has(String(id)),
   )
 
-  if (missingIds.length!) return
+  if (missingIds.length === 0) return
 
   const fetched: CatalogOption[] = []
   for (const id of missingIds) {
@@ -659,12 +682,12 @@ async function hydrateMissingArtists(creditArtistIds: CatalogId[]) {
     }
   }
 
-  if (fetched.length!) return
+  if (fetched.length === 0) return
 
   // Add fetched artists to filtered artists for AutoComplete
   const existing = new Set(filteredArtists.value.map((a) => String(a.id)))
   for (const opt of fetched) {
-    if (existing.has!(String(opt.id))) {
+    if (!existing.has(String(opt.id))) {
       filteredArtists.value.push(opt)
       existing.add(String(opt.id))
     }
@@ -672,7 +695,7 @@ async function hydrateMissingArtists(creditArtistIds: CatalogId[]) {
 }
 
 function splitArtists(value?: string | null) {
-  if (value!) return []
+  if (!value) return []
 
   return value
     .replace(/\s+\((feat\.?|ft\.?|featuring)\s+/gi, ' feat. ')
@@ -683,7 +706,7 @@ function splitArtists(value?: string | null) {
 }
 
 function splitGenres(values?: string[] | string | null): string[] {
-  if (values!) return []
+  if (values == null) return []
 
   if (Array.isArray(values)) {
     return values
@@ -734,7 +757,7 @@ function toOptionsByNames(options: CatalogOption[], names: string[]) {
 
 function resolveAlbumInput() {
   const typed = getModelText(albumModel.value)
-  if (typed!) return
+  if (!typed) return
 
   const found = findOptionByName(props.albumsOptions, typed)
   if (found) {
@@ -744,7 +767,7 @@ function resolveAlbumInput() {
 
 function resolveAlbumArtistInput() {
   const typed = getModelText(albumArtistModel.value)
-  if (typed!) return
+  if (!typed) return
 
   const found = findOptionByName(props.artistsOptions, typed)
   if (found) {
@@ -764,10 +787,16 @@ async function onAudioFileChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
 
-  if (file!) return
+  if (!file) return
 
   form.audioFile = file
   audioFileName.value = file.name
+
+  // Revoke previous uploaded preview URL if any
+  if (form.uploadedAudioPreviewUrl?.startsWith('blob:')) {
+    URL.revokeObjectURL(form.uploadedAudioPreviewUrl)
+  }
+  form.uploadedAudioPreviewUrl = URL.createObjectURL(file)
 
   await autoFillFromAudioFile(file)
 
@@ -778,7 +807,7 @@ function onCoverFileChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
 
-  if (file!) return
+  if (!file) return
 
   form.coverFile = file
 
@@ -816,6 +845,7 @@ function imageMimeToExtension(mime: string) {
 }
 
 async function readAudioMetadata(file: File): Promise<TrackMetadataResult> {
+  const parseBlob = await getParseBlob()
   const metadata = await parseBlob(file)
 
   const common = metadata.common
@@ -864,31 +894,31 @@ async function autoFillFromAudioFile(file: File) {
   try {
     const metadata = await readAudioMetadata(file)
 
-    if (metadata.title && form.title!) {
+    if (metadata.title && !form.title) {
       form.title = metadata.title
     }
 
-    if (metadata.durationSeconds && form.duration_seconds!) {
+    if (metadata.durationSeconds && form.duration_seconds == null) {
       form.duration_seconds = metadata.durationSeconds
     }
 
-    if (metadata.trackNumber && form.track_number!) {
+    if (metadata.trackNumber && form.track_number == null) {
       form.track_number = metadata.trackNumber
     }
 
-    if (metadata.discNumber && form.disc_number!) {
+    if (metadata.discNumber && form.disc_number == null) {
       form.disc_number = metadata.discNumber
     }
 
-    if (metadata.year && form.year!) {
+    if (metadata.year && form.year == null) {
       form.year = metadata.year
     }
 
-    if (metadata.composer && form.composer!) {
+    if (metadata.composer && !form.composer) {
       form.composer = metadata.composer
     }
 
-    if (metadata.lyrics && form.lyrics!) {
+    if (metadata.lyrics && !form.lyrics) {
       form.lyrics = metadata.lyrics
     }
 
@@ -963,7 +993,7 @@ function buildCreditsPayload() {
   const extraCredits: CreditPayload[] = creditRows.value
     .filter((row) => row.artist && String(row.role).trim())
     .map((row, index) => ({
-      artist_id: row.artist.id!,
+      artist_id: row.artist!.id,
       role: String(row.role).trim(),
       position: index,
     }))
@@ -974,8 +1004,8 @@ function buildCreditsPayload() {
 function submitForm() {
   const title = form.title.trim()
 
-  if (title!) return
-  if (primaryArtistModels.value.length!) return
+  if (!title) return
+  if (!primaryArtistModels.value.length) return
 
   const credits = buildCreditsPayload()
 
@@ -1021,6 +1051,45 @@ function stopAiPolling() {
   }
 }
 
+/**
+ * Convert plain text lyrics to approximate LRC format
+ * by evenly distributing lines across the track duration.
+ */
+function plainToApproximateLRC(plain: string, durationSeconds: number): string {
+  const lines = plain.split('\n')
+  if (!lines.length) return ''
+
+  // Strip trailing empty lines
+  while (lines.length > 0 && lines[lines.length - 1]!.trim() === '') {
+    lines.pop()
+  }
+  if (!lines.length) return ''
+
+  // Only count non-empty lines for timing
+  const nonEmptyLines = lines.filter((l) => l.trim() !== '')
+  if (!nonEmptyLines.length) return ''
+
+  const interval = durationSeconds / nonEmptyLines.length
+  let result = ''
+  let lineIdx = 0
+
+  for (const line of lines) {
+    const text = line.trim()
+    if (!text) {
+      result += '\n'
+      continue
+    }
+    const sec = lineIdx * interval
+    const min = Math.floor(sec / 60)
+    const s = Math.floor(sec % 60)
+    const cs = Math.floor((sec - Math.floor(sec)) * 100)
+    result += `[${String(min).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}]${text}\n`
+    lineIdx++
+  }
+
+  return result
+}
+
 async function fillLyricsFromResult(content: string, type: 'synced' | 'plain', trackName: string) {
   form.lyrics = content
   form.lyrics_type = type
@@ -1038,7 +1107,7 @@ const LYRICS_TIMEOUT_MS = 8000
 async function fetchLRCLyrics() {
   const trackName = form.title?.trim()
   const artistName = primaryArtistModels.value[0]?.name || detectedArtistNames.value[0] || ''
-  if (trackName!) {
+  if (!trackName) {
     toast.add({ severity: 'warn', summary: 'Enter a track title first', life: 2500 })
     return
   }
@@ -1068,7 +1137,7 @@ async function fetchLRCLyrics() {
     }
 
     // Fallback to /search if exact fails
-    if (data! || (data.syncedLyrics! && data.plainLyrics!)) {
+    if (!data || (!data.syncedLyrics && !data.plainLyrics)) {
       const q = artistName ? `${artistName} ${trackName}` : trackName
       try {
         const searchController = new AbortController()
@@ -1105,7 +1174,7 @@ async function fetchLRCLyrics() {
           albumModel.value = matchedAlbum
 
           // Auto-populate cover from the matched album if none set
-          if (coverPreviewUrl.value! && form.coverFile!) {
+          if (!coverPreviewUrl.value && !form.coverFile) {
             const albumCover = matchedAlbum.cover_url || matchedAlbum.image_url || null
             if (albumCover) {
               form.cover_url = albumCover
@@ -1118,23 +1187,41 @@ async function fetchLRCLyrics() {
       }
 
       // Auto-select primary artist from LRCLIB response (only if none selected)
-      if (data.artistName && primaryArtistModels.value.length!) {
+      if (data.artistName && !primaryArtistModels.value.length) {
         const matchedArtist = findOptionByName(props.artistsOptions, data.artistName)
         if (matchedArtist) {
           primaryArtistModels.value = [matchedArtist]
-        } else if (detectedArtistNames.value.length!) {
+        } else if (!detectedArtistNames.value.length) {
           detectedArtistNames.value = [data.artistName]
         }
       }
 
       // Try to fetch cover from iTunes API if we still don't have one
-      if (coverPreviewUrl.value! && form.coverFile!) {
+      if (!coverPreviewUrl.value && !form.coverFile) {
         fetchCoverFromiTunes().catch(() => {})
       }
       return
     }
 
-    // ── LRCLIB returned nothing or timed out ── try server-side pipeline (LRCLIB → AI fallback)
+    // ── LRCLIB returned nothing ── try text-to-LRC conversion for user-entered plain lyrics
+    if (form.lyrics?.trim() && form.lyrics_type === 'plain') {
+      const lrc = plainToApproximateLRC(
+        form.lyrics,
+        form.duration_seconds ? Math.round(form.duration_seconds) : 240,
+      )
+      if (lrc) {
+        form.lyrics = lrc
+        form.lyrics_type = 'synced'
+        toast.add({
+          severity: 'success',
+          summary: `Synced LRC generated from your lyrics for "${trackName}"`,
+          life: 3000,
+        })
+        return
+      }
+    }
+
+    // ── No user lyrics to convert ── try server-side pipeline (LRCLIB → AI fallback)
     await fetchLyricsViaPipeline(trackName)
   } catch (err) {
     // Only show error for non-abort (timeout) errors — timeouts go to pipeline
@@ -1154,14 +1241,15 @@ async function fetchLRCLyrics() {
  * If the server enqueues an AI job, starts polling for the result.
  */
 async function fetchLyricsViaPipeline(trackName: string) {
-  // If we're in edit mode and have a track ID, use the server pipeline
-  if (props.track!?.id) {
+  // Pipeline needs a saved track ID (server-side processing requires a DB record)
+  const trackId = props.track?.id
+  if (!trackId) {
     toast.add({ severity: 'warn', summary: 'Save the track first, then try Fetch LRC again for AI-powered lyrics', life: 5000 })
     return
   }
 
   try {
-    const result = await lyricsApi.fetchOrGenerateLyrics(props.track.id)
+    const result = await lyricsApi.fetchOrGenerateLyrics(trackId)
 
     if (result?.source === 'lrclib' && result?.data?.content) {
       await fillLyricsFromResult(
@@ -1182,7 +1270,7 @@ async function fetchLyricsViaPipeline(trackName: string) {
         life: 8000,
       })
 
-      const trackId = result.track_id || String(props.track.id)
+      const aiTrackId = result.track_id || String(trackId)
       let attempts = 0
       const maxAttempts = 30 // ~2.5 minutes at 5s intervals
 
@@ -1190,7 +1278,7 @@ async function fetchLyricsViaPipeline(trackName: string) {
       aiPollTimer = setInterval(async () => {
         attempts++
         try {
-          const statusResult = await lyricsApi.aiStatus(trackId)
+          const statusResult = await lyricsApi.aiStatus(aiTrackId)
 
           if (statusResult?.status === 'completed') {
             // AI finished — lyrics should be in DB now
@@ -1264,21 +1352,102 @@ onUnmounted(() => {
   stopAiPolling()
 })
 
+/**
+ * Syncs plain-text lyrics to LRC format using OpenRouter AI.
+ * Sends the current plain lyrics to the sync endpoint,
+ * then replaces them with synced LRC content.
+ */
+async function syncLyricsWithAI() {
+  const trackId = props.track?.id
+  if (!trackId) {
+    toast.add({ severity: 'warn', summary: 'Save the track first before using AI sync', life: 5000 })
+    return
+  }
+
+  const plainText = form.lyrics?.trim()
+  if (!plainText) {
+    toast.add({ severity: 'warn', summary: 'Type some plain lyrics first, then click Sync with AI', life: 5000 })
+    return
+  }
+
+  aiSyncing.value = true
+  try {
+    const result = await lyricsApi.syncWithAI({
+      track_id: trackId,
+      plain_text: plainText,
+      track_title: form.title?.trim() || undefined,
+      artist_name: primaryArtistModels.value[0]?.name || detectedArtistNames.value[0] || undefined,
+    })
+
+    if (result?.success && result?.data?.content) {
+      form.lyrics = result.data.content
+      form.lyrics_type = 'synced'
+      toast.add({ severity: 'success', summary: 'Lyrics synced to LRC!', life: 3000 })
+    } else {
+      toast.add({ severity: 'error', summary: result?.message || 'AI sync failed', life: 5000 })
+    }
+  } catch (err: any) {
+    toast.add({ severity: 'error', summary: 'AI sync failed', detail: String(err?.message || err), life: 5000 })
+  } finally {
+    aiSyncing.value = false
+  }
+}
+
+/**
+ * Reviews existing LRC lyrics using OpenRouter AI to fix
+ * spelling mistakes and timing issues.
+ */
+async function reviewLyricsWithAI() {
+  const trackId = props.track?.id
+  if (!trackId) {
+    toast.add({ severity: 'warn', summary: 'Save the track first before using AI review', life: 5000 })
+    return
+  }
+
+  const currentLRC = form.lyrics?.trim()
+  if (!currentLRC) {
+    toast.add({ severity: 'warn', summary: 'Add lyrics first, then click Review with AI', life: 5000 })
+    return
+  }
+
+  aiReviewing.value = true
+  try {
+    const result = await lyricsApi.reviewWithAI({
+      track_id: trackId,
+      existing_lrc: currentLRC,
+      track_title: form.title?.trim() || undefined,
+      artist_name: primaryArtistModels.value[0]?.name || detectedArtistNames.value[0] || undefined,
+    })
+
+    if (result?.success && result?.data?.content) {
+      form.lyrics = result.data.content
+      form.lyrics_type = 'synced'
+      toast.add({ severity: 'success', summary: 'Lyrics reviewed and fixed!', life: 3000 })
+    } else {
+      toast.add({ severity: 'error', summary: result?.message || 'AI review failed', life: 5000 })
+    }
+  } catch (err: any) {
+    toast.add({ severity: 'error', summary: 'AI review failed', detail: String(err?.message || err), life: 5000 })
+  } finally {
+    aiReviewing.value = false
+  }
+}
+
 async function fetchCoverFromiTunes() {
   const trackName = form.title?.trim()
   const artistName = primaryArtistModels.value[0]?.name || detectedArtistNames.value[0] || ''
   const albumName = getModelText(albumModel.value) || detectedAlbumName.value || ''
-  if (trackName! && artistName! && albumName!) return
+  if (!trackName || !artistName || !albumName) return
 
   try {
     const terms = [artistName, albumName || trackName].filter(Boolean).join(' ')
     const url = `https://itunes.apple.com/search?term=${encodeURIComponent(terms)}&entity=song&limit=5`
     const resp = await fetch(url, { headers: { Accept: 'application/json' } })
-    if (resp.ok!) return
+    if (!resp.ok) return
 
     const data: any = await resp.json()
     const result = data.results?.[0]
-    if (result!?.artworkUrl100) return
+    if (result?.artworkUrl100) return
 
     // Get larger artwork by replacing 100x100 with larger size
     const coverUrl = result.artworkUrl100.replace('/100x100bb.', '/600x600bb.')
@@ -1298,6 +1467,11 @@ function closeDialog() {
     audioPreviewPlaying.value = false
   }
   audioPreviewUrl.value = null
+  // Revoke uploaded audio blob URL
+  if (form.uploadedAudioPreviewUrl?.startsWith('blob:')) {
+    URL.revokeObjectURL(form.uploadedAudioPreviewUrl)
+  }
+  form.uploadedAudioPreviewUrl = null
   emit('cancel')
   internalVisible.value = false
 }
@@ -1305,7 +1479,8 @@ function closeDialog() {
 // ── Audio preview ──
 function toggleAudioPreview() {
   const audio = audioPreviewRef.value
-  if (audio! || audioPreviewUrl.value!) return
+  const previewUrl = audioPreviewUrl.value || form.uploadedAudioPreviewUrl
+  if (!audio || !previewUrl) return
 
   if (audio.paused) {
     audio.play().catch(() => {
@@ -1343,12 +1518,6 @@ function seekAudioPreview(event: Event) {
   }
 }
 
-function formatDuration(seconds: number): string {
-  if (seconds! || isFinite!(seconds)) return '0:00'
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
 </script>
 
 <template>
@@ -1394,8 +1563,8 @@ function formatDuration(seconds: number): string {
             {{ metadataError }}
           </p>
 
-          <!-- Audio preview (edit mode: existing track) -->
-          <div v-if="audioPreviewUrl" class="mt-4 border-t border-white/6 pt-3">
+          <!-- Audio preview (edit mode: existing track / create mode: uploaded file) -->
+          <div v-if="audioPreviewUrl || form.uploadedAudioPreviewUrl" class="mt-4 border-t border-white/6 pt-3">
             <div class="mb-2 flex items-center gap-2">
               <Button
                 type="button"
@@ -1428,7 +1597,7 @@ function formatDuration(seconds: number): string {
 
             <audio
               ref="audioPreviewRef"
-              :src="audioPreviewUrl"
+              :src="audioPreviewUrl ?? form.uploadedAudioPreviewUrl ?? undefined"
               preload="metadata"
               hidden
               @timeupdate="onAudioPreviewTimeUpdate"
@@ -1534,13 +1703,26 @@ function formatDuration(seconds: number): string {
               </template>
             </AutoComplete>
 
-            <p
+            <div
               v-if="detectedArtistNames.length && !primaryArtistModels.length"
-              class="mt-1 text-xs text-yellow-400"
+              class="mt-1 flex flex-wrap items-center gap-2"
             >
-              Detected:
-              {{ detectedArtistNames.join(', ') }}
-            </p>
+              <span class="text-xs text-yellow-400">
+                Detected: {{ detectedArtistNames.join(', ') }}
+              </span>
+              <Button
+                v-for="name in unresolvedPrimaryArtistNames"
+                :key="name"
+                type="button"
+                icon="pi pi-plus"
+                size="small"
+                severity="success"
+                text
+                class="h-6! rounded-md! px-2! text-[11px]! text-emerald-400! hover:text-emerald-300!"
+                :label='`Create "${name}"`'
+                @click="emit('create-artist', name)"
+              />
+            </div>
           </div>
 
           <div>
@@ -1595,10 +1777,21 @@ function formatDuration(seconds: number): string {
               @blur="resolveAlbumInput"
             />
 
-            <p v-if="unresolvedAlbumName" class="mt-1 text-xs text-yellow-400">
-              Album not found:
-              {{ unresolvedAlbumName }}
-            </p>
+            <div v-if="unresolvedAlbumName" class="mt-1 flex flex-wrap items-center gap-2">
+              <span class="text-xs text-yellow-400">
+                Album not found: {{ unresolvedAlbumName }}
+              </span>
+              <Button
+                type="button"
+                icon="pi pi-plus"
+                size="small"
+                severity="success"
+                text
+                class="h-6! rounded-md! px-2! text-[11px]! text-emerald-400! hover:text-emerald-300!"
+                label="Create album"
+                @click="emit('create-album', unresolvedAlbumName)"
+              />
+            </div>
           </div>
 
           <div>
@@ -1624,13 +1817,24 @@ function formatDuration(seconds: number): string {
               @blur="resolveAlbumArtistInput"
             />
 
-            <p
+            <div
               v-if="unresolvedAlbumArtistName"
-              class="mt-1 text-xs text-yellow-400"
+              class="mt-1 flex flex-wrap items-center gap-2"
             >
-              Album artist not found:
-              {{ unresolvedAlbumArtistName }}
-            </p>
+              <span class="text-xs text-yellow-400">
+                Album artist not found: {{ unresolvedAlbumArtistName }}
+              </span>
+              <Button
+                type="button"
+                icon="pi pi-plus"
+                size="small"
+                severity="success"
+                text
+                class="h-6! rounded-md! px-2! text-[11px]! text-emerald-400! hover:text-emerald-300!"
+                label="Create artist"
+                @click="emit('create-artist', unresolvedAlbumArtistName)"
+              />
+            </div>
           </div>
         </div>
 
@@ -1901,16 +2105,42 @@ function formatDuration(seconds: number): string {
               Lyrics
             </label>
 
-            <Button
-              type="button"
-              icon="pi pi-cloud-download"
-              :label="aiGenerating ? 'AI Generating...' : 'Fetch LRC'"
-              size="small"
-              text
-              :loading="metadataLoading || aiGenerating"
-              class="text-teal-400! hover:text-teal-300!"
-              @click="fetchLRCLyrics"
-            />
+            <div class="flex items-center gap-1">
+              <Button
+                type="button"
+                icon="pi pi-sync"
+                label="Sync with AI"
+                size="small"
+                text
+                :loading="aiSyncing"
+                :disabled="!form.lyrics?.trim() || aiSyncing || !props.track?.id"
+                class="text-indigo-400! hover:text-indigo-300!"
+                @click="syncLyricsWithAI"
+              />
+
+              <Button
+                type="button"
+                icon="pi pi-pencil"
+                label="Review with AI"
+                size="small"
+                text
+                :loading="aiReviewing"
+                :disabled="!form.lyrics?.trim() || aiReviewing || !props.track?.id"
+                class="text-amber-400! hover:text-amber-300!"
+                @click="reviewLyricsWithAI"
+              />
+
+              <Button
+                type="button"
+                icon="pi pi-cloud-download"
+                :label="aiGenerating ? 'AI Generating...' : 'Fetch LRC'"
+                size="small"
+                text
+                :loading="metadataLoading || aiGenerating"
+                class="text-teal-400! hover:text-teal-300!"
+                @click="fetchLRCLyrics"
+              />
+            </div>
           </div>
 
           <Textarea
@@ -1938,7 +2168,7 @@ function formatDuration(seconds: number): string {
           icon="pi pi-check"
           :label="isEditMode ? 'Save changes' : 'Create track'"
           :loading="props.loading"
-          :disabled="canSubmit! || props.loading"
+          :disabled="!canSubmit || props.loading"
           class="rounded-xl!"
         />
       </footer>

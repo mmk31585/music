@@ -67,7 +67,7 @@ const iconBgClass = computed(
 
 const timeAgo = computed(() => {
   const ts = props.notification.createdAt
-  if (ts!) return ''
+  if (!ts) return ''
   const diff = Date.now() - new Date(ts).getTime()
   const mins = Math.floor(diff / 60000)
   if (mins < 1) return 'Just now'

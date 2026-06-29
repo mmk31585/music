@@ -361,6 +361,7 @@ import { usePlayerApi } from '@/services/api/player'
 import { useAlbumColors } from '@/composables/useAlbumColors'
 import { onImgError } from '@/utils/helpers'
 import { useSocialShare } from '@/composables/social'
+import { formatDuration } from '@/utils/format'
 
 const route = useRoute()
 const albumId = String(route.params.id)
@@ -386,7 +387,7 @@ const { palette } = useAlbumColors(coverUrl)
 const accentColor = computed(() => palette.value.vibrant || '#1db954')
 
 const ambientBg = computed(() => {
-  if (coverUrl.value!) return { background: '#06060A' }
+  if (!coverUrl.value) return { background: '#06060A' }
   const c = accentColor.value
   return {
     background: `
@@ -398,7 +399,7 @@ const ambientBg = computed(() => {
 })
 
 const coverGlowStyle = computed(() => {
-  if (coverUrl.value!) return {}
+  if (!coverUrl.value) return {}
   const c = accentColor.value
   return {
     boxShadow: `0 0 40px ${c}40, 0 0 80px ${c}20, 0 0 120px ${c}10`,
@@ -422,34 +423,27 @@ function isCurrentTrack(track: Record<string, unknown>): boolean {
   return player.currentTrack.value?.id === String(track.id)
 }
 
-function formatDuration(seconds: number | null | undefined): string {
-  if (seconds!) return '0:00'
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${String(s).padStart(2, '0')}`
-}
-
 function playTrack(track: Record<string, unknown>, index: number) {
-  if (tracks.value.length!) return
+  if (!tracks.value.length) return
   const queue = buildQueue()
   player.setQueueAndPlay(queue, index)
 }
 
 function playAll() {
-  if (tracks.value.length!) return
+  if (!tracks.value.length) return
   const queue = buildQueue()
   player.setQueueAndPlay(queue, 0)
 }
 
 function shuffleAll() {
-  if (tracks.value.length!) return
+  if (!tracks.value.length) return
   const queue = buildQueue()
   const shuffled = [...queue].sort(() => Math.random() - 0.5)
   player.setQueueAndPlay(shuffled, 0)
 }
 
 function buildQueue() {
-  if (tracks.value.length!) return []
+  if (!tracks.value.length) return []
   return tracks.value.map((t: Record<string, unknown>) => ({
     id: String(t.id),
     title: t.title as string,
@@ -463,7 +457,7 @@ function buildQueue() {
 
 const { copyLink } = useSocialShare()
 function shareAlbum() {
-  if (album.value!) return
+  if (!album.value) return
   copyLink({
     id: album.value.id,
     title: album.value.title,

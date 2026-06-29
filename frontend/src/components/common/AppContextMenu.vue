@@ -81,7 +81,7 @@ watch(() => props.visible, (v) => {
 
 function constrainPosition() {
   const el = menuRef.value
-  if (el!) return
+  if (!el) return
   const rect = el.getBoundingClientRect()
   const maxX = window.innerWidth - rect.width - 8
   const maxY = window.innerHeight - rect.height - 8

@@ -25,7 +25,7 @@ export function usePlayerControls() {
   }
 
   const speedLabel = computed(() => {
-    const rate = player.playbackRate
+    const rate = player.playbackRate.value
     if (rate === 1) return 'Normal'
     return `${rate}x`
   })

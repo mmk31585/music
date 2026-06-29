@@ -61,9 +61,10 @@
           :color="topGenreColor"
         />
         <StatCard
-          icon="award"
-          :value="String(badgeCount)"
-          label="Badges earned"
+          :icon="xpLevel === '—' ? 'award' : 'star'"
+          :value="String(xpLevel)"
+          :sub="xpTitle || String(badgeCount) + ' badge' + (badgeCount !== 1 ? 's' : '')"
+          :label="xpLevel === '—' ? 'Badges earned' : 'Level'"
         />
         <StatCard
           icon="heart"
@@ -143,8 +144,8 @@
 
               <!-- Info -->
               <div class="p-3">
-                <p class="truncate text-sm font-medium text-white">{{ track.track_title || track.title }}</p>
-                <p class="truncate text-xs text-white/40">{{ track.artist_name || track.artistName || '' }}</p>
+                <p class="truncate text-sm font-medium text-white">{{ track.track_title }}</p>
+                <p class="truncate text-xs text-white/40">{{ track.artist_name || '' }}</p>
               </div>
 
               <!-- Visibility badge (own profile) -->
@@ -361,6 +362,8 @@ import { SkeletonLoader } from '@/components/common'
 import { useSocialApi } from '@/services/api/social'
 import { useReactionsApi } from '@/services/api/reactions'
 import { useVideoApi } from '@/services/api/video'
+import { useUserApi } from '@/services/api/users'
+import { useGamificationApi } from '@/services/api/gamification'
 import { useUserAuthStore } from '@/stores'
 import { usePlayerStore } from '@/stores/player'
 import { AlbumCard } from '@/components/music'
@@ -378,10 +381,11 @@ const playerStore = usePlayerStore()
 const socialApi = useSocialApi()
 const reactionsApi = useReactionsApi()
 const videoApi = useVideoApi()
+const gamificationApi = useGamificationApi()
 
 const userId = route.params.id as string | undefined
 const targetUserId = userId || String(auth.user?.id || '')
-const isOwnProfile = userId! || userId === String(auth.user?.id)
+const isOwnProfile = !!userId || userId === String(auth.user?.id)
 
 const loading = ref(false)
 const error = ref<any>(null)
@@ -405,6 +409,18 @@ const musicStatus = ref<{
   } | null
   current_track_id?: string | null
   updated_at?: string | null
+} | null>(null)
+
+// Gamification
+const gamificationProfile = ref<{
+  level: number
+  current_xp: number
+  next_level_xp: number
+  total_xp: number
+  title: string
+  title_persian: string
+  rank: number
+  badges: { badge?: { name: string; icon_url: string } }[]
 } | null>(null)
 
 // Edits tab
@@ -460,7 +476,12 @@ const statsTrends = computed(() => ({
 const topGenreName = computed(() => '—')
 const topGenrePercent = computed(() => '')
 const topGenreColor = computed(() => '#1db954')
-const badgeCount = computed(() => 0)
+const badgeCount = computed(() => gamificationProfile.value?.badges?.length ?? 0)
+const xpLevel = computed(() => gamificationProfile.value?.level ?? '—')
+const xpTitle = computed(() => {
+  if (!gamificationProfile.value) return ''
+  return gamificationProfile.value.title_persian || gamificationProfile.value.title
+})
 
 const tabs = [
   { key: 'tracks', label: 'آهنگ‌ها', icon: 'pi pi-music' },
@@ -484,6 +505,8 @@ async function fetchProfile() {
       userVideosData,
       musicStatusData,
       profile,
+      gamificationProfileData,
+      gamificationBadgesData,
     ] = await Promise.all([
       socialApi.getFollowers(targetUserId).catch(() => null),
       socialApi.getFollowing(targetUserId).catch(() => null),
@@ -491,7 +514,9 @@ async function fetchProfile() {
       reactionsApi.getLikedAlbums({ user_id: isOwnProfile ? undefined : targetUserId, limit: 10 }).catch(() => null),
       videoApi.getUserVideos(targetUserId, { limit: VIDEOS_LIMIT, offset: 0 }).catch(() => null),
       isOwnProfile ? Promise.resolve(null) : videoApi.getMusicStatus(targetUserId).catch(() => null),
-      socialApi.getPublicProfile?.(targetUserId).catch(() => null) || Promise.resolve(null),
+      useUserApi().getPublicUserProfile(targetUserId).catch(() => null),
+      isOwnProfile ? gamificationApi.getProfile().catch(() => null) : Promise.resolve(null),
+      isOwnProfile ? gamificationApi.getBadges().catch(() => null) : Promise.resolve(null),
     ])
 
     if (followersData) {
@@ -546,7 +571,15 @@ async function fetchProfile() {
 
     if (profile) profileData.value = profile
 
-    if (isOwnProfile!) {
+    if (gamificationProfileData) {
+      gamificationProfile.value = gamificationProfileData
+    }
+    if (gamificationBadgesData) {
+      if (!gamificationProfile.value) gamificationProfile.value = { level: 0, current_xp: 0, next_level_xp: 0, total_xp: 0, title: '', title_persian: '', rank: 0, badges: [] }
+      gamificationProfile.value.badges = gamificationBadgesData.mine || []
+    }
+
+    if (!isOwnProfile) {
       const f = await socialApi.isFollowing(targetUserId).catch(() => null)
       if (f) isFollowing.value = (f as any).is_following
     }
@@ -560,7 +593,7 @@ async function fetchProfile() {
 // ── Actions ──
 
 async function toggleFollow() {
-  if (userId!) return
+  if (!userId) return
   try {
     if (isFollowing.value) {
       await socialApi.unfollow(userId)

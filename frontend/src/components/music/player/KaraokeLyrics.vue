@@ -127,7 +127,7 @@ let parsedCache: ParsedLine[] = []
 watch(
   () => [props.type, props.content],
   () => {
-    if (props.content!) {
+    if (!props.content) {
       parsedCache = []
       return
     }
@@ -140,7 +140,7 @@ watch(
 const activeLineIdx = computed(() => {
   const t = props.currentTime
   for (let i = parsedCache.length - 1; i >= 0; i--) {
-    if (t >= parsedCache[i].timeSeconds!) return i
+    if (t >= parsedCache[i]!.timeSeconds) return i
   }
   return -1
 })
@@ -150,11 +150,11 @@ function isPast(idx: number) {
 }
 
 function isWordActive(line: ParsedLine, wordIdx: number) {
-  if (line.words! || line.words.length === 0) return true
+  if (line.words.length === 0) return true
   const t = props.currentTime
   const word = line.words[wordIdx]
   const nextWord = line.words[wordIdx + 1]
-  if (word!) return false
+  if (!word) return false
   const start = word.timeSeconds >= 0 ? word.timeSeconds : line.timeSeconds
   const end = nextWord?.timeSeconds ?? line.timeSeconds + 4
   return t >= start && t < end

@@ -118,6 +118,7 @@ func (r *Repository) Create(ctx context.Context, req CreateRequest) (*Track, err
 		"artist_ids_count", len(req.ArtistIDs),
 		"artists_count", len(req.Artists),
 		"credits_count", len(req.Credits),
+		"audio_url", req.AudioURL,
 	)
 
 	tx, err := r.db.BeginTxx(ctx, nil)
@@ -181,6 +182,7 @@ func (r *Repository) Create(ctx context.Context, req CreateRequest) (*Track, err
 
 	err = tx.GetContext(ctx, &item, `
 		INSERT INTO tracks (
+			id,
 			artist_id,
 			album_id,
 			title,
@@ -194,7 +196,7 @@ func (r *Repository) Create(ctx context.Context, req CreateRequest) (*Track, err
 			cover_media_id,
 			is_public
 		)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+		VALUES (gen_random_uuid(),$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
 		RETURNING
 			id,
 			artist_id,

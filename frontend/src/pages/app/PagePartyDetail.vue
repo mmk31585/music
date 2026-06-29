@@ -77,7 +77,7 @@
       <div v-if="isHost" class="flex flex-wrap gap-3">
         <button
           class="inline-flex items-center gap-1.5 rounded-xl bg-white/5 px-4 py-2 text-sm font-semibold text-white/60 transition hover:bg-white/10 hover:text-white"
-          :disabled="nowPlayingTrackId! || isTrackTransitioning"
+          :disabled="!nowPlayingTrackId || isTrackTransitioning"
           @click="skipTrack"
         >
           <i aria-hidden="true" class="pi pi-forward text-xs" />
@@ -207,7 +207,7 @@ const isHost = computed(() => party.value?.host_id === auth.user?.id)
 /* ---- Play / Pause ---- */
 async function handleTogglePlay() {
   const trackId = nowPlayingTrackId.value
-  if (trackId!) return
+  if (!trackId) return
 
   // Clear any previous error before retry
   playerStore.error = null
@@ -229,7 +229,7 @@ async function handleTogglePlay() {
 /** Retry playback after an error */
 async function retryPlayback() {
   const trackId = nowPlayingTrackId.value
-  if (trackId!) return
+  if (!trackId) return
   playerStore.error = null
   isTrackTransitioning.value = true
   try {
@@ -253,7 +253,7 @@ async function playNowPlayingTrack(trackId: string) {
 /** Skip the current track (host only) */
 async function skipTrack() {
   const trackId = nowPlayingTrackId.value
-  if (trackId! || isHost.value!) return
+  if (!trackId || !isHost.value) return
   try {
     await roomQueue.reportEnded(trackId)
   } catch {
@@ -276,7 +276,7 @@ watch(
 watch(
   () => playerStore.isLoadingTrack,
   (loading) => {
-    if (loading!) {
+    if (!loading) {
       setTimeout(() => {
         isTrackTransitioning.value = false
       }, 0)
@@ -288,7 +288,7 @@ watch(
 watch(
   [() => queueState.value, () => party.value],
   ([qs, p]) => {
-    if (qs && p?.current_track_id && qs.now_playing!) {
+    if (qs && p?.current_track_id && !qs.now_playing) {
       // Party has a track but queue system hasn't picked it up yet.
       // Suggest it to the queue so it becomes now_playing on next advance.
       roomQueue.suggest(p.current_track_id)
@@ -339,7 +339,7 @@ function userName(userId: string): string {
 }
 
 const statusClass = computed(() => {
-  if (party.value!) return ''
+  if (!party.value) return ''
   switch (party.value.status) {
     case 'active': return 'bg-green-500/10 text-green-400'
     case 'paused': return 'bg-yellow-500/10 text-yellow-400'
@@ -366,10 +366,10 @@ async function loadParty() {
 watch(
   [() => party.value, () => queueState.value],
   ([p, qs]) => {
-    if (p! || qs!) return
+    if (!p || !qs) return
 
     // If the party has an active track and nothing is playing yet, play it.
-    if (p.current_track_id && playerStore.currentTrack! && qs.now_playing!) {
+    if (p.current_track_id && !playerStore.currentTrack && !qs.now_playing) {
       playerStore.playTrackById(p.current_track_id)
         .catch(() => {
           roomQueue.suggest(String(p.current_track_id))
@@ -397,7 +397,7 @@ async function updateStatus(status: string, trackId?: string) {
 
 /* ---- React to party status changes from WebSocket ---- */
 watch(partyStatus, (status) => {
-  if (status! || isParticipant.value!) return
+  if (!status || !isParticipant.value) return
   // Sync local party status for UI badge
   if (party.value) {
     party.value.status = status as ListeningParty['status']

@@ -55,13 +55,13 @@ export const useAlbumsApi = () => {
         data: {
           title: payload.title,
           artists: payload.artists?.map((a) => ({
-            artistId: a.artistId,
+            artist_id: a.artist_id,
             role: a.role ?? 'primary',
             position: a.position ?? 0,
           })) ?? [],
-          coverUrl: payload.coverUrl ?? null,
-          releaseDate: payload.releaseDate ?? null,
-          albumType: payload.albumType ?? null,
+          cover_url: payload.cover_url ?? null,
+          release_date: payload.release_date ?? null,
+          album_type: payload.album_type ?? null,
         },
       },
       {
@@ -84,13 +84,13 @@ export const useAlbumsApi = () => {
         data: {
           title: payload.title,
           artists: payload.artists?.map((a) => ({
-            artistId: a.artistId,
+            artist_id: a.artist_id,
             role: a.role ?? 'primary',
             position: a.position ?? 0,
           })) ?? [],
-          coverUrl: payload.coverUrl ?? null,
-          releaseDate: payload.releaseDate ?? null,
-          albumType: payload.albumType ?? null,
+          cover_url: payload.cover_url ?? null,
+          release_date: payload.release_date ?? null,
+          album_type: payload.album_type ?? null,
         },
       },
       {

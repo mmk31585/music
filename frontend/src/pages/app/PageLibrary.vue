@@ -306,11 +306,11 @@
               class="overflow-hidden rounded-2xl border border-white/6 bg-white/2 backdrop-blur-xs"
             >
               <TrackRow
-                v-for="(item, index) in recentTracks"
+                v-for="(item, index) in recentTrackItems"
                 :key="item.track_id"
                 :track="item"
                 :index="index"
-                :queue="recentTracks"
+                :queue="recentTrackItems"
               />
             </div>
             <div
@@ -391,7 +391,7 @@
             label="Create"
             severity="success"
             class="text-sm"
-            :disabled="newName.trim!() || creating"
+            :disabled="!newName.trim() || creating"
             :loading="creating"
             @click="handleCreate"
           />
@@ -425,6 +425,9 @@ const likedAlbums = ref<LibraryAlbum[]>([])
 const followedArtists = ref<LibraryArtist[]>([])
 const playlists = ref<PlaylistListItem[]>([])
 const recentTracks = ref<LibraryTrack[]>([])
+const recentTrackItems = computed(() =>
+  recentTracks.value.map(t => ({ ...t, id: t.track_id })),
+)
 const trackFilter = ref('')
 
 // Create playlist
@@ -482,7 +485,7 @@ async function fetchAll() {
 
 // ── Create playlist ──
 async function handleCreate() {
-  if (newName.value.trim!() || creating.value) return
+  if (!newName.value.trim() || creating.value) return
   creating.value = true
   try {
     const result = await playlistsApi.createPlaylist({

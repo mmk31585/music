@@ -11,6 +11,7 @@ export interface ParsedLine {
 }
 
 export function parseLRCLines(content: string): ParsedLine[] {
+  if (!content) return []
   const lines: ParsedLine[] = []
   const lineRegex = /\[(\d{2}):(\d{2})[\.:](\d{2,3})\](.*)/
   for (const raw of content.split('\n')) {
@@ -29,6 +30,7 @@ export function parseLRCLines(content: string): ParsedLine[] {
 }
 
 export function parsePlainLines(content: string): ParsedLine[] {
+  if (!content) return []
   return content
     .split('\n')
     .filter(Boolean)

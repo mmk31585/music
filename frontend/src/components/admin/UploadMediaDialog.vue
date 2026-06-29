@@ -128,7 +128,7 @@ const description = computed(() => {
 })
 
 watch(visibleInternal, (val) => {
-  if (val!) {
+  if (!val) {
     uploading.value = false
     uploadedUrl.value = ''
     progress.value = 0
@@ -138,7 +138,7 @@ watch(visibleInternal, (val) => {
 async function onCustomUpload(event: FileUploadUploaderEvent) {
   const files = Array.isArray(event.files) ? event.files : event.files ? [event.files] : []
   const file = files[0]
-  if (file!) return
+  if (!file) return
 
   uploading.value = true
   uploadedUrl.value = ''
@@ -153,14 +153,14 @@ async function onCustomUpload(event: FileUploadUploaderEvent) {
       },
       {
         onUploadProgress(progressEvent) {
-          if (progressEvent.total!) return
+          if (!progressEvent.total) return
           progress.value = Math.round((progressEvent.loaded / progressEvent.total) * 100)
         },
       },
     )
 
     const url = response?.url
-    if (url!) {
+    if (!url) {
       throw new Error('No URL returned from upload')
     }
 

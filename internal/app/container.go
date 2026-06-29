@@ -151,8 +151,9 @@ type Container struct {
 	ReactionsService *reactions.Service
 	ReactionsHandler *reactions.Handler
 
-	GamificationService *gamification.Service
-	GamificationHandler *gamification.Handler
+	GamificationService      *gamification.Service
+	GamificationHandler      *gamification.Handler
+	GamificationEventHandler *gamification.EventHandler
 
 	CreatorService *creator.Service
 	CreatorHandler *creator.Handler
@@ -175,12 +176,15 @@ type Container struct {
 
 	AIHandler *ai.Handler
 
-	MLServiceClient *lyrics.MLServiceClient
-	MLServiceHMACMW gin.HandlerFunc
+	MLServiceClient  *lyrics.MLServiceClient
+	MLServiceHMACMW  gin.HandlerFunc
+	OpenRouterClient *lyrics.OpenRouterClient
 
 	CoverHandler *covers.Handler
 
 	Enricher      *enrichment.Enricher
+	LastFMClient  enrichment.LastFMClient
+	SpotifyClient enrichment.SpotifyClient
 	EnrichHandler *catalog.EnrichHandler
 }
 
@@ -355,6 +359,8 @@ func (c *Container) buildEnrich() {
 		c.LyricsService,
 		deezerClient,
 		coverArtClient,
+		c.LastFMClient,
+		c.SpotifyClient,
 		zap.L(),
 	)
 }
@@ -368,6 +374,9 @@ func (c *Container) buildLyrics(a *App) {
 	c.MLServiceHMACMW = middleware.VerifyMLServiceWebhook(a.Config.MLService.WebhookHMACSecret)
 
 	c.LyricsHandler.SetMLClient(c.MLServiceClient)
+
+	c.OpenRouterClient = lyrics.NewOpenRouterClient(a.Config.OpenRouter)
+	c.LyricsHandler.SetOpenRouterClient(c.OpenRouterClient)
 }
 
 func (c *Container) buildCovers(a *App) {
@@ -489,7 +498,9 @@ func (c *Container) buildIngestion(a *App) {
 
 	mbClient := enrichment.NewMusicBrainzClient(enrichCfg.MusicBrainz)
 	lfmClient := enrichment.NewLastFMClient(enrichCfg.LastFM)
+	c.LastFMClient = lfmClient
 	spotClient := enrichment.NewSpotifyClient(enrichCfg.Spotify)
+	c.SpotifyClient = spotClient
 	lrcClient := enrichment.NewLRCLibClient()
 	mlClient := enrichment.NewMLEnrichmentClient(a.Config.MLService.BaseURL)
 
@@ -570,6 +581,7 @@ func (c *Container) buildGamification() {
 	gamificationRepo := gamification.NewRepository(c.SQLX)
 	c.GamificationService = gamification.NewService(gamificationRepo)
 	c.GamificationHandler = gamification.NewHandler(c.GamificationService)
+	c.GamificationEventHandler = gamification.NewEventHandler(c.GamificationService)
 }
 
 func (c *Container) buildCreator() {
@@ -677,9 +689,11 @@ func (c *Container) subscribeEvents() {
 	c.Bus.Subscribe(events.EventTrackPlayed, historyEvents.OnTrackPlayed)
 	c.Bus.Subscribe(events.EventTrackPlayed, recommendationEvents.OnTrackPlayed)
 	c.Bus.Subscribe(events.EventTrackPlayed, c.VideoEventHandler.OnTrackPlayed)
+	c.Bus.Subscribe(events.EventTrackPlayed, c.GamificationEventHandler.OnTrackPlayed)
 
 	c.Bus.Subscribe(events.EventPlaybackSignalRecorded, c.ProfileEventHandler.OnPlaybackSignalRecorded)
 	c.Bus.Subscribe(events.EventTrackLiked, c.ProfileEventHandler.OnTrackLiked)
+	c.Bus.Subscribe(events.EventTrackLiked, c.GamificationEventHandler.OnTrackLiked)
 
 	c.Bus.Subscribe(events.EventPlaylistCreated, analyticsEvents.OnPlaylistCreated)
 	c.Bus.Subscribe(events.EventPlaylistCreated, notificationEvents.OnPlaylistCreated)

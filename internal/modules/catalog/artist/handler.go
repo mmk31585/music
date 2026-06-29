@@ -2,6 +2,7 @@ package artist
 
 import (
 	"errors"
+	"fmt"
 	"music/internal/modules/catalog/common"
 	"net/http"
 	"strings"
@@ -106,7 +107,7 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create artist"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to create artist: %v", err)})
 		return
 	}
 	c.JSON(http.StatusCreated, ArtistToResponse(item))

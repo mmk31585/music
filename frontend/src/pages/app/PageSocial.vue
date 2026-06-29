@@ -318,7 +318,7 @@ const createEntityType = ref<'party' | 'room' | 'club'>('party')
 const currentTrack = computed(() => playerStore.currentTrack)
 
 const greeting = computed(() => {
-  if (authStore.isLoggedIn!) return 'Community'
+  if (!authStore.isAuthenticated) return 'Community'
   const name = authStore.user?.displayName || authStore.user?.username || ''
   const hour = new Date().getHours()
   let timeGreeting = 'Hello'

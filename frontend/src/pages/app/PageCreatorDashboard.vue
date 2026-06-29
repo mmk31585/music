@@ -540,7 +540,7 @@ const contentData = reactive<CreatorContentData>({ tracks: [], albums: [], playl
 const editForm = reactive({ title: '', persian_title: '', lyrics: '', explicit: false })
 
 const audienceRepeatRate = computed(() => {
-  if (audience.overview!) return '0'
+  if (!audience.overview) return '0'
   return (audience.overview.repeat_rate * 100).toFixed(1)
 })
 
@@ -564,21 +564,21 @@ async function fetchDashboard() {
       creatorApi.getTrackStats(),
       creatorApi.isCreator(),
     ])
-    if (overview.success && overview.data) {
-      stats.value = overview.data
-      totalPlays.value = overview.data.total_plays
-      uniqueListeners.value = overview.data.unique_listeners
-      totalFollowers.value = overview.data.total_followers
-      totalTracks.value = overview.data.total_tracks
-      totalAlbums.value = overview.data.total_albums
-      estimatedRevenue.value = overview.data.estimated_revenue
-      totalPlaylists.value = overview.data.total_playlists
+    if (overview) {
+      stats.value = overview as unknown as Record<string, unknown>
+      totalPlays.value = overview.total_plays
+      uniqueListeners.value = overview.unique_listeners
+      totalFollowers.value = overview.total_followers
+      totalTracks.value = overview.total_tracks
+      totalAlbums.value = overview.total_albums
+      estimatedRevenue.value = overview.estimated_revenue
+      totalPlaylists.value = overview.total_playlists
     }
-    if (daily.success && daily.data) {
-      dailyStats.value = daily.data
-      maxPlays = Math.max(1, ...daily.data.map((d: Record<string, unknown>) => (d as { plays: number }).plays))
+    if (daily && daily.length > 0) {
+      dailyStats.value = daily as unknown as Array<Record<string, unknown>>
+      maxPlays = Math.max(1, ...daily.map((d) => d.plays))
     }
-    if (tracks.success && tracks.data) trackStats.value = tracks.data
+    if (tracks && tracks.length > 0) trackStats.value = tracks
     isCreator.value = creatorCheck.is_creator
   } catch (err) {
     console.error('Failed to load dashboard:', err)
@@ -595,10 +595,10 @@ async function fetchSecondaryData() {
       creatorApi.getAudience({ top_limit: 20 }),
       creatorApi.getContent(),
     ])
-    if (e?.data) Object.assign(earnings, e.data)
-    if (p?.data) payouts.value = p.data
-    if (a?.data) Object.assign(audience, a.data)
-    if (c?.data) Object.assign(contentData, c.data)
+    if (e) Object.assign(earnings, e)
+    if (p && p.length > 0) payouts.value = p
+    if (a) Object.assign(audience, a)
+    if (c) Object.assign(contentData, c)
   } catch (err) {
     console.error('Failed to load secondary data:', err)
   }
@@ -631,7 +631,7 @@ function playTrack(track: Record<string, unknown>) {
 }
 
 async function saveTrack() {
-  if (editTrack.value!) return
+  if (!editTrack.value) return
   try {
     await creatorApi.updateTrack(editTrack.value.track_id, {
       title: editForm.title,
@@ -651,7 +651,7 @@ function barWidth(plays: number) {
 }
 
 function formatDate(dateStr: string) {
-  if (dateStr!) return ''
+  if (!dateStr) return ''
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 

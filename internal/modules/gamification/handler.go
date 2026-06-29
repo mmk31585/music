@@ -65,6 +65,15 @@ func (h *Handler) GetBadges(c *gin.Context) {
 		return
 	}
 
+	// Go nil slices marshal to JSON null, but the frontend
+	// expects arrays. Ensure non-nil so the contract is stable.
+	if allBadges == nil {
+		allBadges = []Badge{}
+	}
+	if userBadges == nil {
+		userBadges = []UserBadge{}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
@@ -84,6 +93,15 @@ func (h *Handler) GetChallenges(c *gin.Context) {
 	if err != nil {
 		h.handleError(c, err)
 		return
+	}
+
+	// Go nil slices marshal to JSON null, but the frontend
+	// expects arrays. Ensure non-nil so the contract is stable.
+	if challenges == nil {
+		challenges = []DailyChallenge{}
+	}
+	if userChallenges == nil {
+		userChallenges = []UserChallenge{}
 	}
 
 	earnedXP := 0

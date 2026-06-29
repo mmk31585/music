@@ -92,7 +92,7 @@ class Transcriber:
         self._language_hint = language_hint
         logger.info("Whisper model loaded successfully")
 
-    def transcribe(self, audio_path: str) -> TranscriptionResult:
+    def transcribe(self, audio_path: str, language: str | None = None) -> TranscriptionResult:
         """Transcribe an audio file and return typed results.
 
         Word-level timestamps are enabled (``word_timestamps=True``) because
@@ -100,6 +100,10 @@ class Transcriber:
 
         Args:
             audio_path: Path to an audio file readable by ffmpeg.
+            language: Force a specific Whisper language (e.g. ``"fa"``).
+                If ``None``, auto-detect — but for Persian tracks this often
+                mis-detects as Arabic with smaller models, so the caller
+                should pass the language from the DB when known.
 
         Returns:
             A ``TranscriptionResult`` with per-segment timing and text.
@@ -108,23 +112,25 @@ class Transcriber:
             TranscriptionError: If transcription fails for any reason.
         """
         try:
-            # faster-whisper's ``language`` param:
-            #   - If ``None``: force auto-detect.
-            #   - If a string: force that language model (Whisper will NOT
-            #     auto-detect; it runs the specified language's decoder).
-            #
-            # We pass ``None`` so Whisper auto-detects per track — this is
-            # critical for a multi-language catalog where English, Turkish,
-            # Arabic etc. songs coexist with Persian. Forcing ``fa`` makes
-            # non-Persian tracks produce garbled output.
-            language = None
+            # Use the caller-provided language, fall back to the hint from
+            # settings, then finally let Whisper auto-detect.  The hint is
+            # especially important for Persian (fa) which smaller Whisper
+            # models frequently mis-classify as Arabic (ar).
+            language = language or self._language_hint
 
+            # NOTE: VAD filter is DISABLED for lyrics transcription.
+            # Speech-based VAD (Voice Activity Detection) aggressively removes
+            # sung portions because singing ≠ speech acoustically.  With a
+            # 6m45s Persian track, VAD removed 6m13s of actual singing,
+            # leaving only ~32s of noise → garbled output.
+            #
+            # For lyrics, let Whisper process the full audio and rely on its
+            # built-in timestamp prediction for segment boundaries instead.
             segments_gen, info = self._model.transcribe(
                 audio_path,
                 language=language,
                 word_timestamps=True,
-                vad_filter=True,
-                vad_parameters=dict(min_silence_duration_ms=500),
+                vad_filter=False,
             )
 
             segments_list = list(segments_gen)

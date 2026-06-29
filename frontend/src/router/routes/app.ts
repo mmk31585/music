@@ -115,13 +115,15 @@ export const appRoutes: RouteRecordRaw[] = [
         meta: { title: 'Social Hub', requiresAuth: true },
       },
       {
-        path: 'social/party/:id',
+        path: 'social/parties/:id',
+        alias: 'social/party/:id',
         name: 'social.party',
         component: () => import('@/pages/app/PagePartyDetail.vue'),
         meta: { title: 'Listening Party' },
       },
       {
-        path: 'social/room/:id',
+        path: 'social/rooms/:id',
+        alias: 'social/room/:id',
         name: 'social.room',
         component: () => import('@/pages/app/PageRoomLive.vue'),
         meta: { title: 'Live Room' },
@@ -133,7 +135,8 @@ export const appRoutes: RouteRecordRaw[] = [
         meta: { title: 'Browse Clubs', requiresAuth: true },
       },
       {
-        path: 'social/club/:id',
+        path: 'social/clubs/:id',
+        alias: 'social/club/:id',
         name: 'social.club',
         component: () => import('@/pages/app/PageClubDetail.vue'),
         meta: { title: 'Music Club' },

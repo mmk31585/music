@@ -54,6 +54,22 @@ type AdminLyricsResponse struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// SyncLyricsRequest is the payload for the OpenRouter sync endpoint.
+type SyncLyricsRequest struct {
+	TrackID    string `json:"track_id" binding:"required"`
+	PlainText  string `json:"plain_text" binding:"required"`
+	TrackTitle string `json:"track_title,omitempty"`
+	ArtistName string `json:"artist_name,omitempty"`
+}
+
+// ReviewLyricsRequest is the payload for the OpenRouter review endpoint.
+type ReviewLyricsRequest struct {
+	TrackID     string `json:"track_id" binding:"required"`
+	ExistingLRC string `json:"existing_lrc" binding:"required"`
+	TrackTitle  string `json:"track_title,omitempty"`
+	ArtistName  string `json:"artist_name,omitempty"`
+}
+
 // Pagination DTO
 type LyricsPaginationRequest struct {
 	Page     int `json:"page" form:"page" binding:"min=1"`

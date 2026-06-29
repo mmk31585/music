@@ -81,12 +81,14 @@ func TestService_GeneratePlaylist_FallbackSelect(t *testing.T) {
 	defer db.Close()
 	sqlxDB := sqlx.NewDb(db, "postgres")
 
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT t.id::text, t.title, COALESCE(a.name, '') as artist`)).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "title", "artist", "album", "genre", "duration", "cover_url"}).
-			AddRow("1", "A", "Artist", "Album", "Pop", 200, "").
-			AddRow("2", "B", "Artist", "Album", "Rock", 180, ""))
+	// GetTracksWithMood query returns 11 columns
+	moodRow := sqlmock.NewRows([]string{"id", "title", "artist", "album", "genre", "duration", "cover_url", "energy", "valence", "tempo", "danceability"}).
+		AddRow("1", "A", "Artist", "Album", "Pop", 200, "", 0.8, 0.6, 140.0, 0.7).
+		AddRow("2", "B", "Artist", "Album", "Rock", 180, "", 0.3, 0.4, 90.0, 0.3)
+	mock.ExpectQuery(`SELECT t\.id::text`).WillReturnRows(moodRow)
 
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT t.id::text, t.title, COALESCE(a.name, '') as artist`)).
+	// GetTracksByIDs — use AnyArg for the []string/ANY($1) pq driver issue
+	mock.ExpectQuery(`WHERE t\.id = ANY`).WithArgs(sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "title", "artist", "album", "genre", "duration", "cover_url"}).
 			AddRow("1", "A", "Artist", "Album", "Pop", 200, ""))
 
@@ -115,12 +117,22 @@ func TestService_GeneratePlaylist_AllFallbackLevels(t *testing.T) {
 	defer db.Close()
 	sqlxDB := sqlx.NewDb(db, "postgres")
 
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT t.id::text, t.title, COALESCE(a.name, '') as artist`)).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "title", "artist", "album", "genre", "duration", "cover_url"}).
-			AddRow("1", "A", "Artist", "Album", "Pop", 200, "").
-			AddRow("2", "B", "Artist", "Album", "Rock", 180, ""))
+	// getCandidatesForMood → GetTracksByMood (returns empty)
+	mock.ExpectQuery(`WHERE tm\.mood_tags @>`).WillReturnRows(sqlmock.NewRows([]string{"id", "title"}))
 
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT t.id::text, t.title, COALESCE(a.name, '') as artist`)).
+	// getCandidatesForMood → GetTracksByMoodRange (returns empty)
+	mock.ExpectQuery(`WHERE tm\.energy BETWEEN`).WillReturnRows(sqlmock.NewRows([]string{"id", "title"}))
+
+	// getCandidatesForMood → GetTracksWithMood (returns 2 tracks with mood data)
+	tracksWithMood := sqlmock.NewRows([]string{"id", "title", "artist", "album", "genre", "duration", "cover_url", "energy", "valence", "tempo", "danceability"}).
+		AddRow("1", "A", "Artist", "Album", "Pop", 200, "", 0.2, 0.5, 70.0, 0.3).
+		AddRow("2", "B", "Artist", "Album", "Rock", 180, "", 0.8, 0.6, 140.0, 0.7)
+	mock.ExpectQuery(`LEFT JOIN track_moods`).WillReturnRows(tracksWithMood)
+
+	// filterTracksByMood keeps track 1 (calm: energy 0-0.35, valence 0.3-0.7)
+	// AI fails → fallbackSelect picks from filtered candidates
+	// GetTracksByIDs for the selected IDs
+	mock.ExpectQuery(`WHERE t\.id = ANY`).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "title", "artist", "album", "genre", "duration", "cover_url"}).
 			AddRow("1", "A", "Artist", "Album", "Pop", 200, ""))
 

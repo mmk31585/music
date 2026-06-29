@@ -98,6 +98,7 @@ export type CreateEditPayload = z.infer<typeof CreateEditPayloadSchema>
 // ── Upload edit response ───────────────────────────────────────────────
 
 export const UploadEditResponseSchema = z.object({
+  id: IdSchema.optional(),
   video_id: IdSchema.optional(),
   job_id: z.string().optional(),
 })

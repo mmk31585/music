@@ -18,7 +18,8 @@ type mockVideoRepo struct {
 	likes         map[string]*VideoLike           // key: "videoID:userID"
 	tlv           map[string]*TrackLikeVisibility // key: "userID:trackID"
 	status        map[uuid.UUID]*UserMusicStatus
-	reactedTracks map[string]bool // key: "userID:trackID" — simulates reactions table
+	reactedTracks map[string]bool      // key: "userID:trackID" — simulates reactions table
+	trackCovers   map[uuid.UUID]string // key: trackID -> cover URL
 }
 
 func newMockVideoRepo() *mockVideoRepo {
@@ -28,6 +29,7 @@ func newMockVideoRepo() *mockVideoRepo {
 		tlv:           make(map[string]*TrackLikeVisibility),
 		status:        make(map[uuid.UUID]*UserMusicStatus),
 		reactedTracks: make(map[string]bool),
+		trackCovers:   make(map[uuid.UUID]string),
 	}
 }
 
@@ -237,6 +239,24 @@ func (m *mockVideoRepo) GetMusicStatus(ctx context.Context, userID uuid.UUID) (*
 		return nil, nil
 	}
 	return s, nil
+}
+
+func (m *mockVideoRepo) GetTrackCoverURL(_ context.Context, trackID uuid.UUID) (*string, error) {
+	if url, ok := m.trackCovers[trackID]; ok {
+		return &url, nil
+	}
+	return nil, nil
+}
+
+func (m *mockVideoRepo) GetTrackCovers(_ context.Context, trackIDs []uuid.UUID) (map[uuid.UUID]*string, error) {
+	result := make(map[uuid.UUID]*string, len(trackIDs))
+	for _, id := range trackIDs {
+		if url, ok := m.trackCovers[id]; ok {
+			urlCopy := url
+			result[id] = &urlCopy
+		}
+	}
+	return result, nil
 }
 
 // ---------------------------------------------------------------------------

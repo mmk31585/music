@@ -191,6 +191,7 @@ import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
 import type { Album } from '@/services/api/catalog/albums'
 import type { Artist } from '@/services/api/catalog/artists'
 import type { Track } from '@/services/api/catalog/tracks'
+import { formatDuration } from '@/utils/format'
 
 const router = useRouter()
 const route = useRoute()
@@ -281,7 +282,7 @@ function openDeleteConfirm() {
 }
 
 async function handleEnrich() {
-  if (album.value!) return
+  if (!album.value) return
   enriching.value = true
   try {
     await albumsApi.adminEnrichAlbum(album.value.id)
@@ -295,7 +296,7 @@ async function handleEnrich() {
 }
 
 async function handleEditSubmit(payload: AlbumFormPayload) {
-  if (album.value!) return
+  if (!album.value) return
   saving.value = true
   try {
     const updated = await albumsApi.adminUpdateAlbum(album.value.id, payload)
@@ -310,7 +311,7 @@ async function handleEditSubmit(payload: AlbumFormPayload) {
 }
 
 async function handleDelete() {
-  if (album.value!) return
+  if (!album.value) return
   deleting.value = true
   try {
     await albumsApi.adminDeleteAlbum(album.value.id)
@@ -323,9 +324,4 @@ async function handleDelete() {
   }
 }
 
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
 </script>

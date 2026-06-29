@@ -213,7 +213,7 @@ async function handleSubmitGenre() {
 }
 
 async function handleDelete() {
-  if (deleteTarget.value!) return
+  if (!deleteTarget.value) return
   try {
     await deleteGenre(deleteTarget.value.id)
     toast.add({ severity: 'success', summary: 'Genre deleted', life: 2500 })

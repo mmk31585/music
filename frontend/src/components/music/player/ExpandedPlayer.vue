@@ -68,7 +68,7 @@
                     :alt="title"
                     loading="lazy"
                     class="h-full w-full object-cover transition-all duration-300"
-                    :class="{ 'animate-[art-pop_300ms_cubic-bezier(0.34,1.56,0.64,1)]': currentTrack!! }"
+                    :class="{ 'animate-[art-pop_300ms_cubic-bezier(0.34,1.56,0.64,1)]': !!currentTrack }"
                     @error="onImgError"
                   />
                   <div
@@ -161,7 +161,7 @@
                 <button
                   type="button"
                   class="flex h-10 w-10 items-center justify-center rounded-full text-white/60 transition-all hover:bg-white/10 hover:text-white active:scale-90 disabled:opacity-20"
-                  :disabled="hasPrevious!"
+                  :disabled="!hasPrevious"
                   @click="playPrevious"
                   aria-label="قبلی"
                 >
@@ -173,7 +173,7 @@
                   :aria-label="isPlaying ? 'Pause' : 'Play'"
                   class="relative flex h-16 w-16 items-center justify-center rounded-full bg-spotify text-white shadow-lg transition-all active:scale-95 disabled:opacity-40"
                   :style="{ transitionTimingFunction: 'var(--ease-spring)', transitionDuration: '150ms' }"
-                  :disabled="currentTrack! || isLoadingTrack"
+                  :disabled="!currentTrack || isLoadingTrack"
                   @click="togglePlayPause"
                 >
                   <i aria-hidden="true" v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-xl" />
@@ -187,7 +187,7 @@
                 <button
                   type="button"
                   class="flex h-10 w-10 items-center justify-center rounded-full text-white/60 transition-all hover:bg-white/10 hover:text-white active:scale-90 disabled:opacity-20"
-                  :disabled="hasNext!"
+                  :disabled="!hasNext"
                   @click="playNext"
                   aria-label="بعدی"
                 >
@@ -601,21 +601,21 @@ const sleepMenuOpen = ref(false)
 const karaokeMode = ref(true)
 
 const repeatTitle = computed(() => {
-  if (repeatMode === 'off') return 'Repeat: off'
-  if (repeatMode === 'all') return 'Repeat: all'
+  if (repeatMode.value === 'off') return 'Repeat: off'
+  if (repeatMode.value === 'all') return 'Repeat: all'
   return 'Repeat: one'
 })
 
 const speedOptions = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
 function cycleSpeed() {
-  const idx = speedOptions.indexOf(playbackRate)
+  const idx = speedOptions.indexOf(playbackRate.value)
   const nextIdx = (idx + 1) % speedOptions.length
   setPlaybackRate(speedOptions[nextIdx]!)
 }
 
 const sleepTimerLabel = computed(() => {
-  const minutes = sleepTimerMinutes
+  const minutes = sleepTimerMinutes.value
   if (minutes <= 0) return ''
   return `${minutes}m`
 })
@@ -641,7 +641,7 @@ function cycleCrossfade() {
 const queueTracks = computed(() => player.queue.value as PlaybackTrack[])
 
 const queueIndex = computed(() => {
-  if (currentTrack.value!) return -1
+  if (!currentTrack.value) return -1
   return queueTracks.value.findIndex((t) => t.id === currentTrack.value?.id)
 })
 
@@ -661,7 +661,7 @@ function onDragOver(index: number) {
   if (dragIndex.value === null || dragIndex.value === index) return
   const items = [...queueTracks.value]
   const [moved] = items.splice(dragIndex.value, 1)
-  if (moved!) return
+  if (!moved) return
   items.splice(index, 0, moved)
   player.updateQueue(items)
   dragIndex.value = index
@@ -672,12 +672,12 @@ function onDragEnd() {
 }
 
 const progressPct = computed(() => {
-  if (duration.value!) return 0
+  if (!duration.value) return 0
   return (currentTime.value / duration.value) * 100
 })
 
 function formatTime(s?: number | null): string {
-  if (s!) return '0:00'
+  if (!s) return '0:00'
   const total = Math.max(0, Math.floor(Number(s) || 0))
   const m = Math.floor(total / 60)
   const sec = total % 60
@@ -689,7 +689,7 @@ const durationLabel = computed(() =>
   formatTime(duration.value || currentTrack.value?.durationSeconds || 0),
 )
 const hoverTimeLabel = computed(() => {
-  if (hoverPos.value === null || duration.value!) return '0:00'
+  if (hoverPos.value === null || !duration.value) return '0:00'
   return formatTime((hoverPos.value / 100) * duration.value)
 })
 
@@ -711,7 +711,7 @@ function togglePlayPause() {
 
 function seekFromEvent(e: MouseEvent | KeyboardEvent) {
   const rect = progressRef.value?.getBoundingClientRect()
-  if (rect!) return
+  if (!rect) return
   const pct = ((e as MouseEvent).clientX - rect.left) / rect.width
   if (duration.value) {
     player.seek(pct * duration.value)
@@ -720,17 +720,17 @@ function seekFromEvent(e: MouseEvent | KeyboardEvent) {
 
 function onProgressHover(e: MouseEvent) {
   const rect = progressRef.value?.getBoundingClientRect()
-  if (rect!) return
+  if (!rect) return
   hoverPos.value = ((e.clientX - rect.left) / rect.width) * 100
 }
 
-function onVolume(val: number) {
-  player.setVolume(val)
+function onVolume(val: number | number[]) {
+  player.setVolume(typeof val === 'number' ? val : val[0] ?? 0)
 }
 
 function playQueueItem(index: number) {
   const track = queueTracks.value[index]
-  if (track! || track.id === currentTrack.value?.id) return
+  if (!track || track.id === currentTrack.value?.id) return
   player.setQueueAndPlay(queueTracks.value, index)
 }
 
@@ -761,14 +761,14 @@ function parseHexColor(hex: string): string {
     const r = parseInt(clean.substring(0, 2), 16)
     const g = parseInt(clean.substring(2, 4), 16)
     const b = parseInt(clean.substring(4, 6), 16)
-    if (isNaN!(r) && isNaN!(g) && isNaN!(b)) return `${r},${g},${b}`
+    if (!isNaN(r) && !isNaN(g) && !isNaN(b)) return `${r},${g},${b}`
   }
   return '29,185,84'
 }
 
 const auroraGradient = computed(() => {
   const p = accentColor.value || '#1db954'
-  if (coverUrl.value!) return {}
+  if (!coverUrl.value) return {}
   return {
     background: `
       radial-gradient(ellipse 80% 60% at 50% 0%,
@@ -780,7 +780,7 @@ const auroraGradient = computed(() => {
 })
 
 const resolvedBgStyle = computed(() => {
-  if (coverUrl.value!) {
+  if (!coverUrl.value) {
     return { background: '#0a0a0a' }
   }
   return {
@@ -835,7 +835,7 @@ const recs = shallowRef<RecommendationTrack[]>([])
 const recsLoading = ref(false)
 
 async function fetchRecs() {
-  if (currentTrack.value!?.id) return
+  if (!currentTrack.value?.id) return
   recsLoading.value = true
   try {
     const res = await recsApi.getSimilar(currentTrack.value.id, { limit: 10 })

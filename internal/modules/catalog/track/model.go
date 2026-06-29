@@ -62,69 +62,62 @@ type TrackCredit struct {
 	CreatedAt  time.Time `db:"created_at"`
 }
 
-// CreateRequest is the payload for creating a track.
-// JSON tags use camelCase for modern API standards.
 type CreateRequest struct {
-	ArtistID uuid.UUID `json:"artistId"`
+	ArtistID uuid.UUID `json:"artist_id"`
 
 	Artists []TrackArtistRequest `json:"artists"`
 
-	// compatibility with legacy frontend
-	ArtistIDs []uuid.UUID          `json:"artistIds"`
+	ArtistIDs []uuid.UUID          `json:"artist_ids"`
 	Credits   []TrackArtistRequest `json:"credits"`
 
-	AlbumID         *uuid.UUID `json:"albumId"`
+	AlbumID         *uuid.UUID `json:"album_id"`
 	Title           string     `json:"title"`
-	DurationSeconds int        `json:"durationSeconds"`
-	TrackNumber     *int       `json:"trackNumber"`
+	DurationSeconds int        `json:"duration_seconds"`
+	TrackNumber     *int       `json:"track_number"`
 	Explicit        *bool      `json:"explicit"`
 
-	AudioURL *string `json:"audioUrl"`
-	CoverURL *string `json:"coverUrl"`
+	AudioURL *string `json:"audio_url"`
+	CoverURL *string `json:"cover_url"`
 
-	AudioMediaID *uuid.UUID `json:"audioMediaId"`
-	CoverMediaID *uuid.UUID `json:"coverMediaId"`
+	AudioMediaID *uuid.UUID `json:"audio_media_id"`
+	CoverMediaID *uuid.UUID `json:"cover_media_id"`
 
-	IsPublic *bool       `json:"isPublic"`
-	GenreIDs []uuid.UUID `json:"genreIds"`
+	IsPublic *bool       `json:"is_public"`
+	GenreIDs []uuid.UUID `json:"genre_ids"`
 }
 
-// UpdateRequest is the payload for updating a track.
-// JSON tags use camelCase for modern API standards.
 type UpdateRequest struct {
 	Artists []TrackArtistRequest `json:"artists"`
 
-	AlbumID         *uuid.UUID `json:"albumId"`
+	AlbumID         *uuid.UUID `json:"album_id"`
 	Title           *string    `json:"title"`
-	DurationSeconds *int       `json:"durationSeconds"`
-	TrackNumber     *int       `json:"trackNumber"`
+	DurationSeconds *int       `json:"duration_seconds"`
+	TrackNumber     *int       `json:"track_number"`
 	Explicit        *bool      `json:"explicit"`
 
-	AudioURL *string `json:"audioUrl"`
-	CoverURL *string `json:"coverUrl"`
+	AudioURL *string `json:"audio_url"`
+	CoverURL *string `json:"cover_url"`
 
-	AudioMediaID *uuid.UUID `json:"audioMediaId"`
-	CoverMediaID *uuid.UUID `json:"coverMediaId"`
+	AudioMediaID *uuid.UUID `json:"audio_media_id"`
+	CoverMediaID *uuid.UUID `json:"cover_media_id"`
 
-	IsPublic *bool       `json:"isPublic"`
-	GenreIDs []uuid.UUID `json:"genreIds"`
+	IsPublic *bool       `json:"is_public"`
+	GenreIDs []uuid.UUID `json:"genre_ids"`
 
-	// clearFields allows explicitly clearing nullable fields.
-	// Supported values: "albumId", "audioUrl", "coverUrl", "audioMediaId", "coverMediaId"
-	ClearFields []string `json:"clearFields,omitempty"`
+	ClearFields []string `json:"clear_fields,omitempty"`
 }
 
 // TrackArtistRequest is used in CreateRequest and UpdateRequest.
 type TrackArtistRequest struct {
-	ArtistID uuid.UUID `json:"artistId" validate:"required"`
+	ArtistID uuid.UUID `json:"artist_id" validate:"required"`
 	Role     string    `json:"role"`
 	Position int       `json:"position"`
 }
 
 // TrackCreditRequest is used for credit replacement.
 type TrackCreditRequest struct {
-	ArtistID   uuid.UUID `json:"artistId" validate:"required"`
-	CreditType string    `json:"creditType" validate:"required"`
+	ArtistID   uuid.UUID `json:"artist_id" validate:"required"`
+	CreditType string    `json:"credit_type" validate:"required"`
 	Position   int       `json:"position"`
 }
 

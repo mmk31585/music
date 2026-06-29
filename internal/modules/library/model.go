@@ -24,10 +24,12 @@ type FollowedArtist struct {
 }
 
 type PlayHistory struct {
-	ID       int64     `json:"id"`
-	UserID   string    `json:"user_id"`
-	TrackID  string    `json:"track_id"`
-	PlayedAt time.Time `json:"played_at"`
+	ID        int64     `json:"id"`
+	UserID    string    `json:"user_id"`
+	TrackID   string    `json:"track_id"`
+	Duration  *int      `json:"duration,omitempty"`
+	Completed *bool     `json:"completed,omitempty"`
+	PlayedAt  time.Time `json:"played_at"`
 }
 
 type LibraryTrackItem struct {

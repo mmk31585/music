@@ -1,18 +1,22 @@
 package lyrics
 
 import (
+	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 type Handler struct {
-	service  *Service
-	mlClient *MLServiceClient
+	service          *Service
+	mlClient         *MLServiceClient
+	openRouterClient *OpenRouterClient
 }
 
 func NewHandler(service *Service) *Handler {
@@ -22,6 +26,11 @@ func NewHandler(service *Service) *Handler {
 // SetMLClient sets the ML service client used for AI lyrics generation.
 func (h *Handler) SetMLClient(client *MLServiceClient) {
 	h.mlClient = client
+}
+
+// SetOpenRouterClient sets the OpenRouter client used for AI lyrics fetch/sync/review.
+func (h *Handler) SetOpenRouterClient(client *OpenRouterClient) {
+	h.openRouterClient = client
 }
 
 // LyricsCallbackPayload is the JSON body sent by the Python ML service
@@ -178,17 +187,63 @@ func (h *Handler) FetchOrGenerateLyrics(c *gin.Context) {
 		return
 	}
 
-	// Step 2: LRCLIB returned nothing — try AI generation
+	// Step 2: Try OpenRouter (AI-generated lyrics without audio)
+	if h.openRouterClient != nil {
+		info, infoErr := h.service.GetTrackInfo(c.Request.Context(), trackID)
+		if infoErr == nil {
+			lrcContent, lang, aiErr := h.openRouterClient.FetchLyrics(c.Request.Context(), info.Title, info.ArtistName)
+			if aiErr == nil && lrcContent != "" {
+				// Save OpenRouter-generated lyrics
+				req := CreateLyricsRequest{
+					TrackID:  trackID,
+					Language: lang,
+					Type:     "lrc",
+					Content:  lrcContent,
+					Source:   "ai_generated",
+				}
+				if req.Language == "" {
+					req.Language = "fa"
+				}
+				lyrics, saveErr := h.service.CreateLyrics(c.Request.Context(), req)
+				if saveErr == nil {
+					c.JSON(http.StatusOK, gin.H{
+						"success": true,
+						"source":  "openrouter",
+						"data":    ToLyricsResponse(lyrics),
+					})
+					return
+				}
+				// If save failed (e.g. already exists), still return the content
+				c.JSON(http.StatusOK, gin.H{
+					"success": true,
+					"source":  "openrouter",
+					"data": LyricsResponse{
+						ID:        "",
+						TrackID:   trackID,
+						Language:  lang,
+						Type:      "lrc",
+						Content:   lrcContent,
+						Source:    "ai_generated",
+						CreatedAt: time.Time{},
+						UpdatedAt: time.Time{},
+					},
+				})
+				return
+			}
+		}
+	}
+
+	// Step 3: Fall back to Whisper (requires audio file)
 	if h.mlClient == nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"source":  "none",
-			"message": "No lyrics found on LRCLIB and AI generation is not configured",
+			"message": "No lyrics found on LRCLIB or OpenRouter, and Whisper AI generation is not configured",
 		})
 		return
 	}
 
-	// Get track info for AI job
+	// Get track info for Whisper job
 	info, infoErr := h.service.GetTrackInfo(c.Request.Context(), trackID)
 	if infoErr != nil {
 		h.handleError(c, infoErr)
@@ -200,28 +255,20 @@ func (h *Handler) FetchOrGenerateLyrics(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"source":  "none",
-			"message": "No lyrics found on LRCLIB and track has no audio file for AI transcription",
+			"message": "No lyrics found on LRCLIB or OpenRouter, and track has no audio file for Whisper transcription",
 		})
 		return
 	}
 
 	// Build audio source for ML service
-	// The track's AudioURL could be either a relative path (like
-	// "/uploads/catalog-audio/uuid/file.mp3") or an absolute URL
-	// (like "http://localhost:8080/api/v1/player/tracks/.../stream").
-	// Detect which one and pass it via the appropriate field so the
-	// ML service's storage client can resolve it correctly.
 	var audioFilePath, audioDownloadURL string
-	audioURL := info.AudioURL
-	if strings.HasPrefix(audioURL, "http://") || strings.HasPrefix(audioURL, "https://") {
-		// Absolute URL — pass as download URL (presigned_url mode)
-		audioDownloadURL = audioURL
+	if strings.HasPrefix(info.AudioURL, "http://") || strings.HasPrefix(info.AudioURL, "https://") {
+		audioDownloadURL = info.AudioURL
 	} else {
-		// Relative path — strip leading "/", pass as file path (shared_volume mode)
-		audioFilePath = strings.TrimLeft(audioURL, "/")
+		audioFilePath = strings.TrimLeft(info.AudioURL, "/")
 	}
 
-	req := CreateLyricsJobRequest{
+	jobReq := CreateLyricsJobRequest{
 		TrackID:          trackID,
 		AudioFilePath:    audioFilePath,
 		AudioDownloadURL: audioDownloadURL,
@@ -229,12 +276,12 @@ func (h *Handler) FetchOrGenerateLyrics(c *gin.Context) {
 		TrackArtist:      info.ArtistName,
 	}
 
-	jobID, err := h.mlClient.EnqueueLyricsJob(c.Request.Context(), req)
+	jobID, err := h.mlClient.EnqueueLyricsJob(c.Request.Context(), jobReq)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"source":  "none",
-			"message": "No lyrics found on LRCLIB. AI lyrics generation is unavailable: " + err.Error(),
+			"message": "No lyrics found on LRCLIB or OpenRouter. Whisper AI lyrics generation is unavailable: " + err.Error(),
 		})
 		return
 	}
@@ -244,7 +291,7 @@ func (h *Handler) FetchOrGenerateLyrics(c *gin.Context) {
 		"source":   "ai",
 		"job_id":   jobID,
 		"track_id": trackID,
-		"message":  "LRCLIB returned no lyrics. AI lyrics generation has been started and will be saved automatically when ready.",
+		"message":  "No lyrics found on LRCLIB or OpenRouter. Whisper AI lyrics generation has been started and will be saved automatically when ready.",
 	})
 }
 
@@ -376,7 +423,8 @@ func jobProgressPercent(status string) int {
 func (h *Handler) CreateLyrics(c *gin.Context) {
 	var req CreateLyricsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid request body"})
+		slog.Error("CreateLyrics: invalid request body", "error", err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid request body: " + err.Error()})
 		return
 	}
 
@@ -527,6 +575,232 @@ func (h *Handler) GetLyricsByTrackID(c *gin.Context) {
 		"success": true,
 		"data":    lyricsList,
 	})
+}
+
+// SyncWithAI godoc
+// @Summary Sync plain lyrics to LRC via OpenRouter
+// @Description Takes plain text lyrics and adds LRC timestamps using OpenRouter AI.
+// @Tags lyrics
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body SyncLyricsRequest true "Sync lyrics request"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /api/v1/admin/lyrics/sync [post]
+func (h *Handler) SyncWithAI(c *gin.Context) {
+	if h.openRouterClient == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"source":  "none",
+			"message": "OpenRouter AI is not configured (set OPENROUTER_API_KEY)",
+		})
+		return
+	}
+
+	var req SyncLyricsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid request body"})
+		return
+	}
+
+	// Validate track exists and get duration
+	info, infoErr := h.service.GetTrackInfo(c.Request.Context(), req.TrackID)
+	if infoErr != nil {
+		h.handleError(c, infoErr)
+		return
+	}
+
+	lrcContent, lang, err := h.openRouterClient.SyncLyrics(
+		c.Request.Context(),
+		info.Title, info.ArtistName,
+		req.PlainText, info.DurationSeconds,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"source":  "openrouter",
+			"message": friendlyOpenRouterError(err),
+		})
+		return
+	}
+
+	if lrcContent == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"source":  "openrouter",
+			"message": "AI returned empty results. The model may be overloaded or the input may need more context. Try again later.",
+		})
+		return
+	}
+
+	// Upsert: update existing lyrics or create new ones
+	savedLyrics, saveErr := h.upsertLyrics(c.Request.Context(), req.TrackID, lang, lrcContent)
+	if saveErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"source":  "openrouter",
+			"message": "Failed to save synced lyrics: " + saveErr.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"success": true,
+		"source":  "openrouter",
+		"data":    ToLyricsResponse(savedLyrics),
+	})
+}
+
+// ReviewWithAI godoc
+// @Summary Review and fix lyrics via OpenRouter
+// @Description Reviews existing LRC lyrics and fixes spelling/timing issues using OpenRouter AI.
+// @Tags lyrics
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body ReviewLyricsRequest true "Review lyrics request"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /api/v1/admin/lyrics/review [post]
+func (h *Handler) ReviewWithAI(c *gin.Context) {
+	if h.openRouterClient == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"source":  "none",
+			"message": "OpenRouter AI is not configured (set OPENROUTER_API_KEY)",
+		})
+		return
+	}
+
+	var req ReviewLyricsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid request body"})
+		return
+	}
+
+	// Get track info for context
+	info, _ := h.service.GetTrackInfo(c.Request.Context(), req.TrackID)
+	title := req.TrackTitle
+	artist := req.ArtistName
+	if info != nil {
+		if title == "" {
+			title = info.Title
+		}
+		if artist == "" {
+			artist = info.ArtistName
+		}
+	}
+
+	fixedLRC, lang, err := h.openRouterClient.ReviewLyrics(
+		c.Request.Context(),
+		title, artist,
+		req.ExistingLRC,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"source":  "openrouter",
+			"message": friendlyOpenRouterError(err),
+		})
+		return
+	}
+
+	if fixedLRC == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"source":  "openrouter",
+			"message": "AI returned empty results. The model may be overloaded or the input may need more context. Try again later.",
+		})
+		return
+	}
+
+	// Persist the reviewed lyrics (update in place)
+	lyricsLang := lang
+	if lyricsLang == "" {
+		lyricsLang = "fa"
+	}
+	savedLyrics, saveErr := h.upsertLyrics(c.Request.Context(), req.TrackID, lyricsLang, fixedLRC)
+	if saveErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"source":  "openrouter",
+			"message": "Failed to save reviewed lyrics: " + saveErr.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":  true,
+		"source":   "openrouter",
+		"language": lyricsLang,
+		"data":     ToLyricsResponse(savedLyrics),
+	})
+}
+
+// upsertLyrics looks for existing lyrics for a track+language pair and
+// updates the content, or creates a new record if none exists.
+func (h *Handler) upsertLyrics(ctx context.Context, trackID, language, lrcContent string) (Lyrics, error) {
+	if language == "" {
+		language = "fa"
+	}
+
+	// Try to find existing lyrics
+	existingResp, lookupErr := h.service.GetTrackLyrics(ctx, trackID, language)
+	if lookupErr == nil && existingResp.ID != "" {
+		lrcType := "lrc"
+		return h.service.UpdateLyrics(ctx, existingResp.ID, UpdateLyricsRequest{
+			Type:    &lrcType,
+			Content: &lrcContent,
+		})
+	}
+
+	// No existing lyrics — create new
+	return h.service.CreateLyrics(ctx, CreateLyricsRequest{
+		TrackID:  trackID,
+		Language: language,
+		Type:     "lrc",
+		Content:  lrcContent,
+		Source:   "ai_generated",
+	})
+}
+
+// friendlyOpenRouterError maps common Go-level OpenRouter errors to user-facing messages.
+func friendlyOpenRouterError(err error) string {
+	if err == nil {
+		return ""
+	}
+	msg := err.Error()
+	switch {
+	case strings.Contains(msg, "TLS handshake timeout"):
+		return "OpenRouter is not responding. The AI service may be overloaded. Try again later."
+	case strings.Contains(msg, "i/o timeout"):
+		return "OpenRouter request timed out. The free model may be slow right now. Try again later."
+	case strings.Contains(msg, "no such host"):
+		return "Cannot reach OpenRouter. Check your internet connection."
+	case strings.Contains(msg, "connection refused"):
+		return "OpenRouter refused the connection. The service may be down."
+	case strings.Contains(msg, "status 429"):
+		return "OpenRouter rate limit exceeded. Wait a moment and try again."
+	case strings.Contains(msg, "status 401"):
+		return "OpenRouter API key is invalid. Check your OPENROUTER_API_KEY."
+	case strings.Contains(msg, "status 402"):
+		return "OpenRouter free tier quota exceeded. Check your OpenRouter account."
+	case strings.Contains(msg, "status 404"):
+		return "OpenRouter model not found. The AI model may be unavailable or deprecated. Check OPENROUTER_MODEL."
+	case strings.Contains(msg, "status 5"):
+		return "OpenRouter server error. The AI service may be overloaded. Try again later."
+	default:
+		// Strip Go-internal wrapping for a cleaner message but keep the substance.
+		if strings.HasPrefix(msg, "openrouter ") {
+			msg = strings.TrimPrefix(msg, "openrouter ")
+		}
+		return "OpenRouter AI error: " + msg
+	}
 }
 
 func (h *Handler) handleError(c *gin.Context, err error) {

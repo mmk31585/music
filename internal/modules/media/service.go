@@ -127,6 +127,7 @@ func (s *Service) Upload(
 	if existing != nil {
 		// Duplicate found — remove the uploaded file and return existing
 		_ = s.storage.Delete(ctx, key)
+		log.Printf("[UPLOAD DUPLICATE] existing key=%s url=%s", existing.ObjectKey, existing.PublicURL)
 		return uploadResponseFromMedia(existing, true), nil
 	}
 
@@ -171,6 +172,8 @@ func (s *Service) Upload(
 
 	resp := uploadResponseFromMedia(mediaItem, false)
 	resp.FileName = original
+
+	log.Printf("[UPLOAD SUCCESS] key=%s url=%s duplicate=%v", key, resp.URL, resp.Duplicate)
 
 	return resp, nil
 }

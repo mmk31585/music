@@ -423,7 +423,7 @@ function getScoreBadge(item: RecommendationTrack): string | undefined {
 
 function isCurrentlyPlaying(item: RecommendationTrack): boolean {
   const currentId = player.currentTrack.value?.id
-  if (currentId!) return false
+  if (!currentId) return false
   return currentId === item.id
 }
 

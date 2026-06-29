@@ -251,7 +251,7 @@
           label="Upload Official MV"
           icon="pi pi-cloud-upload"
           class="rounded-xl! bg-spotify! px-6! text-black! hover:bg-spotify/90!"
-          :disabled="selectedTrack! || uploadedFileUrl! || submitting"
+          :disabled="!!selectedTrack || !!uploadedFileUrl || submitting"
           :loading="submitting"
           @click="submitMV"
         />
@@ -374,7 +374,7 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null
 function onSearchInput() {
   if (searchTimer) clearTimeout(searchTimer)
   const q = searchQuery.value.trim()
-  if (q!) {
+  if (!q) {
     searchResults.value = []
     return
   }
@@ -417,7 +417,7 @@ const uploadProgress = ref(0)
 const dragOver = ref(false)
 
 const dropZoneClass = computed(() => {
-  if (uploadedFile) return 'border-spotify/30 bg-spotify/2'
+  if (uploadedFile.value) return 'border-spotify/30 bg-spotify/2'
   if (dragOver.value) return 'border-spotify/50 bg-spotify/4 scale-[1.01]'
   return 'border-white/8 hover:border-spotify/30 hover:bg-white/2'
 })
@@ -481,7 +481,7 @@ const statusMessage = ref('')
 const statusError = ref(false)
 
 async function submitMV() {
-  if (selectedTrack.value! || uploadedFileUrl.value!) return
+  if (!selectedTrack.value || !uploadedFileUrl.value) return
   submitting.value = true
   statusMessage.value = ''
   statusError.value = false

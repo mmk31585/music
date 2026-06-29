@@ -76,7 +76,7 @@ func (r *Repository) GetTrackStats(ctx context.Context, userID uuid.UUID) ([]Tra
 		) r ON r.target_id = t.id::text
 		LEFT JOIN (
 			SELECT track_id, COUNT(*) AS total_plays
-			FROM track_plays
+			FROM play_history
 			GROUP BY track_id
 		) tp ON tp.track_id = t.id
 		WHERE t.artist_id = $1 OR t.id IN (
@@ -93,8 +93,8 @@ func (r *Repository) RefreshStats(ctx context.Context, userID uuid.UUID) error {
 			total_tracks, total_albums, total_playlists, estimated_revenue, last_calculated)
 		SELECT
 			$1 AS user_id,
-			COALESCE((SELECT COUNT(*) FROM track_plays WHERE user_id = $1), 0) AS total_plays,
-			COALESCE((SELECT COUNT(DISTINCT user_id) FROM track_plays WHERE track_id IN (
+			COALESCE((SELECT COUNT(*) FROM play_history WHERE user_id = $1), 0) AS total_plays,
+			COALESCE((SELECT COUNT(DISTINCT user_id) FROM play_history WHERE track_id IN (
 				SELECT id FROM tracks WHERE artist_id = $1
 			)), 0) AS unique_listeners,
 			COALESCE((SELECT COUNT(*) FROM user_follows WHERE followed_id = $1), 0) AS total_followers,
@@ -177,7 +177,7 @@ func (r *Repository) GetTopListeners(ctx context.Context, userID uuid.UUID, limi
 		SELECT
 			tp.user_id, u.display_name AS username, u.avatar_url,
 			COUNT(*) AS play_count
-		FROM track_plays tp
+		FROM play_history tp
 		JOIN tracks t ON t.id = tp.track_id
 		LEFT JOIN users u ON u.id = tp.user_id
 		WHERE t.artist_id = $1
@@ -192,14 +192,15 @@ func (r *Repository) GetGeographicStats(ctx context.Context, userID uuid.UUID) (
 	var items []GeographicStat
 	err := r.db.SelectContext(ctx, &items, `
 		SELECT
-			COALESCE(tp.country, 'Unknown') AS country,
-			COALESCE(tp.city, 'Unknown') AS city,
+			COALESCE(u.location, 'Unknown') AS country,
+			'Unknown' AS city,
 			COUNT(DISTINCT tp.user_id) AS listeners,
 			COUNT(*) AS plays
-		FROM track_plays tp
+		FROM play_history tp
 		JOIN tracks t ON t.id = tp.track_id
+		LEFT JOIN users u ON u.id = tp.user_id
 		WHERE t.artist_id = $1
-		GROUP BY tp.country, tp.city
+		GROUP BY u.location
 		ORDER BY plays DESC
 		LIMIT 20
 	`, userID)
@@ -209,19 +210,19 @@ func (r *Repository) GetGeographicStats(ctx context.Context, userID uuid.UUID) (
 func (r *Repository) GetAudienceOverview(ctx context.Context, userID uuid.UUID) (*AudienceOverview, error) {
 	var total int
 	_ = r.db.GetContext(ctx, &total, `
-		SELECT COUNT(DISTINCT user_id) FROM track_plays tp
+		SELECT COUNT(DISTINCT user_id) FROM play_history tp
 		JOIN tracks t ON t.id = tp.track_id WHERE t.artist_id = $1
 	`, userID)
 
 	var new7d int
 	_ = r.db.GetContext(ctx, &new7d, `
-		SELECT COUNT(DISTINCT tp.user_id) FROM track_plays tp
+		SELECT COUNT(DISTINCT tp.user_id) FROM play_history tp
 		JOIN tracks t ON t.id = tp.track_id
-		WHERE t.artist_id = $1 AND tp.created_at >= NOW() - INTERVAL '7 days'
+		WHERE t.artist_id = $1 AND tp.played_at >= NOW() - INTERVAL '7 days'
 		AND tp.user_id NOT IN (
-			SELECT DISTINCT tp2.user_id FROM track_plays tp2
+			SELECT DISTINCT tp2.user_id FROM play_history tp2
 			JOIN tracks t2 ON t2.id = tp2.track_id
-			WHERE t2.artist_id = $1 AND tp2.created_at < NOW() - INTERVAL '7 days'
+			WHERE t2.artist_id = $1 AND tp2.played_at < NOW() - INTERVAL '7 days'
 		)
 	`, userID)
 
@@ -231,7 +232,7 @@ func (r *Repository) GetAudienceOverview(ctx context.Context, userID uuid.UUID) 
 			(SELECT COUNT(*) * 1.0 / NULLIF(COUNT(DISTINCT user_id), 0)
 			FROM (
 				SELECT user_id, COUNT(*) AS plays
-				FROM track_plays tp
+				FROM play_history tp
 				JOIN tracks t ON t.id = tp.track_id
 				WHERE t.artist_id = $1
 				GROUP BY user_id
@@ -254,7 +255,7 @@ func (r *Repository) GetCreatorContent(ctx context.Context, userID uuid.UUID) (*
 			COALESCE(r.likes, 0) AS total_likes, t.duration_seconds AS duration, t.created_at
 		FROM tracks t
 		LEFT JOIN (SELECT target_id, COUNT(*) AS likes FROM reactions WHERE target_type = 'track' AND type = 'like' GROUP BY target_id) r ON r.target_id = t.id::text
-		LEFT JOIN (SELECT track_id, COUNT(*) AS total_plays FROM track_plays GROUP BY track_id) tp ON tp.track_id = t.id
+		LEFT JOIN (SELECT track_id, COUNT(*) AS total_plays FROM play_history GROUP BY track_id) tp ON tp.track_id = t.id
 		WHERE t.artist_id = $1
 		ORDER BY t.created_at DESC
 	`, userID)
@@ -269,7 +270,7 @@ func (r *Repository) GetCreatorContent(ctx context.Context, userID uuid.UUID) (*
 			COALESCE(SUM(tp.total_plays), 0) AS total_plays, a.cover_url
 		FROM albums a
 		LEFT JOIN tracks t ON t.album_id = a.id
-		LEFT JOIN (SELECT track_id, COUNT(*) AS total_plays FROM track_plays GROUP BY track_id) tp ON tp.track_id = t.id
+		LEFT JOIN (SELECT track_id, COUNT(*) AS total_plays FROM play_history GROUP BY track_id) tp ON tp.track_id = t.id
 		WHERE a.artist_id = $1
 		GROUP BY a.id, a.title, a.release_date, a.cover_url
 		ORDER BY a.release_date DESC

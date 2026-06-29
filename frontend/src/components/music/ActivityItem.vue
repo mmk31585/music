@@ -94,7 +94,7 @@ defineEmits<{
 
 const displayTimeAgo = computed(() => {
   if (props.item.timeAgo) return props.item.timeAgo
-  if (props.item.createdAt!) return ''
+  if (!props.item.createdAt) return ''
   const d = new Date(props.item.createdAt)
   const now = Date.now()
   const diff = now - d.getTime()

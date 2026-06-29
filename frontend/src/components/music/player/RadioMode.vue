@@ -57,7 +57,7 @@
                     :src="coverUrl"
                     :alt="title"
                     class="h-full w-full object-cover"
-                    :class="{ 'vinyl-spin': isPlaying, 'vinyl-spin-paused': isPlaying! }"
+                    :class="{ 'vinyl-spin': isPlaying, 'vinyl-spin-paused': !isPlaying }"
                     @error="onImgError"
                   />
                   <div
@@ -82,7 +82,7 @@
           <button
             type="button"
             class="spring flex h-12 w-12 items-center justify-center rounded-full text-white/60 transition-all hover:bg-white/10 hover:text-white disabled:opacity-20"
-            :disabled="hasPrevious!"
+            :disabled="!hasPrevious"
             aria-label="Previous track"
             @click="playPrevious"
           >
@@ -93,7 +93,7 @@
             type="button"
             class="glow-green spring relative flex h-16 w-16 items-center justify-center rounded-full bg-white text-black shadow-2xl transition-all hover:scale-105 hover:bg-spotify hover:text-white disabled:opacity-40"
             :class="{ 'bg-spotify! text-white!': isPlaying }"
-            :disabled="currentTrack! || isLoadingTrack"
+            :disabled="!currentTrack || isLoadingTrack"
             :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'"
             @click="togglePlayPause"
           >
@@ -128,7 +128,7 @@
                   class="fullscreen-range w-full"
                   :style="progressStyle"
                   :value="progressPercent"
-                  :disabled="currentTrack!"
+                  :disabled="!currentTrack"
                   @input="onSeek"
                 />
                 <div class="mt-1 flex justify-between text-[11px] text-white/40 tabular-nums">
@@ -336,7 +336,7 @@ const isLoadingBatch = computed(() => radio.isLoadingBatch.value)
 
 const bgStyle = computed(() => {
   const p = albumPalette.value
-  if (coverUrl.value!) {
+  if (!coverUrl.value) {
     return { background: 'linear-gradient(135deg, #0a0a0a 0%, #121212 100%)' }
   }
   return {

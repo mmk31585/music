@@ -305,7 +305,7 @@
               <button
                 type="button"
                 class="flex h-10 w-10 items-center justify-center rounded-xl bg-spotify text-black transition hover:bg-spotify/90 disabled:opacity-30"
-                :disabled="newComment.trim!() || submittingComment"
+                :disabled="!newComment.trim() || submittingComment"
                 @click="submitComment"
               >
                 <i v-if="!submittingComment" class="pi pi-send text-sm" />
@@ -398,17 +398,17 @@ const nextTranslateY = computed(() => 100 - translateY.value)
 
 const currentSrc = computed(() => {
   const v = currentVideo.value
-  if (v!) return ''
+  if (!v) return ''
   return v.final_video_url || `/api/v1/videos/${v.id}/stream`
 })
 const currentPoster = computed(() => {
   const v = currentVideo.value
-  if (v!) return undefined
+  if (!v) return undefined
   return v.thumbnail_url || v.thumbnail_path || v.track_cover_url || undefined
 })
 const nextSrc = computed(() => {
   const v = nextVideo.value
-  if (v!) return ''
+  if (!v) return ''
   return v.final_video_url || `/api/v1/videos/${v.id}/stream`
 })
 
@@ -492,7 +492,7 @@ useVerticalSwipe({
   element: swipeRef as any,
   threshold: 60,
   onSwipeUp: () => {
-    if (hasNext.value!) return
+    if (!hasNext.value) return
     if (reducedMotion.value) {
       goToNext()
       return
@@ -515,7 +515,7 @@ useVerticalSwipe({
     requestAnimationFrame(animate)
   },
   onSwipeDown: () => {
-    if (hasPrevious.value!) return
+    if (!hasPrevious.value) return
     if (reducedMotion.value) {
       goToPrevious()
       return
@@ -543,7 +543,7 @@ useVerticalSwipe({
 
 function playCurrentVideo() {
   const video = currentVideoRef.value
-  if (video!) return
+  if (!video) return
   video.currentTime = 0
   video.muted = isMuted.value
   video.play().catch(() => {})
@@ -551,7 +551,7 @@ function playCurrentVideo() {
 
 function onVideoLoaded() {
   const video = currentVideoRef.value
-  if (video!) return
+  if (!video) return
   video.muted = isMuted.value
   video.play().catch(() => {})
 }
@@ -578,7 +578,7 @@ function toggleMute() {
 // ── Navigation ────────────────────────────────────────────────────────
 
 function goToNext() {
-  if (hasNext.value!) return
+  if (!hasNext.value) return
   isTransitioning.value = true
   currentIndex.value++
   nextTick(() => {
@@ -588,7 +588,7 @@ function goToNext() {
 }
 
 function goToPrevious() {
-  if (hasPrevious.value!) return
+  if (!hasPrevious.value) return
   isTransitioning.value = true
   currentIndex.value--
   nextTick(() => {
@@ -606,7 +606,7 @@ function handleClose() {
 
 async function toggleLike() {
   const video = currentVideo.value
-  if (video!) return
+  if (!video) return
 
   const previousState = isLiked.value
   const previousCount = video.like_count
@@ -633,7 +633,7 @@ async function toggleLike() {
 
 function countView() {
   const video = currentVideo.value
-  if (video! || viewed.value.has(String(video.id))) return
+  if (!video || viewed.value.has(String(video.id))) return
   viewed.value.add(String(video.id))
   videoApi.viewVideo(String(video.id)).catch(() => {})
 }
@@ -641,13 +641,13 @@ function countView() {
 // ── Actions ───────────────────────────────────────────────────────────
 
 function handlePlayTrack(track: TrackSummary) {
-  if (track!) return
+  if (!track) return
   playerStore.playTrackById(String(track.id))
 }
 
 function shareOnTelegram() {
   const video = currentVideo.value
-  if (video!?.track?.id) return
+  if (!video?.track?.id) return
   const url = `${window.location.origin}/track/${String(video.track.id)}`
   window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(video.title)}`, '_blank')
   showOverflow.value = false
@@ -655,7 +655,7 @@ function shareOnTelegram() {
 
 function goToTrack() {
   const video = currentVideo.value
-  if (video!?.track?.id) return
+  if (!video?.track?.id) return
   currentVideoRef.value?.pause()
   router.push(`/track/${String(video.track.id)}`)
   emit('close')
@@ -665,7 +665,7 @@ function goToTrack() {
 
 async function loadComments() {
   const video = currentVideo.value
-  if (video!) return
+  if (!video) return
   commentsAbort?.abort()
   commentsAbort = new AbortController()
   try {
@@ -683,7 +683,7 @@ async function loadComments() {
 
 async function submitComment() {
   const video = currentVideo.value
-  if (video! || newComment.value.trim!() || submittingComment.value) return
+  if (!video || !newComment.value.trim() || submittingComment.value) return
   submittingComment.value = true
   try {
     const result = await useRequest<VideoComment>(

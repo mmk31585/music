@@ -1,36 +1,36 @@
 import { z } from 'zod'
 
 export const CreatorStatsSchema = z.object({
-  user_id: z.string(),
-  total_plays: z.number(),
-  unique_listeners: z.number(),
-  total_followers: z.number(),
-  total_tracks: z.number(),
-  total_albums: z.number(),
-  total_playlists: z.number(),
-  estimated_revenue: z.number(),
-  last_calculated: z.string(),
+  user_id: z.string().catch(''),
+  total_plays: z.number().default(0),
+  unique_listeners: z.number().default(0),
+  total_followers: z.number().default(0),
+  total_tracks: z.number().default(0),
+  total_albums: z.number().default(0),
+  total_playlists: z.number().default(0),
+  estimated_revenue: z.number().default(0),
+  last_calculated: z.string().optional().nullable().default(null),
 })
 
 export const CreatorDailyStatSchema = z.object({
-  id: z.string(),
-  user_id: z.string(),
-  date: z.string(),
-  plays: z.number(),
-  listeners: z.number(),
-  likes: z.number(),
-  follows: z.number(),
-  shares: z.number(),
-  revenue_cents: z.number(),
+  id: z.string().catch(''),
+  user_id: z.string().catch(''),
+  date: z.string().catch(''),
+  plays: z.number().default(0),
+  listeners: z.number().default(0),
+  likes: z.number().default(0),
+  follows: z.number().default(0),
+  shares: z.number().default(0),
+  revenue_cents: z.number().default(0),
 })
 
 export const TrackStatsSchema = z.object({
-  track_id: z.string(),
-  title: z.string(),
-  total_plays: z.number(),
-  total_likes: z.number(),
-  duration: z.number(),
-  created_at: z.string(),
+  track_id: z.string().catch(''),
+  title: z.string().catch(''),
+  total_plays: z.number().default(0),
+  total_likes: z.number().default(0),
+  duration: z.number().default(0),
+  created_at: z.string().optional().nullable().default(null),
 })
 
 export const OverviewResponseSchema = z.object({
@@ -51,84 +51,97 @@ export const TrackStatsResponseSchema = z.object({
   error: z.string().nullable().optional(),
 })
 
-// --- New types (no Zod) ---
+// --- Zod schemas for remaining creator data types ---
 
-export interface EarningsBreakdown {
-  total_revenue: number
-  stream_revenue: number
-  tip_revenue: number
-  subscription_revenue: number
-  pending_payout: number
-  last_payout: number
-  last_payout_date?: string
-}
+export const EarningsBreakdownSchema = z.object({
+  total_revenue: z.number(),
+  stream_revenue: z.number(),
+  tip_revenue: z.number(),
+  subscription_revenue: z.number(),
+  pending_payout: z.number(),
+  last_payout: z.number(),
+  last_payout_date: z.string().optional(),
+})
 
-export interface Payout {
-  id: string
-  user_id: string
-  amount: number
-  method: string
-  status: string
-  created_at: string
-  paid_at?: string
-}
+export const PayoutSchema = z.object({
+  id: z.string(),
+  user_id: z.string(),
+  amount: z.number(),
+  method: z.string(),
+  status: z.string(),
+  created_at: z.string(),
+  paid_at: z.string().optional(),
+})
 
-export interface PayoutMethod {
-  id: string
-  user_id: string
-  type: string
-  details: string
-  is_active: boolean
-}
+export const PayoutMethodSchema = z.object({
+  id: z.string(),
+  user_id: z.string(),
+  type: z.string(),
+  details: z.string(),
+  is_active: z.boolean(),
+})
 
-export interface TopListener {
-  user_id: string
-  username: string
-  avatar_url?: string
-  play_count: number
-}
+export const TopListenerSchema = z.object({
+  user_id: z.string(),
+  username: z.string(),
+  avatar_url: z.string().optional(),
+  play_count: z.number(),
+})
 
-export interface GeographicStat {
-  country: string
-  city: string
-  listeners: number
-  plays: number
-}
+export const GeographicStatSchema = z.object({
+  country: z.string(),
+  city: z.string(),
+  listeners: z.number(),
+  plays: z.number(),
+})
 
-export interface AudienceOverview {
-  total_listeners: number
-  new_listeners_7d: number
-  repeat_rate: number
-}
+export const AudienceOverviewSchema = z.object({
+  total_listeners: z.number(),
+  new_listeners_7d: z.number(),
+  repeat_rate: z.number(),
+})
 
-export interface AudienceData {
-  overview: AudienceOverview
-  top_listeners: TopListener[]
-  geographics: GeographicStat[]
-}
+export const AudienceDataSchema = z.object({
+  overview: AudienceOverviewSchema,
+  top_listeners: z.array(TopListenerSchema),
+  geographics: z.array(GeographicStatSchema),
+})
 
-export interface AlbumStats {
-  id: string
-  title: string
-  release_year: number
-  track_count: number
-  total_plays: number
-  cover_url?: string
-}
+export const AlbumStatsSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  release_year: z.number(),
+  track_count: z.number(),
+  total_plays: z.number(),
+  cover_url: z.string().optional(),
+})
 
-export interface CreatorPlaylistItem {
-  id: string
-  name: string
-  track_count: number
-  is_public: boolean
-  cover_url?: string
-}
+export const CreatorPlaylistItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  track_count: z.number(),
+  is_public: z.boolean(),
+  cover_url: z.string().optional(),
+})
 
-export interface CreatorContentData {
-  tracks: TrackStats[]
-  albums: AlbumStats[]
-  playlists: CreatorPlaylistItem[]
-}
+export const CreatorContentDataSchema = z.object({
+  tracks: z.array(TrackStatsSchema),
+  albums: z.array(AlbumStatsSchema),
+  playlists: z.array(CreatorPlaylistItemSchema),
+})
+
+// --- TypeScript interfaces (inferred from Zod schemas where possible) ---
+
+export type EarningsBreakdown = z.infer<typeof EarningsBreakdownSchema>
+export type Payout = z.infer<typeof PayoutSchema>
+export type PayoutMethod = z.infer<typeof PayoutMethodSchema>
+export type TopListener = z.infer<typeof TopListenerSchema>
+export type GeographicStat = z.infer<typeof GeographicStatSchema>
+export type AudienceOverview = z.infer<typeof AudienceOverviewSchema>
+export type AudienceData = z.infer<typeof AudienceDataSchema>
+export type AlbumStats = z.infer<typeof AlbumStatsSchema>
+export type CreatorPlaylistItem = z.infer<typeof CreatorPlaylistItemSchema>
+export type CreatorContentData = z.infer<typeof CreatorContentDataSchema>
 
 export interface TrackUpdateRequest {
   title?: string

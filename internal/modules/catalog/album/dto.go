@@ -12,24 +12,26 @@ type AlbumResponse struct {
 	ID uuid.UUID `json:"id"`
 
 	// Deprecated compatibility field.
-	ArtistID uuid.UUID `json:"artistId"`
+	ArtistID uuid.UUID `json:"artist_id"`
 
+	ArtistName   *string    `json:"artist_name"`
 	Title        string     `json:"title"`
 	Slug         string     `json:"slug"`
-	CoverURL     *string    `json:"coverUrl,omitempty"`
-	CoverMediaID *uuid.UUID `json:"coverMediaId,omitempty"`
+	CoverURL     *string    `json:"cover_url"`
+	CoverMediaID *uuid.UUID `json:"cover_media_id"`
 
-	ReleaseDate *time.Time `json:"releaseDate,omitempty"`
-	AlbumType   string     `json:"albumType"`
+	ReleaseDate *time.Time `json:"release_date"`
+	AlbumType   string     `json:"album_type"`
 
-	CreatedAt time.Time  `json:"createdAt"`
-	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 
-	Artists []AlbumArtistResponse `json:"artists,omitempty"`
+	TrackCount int                   `json:"track_count"`
+	Artists    []AlbumArtistResponse `json:"artists,omitempty"`
 }
 
 type AlbumArtistResponse struct {
-	ArtistID uuid.UUID `json:"artistId"`
+	ArtistID uuid.UUID `json:"artist_id"`
 	Name     string    `json:"name"`
 	Slug     string    `json:"slug"`
 	Role     string    `json:"role"`
@@ -38,17 +40,17 @@ type AlbumArtistResponse struct {
 
 type AlbumTrackResponse struct {
 	ID              uuid.UUID  `json:"id"`
-	AlbumID         *uuid.UUID `json:"albumId,omitempty"`
+	AlbumID         *uuid.UUID `json:"album_id,omitempty"`
 	Title           string     `json:"title"`
 	Slug            string     `json:"slug"`
-	DurationSeconds int        `json:"durationSeconds"`
-	TrackNumber     *int       `json:"trackNumber,omitempty"`
+	DurationSeconds int        `json:"duration_seconds"`
+	TrackNumber     *int       `json:"track_number,omitempty"`
 	Explicit        bool       `json:"explicit"`
-	AudioURL        *string    `json:"audioUrl,omitempty"`
-	CoverURL        *string    `json:"coverUrl,omitempty"`
-	PlayCount       int64      `json:"playCount"`
-	IsPublic        bool       `json:"isPublic"`
-	CreatedAt       time.Time  `json:"createdAt"`
+	AudioURL        *string    `json:"audio_url,omitempty"`
+	CoverURL        *string    `json:"cover_url,omitempty"`
+	PlayCount       int64      `json:"play_count"`
+	IsPublic        bool       `json:"is_public"`
+	CreatedAt       time.Time  `json:"created_at"`
 }
 
 // Mapper functions
@@ -67,9 +69,17 @@ func AlbumToResponse(a *Album) *AlbumResponse {
 			Position: ar.Position,
 		}
 	}
+
+	var artistName *string
+	if len(a.Artists) > 0 {
+		name := a.Artists[0].Name
+		artistName = &name
+	}
+
 	return &AlbumResponse{
 		ID:           a.ID,
 		ArtistID:     a.ArtistID,
+		ArtistName:   artistName,
 		Title:        a.Title,
 		Slug:         a.Slug,
 		CoverURL:     a.CoverURL,
@@ -78,6 +88,7 @@ func AlbumToResponse(a *Album) *AlbumResponse {
 		AlbumType:    a.AlbumType,
 		CreatedAt:    a.CreatedAt,
 		UpdatedAt:    a.UpdatedAt,
+		TrackCount:   0,
 		Artists:      artists,
 	}
 }

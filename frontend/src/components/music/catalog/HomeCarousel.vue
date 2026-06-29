@@ -39,7 +39,7 @@ const isAtStart = ref(true)
 const isAtEnd = ref(false)
 
 function checkScroll() {
-  if (carouselRef.value!) return
+  if (!carouselRef.value) return
   isAtStart.value = carouselRef.value.scrollLeft <= 10
   isAtEnd.value =
     carouselRef.value.scrollLeft >= carouselRef.value.scrollWidth - carouselRef.value.clientWidth - 10
@@ -50,7 +50,7 @@ function scroll(amount: number) {
 }
 
 function scrollTo(dir: 'next' | 'prev') {
-  if (carouselRef.value!) return
+  if (!carouselRef.value) return
   const amount = dir === 'next' ? carouselRef.value.clientWidth : -carouselRef.value.clientWidth
   carouselRef.value.scrollBy({ left: amount, behavior: 'smooth' })
 }

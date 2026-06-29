@@ -91,7 +91,32 @@ const xpToNextLevel = computed(() => {
   return Math.max(0, props.profile.next_level_xp - props.profile.current_xp)
 })
 
+// Must match the backend CalculateLevel() in internal/modules/gamification/model.go
+const XP_LEVELS: Array<{ level: number; xpRequired: number }> = [
+  { level: 1, xpRequired: 0 },
+  { level: 2, xpRequired: 100 },
+  { level: 3, xpRequired: 520 },
+  { level: 4, xpRequired: 1600 },
+  { level: 5, xpRequired: 3900 },
+  { level: 6, xpRequired: 8000 },
+  { level: 7, xpRequired: 14000 },
+  { level: 8, xpRequired: 22000 },
+  { level: 9, xpRequired: 33000 },
+  { level: 10, xpRequired: 48000 },
+  { level: 11, xpRequired: 66000 },
+  { level: 12, xpRequired: 88000 },
+  { level: 13, xpRequired: 115000 },
+  { level: 14, xpRequired: 147000 },
+  { level: 15, xpRequired: 185000 },
+  { level: 16, xpRequired: 230000 },
+  { level: 17, xpRequired: 283000 },
+  { level: 18, xpRequired: 345000 },
+  { level: 19, xpRequired: 417000 },
+  { level: 20, xpRequired: 500000 },
+]
+
 function xpForLevel(level: number): number {
-  return Math.floor(Math.pow(level, 2.5) * 100)
+  const found = XP_LEVELS.find((l) => l.level === level)
+  return found ? found.xpRequired : XP_LEVELS[0].xpRequired
 }
 </script>

@@ -21,20 +21,24 @@ export const MoodResponseSchema = z.object({
 
 export type MoodResponse = z.infer<typeof MoodResponseSchema>
 
+export type AITrackItem = z.infer<typeof AITrackItemSchema>
+
 export const AITrackItemSchema = z.object({
-  id: z.string(),
-  title: z.string(),
+  id: z.string().catch(''),
+  title: z.string().catch(''),
   artist: z.string().optional(),
   cover_url: z.string().optional(),
   duration: z.number().optional(),
+  energy: z.number().optional(),
+  valence: z.number().optional(),
 })
 
 export const AIPlaylistResponseSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  description: z.string(),
-  tracks: z.array(AITrackItemSchema),
-  generated_at: z.string(),
+  id: z.string().catch(''),
+  name: z.string().catch(''),
+  description: z.string().catch(''),
+  tracks: z.array(AITrackItemSchema).optional().default([]),
+  generated_at: z.string().catch(''),
 })
 
 export type AIPlaylistResponse = z.infer<typeof AIPlaylistResponseSchema>
@@ -42,10 +46,15 @@ export type AIPlaylistResponse = z.infer<typeof AIPlaylistResponseSchema>
 export const TrackMetaSchema = z.object({
   id: z.string(),
   title: z.string(),
+  artist_id: z.string().optional(),
   artist: z.string().optional(),
   album: z.string().optional(),
   genre: z.string().optional(),
+  year: z.number().optional(),
   duration: z.number().optional(),
+  cover_url: z.string().optional(),
+  energy: z.number().optional(),
+  valence: z.number().optional(),
 })
 
 export type TrackMeta = z.infer<typeof TrackMetaSchema>

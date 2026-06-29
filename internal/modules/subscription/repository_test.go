@@ -25,13 +25,13 @@ func TestRepository_ListPlans(t *testing.T) {
 
 	rows := sqlmock.NewRows([]string{
 		"id", "code", "name", "description", "price_cents",
-		"currency", "interval", "features", "is_active", "created_at", "updated_at",
+		"currency", "interval", "is_premium", "is_active", "features", "created_at", "updated_at",
 	}).AddRow(
-		uuid.New(), "premium", "Premium", "Premium plan", 999,
-		"USD", "month", `{"max_bitrate": 320}`, true, now, now,
+		uuid.New().String(), "premium", "Premium", "Premium plan", int64(999),
+		"USD", "month", false, true, []byte(`{"max_bitrate": 320}`), now, now,
 	).AddRow(
-		uuid.New(), "family", "Family", "Family plan", 1499,
-		"USD", "month", `{"max_bitrate": 320, "max_users": 6}`, true, now, now,
+		uuid.New().String(), "family", "Family", "Family plan", int64(1499),
+		"USD", "month", false, true, []byte(`{"max_bitrate": 320, "max_users": 6}`), now, now,
 	)
 
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT`)).WillReturnRows(rows)
@@ -40,7 +40,7 @@ func TestRepository_ListPlans(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, plans, 2)
 	assert.Equal(t, "premium", plans[0].Code)
-	assert.Equal(t, 999, plans[0].PriceCents)
+	assert.Equal(t, int64(999), plans[0].PriceCents)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -70,7 +70,7 @@ func TestRepository_GetCurrentSubscription(t *testing.T) {
 
 	sub, err := repo.GetCurrentSubscription(context.Background(), userID.String())
 	require.NoError(t, err)
-	assert.Equal(t, subID, sub.ID)
+	assert.Equal(t, subID.String(), sub.ID)
 	assert.Equal(t, "active", sub.Status)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
@@ -115,13 +115,28 @@ func TestRepository_CancelCurrentSubscription(t *testing.T) {
 	repo := NewRepository(sqlxDB)
 
 	userID := uuid.New()
+	subID := uuid.New()
+	planID := uuid.New()
+	now := time.Now()
+	future := now.Add(30 * 24 * time.Hour)
 
-	mock.ExpectExec(regexp.QuoteMeta(`UPDATE subscriptions`)).
+	rows := sqlmock.NewRows([]string{
+		"id", "user_id", "plan_id", "status", "current_period_start",
+		"current_period_end", "cancel_at_period_end", "canceled_at",
+		"provider", "provider_subscription_id", "created_at", "updated_at",
+	}).AddRow(
+		subID.String(), userID.String(), planID.String(), "canceled",
+		now, future, true, now, nil, nil, now, now,
+	)
+
+	mock.ExpectQuery(regexp.QuoteMeta(`UPDATE subscriptions`)).
 		WithArgs(userID.String()).
-		WillReturnResult(sqlmock.NewResult(0, 1))
+		WillReturnRows(rows)
 
 	sub, err := repo.CancelCurrentSubscription(context.Background(), userID.String())
 	require.NoError(t, err)
 	assert.NotNil(t, sub)
+	assert.Equal(t, "canceled", sub.Status)
+	assert.Equal(t, subID.String(), sub.ID)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }

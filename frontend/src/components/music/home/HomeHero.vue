@@ -86,6 +86,7 @@
             v-if="currentItem.image"
             :src="currentItem.image"
             :alt="currentItem.title"
+            fetchpriority="high"
             class="h-44 w-44 rounded-2xl object-cover shadow-2xl md:h-52 md:w-52"
             :style="{
               transform: 'rotate(-3deg)',
@@ -210,14 +211,14 @@ function stopTimer() {
 }
 
 function pauseAutoRotate() {
-  if (reducedMotion!) {
+  if (!reducedMotion) {
     showArrows.value = true
     stopTimer()
   }
 }
 
 function resumeAutoRotate() {
-  if (autoRotating.value && reducedMotion!) {
+  if (autoRotating.value && !reducedMotion) {
     showArrows.value = false
     startTimer()
   }
@@ -253,7 +254,7 @@ function prev() {
 
 function goTo(index: number) {
   crossfade(index)
-  if (autoRotating.value && reducedMotion!) {
+  if (autoRotating.value && !reducedMotion) {
     startTimer()
   }
 }

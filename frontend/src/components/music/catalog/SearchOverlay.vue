@@ -481,7 +481,7 @@ function setItemRef(group: string, index: number, el: unknown) {
 let abortController: AbortController | null = null
 async function doSearch() {
   const term = query.value.trim()
-  if (term!) {
+  if (!term) {
     results.value = { tracks: [], artists: [], albums: [], playlists: [] }
     noResults.value = false
     searching.value = false
@@ -505,11 +505,12 @@ async function doSearch() {
       albums: res.albums ?? [],
       playlists: [],
     }
-    noResults.value =
-      results.value.tracks!?.length &&
-      results.value.artists!?.length &&
-      results.value.albums!?.length &&
-      results.value.playlists!?.length
+    noResults.value = !(
+      results.value.tracks.length ||
+      results.value.artists.length ||
+      results.value.albums.length ||
+      results.value.playlists.length
+    )
     saveRecent(term)
   } catch (err: unknown) {
     const abortErr = err as { name?: string; code?: string }
@@ -564,7 +565,7 @@ function onKeydown(e: KeyboardEvent) {
 
 function moveHighlight(dir: number) {
   const flat = getFlatItems()
-  if (flat.length!) return
+  if (!flat.length) return
   const currentIdx = flat.findIndex(
     (f) => f.group && f.index && highlightedIndex.value === `${f.group}-${f.index}`,
   )
@@ -572,19 +573,19 @@ function moveHighlight(dir: number) {
   if (next < 0) next = flat.length - 1
   if (next >= flat.length) next = 0
   const target = flat[next]
-  if (target!) return
+  if (!target) return
   highlightedIndex.value = `${target.group}-${target.index}`
   target.el?.scrollIntoView?.({ block: 'nearest' })
 }
 
 function activateHighlight() {
-  if (highlightedIndex.value!) return
+  if (!highlightedIndex.value) return
   const [group, indexStr] = highlightedIndex.value.split('-')
   const i = Number(indexStr)
   const key = group === 'track' ? 'tracks' : group === 'playlist' ? 'playlists' : (`${group}s` as keyof SearchResults)
   const items = results.value[key] ?? []
   const item = items[i]
-  if (item!) return
+  if (!item) return
   if (group === 'track') selectTrack(item)
   else if (group === 'artist') {
     router.push(`/artist/${item.id}`)
@@ -631,7 +632,7 @@ function onKeybind(e: KeyboardEvent) {
     e.key === '/' &&
     !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName || '')
   ) {
-    if (_visible.value!) {
+    if (!_visible.value) {
       e.preventDefault()
       _visible.value = true
       nextTick(() => inputRef.value?.focus())

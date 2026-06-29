@@ -154,10 +154,18 @@ func (r *Repository) UnfollowArtist(ctx context.Context, userID, artistID string
 	return nil
 }
 
-func (r *Repository) AddPlayHistory(ctx context.Context, userID, trackID string) error {
+func (r *Repository) AddPlayHistory(ctx context.Context, userID, trackID string, duration *int, completed *bool) error {
+	// completed has a NOT NULL constraint with DEFAULT FALSE in the DB.
+	// When the JSON body omits the field, the Go *bool is nil, so we
+	// default it here to avoid sending SQL NULL.
+	if completed == nil {
+		f := false
+		completed = &f
+	}
+
 	_, err := r.db.ExecContext(ctx,
-		`INSERT INTO play_history (user_id, track_id) VALUES ($1, $2)`,
-		userID, trackID,
+		`INSERT INTO play_history (user_id, track_id, duration, completed) VALUES ($1, $2, $3, $4)`,
+		userID, trackID, duration, completed,
 	)
 	return err
 }

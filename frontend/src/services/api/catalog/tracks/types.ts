@@ -3,50 +3,35 @@ import { IdSchema } from '../common'
 import { GenreSchema } from '../genres'
 
 export const TrackArtistRequestSchema = z.object({
-  artistId: IdSchema,
+  artist_id: IdSchema,
   role: z.string(),
   position: z.number().int().nonnegative().optional(),
 })
 
 const TrackArtistSchema = z.object({
-  artistId: IdSchema,
+  artist_id: IdSchema.optional().nullable().default(null),
   name: z.string(),
   slug: z.string().optional(),
   role: z.string().optional(),
   position: z.number().optional(),
 })
 
-export const TrackSchema = z
-  .object({
-    id: IdSchema,
-    title: z.string(),
-    durationSeconds: z.number().optional().nullable(),
-    audioUrl: z.string().optional().nullable(),
-    coverUrl: z.string().optional().nullable(),
-    artistId: IdSchema.optional().nullable(),
-    albumId: IdSchema.optional().nullable(),
-    genres: z.array(GenreSchema).optional().nullable(),
-    playCount: z.number().optional().nullable(),
-    trackNumber: z.number().optional().nullable(),
-    explicit: z.boolean().optional().nullable(),
-    artists: z.array(TrackArtistSchema).optional().nullable(),
-  })
-  .transform((track) => ({
-    id: track.id,
-    title: track.title,
-    duration_seconds: track.durationSeconds ?? 0,
-    audio_url: track.audioUrl ?? null,
-    cover_url: track.coverUrl ?? null,
-    artist_id: track.artistId ?? null,
-    album_id: track.albumId ?? null,
-    genre_id: track.genres?.[0]?.id ?? null,
-    artist_name: track.artists?.find((a) => a.role === 'primary')?.name ?? track.artists?.[0]?.name ?? null,
-    album_title: null,
-    genres: track.genres ?? [],
-    play_count: track.playCount ?? 0,
-    track_number: track.trackNumber ?? null,
-    explicit: track.explicit ?? false,
-  }))
+export const TrackSchema = z.object({
+  id: IdSchema,
+  title: z.string(),
+  duration_seconds: z.number().default(0),
+  audio_url: z.string().optional().nullable().default(null),
+  cover_url: z.string().optional().nullable().default(null),
+  artist_id: IdSchema.optional().nullable().default(null),
+  album_id: IdSchema.optional().nullable().default(null),
+  genre_id: IdSchema.optional().nullable().default(null),
+  artist_name: z.string().optional().nullable().default(null),
+  album_title: z.string().optional().nullable().default(null),
+  genres: z.array(GenreSchema).optional().default([]),
+  play_count: z.number().default(0),
+  track_number: z.number().optional().nullable().default(null),
+  explicit: z.boolean().default(false),
+})
 
 export type Track = {
   id: string | number
@@ -68,30 +53,32 @@ export type TrackArtistRequest = z.infer<typeof TrackArtistRequestSchema>
 
 export interface TrackCreatePayload {
   title: string
-  artistId: string | number
+  artist_id: string | number
   artists?: TrackArtistRequest[]
-  albumId?: string | number | null
-  durationSeconds?: number | null
-  audioUrl?: string | null
-  coverUrl?: string | null
-  genreIds?: Array<string | number>
-  trackNumber?: number | null
+  album_id?: string | number | null
+  duration_seconds?: number | null
+  audio_url?: string | null
+  cover_url?: string | null
+  genre_ids?: Array<string | number>
+  track_number?: number | null
   explicit?: boolean | null
-  isPublic?: boolean
+  is_public?: boolean
 }
 
 export interface TrackUpdatePayload {
   title?: string
-  artistId?: string | number | null
+  artist_id?: string | number | null
   artists?: TrackArtistRequest[]
-  albumId?: string | number | null
-  durationSeconds?: number | null
-  audioUrl?: string | null
-  coverUrl?: string | null
-  genreIds?: Array<string | number>
-  trackNumber?: number | null
+  album_id?: string | number | null
+  duration_seconds?: number | null
+  audio_url?: string | null
+  cover_url?: string | null
+  genre_ids?: Array<string | number>
+  track_number?: number | null
   explicit?: boolean | null
-  isPublic?: boolean | null
+  is_public?: boolean | null
+  /** Names of nullable fields to set to NULL (backend uses these to distinguish 'clear' from 'absent') */
+  clear_fields?: string[]
 }
 
 export interface TrackUploadPayload extends TrackCreatePayload {
@@ -109,22 +96,22 @@ export function toTrackMutationPayload(payload: Partial<Track>): TrackCreatePayl
 
   return {
     title: payload.title,
-    artistId: payload.artist_id,
+    artist_id: payload.artist_id,
     artists: payload.artist_id
       ? [
         {
-          artistId: payload.artist_id,
+          artist_id: payload.artist_id,
           role: 'primary',
           position: 0,
         },
       ]
       : [],
-    albumId: payload.album_id ?? null,
-    durationSeconds: payload.duration_seconds ?? 0,
-    audioUrl: payload.audio_url ?? null,
-    coverUrl: payload.cover_url ?? null,
-    genreIds: payload.genre_id ? [payload.genre_id] : [],
-    trackNumber: payload.track_number ?? null,
+    album_id: payload.album_id ?? null,
+    duration_seconds: payload.duration_seconds ?? 0,
+    audio_url: payload.audio_url ?? null,
+    cover_url: payload.cover_url ?? null,
+    genre_ids: payload.genre_id ? [payload.genre_id] : [],
+    track_number: payload.track_number ?? null,
     explicit: payload.explicit ?? false,
   }
 }

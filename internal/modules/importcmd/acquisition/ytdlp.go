@@ -53,6 +53,7 @@ func (r *ytDlpResolver) Quality() string { return r.quality }
 
 func (r *ytDlpResolver) buildArgs(query string) []string {
 	args := []string{
+		"--js-runtimes", "node",
 		"--flat-playlist",
 		"--dump-json",
 		"--no-warnings",

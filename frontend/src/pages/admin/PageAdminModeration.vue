@@ -617,7 +617,7 @@ function timeAgo(dateStr: string): string {
 }
 
 function isExpired(flag: ContentFlag): boolean {
-  if (flag.expires_at!) return false
+  if (!flag.expires_at) return false
   return new Date(flag.expires_at) < new Date()
 }
 
@@ -741,7 +741,7 @@ function openFlagDialog(report: ContentReport) {
 }
 
 async function confirmFlag() {
-  if (flagTarget.value!) return
+  if (!flagTarget.value) return
   try {
     await moderationApi.flagContent({
       target_id: flagTarget.value.target_id,

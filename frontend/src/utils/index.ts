@@ -9,6 +9,7 @@ export * from './forms'
 export * from './helpers'
 export * from './number'
 export * from './record'
+export * from './format'
 
 export * from './prime/prime-locale'
 export * from './prime/prime-preset'

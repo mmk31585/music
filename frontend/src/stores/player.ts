@@ -12,6 +12,7 @@ import {
   type ShuffleMode,
   type RepeatMode,
 } from '@/services/player'
+import { audioEngine } from '@/services/player/audio-engine'
 
 const QUEUE_STORAGE_KEY = 'player-queue-track-ids'
 
@@ -79,6 +80,41 @@ const repeatMode = ref<RepeatMode>('off')
     return currentTime.value > 0
   })
 
+  /**
+   * The actual next track that will play, accounting for shuffle order.
+   * - shuffle='off': next sequential track
+   * - shuffle='queue': next index from the internal shuffleOrder
+   * - shuffle='catalog'|'similar': null (unpredictable API fetch)
+   *
+   * Accesses store refs as explicit deps so Vue re-evaluates when
+   * shuffle mode, queue, or current track changes — engine's internal
+   * state is non-reactive so the computed needs reactive anchors.
+   */
+  const nextUpTrack = computed<PlaybackTrack | null>(() => {
+    if (!engine) return null
+    // Reactive deps: re-evaluate when these store values change
+    void shuffleMode.value
+    void queue.value.length
+    void currentTrack.value?.id
+    void repeatMode.value
+    return engine.peekNextTrack()
+  })
+
+  /**
+   * Queue items in the order they will actually be played.
+   * - 'queue' shuffle mode: ordered by internal shuffleOrder (remaining after current)
+   * - 'catalog'/'similar'/off: returns the raw queue
+   *
+   * Always returns a new array reference so downstream watchers fire correctly.
+   */
+  const remainingShuffledQueue = computed<PlaybackTrack[]>(() => {
+    void shuffleMode.value
+    void queue.value.length
+    void repeatMode.value
+    if (!engine) return [...queue.value]
+    return engine.getRemainingShuffledQueue()
+  })
+
   let engine: PlayerEngine | null = null
   let initialized = false
   const unsubs: (() => void)[] = []
@@ -90,9 +126,14 @@ const repeatMode = ref<RepeatMode>('off')
   let _beforeUnloadHandler: (() => void) | null = null
 
   /**
-   * Register the beforeunload handler — must be called from a component's
+   * Register the pagehide handler — must be called from a component's
    * onMounted (or from a composable used in a component) so it's properly
    * tied to the component lifecycle.
+   *
+   * Uses `pagehide` instead of `beforeunload` because `beforeunload`
+   * prevents the browser's back/forward cache (bfcache), degrading
+   * navigation performance. The `pagehide` event fires in all the same
+   * scenarios but is bfcache-friendly.
    */
   function registerBeforeUnload() {
     if (_beforeUnloadHandler || typeof window === 'undefined') return
@@ -115,12 +156,12 @@ const repeatMode = ref<RepeatMode>('off')
         }
       }
     }
-    window.addEventListener('beforeunload', _beforeUnloadHandler)
+    window.addEventListener('pagehide', _beforeUnloadHandler)
   }
 
   function unregisterBeforeUnload() {
     if (_beforeUnloadHandler && typeof window !== 'undefined') {
-      window.removeEventListener('beforeunload', _beforeUnloadHandler)
+      window.removeEventListener('pagehide', _beforeUnloadHandler)
       _beforeUnloadHandler = null
     }
   }
@@ -287,7 +328,7 @@ const repeatMode = ref<RepeatMode>('off')
 
     // Volume/mute: listen for audio engine changes and sync to store + localStorage
     unsubs.push(
-      engine.on('volumechange', (payload) => {
+      audioEngine.on('volumechange', (payload) => {
         volume.value = payload.volume
         muted.value = payload.muted
         localStorage.setItem('player-volume', String(payload.volume))
@@ -545,6 +586,8 @@ const repeatMode = ref<RepeatMode>('off')
 
     error,
 
+    nextUpTrack,
+    remainingShuffledQueue,
     hasNext,
     hasPrevious,
 

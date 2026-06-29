@@ -314,6 +314,7 @@ import type { IngestionStats } from '@/services/api/ingestion/types'
 import { usePlayer } from '@/composables/player'
 import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
 import { client } from '@/composables/useRequest'
+import { formatDuration } from '@/utils/format'
 
 const { adminGetTracks, getTracks } = useTracksApi()
 const ingestionApi = useIngestionApi()
@@ -417,19 +418,6 @@ function toArray<T>(value: unknown): T[] {
   }
 
   return []
-}
-
-function formatDuration(value?: number | string | null): string {
-  const seconds = Number(value)
-
-  if (Number.isFinite!(seconds) || seconds <= 0) {
-    return '—'
-  }
-
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-
-  return `${mins}:${String(secs).padStart(2, '0')}`
 }
 
 function hideBrokenImage(event: Event) {

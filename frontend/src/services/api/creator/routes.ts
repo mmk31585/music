@@ -2,12 +2,17 @@ import { useRequest } from '@/composables/useRequest'
 import type { UseRequestConfig } from '@/plugins/client/types'
 import { CreatorApiRoutes } from './enums'
 import {
-  OverviewResponseSchema,
-  DailyStatsResponseSchema,
-  TrackStatsResponseSchema,
-  type OverviewResponse,
-  type DailyStatsResponse,
-  type TrackStatsResponse,
+  CreatorStatsSchema,
+  CreatorDailyStatSchema,
+  TrackStatsSchema,
+  EarningsBreakdownSchema,
+  PayoutSchema,
+  PayoutMethodSchema,
+  AudienceDataSchema,
+  CreatorContentDataSchema,
+  type CreatorStats,
+  type CreatorDailyStat,
+  type TrackStats,
   type EarningsBreakdown,
   type Payout,
   type PayoutMethod,
@@ -18,30 +23,30 @@ import {
 } from './types'
 
 export const useCreatorApi = () => {
-  const getOverview = async (config?: UseRequestConfig<OverviewResponse>) => {
-    return useRequest<OverviewResponse>(
+  const getOverview = async (config?: UseRequestConfig<CreatorStats>) => {
+    return useRequest<CreatorStats>(
       CreatorApiRoutes.OVERVIEW,
       { method: 'GET' },
-      { schema: OverviewResponseSchema, silent: true, ...config },
+      { schema: CreatorStatsSchema, silent: true, ...config },
     )
   }
 
   const getDailyStats = async (
     params?: { from?: string; to?: string; limit?: number },
-    config?: UseRequestConfig<DailyStatsResponse>,
+    config?: UseRequestConfig<CreatorDailyStat[]>,
   ) => {
-    return useRequest<DailyStatsResponse>(
+    return useRequest<CreatorDailyStat, true>(
       CreatorApiRoutes.DAILY_STATS,
       { method: 'GET', params },
-      { schema: DailyStatsResponseSchema, silent: true, ...config },
+      { schema: CreatorDailyStatSchema, silent: true, ...config },
     )
   }
 
-  const getTrackStats = async (config?: UseRequestConfig<TrackStatsResponse>) => {
-    return useRequest<TrackStatsResponse>(
+  const getTrackStats = async (config?: UseRequestConfig<TrackStats[]>) => {
+    return useRequest<TrackStats, true>(
       CreatorApiRoutes.TRACK_STATS,
       { method: 'GET' },
-      { schema: TrackStatsResponseSchema, silent: true, ...config },
+      { schema: TrackStatsSchema, silent: true, ...config },
     )
   }
 
@@ -62,51 +67,51 @@ export const useCreatorApi = () => {
   }
 
   // Earnings
-  const getEarnings = async (config?: UseRequestConfig<{ data: EarningsBreakdown }>) => {
-    return useRequest<{ data: EarningsBreakdown }>(
+  const getEarnings = async (config?: UseRequestConfig<EarningsBreakdown>) => {
+    return useRequest<EarningsBreakdown>(
       CreatorApiRoutes.EARNINGS,
       { method: 'GET' },
-      { silent: true, ...config },
+      { schema: EarningsBreakdownSchema, silent: true, ...config },
     )
   }
 
   const getPayouts = async (
     params?: { limit?: number },
-    config?: UseRequestConfig<{ data: Payout[] }>,
+    config?: UseRequestConfig<Payout[]>,
   ) => {
-    return useRequest<{ data: Payout[] }>(
+    return useRequest<Payout, true>(
       CreatorApiRoutes.PAYOUTS,
       { method: 'GET', params },
-      { silent: true, ...config },
+      { schema: PayoutSchema, silent: true, ...config },
     )
   }
 
-  const getPayoutMethods = async (config?: UseRequestConfig<{ data: PayoutMethod[] }>) => {
-    return useRequest<{ data: PayoutMethod[] }>(
+  const getPayoutMethods = async (config?: UseRequestConfig<PayoutMethod[]>) => {
+    return useRequest<PayoutMethod, true>(
       CreatorApiRoutes.PAYOUT_METHODS,
       { method: 'GET' },
-      { silent: true, ...config },
+      { schema: PayoutMethodSchema, silent: true, ...config },
     )
   }
 
   // Audience
   const getAudience = async (
     params?: { top_limit?: number },
-    config?: UseRequestConfig<{ data: AudienceData }>,
+    config?: UseRequestConfig<AudienceData>,
   ) => {
-    return useRequest<{ data: AudienceData }>(
+    return useRequest<AudienceData>(
       CreatorApiRoutes.AUDIENCE,
       { method: 'GET', params },
-      { silent: true, ...config },
+      { schema: AudienceDataSchema, silent: true, ...config },
     )
   }
 
   // Content Management
-  const getContent = async (config?: UseRequestConfig<{ data: CreatorContentData }>) => {
-    return useRequest<{ data: CreatorContentData }>(
+  const getContent = async (config?: UseRequestConfig<CreatorContentData>) => {
+    return useRequest<CreatorContentData>(
       CreatorApiRoutes.CONTENT,
       { method: 'GET' },
-      { silent: true, ...config },
+      { schema: CreatorContentDataSchema, silent: true, ...config },
     )
   }
 

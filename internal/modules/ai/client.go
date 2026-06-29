@@ -7,7 +7,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
+	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
@@ -382,6 +385,58 @@ func (f *fallbackClient) GeneratePlaylist(ctx context.Context, prompt string, tr
 	if len(tracks) == 0 {
 		return nil, fmt.Errorf("no tracks available")
 	}
+
+	// Try to extract mood from prompt (format: "... (mood: X)")
+	mood := extractMoodFromPrompt(prompt)
+
+	// If we have a mood, filter tracks heuristically
+	if mood != "" {
+		if r, ok := fallbackMoodRanges[mood]; ok {
+			filtered := make([]TrackMeta, 0, len(tracks))
+			for _, t := range tracks {
+				// Only include tracks with mood data that matches the range
+				if t.Energy >= r.minEnergy && t.Energy <= r.maxEnergy &&
+					t.Valence >= r.minValence && t.Valence <= r.maxValence &&
+					(t.Tempo == 0 || (t.Tempo >= r.minTempo && t.Tempo <= r.maxTempo)) {
+					filtered = append(filtered, t)
+				}
+			}
+			if len(filtered) > 0 {
+				tracks = filtered
+			} else {
+				// No tracks matched energy/valence — fall back to genre-based proxy
+				if genres, ok := moodGenres[mood]; ok && len(genres) > 0 {
+					genreSet := make(map[string]bool, len(genres))
+					for _, g := range genres {
+						genreSet[g] = true
+					}
+					genreFiltered := make([]TrackMeta, 0, len(tracks))
+					for _, t := range tracks {
+						if t.Genre != "" && genreSet[t.Genre] {
+							genreFiltered = append(genreFiltered, t)
+						}
+					}
+					if len(genreFiltered) > 0 {
+						tracks = genreFiltered
+					}
+				}
+			}
+		}
+	}
+
+	// Sort by energy/valence proximity to mood center for better results
+	if mood != "" {
+		if r, ok := fallbackMoodRanges[mood]; ok {
+			centerEnergy := (r.minEnergy + r.maxEnergy) / 2
+			centerValence := (r.minValence + r.maxValence) / 2
+			sort.SliceStable(tracks, func(i, j int) bool {
+				distI := math.Abs(tracks[i].Energy-centerEnergy) + math.Abs(tracks[i].Valence-centerValence)
+				distJ := math.Abs(tracks[j].Energy-centerEnergy) + math.Abs(tracks[j].Valence-centerValence)
+				return distI < distJ
+			})
+		}
+	}
+
 	limit := 20
 	if limit > len(tracks) {
 		limit = len(tracks)
@@ -391,4 +446,35 @@ func (f *fallbackClient) GeneratePlaylist(ctx context.Context, prompt string, tr
 		ids[i] = tracks[i].ID
 	}
 	return ids, nil
+}
+
+type fbMoodRange struct {
+	minEnergy, maxEnergy   float64
+	minValence, maxValence float64
+	minTempo, maxTempo     float64
+}
+
+var fallbackMoodRanges = map[string]fbMoodRange{
+	"energetic": {0.65, 1.0, 0.4, 1.0, 120, 200},
+	"happy":     {0.4, 1.0, 0.6, 1.0, 100, 180},
+	"chill":     {0.0, 0.5, 0.3, 0.8, 60, 100},
+	"calm":      {0.0, 0.35, 0.3, 0.7, 50, 90},
+	"sad":       {0.0, 0.4, 0.0, 0.5, 50, 100},
+	"focus":     {0.3, 0.6, 0.2, 0.5, 80, 140},
+	"romantic":  {0.25, 0.55, 0.4, 0.8, 60, 120},
+	"intense":   {0.7, 1.0, 0.0, 0.5, 130, 200},
+	"confident": {0.5, 1.0, 0.5, 1.0, 90, 160},
+	"sleep":     {0.0, 0.25, 0.0, 0.4, 30, 80},
+}
+
+func extractMoodFromPrompt(prompt string) string {
+	re := regexp.MustCompile(`\(mood:\s*(\w+)\)`)
+	matches := re.FindStringSubmatch(prompt)
+	if len(matches) >= 2 {
+		mood := strings.ToLower(strings.TrimSpace(matches[1]))
+		if _, ok := fallbackMoodRanges[mood]; ok {
+			return mood
+		}
+	}
+	return ""
 }

@@ -1,6 +1,6 @@
 # Agent Team Architecture
 
-Parallel agent system for the Soundify frontend. Each agent owns a set of files and can work independently. A coordinator agent manages cross-cutting changes.
+Parallel agent system for the Soundify frontend. Each agent owns a set of files and can work independently. A coordinator agent (`@muse`) manages cross-cutting changes. For tightly coupled cross-domain work (frontend + backend + infra), use the **Team Supervisor** (`@muse-team`) which deploys teammates that communicate peer-to-peer.
 
 ## How to Use
 
@@ -11,6 +11,7 @@ Task: "Add album art color extraction to AlbumCard" → @catalog
 Task: "Fix queue skip on error" → @player
 Task: "Add rate limit display to login form" → @auth @ui
 Task: "End-to-end: add new badge type" → @admin @creator @ui
+Task: "Build artist stats (API + panel + routing)" → @muse-team
 ```
 
 ## Roles

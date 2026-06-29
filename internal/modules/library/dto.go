@@ -13,5 +13,7 @@ type FollowArtistRequest struct {
 }
 
 type AddPlayHistoryRequest struct {
-	TrackID string `json:"track_id" binding:"required"`
+	TrackID   string `json:"track_id" binding:"required"`
+	Duration  *int   `json:"duration,omitempty"`
+	Completed *bool  `json:"completed,omitempty"`
 }

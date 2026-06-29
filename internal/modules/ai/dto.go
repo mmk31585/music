@@ -11,7 +11,7 @@ type MoodAnalysisRequest struct {
 }
 
 type GeneratePlaylistRequest struct {
-	Prompt      string   `json:"prompt" binding:"required"`
+	Prompt      string   `json:"prompt"`
 	Mood        string   `json:"mood,omitempty"`
 	Activity    string   `json:"activity,omitempty"`
 	SeedTrackID string   `json:"seed_track_id,omitempty"`
@@ -55,9 +55,11 @@ type AIPlaylistResponse struct {
 }
 
 type TrackItem struct {
-	ID       string `json:"id"`
-	Title    string `json:"title"`
-	Artist   string `json:"artist"`
-	CoverURL string `json:"cover_url,omitempty"`
-	Duration int    `json:"duration,omitempty"`
+	ID       string  `json:"id"`
+	Title    string  `json:"title"`
+	Artist   string  `json:"artist"`
+	CoverURL string  `json:"cover_url,omitempty"`
+	Duration int     `json:"duration,omitempty"`
+	Energy   float64 `json:"energy,omitempty"`
+	Valence  float64 `json:"valence,omitempty"`
 }

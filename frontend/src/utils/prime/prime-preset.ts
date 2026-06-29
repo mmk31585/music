@@ -63,7 +63,7 @@ export const AppPreset = definePreset(Aura, {
         background: 'rgba(0, 0, 0, 0.5)',
         backdropFilter: 'blur(4px)',
       },
-    },
+    } as any,
     button: {
       root: {
         borderRadius: '9999px',
@@ -81,7 +81,7 @@ export const AppPreset = definePreset(Aura, {
         hoverBorderColor: 'transparent',
         activeBorderColor: 'transparent',
       },
-    },
+    } as any,
     inputtext: {
       root: {
         background: 'rgba(255, 255, 255, 0.06)',
@@ -130,7 +130,7 @@ export const AppPreset = definePreset(Aura, {
         backdropFilter: 'blur(24px)',
         borderRadius: '1rem',
         shadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
-      },
+      } as any,
     },
   },
 })

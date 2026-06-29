@@ -155,10 +155,10 @@ export const useIngestionApi = () => {
     q: string,
     config?: UseRequestConfig<ArtistSearchResult[]>,
   ) => {
-    return useRequest<ArtistSearchResult[]>(
+    return useRequest<ArtistSearchResult, true>(
       `${IngestionApiRoutes.ADMIN_ARTISTS_SEARCH}?q=${encodeURIComponent(q)}`,
       { method: 'GET' },
-      { schema: z.array(ArtistSearchResultSchema), silent: true, ...config },
+      { schema: ArtistSearchResultSchema, silent: true, ...config },
     )
   }
 
@@ -166,10 +166,10 @@ export const useIngestionApi = () => {
     q: string,
     config?: UseRequestConfig<AlbumSearchResult[]>,
   ) => {
-    return useRequest<AlbumSearchResult[]>(
+    return useRequest<AlbumSearchResult, true>(
       `${IngestionApiRoutes.ADMIN_ALBUMS_SEARCH}?q=${encodeURIComponent(q)}`,
       { method: 'GET' },
-      { schema: z.array(AlbumSearchResultSchema), silent: true, ...config },
+      { schema: AlbumSearchResultSchema, silent: true, ...config },
     )
   }
 
@@ -238,6 +238,17 @@ export const useIngestionApi = () => {
     )
   }
 
+  const deleteDraft = async (
+    id: string,
+    config?: UseRequestConfig<void>,
+  ) => {
+    return useRequest<void>(
+      IngestionApiRoutes.ADMIN_DELETE_DRAFT.replace(':id', id),
+      { method: 'DELETE' },
+      { silent: false, ...config },
+    )
+  }
+
   return {
     uploadAudio,
     listDrafts,
@@ -254,5 +265,6 @@ export const useIngestionApi = () => {
     getIngestionConfig,
     triggerCleanup,
     uploadDraftImage,
+    deleteDraft,
   }
 }

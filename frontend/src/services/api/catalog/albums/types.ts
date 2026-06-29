@@ -2,37 +2,26 @@ import { z } from 'zod'
 import { IdSchema } from '../common'
 
 const AlbumArtistSchema = z.object({
-  artistId: IdSchema,
+  artist_id: IdSchema.optional().nullable().default(null),
   name: z.string(),
   slug: z.string().optional(),
   role: z.string().optional(),
   position: z.number().optional(),
 })
 
-export const AlbumSchema = z
-  .object({
-    id: IdSchema,
-    title: z.string(),
-    coverUrl: z.string().optional().nullable(),
-    coverMediaId: z.string().optional().nullable(),
-    artistId: IdSchema.optional().nullable(),
-    releaseDate: z.string().optional().nullable(),
-    albumType: z.string().optional().nullable(),
-    genre: z.string().optional().nullable(),
-    artists: z.array(AlbumArtistSchema).optional().nullable(),
-  })
-  .transform((album) => ({
-    id: album.id,
-    title: album.title,
-    cover_url: album.coverUrl ?? null,
-    cover_media_id: album.coverMediaId ?? null,
-    artist_id: album.artistId ?? null,
-    artist_name: album.artists?.find((a) => a.role === 'primary')?.name ?? album.artists?.[0]?.name ?? null,
-    release_date: album.releaseDate ?? null,
-    album_type: album.albumType ?? null,
-    genre: album.genre ?? null,
-    track_count: 0,
-  }))
+export const AlbumSchema = z.object({
+  id: IdSchema,
+  title: z.string(),
+  cover_url: z.string().optional().nullable().default(null),
+  cover_media_id: z.string().optional().nullable().default(null),
+  artist_id: IdSchema.optional().nullable().default(null),
+  artist_name: z.string().optional().nullable().default(null),
+  release_date: z.string().optional().nullable().default(null),
+  album_type: z.string().optional().nullable().default(null),
+  genre: z.string().optional().nullable().default(null),
+  artists: z.array(AlbumArtistSchema).optional().nullable().default([]),
+  track_count: z.number().default(0),
+})
 
 export type Album = {
   id: string | number
@@ -48,7 +37,7 @@ export type Album = {
 }
 
 export interface AlbumArtistRequest {
-  artistId: string | number
+  artist_id: string | number
   role?: string
   position?: number
 }
@@ -56,15 +45,15 @@ export interface AlbumArtistRequest {
 export interface AlbumCreatePayload {
   title: string
   artists?: AlbumArtistRequest[]
-  coverUrl?: string | null
-  releaseDate?: string | null
-  albumType?: string | null
+  cover_url?: string | null
+  release_date?: string | null
+  album_type?: string | null
 }
 
 export interface AlbumUpdatePayload {
   title?: string
   artists?: AlbumArtistRequest[]
-  coverUrl?: string | null
-  releaseDate?: string | null
-  albumType?: string | null
+  cover_url?: string | null
+  release_date?: string | null
+  album_type?: string | null
 }

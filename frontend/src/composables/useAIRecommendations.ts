@@ -6,6 +6,7 @@ import { usePlayer } from '@/composables/player'
 import type { RecommendationTrack, ListeningStats, DiscoverWeeklyResponse } from '@/services/api/recommendation/types'
 import type { AIPlaylistResponse, TrackMeta } from '@/services/api/ai/types'
 import type { PlaybackTrack } from '@/services/api/player/types'
+import { formatDuration } from '@/utils/format'
 
 interface PlayQueueItem {
   id: string
@@ -124,13 +125,6 @@ export function useAIRecommendations() {
     } finally {
       loadingPersonalized.value = false
     }
-  }
-
-  function formatDuration(seconds?: number | null): string {
-    if (seconds == null || seconds <= 0) return '0:00'
-    const m = Math.floor(seconds / 60)
-    const s = Math.floor(seconds % 60)
-    return `${m}:${s.toString().padStart(2, '0')}`
   }
 
   function getEnergyColor(energy: number): string {

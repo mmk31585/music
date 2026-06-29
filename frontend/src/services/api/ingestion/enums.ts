@@ -13,4 +13,5 @@ export enum IngestionApiRoutes {
   ADMIN_CONFIG = '/admin/ingestion/config',
   ADMIN_UPLOAD_IMAGE = '/admin/ingestion/drafts/:id/images/:entity',
   ADMIN_UPDATE_METADATA = '/admin/ingestion/drafts/:id/metadata',
+  ADMIN_DELETE_DRAFT = '/admin/ingestion/drafts/:id',
 }

@@ -159,6 +159,7 @@ import { usePlayer } from '@/composables/player'
 import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
 import { useSocialShare } from '@/composables/social'
 import { onImgError } from '@/utils/helpers'
+import { formatDuration } from '@/utils/format'
 
 interface GenreItem {
   id?: string | number
@@ -233,15 +234,8 @@ function shareTrack() {
   })
 }
 
-function formatDuration(seconds?: number | null): string {
-  if (seconds!) return '0:00'
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${String(s).padStart(2, '0')}`
-}
-
 function formatCount(count?: number | null): string {
-  if (count!) return '0'
+  if (!count) return '0'
   if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
   if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`
   return String(count)

@@ -116,7 +116,7 @@
             <button
               type="button"
               class="text-white/50 transition-all hover:text-white active:scale-90 disabled:opacity-30"
-              :disabled="hasPrevious!"
+              :disabled="!hasPrevious"
               aria-label="Previous track"
               @click="playPrevious"
             >
@@ -136,7 +136,7 @@
                   : { '--accent-hover': accentColor }
               "
               :class="isPlaying! ? 'hover:bg-[var(--accent-hover,#1db954)]' : ''"
-              :disabled="currentTrack!"
+              :disabled="!currentTrack"
               :aria-label="isPlaying ? 'Pause' : 'Play'"
               @click="togglePlayPause"
             >
@@ -156,7 +156,7 @@
             <button
               type="button"
               class="text-white/50 transition-all hover:text-white active:scale-90 disabled:opacity-30"
-              :disabled="hasNext!"
+              :disabled="!hasNext"
               aria-label="Next track"
               @click="playNext"
             >
@@ -278,7 +278,7 @@ const sheetRef = ref<HTMLElement | null>(null)
 
 const speedOptions = [0.5, 0.75, 1, 1.25, 1.5, 2]
 function cycleSpeed() {
-  const idx = speedOptions.indexOf(playbackRate)
+  const idx = speedOptions.indexOf(playbackRate.value)
   const nextIdx = (idx + 1) % speedOptions.length
   setPlaybackRate(speedOptions[nextIdx]!)
 }
@@ -294,7 +294,7 @@ const accentColor = computed(() => palette.value.vibrant || '#1db954')
 
 const bgGradient = computed(() => {
   const p = palette.value
-  if (coverUrl.value!) return 'linear-gradient(135deg, #0a0a0a 0%, #121212 100%)'
+  if (!coverUrl.value) return 'linear-gradient(135deg, #0a0a0a 0%, #121212 100%)'
   return `linear-gradient(180deg, ${p.dark} 0%, ${p.dominant}88 40%, ${p.muted} 100%)`
 })
 
@@ -323,9 +323,9 @@ let cleanupListeners: (() => void) | null = null
 function onDragStart(e: TouchEvent | MouseEvent) {
   cleanupListeners?.()
   isDragging.value = true
-  const startY = 'touches' in e ? e.touches[0].clientY! : e.clientY
+  const startY = 'touches' in e ? e.touches[0]!.clientY : e.clientY
   const el = sheetEl.value
-  if (el!) return
+  if (!el) return
 
   el.style.transition = 'none'
 
@@ -378,8 +378,8 @@ function onSeek(e: Event) {
   seekPercent(Number((e.target as HTMLInputElement).value))
 }
 
-function onVolume(val: number) {
-  setVolume(val)
+function onVolume(val: number | number[]) {
+  setVolume(typeof val === 'number' ? val : val[0] ?? 0)
 }
 
 function close() {

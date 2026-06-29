@@ -225,7 +225,7 @@ const orbColor2 = computed(() => {
 })
 
 const formatJoinDate = computed(() => {
-  if (props.joinDate!) return ''
+  if (!props.joinDate) return ''
   const d = new Date(props.joinDate)
   try {
     return d.toLocaleDateString('fa-IR', { year: 'numeric', month: 'long' })

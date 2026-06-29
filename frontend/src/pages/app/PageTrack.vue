@@ -306,12 +306,12 @@
               <button
                 type="button"
                 class="relative flex items-center gap-2 text-sm font-medium transition"
-                :class="player.repeatMode !== 'off' ? 'text-spotify' : 'text-slate-400 hover:text-white'"
+                :class="player.repeatMode.value !== 'off' ? 'text-spotify' : 'text-slate-400 hover:text-white'"
                 @click="player.toggleRepeat"
               >
                 <i aria-hidden="true" class="pi pi-refresh text-lg" />
                 <span
-                  v-if="player.repeatMode === 'one'"
+                  v-if="player.repeatMode.value === 'one'"
                   class="absolute -top-1 -right-3 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-spotify text-[8px] font-bold text-black"
                 >1</span>
                 Repeat
@@ -695,7 +695,7 @@ const { palette } = useAlbumColors(coverUrl)
 const accentColor = computed(() => palette.value.vibrant || '#1db954')
 
 const ambientBg = computed(() => {
-  if (coverUrl.value!) return { background: '#0A0A0F' }
+  if (!coverUrl.value) return { background: '#0A0A0F' }
   const c = accentColor.value
   return {
     background: `
@@ -707,7 +707,7 @@ const ambientBg = computed(() => {
 })
 
 const coverGlowStyle = computed(() => {
-  if (coverUrl.value!) return {}
+  if (!coverUrl.value) return {}
   const c = accentColor.value
   return {
     boxShadow: `0 0 40px ${c}40, 0 0 80px ${c}20, 0 0 120px ${c}10`,

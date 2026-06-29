@@ -118,7 +118,7 @@
           <Button
             label="Create"
             class="rounded-xl bg-spotify px-5 py-2 text-sm font-semibold text-black hover:bg-spotify-hover"
-            :disabled="newName.trim!() || creating"
+            :disabled="!newName.trim() || creating"
             @click="handleCreate"
           />
         </div>

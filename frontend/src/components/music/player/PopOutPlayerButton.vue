@@ -29,6 +29,6 @@ const label = computed(() =>
 )
 
 function onClick() {
-  if (props.disabled!) emit('click')
+  if (!props.disabled) emit('click')
 }
 </script>

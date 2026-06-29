@@ -109,7 +109,7 @@
             <!-- Next / Create -->
             <template v-if="createStep < 3">
               <button
-                :disabled="createStep === 1 && form.name.trim!()"
+                :disabled="createStep === 1 && !form.name.trim()"
                 class="flex-1 rounded-xl bg-spotify py-3 text-sm font-bold text-black transition hover:bg-spotify-hover disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-white"
                 @click="createStep++"
               >
@@ -182,7 +182,7 @@ function reset() {
 }
 
 async function handleCreate() {
-  if (form.name.trim!() || creating.value) return
+  if (!form.name.trim() || creating.value) return
   creating.value = true
   try {
     let result: { id?: string } | undefined

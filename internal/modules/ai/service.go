@@ -197,26 +197,27 @@ func (s *Service) GeneratePlaylist(ctx context.Context, req GeneratePlaylistRequ
 	}
 
 	if len(candidates) == 0 && req.Mood != "" {
-		var err error
-		candidates, err = s.repo.GetTracksByMood(ctx, req.Mood, 50)
-		if err != nil {
-			s.logger.Warn("mood query failed", zap.Error(err))
-		}
+		candidates = s.getCandidatesForMood(ctx, req.Mood, 50)
 	}
 
 	if len(candidates) == 0 {
 		var err error
-		candidates, err = s.repo.GetTracksByMoodRange(ctx, 0, 1, 0, 1, 50)
-		if err != nil {
-			s.logger.Warn("mood range query failed, falling back to plain tracks", zap.Error(err))
-		}
-	}
-
-	if len(candidates) == 0 {
-		var err error
-		candidates, err = s.repo.GetTracks(ctx, 50)
+		candidates, err = s.repo.GetTracksWithMood(ctx, 50)
 		if err != nil {
 			return nil, fmt.Errorf("get candidate tracks: %w", err)
+		}
+	}
+
+	// If mood is specified but candidates weren't pre-filtered (e.g. AI fetched all tracks),
+	// apply heuristic in-memory filtering before sending to AI for selection
+	if req.Mood != "" {
+		filtered := filterTracksByMood(candidates, req.Mood)
+		if len(filtered) < len(candidates) {
+			s.logger.Info("mood playlist: applied in-memory heuristic filter",
+				zap.String("mood", req.Mood),
+				zap.Int("before", len(candidates)),
+				zap.Int("after", len(filtered)))
+			candidates = filtered
 		}
 	}
 
@@ -243,6 +244,8 @@ func (s *Service) GeneratePlaylist(ctx context.Context, req GeneratePlaylistRequ
 			Artist:   t.Artist,
 			Duration: t.Duration,
 			CoverURL: t.CoverURL,
+			Energy:   t.Energy,
+			Valence:  t.Valence,
 		}
 	}
 
@@ -270,9 +273,172 @@ func (s *Service) GeneratePlaylist(ctx context.Context, req GeneratePlaylistRequ
 	}, nil
 }
 
+// moodGenres maps mood names to relevant genre names (case-insensitive).
+// Used as a proxy when no tracks have AI mood analysis data, so we can still
+// filter by genre affinity instead of returning all tracks.
+// var moodGenres = map[string][]string{
+// 	"energetic":  {"Rock", "Metal", "Electronic", "Dance", "Funk", "Pop Rock"},
+// 	"happy":      {"Pop", "Dance", "Funk", "Reggae", "Pop Rock", "Indie"},
+// 	"chill":      {"Ambient", "Lo-Fi", "Jazz", "R&B", "Soul", "Folk"},
+// 	"calm":       {"Classical", "Ambient", "New Age", "Instrumental"},
+// 	"sad":        {"Blues", "Folk", "Soul", "Indie", "Traditional"},
+// 	"focus":      {"Classical", "Ambient", "Lo-Fi", "Instrumental", "Jazz"},
+// 	"romantic":   {"R&B", "Soul", "Jazz", "Pop", "Fusion"},
+// 	"intense":    {"Metal", "Rock", "Electronic", "Fusion", "Punk"},
+// 	"confident":  {"Hip Hop", "Rap", "Pop", "Rock", "Electronic", "Dance"},
+// 	"sleep":      {"Ambient", "Classical", "New Age", "Instrumental", "Lo-Fi"},
+// }
+
+// moodToRange maps mood names to energy/valence ranges for numerical mood filtering.
+// Used when tracks don't have explicit mood tags yet but have mood analysis data.
+type moodRange struct {
+	MinEnergy, MaxEnergy   float64
+	MinValence, MaxValence float64
+	MinTempo, MaxTempo     float64 // optional: further narrow by BPM
+	MinDanceability        float64
+}
+
+var moodRanges = map[string]moodRange{
+	"energetic": {0.65, 1.0, 0.4, 1.0, 120, 200, 0.3},
+	"happy":     {0.4, 1.0, 0.6, 1.0, 100, 180, 0.4},
+	"chill":     {0.0, 0.5, 0.3, 0.8, 60, 100, 0.0},
+	"calm":      {0.0, 0.35, 0.3, 0.7, 50, 90, 0.0},
+	"sad":       {0.0, 0.4, 0.0, 0.5, 50, 100, 0.0},
+	"focus":     {0.3, 0.6, 0.2, 0.5, 80, 140, 0.0},
+	"romantic":  {0.25, 0.55, 0.4, 0.8, 60, 120, 0.0},
+	"intense":   {0.7, 1.0, 0.0, 0.5, 130, 200, 0.0},
+	"confident": {0.5, 1.0, 0.5, 1.0, 90, 160, 0.4},
+	"sleep":     {0.0, 0.25, 0.0, 0.4, 30, 80, 0.0},
+}
+
+// moodGenres maps mood names to relevant genre names (matching DB genre names).
+// Used as a proxy when no tracks have AI mood analysis data (energy/valence = 0).
+var moodGenres = map[string][]string{
+	"energetic": {"Rock", "Metal", "Electronic", "Dance", "Funk", "Pop Rock"},
+	"happy":     {"Pop", "Dance", "Funk", "Reggae", "Pop Rock", "Indie"},
+	"chill":     {"Ambient", "Lo-Fi", "Jazz", "R&B", "Soul", "Folk"},
+	"calm":      {"Classical", "Ambient", "New Age", "Instrumental"},
+	"sad":       {"Blues", "Folk", "Soul", "Indie", "Traditional"},
+	"focus":     {"Classical", "Ambient", "Lo-Fi", "Instrumental", "Jazz"},
+	"romantic":  {"R&B", "Soul", "Jazz", "Pop", "Fusion"},
+	"intense":   {"Metal", "Rock", "Electronic", "Fusion", "Punk"},
+	"confident": {"Hip Hop", "Rap", "Pop", "Rock", "Electronic", "Dance"},
+	"sleep":     {"Ambient", "Classical", "New Age", "Instrumental", "Lo-Fi"},
+}
+
 func (s *Service) CleanupOldLogs(ctx context.Context) error {
 	_, err := s.repo.db.ExecContext(ctx, `DELETE FROM ai_generation_log WHERE created_at < NOW() - INTERVAL '90 days'`)
 	return err
+}
+
+// getCandidatesForMood attempts to find tracks matching a mood using progressively
+// broader strategies: exact mood tag → energy/valence range → genre proxy → all tracks.
+func (s *Service) getCandidatesForMood(ctx context.Context, mood string, limit int) []TrackMeta {
+	// Strategy 1: Exact mood tag match (requires AI mood analysis to have run)
+	candidates, err := s.repo.GetTracksByMood(ctx, mood, limit)
+	if err != nil {
+		s.logger.Warn("mood tag query failed", zap.String("mood", mood), zap.Error(err))
+	}
+	if len(candidates) > 0 {
+		s.logger.Info("mood playlist: found candidates via mood tags",
+			zap.String("mood", mood), zap.Int("count", len(candidates)))
+		return candidates
+	}
+
+	// Strategy 2: Energy/valence range based on mood mapping (requires mood analysis data)
+	if r, ok := moodRanges[mood]; ok {
+		candidates, err = s.repo.GetTracksByMoodRange(ctx, r.MinEnergy, r.MaxEnergy, r.MinValence, r.MaxValence, limit)
+		if err != nil {
+			s.logger.Warn("mood range query failed", zap.String("mood", mood), zap.Error(err))
+		}
+		if len(candidates) > 0 {
+			s.logger.Info("mood playlist: found candidates via energy/valence range",
+				zap.String("mood", mood), zap.Int("count", len(candidates)))
+			return candidates
+		}
+	}
+
+	// Strategy 3: Genre-based proxy — when no mood analysis data exists, narrow by genre affinity
+	if genres, ok := moodGenres[mood]; ok && len(genres) > 0 {
+		candidates, err = s.repo.GetTracksByGenres(ctx, genres, limit)
+		if err != nil {
+			s.logger.Warn("genre proxy query failed", zap.String("mood", mood), zap.Error(err))
+		}
+		if len(candidates) > 0 {
+			s.logger.Info("mood playlist: found candidates via genre proxy",
+				zap.String("mood", mood), zap.Strings("genres", genres), zap.Int("count", len(candidates)))
+			return candidates
+		}
+	}
+
+	// Strategy 4: No mood data at all — fetch broad set with mood data for in-memory filtering
+	s.logger.Warn("mood playlist: no mood data or genre matches found for mood, fetching all tracks with mood info",
+		zap.String("mood", mood))
+	candidates, err = s.repo.GetTracksWithMood(ctx, limit*2)
+	if err != nil {
+		s.logger.Warn("fallback track query failed", zap.Error(err))
+	}
+	return candidates
+}
+
+// filterTracksByMood applies heuristic mood filtering on in-memory tracks.
+// Uses energy/valence ranges first, then falls back to genre-based proxy
+// when no tracks have mood analysis data.
+func filterTracksByMood(tracks []TrackMeta, mood string) []TrackMeta {
+	if len(tracks) == 0 {
+		return tracks
+	}
+
+	r, ok := moodRanges[mood]
+	if !ok {
+		return tracks
+	}
+
+	// Check if any tracks have mood data
+	hasMoodData := false
+	for _, t := range tracks {
+		if t.Energy != 0 || t.Valence != 0 {
+			hasMoodData = true
+			break
+		}
+	}
+
+	if hasMoodData {
+		// Filter by energy/valence ranges
+		filtered := make([]TrackMeta, 0, len(tracks))
+		for _, t := range tracks {
+			if t.Energy == 0 && t.Valence == 0 {
+				continue
+			}
+			if t.Energy >= r.MinEnergy && t.Energy <= r.MaxEnergy &&
+				t.Valence >= r.MinValence && t.Valence <= r.MaxValence {
+				filtered = append(filtered, t)
+			}
+		}
+		if len(filtered) > 0 {
+			return filtered
+		}
+	}
+
+	// No mood data or all filtered out — fall back to genre-based proxy
+	if genres, ok := moodGenres[mood]; ok && len(genres) > 0 {
+		genreSet := make(map[string]bool, len(genres))
+		for _, g := range genres {
+			genreSet[g] = true
+		}
+		filtered := make([]TrackMeta, 0, len(tracks))
+		for _, t := range tracks {
+			if t.Genre != "" && genreSet[t.Genre] {
+				filtered = append(filtered, t)
+			}
+		}
+		if len(filtered) > 0 {
+			return filtered
+		}
+	}
+
+	// Nothing worked — return original
+	return tracks
 }
 
 func redactPII(input string) string {

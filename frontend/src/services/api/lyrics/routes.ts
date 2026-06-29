@@ -107,7 +107,7 @@ export const useLyricsApi = () => {
   ) => {
     return useRequest<{
       success: boolean
-      source: 'lrclib' | 'ai' | 'none'
+      source: 'lrclib' | 'openrouter' | 'ai' | 'none'
       data?: Lyrics
       job_id?: string
       track_id?: string
@@ -157,12 +157,74 @@ export const useLyricsApi = () => {
     )
   }
 
+  /**
+   * Syncs plain text lyrics to LRC format using OpenRouter AI.
+   * Sends plain text, receives synced LRC lyrics.
+   */
+  const syncWithAI = async (
+    payload: {
+      track_id: string
+      plain_text: string
+      track_title?: string
+      artist_name?: string
+    },
+    config?: UseRequestConfig,
+  ) => {
+    return useRequest<{
+      success: boolean
+      source: 'openrouter' | 'none'
+      data?: Lyrics
+      message?: string
+    }>(
+      LyricsApiRoutes.ADMIN_SYNC_AI,
+      { method: 'POST', data: payload, timeout: 180000 }, // 3min for slow AI models
+      {
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
+  /**
+   * Reviews and fixes existing LRC lyrics using OpenRouter AI.
+   * Sends existing LRC, receives fixed LRC content.
+   */
+  const reviewWithAI = async (
+    payload: {
+      track_id: string
+      existing_lrc: string
+      track_title?: string
+      artist_name?: string
+    },
+    config?: UseRequestConfig,
+  ) => {
+    return useRequest<{
+      success: boolean
+      source: 'openrouter' | 'none'
+      language?: string
+      data?: {
+        content: string
+        type: string
+      }
+      message?: string
+    }>(
+      LyricsApiRoutes.ADMIN_REVIEW_AI,
+      { method: 'POST', data: payload, timeout: 180000 }, // 3min for slow AI models
+      {
+        silent: false,
+        ...config,
+      },
+    )
+  }
+
   return {
     getTrackLyrics,
     getLyricsByTrackID,
     adminCreateLyrics,
     fetchLrcLyrics,
     fetchOrGenerateLyrics,
+    syncWithAI,
+    reviewWithAI,
     aiStatus,
     adminUpdateLyrics,
     adminDeleteLyrics,

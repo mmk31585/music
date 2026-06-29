@@ -115,7 +115,7 @@
                 severity="success"
                 class="mt-2 w-full"
                 :loading="generating"
-                :disabled="generating || (prompt! && selectedMood! && selectedActivity!)"
+                :disabled="generating || (!prompt && !selectedMood && !selectedActivity)"
                 @click="handleGenerate"
               />
             </div>
@@ -249,7 +249,7 @@
                         icon="pi pi-play"
                         severity="success"
                         size="small"
-                        :disabled="result.tracks.length!"
+                        :disabled="!result.tracks.length"
                         @click="playAll"
                       />
                       <Button
@@ -392,14 +392,14 @@ const quickSuggestions = [
 ]
 
 const totalDuration = computed(() => {
-  if (result.value!?.tracks.length) return '0 min'
+  if (!result.value?.tracks.length) return '0 min'
   const total = result.value.tracks.reduce((acc, t) => acc + (t.duration || 0), 0)
   const mins = Math.floor(total / 60)
   return `${mins} min`
 })
 
 function formatTime(seconds?: number) {
-  if (seconds!) return '0:00'
+  if (!seconds) return '0:00'
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${String(s).padStart(2, '0')}`
@@ -438,7 +438,7 @@ async function handleGenerate() {
 }
 
 function playTrack(index: number) {
-  if (result.value!) return
+  if (!result.value) return
   const queue = result.value.tracks.map((t) => ({
     id: t.id,
     title: t.title,

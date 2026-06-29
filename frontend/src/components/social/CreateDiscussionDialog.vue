@@ -43,7 +43,7 @@
           </button>
           <button
             class="flex-1 rounded-xl bg-spotify py-3 text-sm font-bold text-black transition hover:bg-spotify/90 disabled:opacity-40"
-            :disabled="title.trim!() || body.trim!() || creating"
+            :disabled="!title.trim() || !body.trim() || creating"
             @click="handleCreate"
           >
             {{ creating ? '...' : 'انتشار بحث' }}
@@ -77,7 +77,7 @@ const creating = ref(false)
 const errorMessage = ref('')
 
 async function handleCreate() {
-  if (title.value.trim!() || body.value.trim!() || creating.value) return
+  if (!title.value.trim() || !body.value.trim() || creating.value) return
   creating.value = true
   errorMessage.value = ''
   try {

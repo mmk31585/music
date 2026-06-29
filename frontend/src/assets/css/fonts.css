@@ -1,25 +1,27 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Lexend:wght@300;400;600;700;800;900&family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap');
-/* ↑ Cabinet Grotesk alternative: Lexend. Satoshi alternative: Inter. */
+/* Google Fonts loaded via <link rel="stylesheet"> in index.html for preconnect benefits */
 
 @font-face {
   font-family: 'IRANYekanWeb';
   font-style: normal;
   font-weight: 300;
-  src: url('../fonts/iranyekanweblight.woff2') format('woff');
+  font-display: swap;
+  src: url('../fonts/iranyekanweblight.woff2') format('woff2');
 }
 
 @font-face {
   font-family: 'IRANYekanWeb';
   font-style: normal;
   font-weight: normal;
-  src: url('../fonts/iranyekanwebregular.woff2') format('woff');
+  font-display: swap;
+  src: url('../fonts/iranyekanwebregular.woff2') format('woff2');
 }
 
 @font-face {
   font-family: 'IRANYekanWeb';
   font-style: normal;
   font-weight: bold;
-  src: url('../fonts/iranyekanwebbold.woff2') format('woff');
+  font-display: swap;
+  src: url('../fonts/iranyekanwebbold.woff2') format('woff2');
 }
 
 :root {

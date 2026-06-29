@@ -211,7 +211,7 @@ function setPeriod(key: string) {
 }
 
 function shareStats() {
-  if (stats.value!) return
+  if (!stats.value) return
   const s = stats.value
   const text = [
     `🎵 *آمار شنیدن من در ${s.period_label}*`,

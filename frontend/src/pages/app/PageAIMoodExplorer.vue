@@ -115,13 +115,21 @@
 
           <!-- Loading state -->
           <div v-if="loading" class="space-y-2">
-            <div v-for="i in 6" :key="i" class="flex items-center gap-3 rounded-2xl bg-white/2 px-4 py-3">
-              <div class="shimmer h-10 w-10 shrink-0 rounded-lg" />
-              <div class="flex-1 space-y-2">
-                <div class="shimmer h-3 w-3/4 rounded" />
-                <div class="shimmer h-2 w-1/2 rounded" />
+            <div class="flex items-center gap-3 rounded-2xl bg-white/2 px-5 py-4">
+              <i aria-hidden="true" class="pi pi-spin pi-sparkles text-spotify" />
+              <div>
+                <span class="text-sm font-medium text-white">AI is analyzing your mood</span>
+                <p class="text-xs text-white/40">Matching tracks by energy and emotional profile...</p>
               </div>
-              <div class="shimmer h-3 w-12 rounded" />
+            </div>
+            <div v-for="i in 5" :key="i" class="flex animate-pulse items-center gap-3 rounded-2xl bg-white/2 px-4 py-3">
+              <div class="h-10 w-10 shrink-0 rounded-lg bg-white/6" />
+              <div class="flex-1 space-y-2">
+                <div class="h-3 w-3/4 rounded bg-white/6" />
+                <div class="h-2 w-1/2 rounded bg-white/4" />
+              </div>
+              <div class="h-2 w-14 rounded bg-white/4" />
+              <div class="h-3 w-12 rounded bg-white/4" />
             </div>
           </div>
 
@@ -289,7 +297,7 @@ function getMoodGradient(mood: string): string {
 }
 
 function moodBgClass(): string {
-  if (selectedMood.value!) return 'bg-black/0'
+  if (!selectedMood.value) return 'bg-black/0'
   const bg: Record<string, string> = {
     energetic: 'bg-linear-to-b from-surface-base via-orange-950/20 to-black',
     happy: 'bg-linear-to-b from-surface-base via-amber-950/15 to-black',
@@ -437,7 +445,7 @@ async function toggleMood(mood: string) {
 }
 
 function playTrack(index: number) {
-  if (tracks.value.length!) return
+  if (!tracks.value.length) return
   const queue = tracks.value.map((t) => ({
     id: String(t.id),
     title: String(t.title ?? ''),
@@ -450,7 +458,7 @@ function playTrack(index: number) {
 }
 
 function formatTime(seconds?: number) {
-  if (seconds!) return '0:00'
+  if (!seconds) return '0:00'
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${String(s).padStart(2, '0')}`

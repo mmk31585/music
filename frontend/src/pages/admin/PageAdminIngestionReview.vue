@@ -124,6 +124,25 @@
     </template>
 
     <template v-else>
+      <!-- Extracted metadata summary -->
+      <div v-if="extractedTitle || extractedArtist || extractedAlbum" class="mb-6 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg border border-surface-700 bg-surface-800/50 px-4 py-2.5">
+        <div v-if="extractedTitle" class="flex items-center gap-1.5 text-xs">
+          <i aria-hidden="true" class="pi pi-music text-surface-500"></i>
+          <span class="text-surface-500">Title:</span>
+          <span class="font-medium text-white">{{ extractedTitle }}</span>
+        </div>
+        <div v-if="extractedArtist" class="flex items-center gap-1.5 text-xs">
+          <i aria-hidden="true" class="pi pi-user text-surface-500"></i>
+          <span class="text-surface-500">Artist:</span>
+          <span class="font-medium text-white">{{ extractedArtist }}</span>
+        </div>
+        <div v-if="extractedAlbum" class="flex items-center gap-1.5 text-xs">
+          <i aria-hidden="true" class="pi pi-book text-surface-500"></i>
+          <span class="text-surface-500">Album:</span>
+          <span class="font-medium text-white">{{ extractedAlbum }}</span>
+        </div>
+      </div>
+
       <div class="mb-8">
         <div class="flex items-center gap-2">
           <div
@@ -153,6 +172,18 @@
       <div v-if="enriching" class="mb-8">
         <Message severity="info" :closable="false">
           <i aria-hidden="true" class="pi pi-spin pi-spinner mr-2"></i>Enrichment in progress — covers, bio, and suggestions will appear once complete.
+        </Message>
+      </div>
+
+      <div v-if="enrichmentComplete" class="mb-8">
+        <Message severity="success" :closable="true" @close="enrichmentComplete = false">
+          <i aria-hidden="true" class="pi pi-check-circle mr-2"></i>Enrichment complete. Found data from
+          <template v-if="enrichment?.spotify"> Spotify,</template>
+          <template v-if="enrichment?.lastfm"> Last.fm,</template>
+          <template v-if="enrichment?.musicbrainz"> MusicBrainz,</template>
+          <template v-if="enrichment?.ml"> ML service,</template>
+          <template v-if="!enrichment?.spotify && !enrichment?.lastfm && !enrichment?.musicbrainz && !enrichment?.ml"> no external sources</template>
+          and applied to empty fields. Click any image or "Apply" button to use specific results.
         </Message>
       </div>
 
@@ -187,7 +218,7 @@
                 @click="fetchSection('artist')"
               />
               <p class="mt-1.5 text-[11px] text-surface-500">
-                Re-fetch artist images &amp; bios from Spotify and Last.fm.
+                Load artist data from the track's embedded metadata (ID3 tags).
               </p>
             </div>
 
@@ -396,7 +427,7 @@
                       <label class="mb-1 block text-xs font-medium text-surface-500">
                         Name
                         <template v-if="aIdx === 0 && findSuggestion('artist')">
-                          <Badge :value="sourceLabel(findSuggestion('artist').source!)" :severity="sourceSeverity(findSuggestion('artist').source!)" size="small" />
+                          <Badge :value="sourceLabel(findSuggestion('artist')!.source)" :severity="sourceSeverity(findSuggestion('artist')!.source)" size="small" />
                         </template>
                       </label>
                       <InputText
@@ -441,11 +472,23 @@
                   </div>
                   <div v-if="aIdx === 0 && enrichment?.musicbrainz?.artistMbid" class="mt-3">
                     <label class="mb-1 block text-xs font-medium text-surface-500">MusicBrainz MBID</label>
-                    <InputText
-                      :model-value="enrichment.musicbrainz.artistMbid"
-                      class="w-full font-mono text-xs text-surface-400"
-                      disabled
-                    />
+                    <div class="flex items-center gap-2">
+                      <InputText
+                        :model-value="enrichment.musicbrainz.artistMbid"
+                        class="flex-1 font-mono text-xs text-surface-400"
+                        disabled
+                      />
+                      <Button
+                        v-if="artist.musicbrainzMbid !== enrichment.musicbrainz.artistMbid"
+                        label="Apply"
+                        icon="pi pi-check"
+                        size="small"
+                        severity="success"
+                        outlined
+                        @click="artist.musicbrainzMbid = enrichment.musicbrainz!.artistMbid; hasUnsavedChanges = true"
+                      />
+                      <i v-else class="pi pi-check-circle text-green-400" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -553,7 +596,7 @@
                 @click="fetchSection('album')"
               />
               <p class="mt-1.5 text-[11px] text-surface-500">
-                Re-fetch album cover, release year &amp; genre from Spotify and Last.fm.
+                Load album data from the track's embedded metadata (ID3 tags).
               </p>
             </div>
 
@@ -626,13 +669,13 @@
                     Title
                     <template v-if="findSuggestion('album')">
                       <Badge
-                        :value="sourceLabel(findSuggestion('album').source!)"
-                        :severity="sourceSeverity(findSuggestion('album').source!)"
+                        :value="sourceLabel(findSuggestion('album')!.source)"
+                        :severity="sourceSeverity(findSuggestion('album')!.source)"
                         size="small"
                       />
                       <Badge
-                        :value="findSuggestion('album').confidence!"
-                        :severity="confidenceSeverity(findSuggestion('album').confidence!)"
+                        :value="findSuggestion('album')!.confidence"
+                        :severity="confidenceSeverity(findSuggestion('album')!.confidence)"
                         size="small"
                       />
                     </template>
@@ -649,13 +692,13 @@
                     Release Year
                     <template v-if="findSuggestion('year')">
                       <Badge
-                        :value="sourceLabel(findSuggestion('year').source!)"
-                        :severity="sourceSeverity(findSuggestion('year').source!)"
+                        :value="sourceLabel(findSuggestion('year')!.source)"
+                        :severity="sourceSeverity(findSuggestion('year')!.source)"
                         size="small"
                       />
                       <Badge
-                        :value="findSuggestion('year').confidence!"
-                        :severity="confidenceSeverity(findSuggestion('year').confidence!)"
+                        :value="findSuggestion('year')!.confidence"
+                        :severity="confidenceSeverity(findSuggestion('year')!.confidence)"
                         size="small"
                       />
                     </template>
@@ -689,11 +732,23 @@
               </div>
               <div v-if="enrichment?.musicbrainz?.albumMbid">
                 <label class="mb-1 block text-xs font-medium text-surface-400">MusicBrainz Release ID</label>
-                <InputText
-                  :model-value="enrichment.musicbrainz.albumMbid"
-                  class="w-full font-mono text-xs text-surface-400"
-                  disabled
-                />
+                <div class="flex items-center gap-2">
+                  <InputText
+                    :model-value="enrichment.musicbrainz.albumMbid"
+                    class="flex-1 font-mono text-xs text-surface-400"
+                    disabled
+                  />
+                  <Button
+                    v-if="finalMetadata.album.musicbrainzReleaseId !== enrichment.musicbrainz.albumMbid"
+                    label="Apply"
+                    icon="pi pi-check"
+                    size="small"
+                    severity="success"
+                    outlined
+                    @click="finalMetadata.album.musicbrainzReleaseId = enrichment.musicbrainz!.albumMbid; hasUnsavedChanges = true"
+                  />
+                  <i v-else class="pi pi-check-circle text-green-400" />
+                </div>
               </div>
             </div>
           </div>
@@ -791,7 +846,7 @@
                 @click="fetchSection('track')"
               />
               <p class="mt-1.5 text-[11px] text-surface-500">
-                Re-fetch lyrics, cover art &amp; Spotify preview from LRCLib and Spotify.
+                Load track data from the track's embedded metadata (ID3 tags).
               </p>
             </div>
 
@@ -826,13 +881,13 @@
                     Title
                     <template v-if="findSuggestion('title')">
                       <Badge
-                        :value="sourceLabel(findSuggestion('title').source!)"
-                        :severity="sourceSeverity(findSuggestion('title').source!)"
+                        :value="sourceLabel(findSuggestion('title')!.source)"
+                        :severity="sourceSeverity(findSuggestion('title')!.source)"
                         size="small"
                       />
                       <Badge
-                        :value="findSuggestion('title').confidence!"
-                        :severity="confidenceSeverity(findSuggestion('title').confidence!)"
+                        :value="findSuggestion('title')!.confidence"
+                        :severity="confidenceSeverity(findSuggestion('title')!.confidence)"
                         size="small"
                       />
                     </template>
@@ -892,14 +947,14 @@
                   <div class="flex items-center gap-2">
                     <Badge
                       v-if="findSuggestion('lyrics_type')"
-                      :value="findSuggestion('lyrics_type').value! === 'lrc' ? 'Synced' : 'Plain'"
-                      :severity="findSuggestion('lyrics_type').value! === 'lrc' ? 'success' : 'info'"
+                      :value="findSuggestion('lyrics_type')!.value === 'lrc' ? 'Synced' : 'Plain'"
+                      :severity="findSuggestion('lyrics_type')!.value === 'lrc' ? 'success' : 'info'"
                       size="small"
                     />
                     <Badge
                       v-if="findSuggestion('lyrics')"
-                      :value="sourceLabel(findSuggestion('lyrics').source!)"
-                      :severity="sourceSeverity(findSuggestion('lyrics').source!)"
+                      :value="sourceLabel(findSuggestion('lyrics')!.source)"
+                      :severity="sourceSeverity(findSuggestion('lyrics')!.source)"
                       size="small"
                     />
                     <Button
@@ -967,7 +1022,7 @@
                   <InputText
                     v-model="finalMetadata.track.spotifyPreviewUrl"
                     class="w-full font-mono text-xs text-surface-400"
-                    :disabled="enrichment!?.spotify?.previewUrl"
+                    :disabled="!!enrichment?.spotify?.previewUrl"
                     :placeholder="enrichment?.spotify?.previewUrl || 'Not available'"
                   />
                 </div>
@@ -1083,7 +1138,7 @@
             label="Next"
             icon="pi pi-chevron-right"
             icon-pos="right"
-            :disabled="canProceed!"
+            :disabled="!canProceed"
             @click="step++"
           />
           <Button
@@ -1091,7 +1146,7 @@
             label="Publish to Catalog"
             icon="pi pi-check"
             :loading="publishing"
-            :disabled="isValid!"
+            :disabled="!isValid"
             @click="publish"
           />
           <Button
@@ -1148,6 +1203,7 @@ import type {
 import { parseLRCLines, parsePlainLines } from '@/composables/lyrics'
 import type { ParsedLine } from '@/composables/lyrics'
 import { useToast } from 'primevue/usetoast'
+import { formatDuration } from '@/utils/format'
 
 // TODO MEDIUM: This component is 1135 lines — too large. Split into ArtistStep, AlbumStep, TrackStep, ConfirmStep sub-components.
 // TODO MEDIUM: pollEnrichment uses polling (2s x 30 = 60s). Use WebSocket or SSE instead.
@@ -1184,6 +1240,7 @@ const syncedLyricsContainer = ref<HTMLElement | null>(null)
 const syncedLyricLineRefs = ref<HTMLElement[]>([])
 
 const enriching = ref(false)
+const enrichmentComplete = ref(false)
 const enrichingArtist = ref(false)
 const enrichingAlbum = ref(false)
 const enrichingTrack = ref(false)
@@ -1226,7 +1283,7 @@ watch(audioLyrics, () => {
 
 function rebuildParsedLyrics() {
   const text = audioLyrics.value
-  if (text!) {
+  if (!text) {
     parsedLyrics = []
     return
   }
@@ -1234,7 +1291,7 @@ function rebuildParsedLyrics() {
 }
 
 function toggleAudio() {
-  if (audioPreview.value!) return
+  if (!audioPreview.value) return
   if (audioPlaying.value) {
     audioPreview.value.pause()
   } else {
@@ -1243,13 +1300,13 @@ function toggleAudio() {
 }
 
 function seekAudio(seconds: number) {
-  if (audioPreview.value!) return
+  if (!audioPreview.value) return
   audioPreview.value.currentTime = seconds
   audioCurrentTime.value = seconds
 }
 
 function seekAudioFromBar(e: MouseEvent) {
-  if (audioPreview.value! || audioDuration.value!) return
+  if (!audioPreview.value || !audioDuration.value) return
   const bar = e.currentTarget as HTMLElement
   const rect = bar.getBoundingClientRect()
   const ratio = (e.clientX - rect.left) / rect.width
@@ -1257,13 +1314,13 @@ function seekAudioFromBar(e: MouseEvent) {
 }
 
 function onAudioTime() {
-  if (audioPreview.value!) return
+  if (!audioPreview.value) return
   audioCurrentTime.value = audioPreview.value.currentTime
   animFrameId = requestAnimationFrame(onAudioTime)
 }
 
 function onAudioLoaded() {
-  if (audioPreview.value!) return
+  if (!audioPreview.value) return
   audioDuration.value = audioPreview.value.duration
 }
 
@@ -1285,7 +1342,7 @@ function onAudioPause() {
 const activeLyricLine = computed(() => {
   const t = audioCurrentTime.value
   for (let i = parsedLyrics.length - 1; i >= 0; i--) {
-    if (t >= parsedLyrics[i].timeSeconds!) return i
+    if (t >= parsedLyrics[i]!.timeSeconds) return i
   }
   return -1
 })
@@ -1295,14 +1352,14 @@ let lyricsScrollTimer: ReturnType<typeof setTimeout> | null = null
 watch(activeLyricLine, (idx) => {
   if (lyricsScrollTimer) clearTimeout(lyricsScrollTimer)
   lyricsScrollTimer = setTimeout(() => {
-    if (idx < 0 || syncedLyricsContainer.value!) return
+    if (idx < 0 || !syncedLyricsContainer.value) return
     const target = syncedLyricLineRefs.value[idx]
     target?.scrollIntoView({ block: 'center', behavior: 'smooth' })
   }, 80)
 })
 
 function formatAudioTime(seconds: number): string {
-  if (seconds! || Number.isFinite!(seconds)) return '0:00'
+  if (!seconds || !Number.isFinite(seconds)) return '0:00'
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${s.toString().padStart(2, '0')}`
@@ -1355,6 +1412,10 @@ const canProceed = computed(() => {
   return true
 })
 
+const extractedTitle = computed(() => draftDetail.value?.extractedMetadata?.title || '')
+const extractedArtist = computed(() => draftDetail.value?.extractedMetadata?.artist || '')
+const extractedAlbum = computed(() => draftDetail.value?.extractedMetadata?.album || '')
+
 const isValid = computed(() => {
   return (
     (finalMetadata.artists[0]?.name?.trim().length ?? 0) > 0 &&
@@ -1395,21 +1456,14 @@ function stepIconClass(i: number): string {
 }
 
 function truncateBio(bio: string): string {
-  if (bio!) return ''
+  if (!bio) return ''
   return bio.length > 300 ? bio.slice(0, 300) + '...' : bio
-}
-
-function formatDuration(seconds?: number): string {
-  if (seconds!) return ''
-  const m = Math.floor(seconds / 60)
-  const s = Math.round(seconds % 60)
-  return `${m}:${s.toString().padStart(2, '0')}`
 }
 
 function selectExistingArtist(a: ArtistSearchResult, index: number = 0) {
   selectedArtistId.value = a.id
   const artist = finalMetadata.artists[index]
-  if (artist!) return
+  if (!artist) return
   artist.existingId = a.id
   artist.name = a.name
   artist.country = a.country || ''
@@ -1450,11 +1504,11 @@ function moveFeaturedArtist(fromIndex: number, direction: -1 | 1) {
 
 /** Parse "feat." / "ft." patterns from a raw artist string */
 function parseFeatArtists(rawArtist: string): string[] {
-  if (rawArtist!) return []
+  if (!rawArtist) return []
   // Split on common feat/ft patterns
   const parts = rawArtist.split(/\s+(?:feat\.|ft\.|featuring|Feat\.|Ft\.|Featuring)\s+/i)
   const mainArtist = parts[0]?.trim()
-  if (mainArtist!) return []
+  if (!mainArtist) return []
   const result = [mainArtist]
   if (parts.length > 1) {
     // Split the feat part further by ",", "&", "and"
@@ -1519,9 +1573,10 @@ function debouncedAlbumSearch() {
 async function loadDraft() {
   loading.value = true
   error.value = null
+  enrichmentComplete.value = false
   try {
     const detail = await ingestionApi.getDraftDetail(draftId)
-    if (detail!) {
+    if (!detail) {
       error.value = 'Draft not found.'
       return
     }
@@ -1550,13 +1605,29 @@ function pollEnrichment() {
       if (detail && detail.status !== 'enriching' && detail.status !== 'refetching') {
         clearInterval(timer)
         enriching.value = false
+        enrichmentComplete.value = true
         enrichingArtist.value = false
         enrichingAlbum.value = false
         enrichingTrack.value = false
         enrichment.value = detail.enrichedMetadata || null
-        prefillForm(detail)
+        applyEnrichmentToEmptyFields()
+        if (!hasUnsavedChanges.value) {
+          prefillForm(detail)
+        }
         if (attempts > 1) {
-          toast.add({ severity: 'success', summary: 'Data fetched', detail: 'Enrichment data has been updated from external sources.', life: 3000 })
+          const parts: string[] = []
+          const e = enrichment.value
+          if (e?.spotify?.artistImageUrl) parts.push('Spotify artist image')
+          if (e?.lastfm?.artistImageUrl) parts.push('Last.fm artist image')
+          if (e?.lastfm?.artistBio) parts.push('artist bio')
+          if (e?.ml?.artistImageUrl) parts.push('ML artist image')
+          if (e?.ml?.albumCoverUrl) parts.push('ML cover art')
+          if (e?.ml?.lyrics) parts.push('lyrics')
+          if (e?.spotify?.albumCoverUrl) parts.push('Spotify cover art')
+          if (e?.lastfm?.albumCoverUrl) parts.push('Last.fm cover art')
+          if (e?.musicbrainz?.artistMbid || e?.musicbrainz?.albumMbid) parts.push('MusicBrainz IDs')
+          const summary = parts.length > 0 ? parts.join(', ') + '.' : 'No additional data found.'
+          toast.add({ severity: 'success', summary: 'Enrichment complete', detail: summary, life: 4000 })
         }
       }
     } catch (err) {
@@ -1575,6 +1646,7 @@ function pollEnrichment() {
 
 async function triggerEnrich() {
   enriching.value = true
+  enrichmentComplete.value = false
   try {
     await ingestionApi.enrichDraft(draftId)
     pollEnrichment()
@@ -1585,34 +1657,59 @@ async function triggerEnrich() {
   }
 }
 
-const sectionScope: Record<string, string[]> = {
-  artist: ['spotify', 'lastfm', 'musicbrainz'],
-  album: ['spotify', 'lastfm', 'musicbrainz'],
-  track: ['lrclib', 'spotify', 'musicbrainz', 'ml'],
+function applyEnrichmentToEmptyFields() {
+  const mb = enrichment.value?.musicbrainz
+  const lfm = enrichment.value?.lastfm
+  const spot = enrichment.value?.spotify
+  const ml = enrichment.value?.ml
+  const sug = enrichment.value?.suggestions || []
+
+  const sugMap = new Map<string, string>()
+  for (const s of sug) {
+    sugMap.set(s.field, s.value)
+  }
+
+  const artist = finalMetadata.artists[0]
+  if (artist) {
+    if (!artist.bio) artist.bio = lfm?.artistBio || sugMap.get('artist_bio') || ''
+    if (!artist.imageUrl) artist.imageUrl = spot?.artistImageUrl || lfm?.artistImageUrl || ml?.artistImageUrl || sugMap.get('artist_image_url') || ''
+    if (!artist.musicbrainzMbid && mb?.artistMbid) artist.musicbrainzMbid = mb.artistMbid
+  }
+  if (!finalMetadata.album.musicbrainzReleaseId && mb?.albumMbid) {
+    finalMetadata.album.musicbrainzReleaseId = mb.albumMbid
+  }
+  if (!finalMetadata.track.lyrics && ml?.lyrics) {
+    finalMetadata.track.lyrics = ml.lyrics
+  }
 }
 
-async function fetchSection(section: 'artist' | 'album' | 'track') {
-  const loadingRef = section === 'artist' ? enrichingArtist
-    : section === 'album' ? enrichingAlbum
-    : enrichingTrack
-  loadingRef.value = true
+function fetchSection(section: 'artist' | 'album' | 'track') {
+  const tags = draftDetail.value?.extractedMetadata
+  if (!tags) return
 
-  try {
-    await ingestionApi.enrichDraft(draftId, sectionScope[section])
-    // Poll for completion — the existing pollEnrichment will update all fields
-    pollEnrichment()
-    const labels = { artist: 'Artist', album: 'Album', track: 'Track' }
-    toast.add({
-      severity: 'info',
-      summary: `Fetching ${labels[section]} Data`,
-      detail: `Retrieving ${labels[section].toLowerCase()} info from external sources...`,
-      life: 4000,
-    })
-  } catch (err) {
-    console.error(`${section} enrichment failed:`, err)
-    loadingRef.value = false
-    toast.add({ severity: 'error', summary: `Failed to fetch ${section} data`, life: 3000 })
+  if (section === 'artist' && tags.artist) {
+    const parsedArtists = parseFeatArtists(tags.artist)
+    if (parsedArtists.length > 0) {
+      finalMetadata.artists = parsedArtists.map((name, i) => ({
+        action: 'create' as const,
+        name,
+        bio: finalMetadata.artists[i]?.bio || '',
+        imageUrl: finalMetadata.artists[i]?.imageUrl || '',
+        country: finalMetadata.artists[i]?.country || '',
+        musicbrainzMbid: finalMetadata.artists[i]?.musicbrainzMbid || '',
+      }))
+    }
   }
+  if (section === 'album') {
+    if (tags.album) finalMetadata.album.title = tags.album
+    if (tags.year) finalMetadata.album.releaseYear = Number(tags.year) || undefined
+  }
+  if (section === 'track') {
+    if (tags.title) finalMetadata.track.title = tags.title
+    if (tags.lyrics) finalMetadata.track.lyrics = tags.lyrics
+    if (tags.trackNumber) finalMetadata.track.trackNumber = Number(tags.trackNumber) || undefined
+  }
+  hasUnsavedChanges.value = true
 }
 
 function prefillForm(detail: DraftDetailResponse) {
@@ -1629,7 +1726,7 @@ function prefillForm(detail: DraftDetailResponse) {
   }
 
   // ── Artists (multi-artist with feat. support) ──
-  const rawArtist = sugMap.get('artist') || tags?.artist || ''
+  const rawArtist = tags?.artist || sugMap.get('artist') || ''
   const parsedArtists = parseFeatArtists(rawArtist)
 
   finalMetadata.artists = parsedArtists.map((name, i) => ({
@@ -1651,20 +1748,20 @@ function prefillForm(detail: DraftDetailResponse) {
   // Apply imageUrl to featured artists from enrichment if available
   const featImage = sugMap.get('artist_image_url') || spot?.artistImageUrl || lfm?.artistImageUrl || ''
   for (let i = 1; i < finalMetadata.artists.length; i++) {
-    if (finalMetadata.artists[i]!.imageUrl!) {
-      finalMetadata.artists[i].imageUrl! = featImage
+    if (!finalMetadata.artists[i]!.imageUrl) {
+      finalMetadata.artists[i]!.imageUrl = featImage
     }
   }
 
   // ── Album ──
-  finalMetadata.album.title = sugMap.get('album') || tags?.album || ''
+  finalMetadata.album.title = tags?.album || sugMap.get('album') || ''
   finalMetadata.album.releaseYear = (sugMap.get('year') || tags?.year || undefined) as number | undefined
   finalMetadata.album.genre = sugMap.get('genre') || tags?.genre || ''
   finalMetadata.album.coverUrl = albumCoverAsset.value || spot?.albumCoverUrl || lfm?.albumCoverUrl || ml?.albumCoverUrl || sugMap.get('album_cover_url') || sugMap.get('album_cover_url_lastfm') || ''
   if (mb?.albumMbid) finalMetadata.album.musicbrainzReleaseId = mb.albumMbid
 
   // ── Track ──
-  finalMetadata.track.title = sugMap.get('title') || tags?.title || ''
+  finalMetadata.track.title = tags?.title || sugMap.get('title') || ''
   finalMetadata.track.trackNumber = tags?.trackNumber || undefined
   finalMetadata.track.durationSeconds = Math.round(detail.durationSeconds || tags?.duration || 0)
   finalMetadata.track.genre = sugMap.get('genre') || tags?.genre || ''
@@ -1684,7 +1781,7 @@ function goBack() {
 async function uploadArtistImage(e: Event, index: number = 0) {
   const target = e.target as HTMLInputElement
   const file = target.files?.[0]
-  if (file!) return
+  if (!file) return
   try {
     const res = await ingestionApi.uploadDraftImage(draftId, 'artist', file)
     if (res?.url) {
@@ -1704,7 +1801,7 @@ async function uploadArtistImage(e: Event, index: number = 0) {
 async function uploadAlbumCover(e: Event) {
   const target = e.target as HTMLInputElement
   const file = target.files?.[0]
-  if (file!) return
+  if (!file) return
   try {
     const res = await ingestionApi.uploadDraftImage(draftId, 'album', file)
     if (res?.url) {
@@ -1763,12 +1860,12 @@ function handleKeydown(e: KeyboardEvent) {
   const tag = (e.target as HTMLElement)?.tagName
   const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
   if (e.key === 'Escape') {
-    if (isInput! && step.value > 0) {
+    if (!isInput && step.value > 0) {
       e.preventDefault()
       step.value--
     }
   } else if (e.key === 'Enter') {
-    if (isInput!) {
+    if (!isInput) {
       e.preventDefault()
       if (step.value < 3 && canProceed.value) {
         step.value++
@@ -1792,7 +1889,6 @@ watch(
 onMounted(() => {
   loadDraft()
   window.addEventListener('keydown', handleKeydown)
-  window.addEventListener('beforeunload', handleBeforeUnload)
 
   const audio = new Audio()
   audio.preload = 'metadata'
@@ -1809,7 +1905,6 @@ onUnmounted(() => {
   if (lyricsScrollTimer) clearTimeout(lyricsScrollTimer)
   cancelAnimationFrame(animFrameId)
   window.removeEventListener('keydown', handleKeydown)
-  window.removeEventListener('beforeunload', handleBeforeUnload)
   if (audioPreview.value) {
     audioPreview.value.pause()
     audioPreview.value.src = ''
@@ -1828,12 +1923,6 @@ onBeforeRouteLeave((_to, _from, next) => {
   }
   next()
 })
-
-function handleBeforeUnload(e: BeforeUnloadEvent) {
-  if (hasUnsavedChanges.value) {
-    e.preventDefault()
-  }
-}
 </script>
 
 <style scoped>

@@ -334,7 +334,12 @@ func (h *Handler) AddPlayHistory(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.AddPlayHistory(c.Request.Context(), userID, req.TrackID); err != nil {
+	if err := h.service.AddPlayHistory(c.Request.Context(), AddPlayHistoryInput{
+		UserID:    userID,
+		TrackID:   req.TrackID,
+		Duration:  req.Duration,
+		Completed: req.Completed,
+	}); err != nil {
 		h.handleError(c, err)
 		return
 	}

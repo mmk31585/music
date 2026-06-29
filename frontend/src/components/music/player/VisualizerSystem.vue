@@ -83,7 +83,7 @@ const effectiveMode = computed<VisualizerMode>(() => {
 
 const colors = computed(() => {
   const p = props.colorPalette
-  if (p!) {
+  if (!p) {
     return {
       primary: 'rgba(29, 185, 84, 0.9)',
       secondary: 'rgba(96, 165, 250, 0.7)',
@@ -103,7 +103,7 @@ const colors = computed(() => {
 
 function tryConnectAudio() {
   const shared = audioEngine.getAnalyserNode()
-  if (shared!) return false
+  if (!shared) return false
 
   analyserNode = shared
   analyserNode.fftSize = 256
@@ -183,7 +183,7 @@ let resizeRaf: number | null = null
 function resize() {
   const el = container.value
   const cvs = canvas.value
-  if (el! || cvs!) return
+  if (!el || !cvs) return
   const rect = el.getBoundingClientRect()
   const dpr = Math.min(window.devicePixelRatio, 2)
   cvs.width = rect.width * dpr
@@ -200,7 +200,7 @@ function onResizeThrottled() {
 let cachedAvgAmplitude = 0
 
 function getFreqData(): Uint8Array | null {
-  if (analyserNode! || frequencyData!) return null
+  if (!analyserNode || !frequencyData) return null
   analyserNode.getByteFrequencyData(frequencyData as unknown as Uint8Array<ArrayBuffer>)
   let sum = 0
   for (let i = 0; i < frequencyData.length; i++) {
@@ -211,7 +211,7 @@ function getFreqData(): Uint8Array | null {
 }
 
 function getWaveData(): Uint8Array | null {
-  if (analyserNode! || waveformData!) return null
+  if (!analyserNode || !waveformData) return null
   analyserNode.getByteTimeDomainData(waveformData as unknown as Uint8Array<ArrayBuffer>)
   return waveformData
 }
@@ -238,7 +238,7 @@ function hexToRgba(hex: string, alpha = 1): string {
 let smoothFreqs: Float32Array | null = null
 
 function drawSpectrum() {
-  if (ctx! || canvas.value!) return
+  if (!ctx || !canvas.value) return
   const dpr = window.devicePixelRatio
   const w = canvas.value.width / dpr
   const h = canvas.value.height / dpr
@@ -249,7 +249,7 @@ function drawSpectrum() {
   const freqData = getFreqData()
   const useAudio = freqData && props.isPlaying
 
-  if (smoothFreqs! || smoothFreqs.length !== bars) {
+  if (!smoothFreqs || smoothFreqs.length !== bars) {
     smoothFreqs = new Float32Array(bars)
   }
 
@@ -260,7 +260,7 @@ function drawSpectrum() {
       values[i] = freqData![freqIdx]! / 255 * props.sensitivity
     } else {
       const bar = simulatedBars[i]
-      if (bar!) continue
+      if (!bar) continue
       if (props.isPlaying) {
         if (Math.random() < 0.03) {
           bar.target = 0.1 + Math.random() * 0.9
@@ -328,7 +328,7 @@ function drawSpectrum() {
 let smoothWaveform: Float32Array | null = null
 
 function drawWaveform() {
-  if (ctx! || canvas.value!) return
+  if (!ctx || !canvas.value) return
   const dpr = window.devicePixelRatio
   const w = canvas.value.width / dpr
   const h = canvas.value.height / dpr
@@ -339,7 +339,7 @@ function drawWaveform() {
   const useAudio = waveData && props.isPlaying
 
   const points = Math.max(30, Math.floor(w / 3))
-  if (smoothWaveform! || smoothWaveform.length !== points) {
+  if (!smoothWaveform || smoothWaveform.length !== points) {
     smoothWaveform = new Float32Array(points)
   }
 
@@ -350,7 +350,7 @@ function drawWaveform() {
       values[i] = (waveData![idx]! - 128) / 128 * props.sensitivity
     } else {
       const bar = simulatedBars[i % simulatedBars.length]
-      if (bar!) continue
+      if (!bar) continue
       values[i] = (bar.height - 0.5) * 2
     }
     smoothWaveform[i] = lerp(smoothWaveform[i] ?? 0, values[i] ?? 0, 0.25)
@@ -401,7 +401,7 @@ function drawWaveform() {
 }
 
 function drawCircular() {
-  if (ctx! || canvas.value!) return
+  if (!ctx || !canvas.value) return
   const dpr = window.devicePixelRatio
   const w = canvas.value.width / dpr
   const h = canvas.value.height / dpr
@@ -422,7 +422,7 @@ function drawCircular() {
       val = freqData![freqIdx]! / 255 * props.sensitivity
     } else {
       const bar = simulatedBars[i]
-      if (bar!) continue
+      if (!bar) continue
       if (props.isPlaying) {
         if (Math.random() < 0.03) {
           bar.target = 0.1 + Math.random() * 0.9
@@ -486,7 +486,7 @@ function drawCircular() {
 let radialSmooth: Float32Array | null = null
 
 function drawRadialBars() {
-  if (ctx! || canvas.value!) return
+  if (!ctx || !canvas.value) return
   const dpr = window.devicePixelRatio
   const w = canvas.value.width / dpr
   const h = canvas.value.height / dpr
@@ -500,7 +500,7 @@ function drawRadialBars() {
   const freqData = getFreqData()
   const useAudio = freqData && props.isPlaying
 
-  if (radialSmooth! || radialSmooth.length !== bars) {
+  if (!radialSmooth || radialSmooth.length !== bars) {
     radialSmooth = new Float32Array(bars)
   }
 
@@ -511,7 +511,7 @@ function drawRadialBars() {
       val = freqData![freqIdx]! / 255 * props.sensitivity
     } else {
       const bar = simulatedBars[i]
-      if (bar!) continue
+      if (!bar) continue
       if (props.isPlaying) {
         if (Math.random() < 0.03) {
           bar.target = 0.1 + Math.random() * 0.9
@@ -579,12 +579,13 @@ function drawRadialBars() {
 }
 
 function drawParticles(_time: number, dt: number) {
-  if (ctx! || canvas.value!) return
+  const c = ctx
+  if (!c || !canvas.value) return
   const dpr = window.devicePixelRatio
   const w = canvas.value.width / dpr
   const h = canvas.value.height / dpr
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  ctx.clearRect(0, 0, w, h)
+  c.setTransform(dpr, 0, 0, dpr, 0, 0)
+  c.clearRect(0, 0, w, h)
 
   getFreqData()
   const avgFreq = cachedAvgAmplitude
@@ -610,25 +611,25 @@ function drawParticles(_time: number, dt: number) {
     }
 
     const size = p.size * (0.8 + energy * 0.8)
-    ctx.beginPath!()
-    ctx.arc!(p.x, p.y, size, 0, Math.PI * 2)
+    c.beginPath()
+    c.arc(p.x, p.y, size, 0, Math.PI * 2)
 
     const alpha = clamp(p.alpha)
-    ctx.fillStyle! = hexToRgba(colors.value.primary, alpha * 0.6)
-    ctx.fill!()
+    c.fillStyle = hexToRgba(colors.value.primary, alpha * 0.6)
+    c.fill()
 
-    ctx.beginPath!()
-    ctx.arc!(p.x - size * 0.2, p.y - size * 0.2, size * 0.3, 0, Math.PI * 2)
-    ctx.fillStyle! = hexToRgba(colors.value.secondary || '#ffffff', alpha * 0.3)
-    ctx.fill!()
+    c.beginPath()
+    c.arc(p.x - size * 0.2, p.y - size * 0.2, size * 0.3, 0, Math.PI * 2)
+    c.fillStyle = hexToRgba(colors.value.secondary || '#ffffff', alpha * 0.3)
+    c.fill()
 
     if (props.isPlaying && energy > 0.3 && props.glowIntensity > 0.1) {
-      ctx.shadowColor! = hexToRgba(colors.value.primary, 0.3 * props.glowIntensity)
-      ctx.shadowBlur! = 6 * props.glowIntensity
-      ctx.beginPath!()
-      ctx.arc!(p.x, p.y, size * 2, 0, Math.PI * 2)
-      ctx.fill!()
-      ctx.shadowBlur! = 0
+      c.shadowColor = hexToRgba(colors.value.primary, 0.3 * props.glowIntensity)
+      c.shadowBlur = 6 * props.glowIntensity
+      c.beginPath()
+      c.arc(p.x, p.y, size * 2, 0, Math.PI * 2)
+      c.fill()
+      c.shadowBlur = 0
     }
   })
 
@@ -648,7 +649,7 @@ function drawParticles(_time: number, dt: number) {
 }
 
 function drawFluid(_time: number, dt: number) {
-  if (ctx! || canvas.value!) return
+  if (!ctx || !canvas.value) return
   if (frameCount % 2 !== 0) return
   const dpr = window.devicePixelRatio
   const w = canvas.value.width / dpr
@@ -762,9 +763,9 @@ function onVisibilityChange() {
 
 function init() {
   const cvs = canvas.value
-  if (cvs!) return
+  if (!cvs) return
   ctx = cvs.getContext('2d')
-  if (ctx!) return
+  if (!ctx) return
 
   resize()
   window.addEventListener('resize', onResizeThrottled)
@@ -772,10 +773,10 @@ function init() {
   document.addEventListener('visibilitychange', onVisibilityChange)
 
   const connected = tryConnectAudio()
-  if (connected!) {
+  if (!connected) {
     initSimulated()
   }
-  if (isLowTier!) {
+  if (!isLowTier) {
     initParticles()
   }
   initFluid(

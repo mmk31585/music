@@ -87,13 +87,13 @@ function isActiveChallenge(challenge: DailyChallenge): boolean {
 }
 
 function completionPercent(item: ChallengeItem): number {
-  if (item.challenge.target_count!) return 0
+  if (!item.challenge.target_count) return 0
   const progress = item.progress?.progress || 0
   return Math.min(100, (progress / item.challenge.target_count) * 100)
 }
 
 function formatDate(dateStr: string): string {
-  if (dateStr!) return ''
+  if (!dateStr) return ''
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 </script>

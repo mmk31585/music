@@ -68,14 +68,26 @@ func (s *DownloadService) proxyArgs() []string {
 func (s *DownloadService) Download(ctx context.Context, url, dir string) (*DownloadResult, error) {
 	timestamp := strconv.FormatInt(time.Now().UnixMilli(), 36)
 
-	infoArgs := []string{"--dump-json", "--no-warnings", "--no-update", "--socket-timeout", "10"}
+	infoArgs := []string{"--js-runtimes", "node", "--dump-json", "--no-warnings", "--no-update", "--socket-timeout", "10"}
 	infoArgs = append(infoArgs, s.proxyArgs()...)
 	infoArgs = append(infoArgs, url)
 
-	infoCmd := exec.CommandContext(ctx, "yt-dlp", infoArgs...)
+	// Use explicit path to yt-dlp
+	ytdlpPath := "/home/space/.local/bin/yt-dlp"
+	infoCmd := exec.CommandContext(ctx, ytdlpPath, infoArgs...)
 	var infoOut, infoErr bytes.Buffer
 	infoCmd.Stdout = &infoOut
 	infoCmd.Stderr = &infoErr
+
+	// Clear HTTPS_PROXY/HTTP_PROXY env vars for yt-dlp subprocess
+	// to prevent conflicts with --proxy flag. yt-dlp respects HTTPS_PROXY
+	// and using both can cause issues in some environments.
+	infoCmd.Env = append(infoCmd.Environ(),
+		"HTTPS_PROXY=",
+		"HTTP_PROXY=",
+		"https_proxy=",
+		"http_proxy=",
+	)
 
 	if err := infoCmd.Run(); err != nil {
 		return nil, fmt.Errorf("metadata fetch: %w (stderr: %s)", err, strings.TrimSpace(infoErr.String()))
@@ -89,6 +101,7 @@ func (s *DownloadService) Download(ctx context.Context, url, dir string) (*Downl
 	outputTemplate := filepath.Join(dir, "%(title)s-"+timestamp+".%(ext)s")
 
 	dlArgs := []string{
+		"--js-runtimes", "node",
 		"-x", "--audio-format", "mp3", "--audio-quality", "0",
 		"--embed-thumbnail", "--add-metadata",
 		"--output", outputTemplate, "--no-playlist",
@@ -107,8 +120,17 @@ func (s *DownloadService) Download(ctx context.Context, url, dir string) (*Downl
 		return nil, fmt.Errorf("download: %w (stderr: %s)", err, strings.TrimSpace(dlErr.String()))
 	}
 
-	// Construct the output path from the template + metadata
-	localPath := filepath.Join(dir, meta.Title+"-"+timestamp+".mp3")
+	// Construct the output path from the template + metadata.
+	// yt-dlp's %(title)s sanitizes filenames by removing \ / : * ? " < > | # chars.
+	// We must match that sanitization here, otherwise the path won't match the file
+	// yt-dlp actually wrote. See yt-dlp's sanitize_filename().
+	sanitize := func(s string) string {
+		return strings.NewReplacer(
+			`\`, "", "/", "", ":", "", "*", "", "?", "",
+			`"`, "", "<", "", ">", "", "|", "", "#", "",
+		).Replace(s)
+	}
+	localPath := filepath.Join(dir, sanitize(meta.Title)+"-"+timestamp+".mp3")
 
 	uploader := meta.Uploader
 	if uploader == "" {
@@ -184,11 +206,10 @@ func (w *ImportWorker) ensureStreamGroup(ctx context.Context) error {
 	err := w.rdb.XGroupCreateMkStream(ctx, streamKey, consumerGroup, "0").Err()
 	if err != nil {
 		if err.Error() == "BUSYGROUP Consumer Group name already exists" {
-			// Reset cursor to beginning so all existing messages
-			// become available for delivery via XReadGroup ">".
-			// Without this, messages enqueued before worker restart
-			// are never delivered because the group cursor is past them.
-			return w.rdb.XGroupSetID(ctx, streamKey, consumerGroup, "0").Err()
+			// Group already exists — do NOT reset the cursor.
+			// Pending messages (from crashed workers) are re-delivered
+			// automatically via XReadGroup with ID "0" on the next poll.
+			return nil
 		}
 		return err
 	}
@@ -196,7 +217,30 @@ func (w *ImportWorker) ensureStreamGroup(ctx context.Context) error {
 }
 
 func (w *ImportWorker) poll(ctx context.Context) {
-	msgs, err := w.rdb.XReadGroup(ctx, &redis.XReadGroupArgs{
+	// Phase 1: drain pending messages (from crashed workers).
+	// XReadGroup with ID "0" delivers messages in the PEL
+	// (pending entries list) — messages that were delivered but not ACK'd.
+	pending, err := w.rdb.XReadGroup(ctx, &redis.XReadGroupArgs{
+		Group:    consumerGroup,
+		Consumer: consumerName,
+		Streams:  []string{streamKey, "0"},
+		Count:    1,
+		Block:    1 * time.Second,
+	}).Result()
+
+	if err != nil && err != redis.Nil {
+		w.logger.Warn("import poll XReadGroup pending error", zap.Error(err))
+		return
+	}
+
+	if len(pending) > 0 && len(pending[0].Messages) > 0 {
+		msg := pending[0].Messages[0]
+		w.processMessage(ctx, msg)
+		return
+	}
+
+	// Phase 2: no pending messages — read new messages with ">".
+	newMsgs, err := w.rdb.XReadGroup(ctx, &redis.XReadGroupArgs{
 		Group:    consumerGroup,
 		Consumer: consumerName,
 		Streams:  []string{streamKey, ">"},
@@ -210,11 +254,14 @@ func (w *ImportWorker) poll(ctx context.Context) {
 		}
 		return
 	}
-	if len(msgs) == 0 || len(msgs[0].Messages) == 0 {
+	if len(newMsgs) == 0 || len(newMsgs[0].Messages) == 0 {
 		return
 	}
 
-	msg := msgs[0].Messages[0]
+	w.processMessage(ctx, newMsgs[0].Messages[0])
+}
+
+func (w *ImportWorker) processMessage(ctx context.Context, msg redis.XMessage) {
 	msgID := msg.ID
 	w.logger.Debug("import poll received message", zap.String("msg_id", msgID),
 		zap.Any("values", msg.Values))
@@ -290,23 +337,36 @@ func (w *ImportWorker) processJob(ctx context.Context, job *Job) {
 	// Resolve to downloadable URL if needed (e.g., Spotify URL needs yt-dlp resolve)
 	downloadURL := job.URL
 
+	// iTunes preview URLs are 30-second clips, not full tracks.
+	// Force resolution via acquisition (SoundCloud/YouTube) to get the full song.
+	if isPreviewURL(downloadURL) {
+		w.logger.Info("iTunes preview URL detected, resolving full track",
+			zap.String("preview_url", downloadURL),
+		)
+		downloadURL = ""
+	}
+
 	if downloadURL == "" {
 		resolveQuery := acquisition.ResolveQuery{
 			Title:  job.Title,
 			Artist: job.Artist,
 		}
 
-		if job.Source == "spotify" || job.Source == "deezer" || job.Source == "musicbrainz" || job.Source == "lastfm" || job.Source == "itunes" {
+		// Resolve via acquisition (SoundCloud/YouTube) when:
+		//   1. The source is a known metadata provider (Spotify, Deezer, etc.), OR
+		//   2. We have at least title+artist and no URL (manual/queue import without a source).
+		if job.Source == "spotify" || job.Source == "deezer" || job.Source == "musicbrainz" || job.Source == "lastfm" || job.Source == "itunes" ||
+			(job.Title != "" && job.Artist != "") {
 			resolveStart := time.Now()
 			candidate, err := w.resolver.Resolve(ctx, resolveQuery)
 			metrics.ObserveImportJobStage("resolve", resolveStart)
 			if err != nil {
-				w.setProgress(job.ID, StatusFailed, 0, "resolve_failed", "", err.Error())
+				w.setProgress(job.ID, StatusFailed, 0, "resolve_failed", "", "Could not find a downloadable source for this track. Try importing with a direct YouTube or SoundCloud URL instead.")
 				metrics.IncImportJob("failed")
 				return
 			}
 			if candidate == nil {
-				w.setProgress(job.ID, StatusFailed, 0, "resolve_failed", "", "no downloadable source found")
+				w.setProgress(job.ID, StatusFailed, 0, "resolve_failed", "", "No downloadable source found for this track. The track may not be available on YouTube or SoundCloud.")
 				metrics.IncImportJob("failed")
 				return
 			}
@@ -318,7 +378,7 @@ func (w *ImportWorker) processJob(ctx context.Context, job *Job) {
 			)
 		} else {
 			// URL is empty and source doesn't need resolution — can't proceed
-			w.setProgress(job.ID, StatusFailed, 0, "resolve_failed", "", "no URL provided and source does not support auto-resolution")
+			w.setProgress(job.ID, StatusFailed, 0, "resolve_failed", "", "Provide a YouTube or SoundCloud URL to import this track, or search for it first.")
 			metrics.IncImportJob("failed")
 			return
 		}
@@ -335,6 +395,14 @@ func (w *ImportWorker) processJob(ctx context.Context, job *Job) {
 		metrics.IncImportJob("failed")
 		return
 	}
+
+	// Debug: log the exact proxy and URL before download
+	w.logger.Info("worker debug: starting download",
+		zap.String("job_id", job.ID),
+		zap.String("url", downloadURL),
+		zap.String("download_dir", w.downloadDir),
+		zap.String("IMPORT_PROXY", os.Getenv("IMPORT_PROXY")),
+	)
 
 	dlStart := time.Now()
 	result, err := w.downloader.Download(ctx, downloadURL, w.downloadDir)
@@ -405,11 +473,11 @@ func (w *ImportWorker) processJob(ctx context.Context, job *Job) {
 
 	job.DraftID = uploadRes.DraftID
 
-	// Override extracted metadata with the job's title/artist if available.
+	// Override extracted metadata with the job's title/artist/album if available.
 	// This fixes the case where yt-dlp infers a garbage title from the URL
 	// (e.g., iTunes previews with generic mzaf_ filenames).
-	if job.Title != "" || job.Artist != "" {
-		if err := w.ingestionSvc.UpdateExtractedMetadata(ctx, uploadRes.DraftID, job.Title, job.Artist, ""); err != nil {
+	if job.Title != "" || job.Artist != "" || job.Album != "" {
+		if err := w.ingestionSvc.UpdateExtractedMetadata(ctx, uploadRes.DraftID, job.Title, job.Artist, job.Album); err != nil {
 			w.logger.Warn("failed to update extracted metadata",
 				zap.String("draft_id", uploadRes.DraftID),
 				zap.Error(err),
@@ -450,4 +518,14 @@ func (w *ImportWorker) setProgress(jobID string, status Status, progress int, st
 		zap.String("draft_id", draftID),
 		zap.String("error", errMsg),
 	)
+}
+
+// isPreviewURL detects iTunes preview URLs (30-second clips).
+// These URLs contain "itunes.apple.com" and "AudioPreview" in the path
+// and point to short preview clips, not full tracks.
+func isPreviewURL(rawURL string) bool {
+	if rawURL == "" {
+		return false
+	}
+	return strings.Contains(rawURL, "itunes.apple.com") && strings.Contains(rawURL, "AudioPreview")
 }

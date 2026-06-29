@@ -95,15 +95,22 @@ func (s *Service) UnfollowArtist(ctx context.Context, userID string, artistID st
 	return s.repo.UnfollowArtist(ctx, userID, artistID)
 }
 
-func (s *Service) AddPlayHistory(ctx context.Context, userID string, trackID string) error {
-	exists, err := s.repo.TrackExists(ctx, trackID)
+type AddPlayHistoryInput struct {
+	UserID    string
+	TrackID   string
+	Duration  *int
+	Completed *bool
+}
+
+func (s *Service) AddPlayHistory(ctx context.Context, input AddPlayHistoryInput) error {
+	exists, err := s.repo.TrackExists(ctx, input.TrackID)
 	if err != nil {
 		return err
 	}
 	if !exists {
 		return ErrTrackNotFound
 	}
-	return s.repo.AddPlayHistory(ctx, userID, trackID)
+	return s.repo.AddPlayHistory(ctx, input.UserID, input.TrackID, input.Duration, input.Completed)
 }
 
 func (s *Service) ListLikedTracks(ctx context.Context, userID string) ([]LibraryTrackItem, error) {

@@ -10,14 +10,14 @@ import (
 )
 
 type LRCLibResult struct {
-	ID           int    `json:"id"`
-	TrackName    string `json:"trackName"`
-	ArtistName   string `json:"artistName"`
-	AlbumName    string `json:"albumName"`
-	Duration     int    `json:"duration"`
-	Synced       bool   `json:"synced"`
-	PlainLyrics  string `json:"plainLyrics"`
-	SyncedLyrics string `json:"syncedLyrics"`
+	ID           int         `json:"id"`
+	TrackName    string      `json:"trackName"`
+	ArtistName   string      `json:"artistName"`
+	AlbumName    string      `json:"albumName"`
+	Duration     json.Number `json:"duration"`
+	Synced       bool        `json:"synced"`
+	PlainLyrics  string      `json:"plainLyrics"`
+	SyncedLyrics string      `json:"syncedLyrics"`
 }
 
 type LRCLibClient interface {

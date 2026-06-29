@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -285,6 +286,92 @@ func (r *Repository) GetTracks(ctx context.Context, limit int) ([]TrackMeta, err
 		LIMIT $1
 	`
 	rows, err := r.db.QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []TrackMeta
+	for rows.Next() {
+		var m TrackMeta
+		if err := rows.Scan(&m.ID, &m.Title, &m.Artist, &m.Album, &m.Genre, &m.Duration, &m.CoverURL); err != nil {
+			return nil, err
+		}
+		results = append(results, m)
+	}
+	return results, nil
+}
+
+// GetTracksWithMood returns tracks with their mood analysis data (energy, valence, tempo).
+// Unlike GetTracks, this LEFT JOINs with track_moods so the returned TrackMeta has mood fields populated.
+func (r *Repository) GetTracksWithMood(ctx context.Context, limit int) ([]TrackMeta, error) {
+	query := `
+		SELECT t.id::text, t.title, COALESCE(a.name, '') as artist,
+			COALESCE(al.title, '') as album, COALESCE(g.name, '') as genre,
+			COALESCE(t.duration_seconds, 0) as duration,
+			COALESCE(t.cover_url, '') as cover_url,
+			COALESCE(tm.energy, 0) as energy,
+			COALESCE(tm.valence, 0) as valence,
+			COALESCE(tm.tempo, 0) as tempo,
+			COALESCE(tm.danceability, 0) as danceability
+		FROM tracks t
+		LEFT JOIN track_artists ta ON ta.track_id = t.id AND ta.role = 'primary'
+		LEFT JOIN artists a ON a.id = ta.artist_id
+		LEFT JOIN albums al ON al.id = t.album_id
+		LEFT JOIN track_genres tg ON tg.track_id = t.id
+		LEFT JOIN genres g ON g.id = tg.genre_id
+		LEFT JOIN track_moods tm ON tm.track_id = t.id
+		GROUP BY t.id, a.name, al.title, g.name, tm.energy, tm.valence, tm.tempo, tm.danceability
+		ORDER BY t.created_at DESC
+		LIMIT $1
+	`
+	rows, err := r.db.QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []TrackMeta
+	for rows.Next() {
+		var m TrackMeta
+		if err := rows.Scan(&m.ID, &m.Title, &m.Artist, &m.Album, &m.Genre,
+			&m.Duration, &m.CoverURL, &m.Energy, &m.Valence, &m.Tempo, &m.Danceability); err != nil {
+			return nil, err
+		}
+		results = append(results, m)
+	}
+	return results, nil
+}
+
+// GetTracksByGenres returns tracks matching any of the given genre names (case-insensitive).
+func (r *Repository) GetTracksByGenres(ctx context.Context, genres []string, limit int) ([]TrackMeta, error) {
+	if len(genres) == 0 {
+		return nil, nil
+	}
+	// Build IN clause with parameterized args
+	placeholders := make([]string, len(genres))
+	args := make([]any, len(genres)+1)
+	args[len(genres)] = limit
+	for i, g := range genres {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = strings.ToLower(g)
+	}
+	query := fmt.Sprintf(`
+		SELECT t.id::text, t.title, COALESCE(a.name, '') as artist,
+			COALESCE(al.title, '') as album, COALESCE(g.name, '') as genre,
+			COALESCE(t.duration_seconds, 0) as duration,
+			COALESCE(t.cover_url, '') as cover_url
+		FROM tracks t
+		LEFT JOIN track_artists ta ON ta.track_id = t.id AND ta.role = 'primary'
+		LEFT JOIN artists a ON a.id = ta.artist_id
+		LEFT JOIN albums al ON al.id = t.album_id
+		LEFT JOIN track_genres tg ON tg.track_id = t.id
+		LEFT JOIN genres g ON g.id = tg.genre_id
+		WHERE LOWER(g.name) IN (%s)
+		LIMIT $%d
+	`, strings.Join(placeholders, ", "), len(genres)+1)
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

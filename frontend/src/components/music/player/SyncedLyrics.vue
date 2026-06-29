@@ -55,10 +55,10 @@
           <span
             v-if="idx === activeIdx"
             :class="[
-              'absolute top-1/2 -translate-y-1/2 text-[10px] font-bold tracking-wider transition-all duration-500',
-              isRtl ? '-right-8' : '-left-8',
+              'absolute top-3/5 -translate-y-1/2 text-4xl font-bold tracking-wider transition-all duration-500',
+              isRtl ? '-right-6' : '-left-8',
             ]"
-            :style="{ color: props.activeColor || '#a855f7', opacity: 0.6 }"
+            :style="{ color: props.activeColor || '#a855f7', opacity: 0.4 }"
           >♪</span>
 
           <!-- Karaoke word highlight on active line -->
@@ -115,24 +115,28 @@ const activeIdx = computed(() => {
   return -1
 })
 
-// ── Clear refs when lines change ────────────
-watch(() => props.lines, () => {
-  lineRefs.value = []
-}, { flush: 'post' })
 const scrollRef = ref<HTMLElement | null>(null)
 
 // ── Auto-scroll to active line (smooth, with debounce) ─────────
+// We do NOT clear lineRefs manually — Vue's template ref callbacks
+// automatically update the array when the v-for re-renders.  The
+// scroll watcher uses nextTick to ensure the DOM (and therefore
+// lineRefs) has settled before attempting to scroll.
 let scrollTimer: ReturnType<typeof setTimeout> | null = null
 
-watch(activeIdx, (idx) => {
+watch(activeIdx, (idx, _oldIdx, onCleanup) => {
   if (scrollTimer) clearTimeout(scrollTimer)
   scrollTimer = setTimeout(() => {
-    if (idx < 0 || containerRef.value!) return
+    if (idx < 0 || !containerRef.value) return
     const target = lineRefs.value[idx]
     if (target) {
       target.scrollIntoView({ block: 'center', behavior: 'smooth' })
     }
   }, 80)
+
+  onCleanup(() => {
+    if (scrollTimer) clearTimeout(scrollTimer)
+  })
 })
 
 onBeforeUnmount(() => {
@@ -189,13 +193,13 @@ function lineStyle(idx: number): Record<string, string> {
 
 // ── Word-level karaoke style (smooth gradient reveal) ─────────
 function hasWordTimings(line: ParsedLine): boolean {
-  return line.words.length > 0 && line.words[0].timeSeconds! >= 0
+  return line.words.length > 0 && line.words[0]!.timeSeconds >= 0
 }
 
 function wordStyle(line: ParsedLine, wordIdx: number): Record<string, string> {
   const t = props.currentTime
   const word = line.words[wordIdx]
-  if (word!) return { color: 'rgba(255,255,255,0.25)' }
+  if (!word) return { color: 'rgba(255,255,255,0.25)' }
 
   const nextWord = line.words[wordIdx + 1]
   const start = word.timeSeconds >= 0 ? word.timeSeconds : line.timeSeconds
@@ -219,8 +223,7 @@ const isRtl = computed(() => {
   const lang = props.language?.toLowerCase()
   return lang === 'fa' || lang === 'far' || lang?.startsWith('fa-') || lang?.startsWith('fa_')
 })
-console.log(isRtl)
-console.log(props)
+
 </script>
 
 <style scoped>
@@ -238,23 +241,6 @@ console.log(props)
 }
 .glow-rtl {
   transform-origin: right center;
-}
-.glow-rtl {
-  /* Slightly wider glow for Persian text which can be more expansive */
-  --glow-scale: 1.02;
-}
-
-/* Active line text in RTL gets a different shadow direction */
-.glow-rtl + .line-text,
-[dir="rtl"] .line-active-text {
-  text-shadow: 0 0 50px var(--glow-color, rgba(168,85,247,0.35)), 0 0 100px var(--glow-color, rgba(168,85,247,0.12));
-}
-
-/* Word karaoke highlight RTL adjustment */
-:deep(.rtl-word-highlight) {
-  background: linear-gradient(to left, currentColor 0%, transparent 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
 }
 
 @media (prefers-reduced-motion: reduce) {

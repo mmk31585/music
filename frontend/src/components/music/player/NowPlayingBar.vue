@@ -23,7 +23,7 @@
             <img
               :src="currentTrack.coverUrl"
               alt=""
-              class="h-full w-full object-cover"
+              class="h-full w-full object-cover transition-opacity duration-300 ease-out"
               :class="collapsed ? 'opacity-[0.15]' : 'opacity-[0.35]'"
               style="filter: blur(60px) saturate(1.5)"
             />
@@ -63,12 +63,12 @@
                 type="button"
                 class="flex h-9 w-9 items-center justify-center rounded-full shadow-lg disabled:opacity-40 hover:scale-110 active:scale-90 transition-all duration-200"
                 :style="{ background: progressColor }"
-                :disabled="currentTrack! || isLoadingTrack"
+                :disabled="!currentTrack || isLoadingTrack"
                 :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'"
                 @click="isPlaying ? togglePlayPause() : proceed()"
               >
                 <i aria-hidden="true" v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-sm text-white" />
-                <i aria-hidden="true" v-else :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" class="ml-0.5 text-sm text-white" />
+                <i aria-hidden="true" v-else :class="isPlaying ? 'pi pi-pause' : 'pi pi-play'" class="ml-0.5 text-sm text-white" />
               </button>
             </GuestPlayGate>
 
@@ -84,7 +84,8 @@
         </div>
 
         <!-- ── FULL EXPANDED BAR ── -->
-        <template v-if="!collapsed">
+        <Transition name="expand">
+          <div v-if="!collapsed" class="overflow-hidden">
           <div class="relative z-10 flex items-center gap-4 px-6 pt-3">
             <div class="flex min-w-0 w-[25%] items-center gap-3">
               <div role="button" tabindex="0" aria-label="Open fullscreen player" class="relative shrink-0 cursor-pointer" @click="emit('toggle-fullscreen')" @keydown.enter="emit('toggle-fullscreen')" @keydown.space.prevent="emit('toggle-fullscreen')">
@@ -142,7 +143,7 @@
                   type="button"
                   class="relative flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200"
                   :class="shuffleMode !== 'off' ? 'text-aurora-purple' : 'text-white/40 hover:text-white hover:bg-white/10'"
-                  :disabled="currentTrack!"
+                  :disabled="!currentTrack"
                   :aria-label="shuffleMode === 'queue' ? 'Shuffle queue' : shuffleMode === 'catalog' ? 'Random catalog tracks' : shuffleMode === 'similar' ? 'Similar tracks' : 'Shuffle off'"
                   @click="showShuffleMenu = !showShuffleMenu"
                 >
@@ -157,7 +158,7 @@
                 <Transition name="fade">
                   <div
                     v-if="showShuffleMenu"
-                    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[60] min-w-[150px] rounded-xl border border-white/10 bg-surface-raised p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
+                    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-60 min-w-37.5 rounded-xl border border-white/10 bg-surface-raised p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
                     style="backdrop-filter: blur(24px);"
                   >
                     <button
@@ -179,7 +180,7 @@
               <button
                 type="button"
                 class="flex h-9 w-9 items-center justify-center rounded-full text-white/50 hover:text-white disabled:opacity-25 hover:bg-white/10 transition-all duration-200"
-                :disabled="hasPrevious!"
+                :disabled="!hasPrevious"
                 aria-label="Previous track"
                 @click="playPrevious"
               >
@@ -191,9 +192,9 @@
                   type="button"
                   class="flex h-11 w-11 items-center justify-center rounded-full shadow-xl disabled:opacity-40 hover:scale-110 active:scale-95 transition-all duration-200"
                   :style="{ background: progressColor }"
-                  :disabled="currentTrack! || isLoadingTrack"
+                  :disabled="!currentTrack || isLoadingTrack"
                   :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'"
-                  @click="isPlaying ? togglePlayPause() : proceed()"
+                @click="isPlaying ? togglePlayPause() : proceed()"
                 >
                   <i aria-hidden="true" v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-base text-white" />
                   <i aria-hidden="true" v-else :class="isPlaying ? 'pi pi-pause' : 'pi pi-play'" class="ml-0.5 text-base text-white" />
@@ -203,7 +204,7 @@
               <button
                 type="button"
                 class="flex h-9 w-9 items-center justify-center rounded-full text-white/50 hover:text-white disabled:opacity-25 hover:bg-white/10 transition-all duration-200"
-                :disabled="hasNext!"
+                :disabled="!hasNext"
                 aria-label="Next track"
                 @click="playNext"
               >
@@ -216,7 +217,7 @@
                   type="button"
                   class="relative flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200"
                   :class="repeatMode !== 'off' ? 'text-aurora-pink' : 'text-white/40 hover:text-white hover:bg-white/10'"
-                  :disabled="currentTrack!"
+                  :disabled="!currentTrack"
                   :aria-label="repeatMode === 'off' ? 'Repeat off' : repeatMode === 'all' ? 'Repeat all' : 'Repeat one'"
                   @click="showRepeatMenu = !showRepeatMenu"
                 >
@@ -252,20 +253,136 @@
             </div>
 
             <div class="flex w-[25%] items-center justify-end gap-1">
-              <button
-                type="button"
-                class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-all duration-200"
-                :disabled="currentTrack!"
-                aria-label="Open queue"
-                @click="emit('toggle-queue')"
-              >
-                <i aria-hidden="true" class="pi pi-list text-sm" />
-              </button>
+              <div class="relative">
+                <button
+                  ref="queueBtnRef"
+                  type="button"
+                  class="relative flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200"
+                  :class="upcomingCount > 0 ? 'text-white hover:bg-white/10' : 'text-white/40 hover:text-white hover:bg-white/10'"
+                  :disabled="!currentTrack"
+                  :aria-label="`Queue — ${upcomingCount} upcoming`"
+                  @click="showQueuePreview = !showQueuePreview"
+                >
+                  <i aria-hidden="true" class="pi pi-list text-sm" />
+                  <span
+                    v-if="upcomingCount > 0"
+                    class="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-spotify text-[8px] font-bold text-black"
+                  >{{ upcomingCount > 9 ? '9+' : upcomingCount }}</span>
+                </button>
+
+                <!-- Up Next mini-preview popup -->
+                <Transition name="fade">
+                  <div
+                    v-if="showQueuePreview"
+                    class="absolute bottom-full right-0 mb-2 z-60 w-72 origin-bottom-right rounded-2xl border border-white/8 p-2 shadow-[0_12px_48px_rgba(0,0,0,0.7)] backdrop-blur-2xl"
+                    style="backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); background: rgba(10, 10, 12, 0.94);"
+                  >
+                    <!-- Now Playing -->
+                    <div class="mb-2 px-2 pt-1">
+                      <p class="text-[10px] font-semibold tracking-wider text-white/30 uppercase">Now Playing</p>
+                      <div class="mt-1.5 flex items-center gap-2.5">
+                        <div class="h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/6">
+                          <img
+                            v-if="currentTrack?.coverUrl"
+                            :src="currentTrack.coverUrl"
+                            :alt="currentTrack.title"
+                            class="h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                          <div v-else class="flex h-full items-center justify-center">
+                            <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
+                          </div>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                          <p class="truncate text-sm font-bold text-white/90">{{ currentTrack?.title }}</p>
+                          <p class="truncate text-xs text-white/40">{{ currentTrack?.artistName }}</p>
+                        </div>
+                        <i aria-hidden="true" class="pi pi-waveform text-sm text-spotify" />
+                      </div>
+                    </div>
+
+                    <div class="mx-2 my-1.5 border-t border-white/6" />
+
+                    <!-- Next Up -->
+                    <div v-if="nextTrack" class="px-2 pb-2">
+                      <div class="flex items-center gap-2 text-[10px] font-semibold tracking-wider text-white/30 uppercase mb-2">
+                        <i aria-hidden="true" class="pi pi-arrow-down text-[9px]" />
+                        Up Next
+                        <span v-if="upcomingCount > 1" class="h-3.5 w-3.5 rounded-full bg-white/8 flex items-center justify-center text-[8px] font-bold text-white/40">{{ upcomingCount }}</span>
+                        <i v-if="shuffleMode !== 'off'" aria-hidden="true" class="pi pi-sort-alt text-[9px] text-aurora-purple ml-auto" title="Shuffle is on — next track from shuffle order" />
+                      </div>
+                      <div
+                        class="group flex items-center gap-2.5 rounded-xl px-2.5 py-2 transition-all duration-200 cursor-pointer ring-1 ring-white/6 bg-white/6 hover:bg-white/10"
+                        @click="playNextTrack"
+                      >
+                        <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10 shadow-sm ring-1 ring-white/6">
+                          <img
+                            v-if="nextTrack.coverUrl"
+                            :src="nextTrack.coverUrl"
+                            :alt="nextTrack.title"
+                            class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                            loading="lazy"
+                          />
+                          <div v-else class="flex h-full items-center justify-center">
+                            <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
+                          </div>
+                          <div class="absolute inset-0 flex items-center justify-center bg-black/0 transition-all duration-200 group-hover:bg-black/30">
+                            <i aria-hidden="true" class="pi pi-play-fill text-white text-sm opacity-0 transition-all duration-200 group-hover:opacity-100 drop-shadow-lg" />
+                          </div>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                          <p class="truncate text-sm font-medium text-white/90 group-hover:text-white transition-colors">
+                            {{ nextTrack.title }}
+                          </p>
+                          <p class="truncate text-xs text-white/40">{{ nextTrack.artistName }}</p>
+                        </div>
+                        <span class="text-[10px] font-mono tabular-nums shrink-0 text-white/25 group-hover:text-white/50 transition-colors">
+                          {{ formatTime(nextTrack.durationSeconds ?? 0) }}
+                        </span>
+                      </div>
+                    </div>
+                    <!-- Shuffle catalog/similar: can't predict next track -->
+                    <div v-else-if="shuffleMode === 'catalog' || shuffleMode === 'similar'" class="px-2 pb-2">
+                      <div class="flex items-center gap-2 text-[10px] font-semibold tracking-wider text-white/30 uppercase mb-2">
+                        <i aria-hidden="true" class="pi pi-sort-alt text-[9px] text-aurora-purple" />
+                        Up Next
+                        <span class="text-[8px] text-aurora-purple/60 font-normal">— random track</span>
+                      </div>
+                      <div
+                        class="flex items-center gap-2.5 rounded-xl px-2.5 py-2 transition-all duration-200 cursor-pointer ring-1 ring-white/6 bg-white/6 hover:bg-white/10 group"
+                        @click="playNextTrack"
+                      >
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-aurora-purple/10 ring-1 ring-aurora-purple/20">
+                          <i aria-hidden="true" class="pi pi-shuffle text-sm text-aurora-purple" />
+                        </div>
+                        <div class="min-w-0 flex-1">
+                          <p class="text-sm font-medium text-white/70 group-hover:text-white transition-colors">Skip to random track</p>
+                          <p class="text-xs text-white/30">Next track selected from {{ shuffleMode === 'catalog' ? 'full catalog' : 'similar tracks' }}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div v-else class="flex flex-col items-center gap-1.5 px-2 pb-3 pt-2 text-center">
+                      <i aria-hidden="true" class="pi pi-list text-lg text-white/20" />
+                      <p class="text-xs text-white/30">No upcoming tracks in queue</p>
+                    </div>
+
+                    <!-- View full queue -->
+                    <button
+                      type="button"
+                      class="flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-white/40 transition-all hover:bg-white/6 hover:text-white/70"
+                      @click="openFullQueue"
+                    >
+                      View full queue
+                      <i aria-hidden="true" class="pi pi-arrow-right text-[10px]" />
+                    </button>
+                  </div>
+                </Transition>
+              </div>
 
               <button
                 type="button"
                 class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-all duration-200"
-                :disabled="currentTrack!"
+                :disabled="!currentTrack"
                 aria-label="Toggle lyrics"
                 @click="emit('toggle-lyrics')"
               >
@@ -298,7 +415,7 @@
               <button
                 type="button"
                 class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-all duration-200"
-                :disabled="currentTrack!"
+                :disabled="!currentTrack"
                 aria-label="Fullscreen"
                 @click="emit('toggle-fullscreen')"
               >
@@ -318,13 +435,13 @@
                 <button
                   type="button"
                   class="flex h-9 w-9 items-center justify-center rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-all duration-200"
-                  :disabled="currentTrack!"
+                  :disabled="!currentTrack"
                   aria-label="More options"
                   @click.stop="showOverflow = !showOverflow"
                 >
                   <i aria-hidden="true" class="pi pi-ellipsis-h text-sm" />
                 </button>
-                <PlayerOverflowMenu v-if="showOverflow" @close="showOverflow = false" />
+                <PlayerOverflowMenu v-if="showOverflow" @close="showOverflow = false" @add-to-playlist="showAddToPlaylist = true" @toggle-pip="handleTogglePiP" />
               </div>
             </div>
           </div>
@@ -373,7 +490,8 @@
             <i aria-hidden="true" class="pi pi-exclamation-circle text-xs" />
             <span>{{ playbackError }}</span>
           </div>
-        </template>
+        </div>
+        </Transition>
       </div>
     </div>
   </Transition>
@@ -427,7 +545,7 @@
             <button
               type="button"
               class="flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-black shadow-lg disabled:opacity-40 active:scale-90 transition-transform"
-              :disabled="currentTrack! || isLoadingTrack"
+              :disabled="!currentTrack || isLoadingTrack"
               :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'"
               @click="isPlaying ? togglePlayPause() : proceed()"
             >
@@ -438,7 +556,7 @@
           <button
             type="button"
             class="flex h-9 w-9 items-center justify-center rounded-full text-white/60 hover:text-white active:scale-90 transition-transform"
-            :disabled="hasNext!"
+            :disabled="!hasNext"
             aria-label="Next track"
             @click.stop="playNext"
           >
@@ -470,10 +588,12 @@ import { computed, onBeforeUnmount, onMounted, onUnmounted, ref } from 'vue'
 
 import { usePlayerControls, useTrackLike } from '@/composables/player'
 import { usePlayerStore } from '@/stores/player'
+import { usePlayerPiPController } from '@/composables/usePlayerPiPController'
 import { useAlbumColors } from '@/composables/useAlbumColors'
 import AddToPlaylistDialog from './AddToPlaylistDialog.vue'
 import PlayerOverflowMenu from './PlayerOverflowMenu.vue'
 import GuestPlayGate from '@/components/common/GuestPlayGate.vue'
+import type { PlaybackTrack } from '@/services/api/player'
 
 const emit = defineEmits<{
   'toggle-queue': []
@@ -489,6 +609,9 @@ const showShuffleMenu = ref(false)
 const shuffleBtnRef = ref<HTMLElement | null>(null)
 const showRepeatMenu = ref(false)
 const repeatBtnRef = ref<HTMLElement | null>(null)
+const showQueuePreview = ref(false)
+const queueBtnRef = ref<HTMLElement | null>(null)
+const showFullQueue = ref(false)
 
 const shuffleModes = [
   { value: 'off' as const, label: 'Off', icon: 'pi pi-ban' },
@@ -522,19 +645,24 @@ onUnmounted(() => {
 })
 function handleOutsideClick(e: MouseEvent) {
   const target = e.target as HTMLElement
-  if (showShuffleMenu.value && shuffleBtnRef.value && shuffleBtnRef.value.contains!(target)) {
+  if (showShuffleMenu.value && shuffleBtnRef.value && !shuffleBtnRef.value.contains(target)) {
     showShuffleMenu.value = false
   }
-  if (showRepeatMenu.value && repeatBtnRef.value && repeatBtnRef.value.contains!(target)) {
+  if (showRepeatMenu.value && repeatBtnRef.value && !repeatBtnRef.value.contains(target)) {
     showRepeatMenu.value = false
+  }
+  if (showQueuePreview.value && queueBtnRef.value && !queueBtnRef.value.contains(target)) {
+    showQueuePreview.value = false
   }
 }
 
 function toggleCollapsed() {
-  collapsed.value = collapsed.value!
+  collapsed.value = !collapsed.value
   localStorage.setItem('player-bar-collapsed', String(collapsed.value))
   window.dispatchEvent(new CustomEvent('playerbar-collapse', { detail: collapsed.value }))
 }
+
+const pip = usePlayerPiPController()
 
 const pc = usePlayerControls()
 
@@ -565,6 +693,46 @@ const {
 const trackId = computed(() => currentTrack.value?.id)
 const { liked, toggleLike } = useTrackLike(trackId)
 
+// Queue next-up preview — uses store directly to ensure reactivity on queue changes
+const playerStore = usePlayerStore()
+const queueTracks = computed(() => playerStore.queue as PlaybackTrack[])
+const currentTrackIndex = computed(() => {
+  if (!currentTrack.value) return -1
+  return queueTracks.value.findIndex((t) => t.id === currentTrack.value?.id)
+})
+/** The actual next track that will play (accounting for shuffle order). */
+const nextTrack = computed(() => {
+  // Use the engine's shuffle-aware peek when available
+  const engineNext = playerStore.nextUpTrack
+  if (engineNext) return engineNext
+
+  // Fallback: sequential next from queue (for catalog/similar shuffle)
+  const idx = currentTrackIndex.value
+  if (idx < 0) return queueTracks.value[0] ?? null
+  return queueTracks.value[idx + 1] ?? null
+})
+const upcomingCount = computed(() => {
+  const idx = currentTrackIndex.value
+  if (idx < 0) return queueTracks.value.length
+
+  if (shuffleMode.value === 'catalog' || shuffleMode.value === 'similar') {
+    // Can't predict count for random-api-based shuffle modes
+    return queueTracks.value.length - idx - 1
+  }
+
+  return Math.max(0, queueTracks.value.length - idx - 1)
+})
+
+function playNextTrack() {
+  playNext()
+  showQueuePreview.value = false
+}
+
+function openFullQueue() {
+  showQueuePreview.value = false
+  emit('toggle-queue')
+}
+
 const coverUrl = computed(() => currentTrack.value?.coverUrl || null)
 const { palette } = useAlbumColors(coverUrl)
 
@@ -585,7 +753,7 @@ const progressStyle = computed(() => ({
 }))
 
 function formatTime(s: number) {
-  if (s! || isFinite!(s)) return '0:00'
+  if (!isFinite(s)) return '0:00'
   const m = Math.floor(s / 60)
   const sec = Math.floor(s % 60)
   return `${m}:${sec.toString().padStart(2, '0')}`
@@ -593,8 +761,8 @@ function formatTime(s: number) {
 
 const barRef = ref<HTMLElement | null>(null)
 
-function onVolume(val: number) {
-  setVolume(val)
+function onVolume(val: number | number[]) {
+  pc.setVolume(typeof val === 'number' ? val : val[0] ?? 0)
 }
 
 function onSeekClick(e: MouseEvent | KeyboardEvent) {
@@ -602,6 +770,12 @@ function onSeekClick(e: MouseEvent | KeyboardEvent) {
   const rect = bar.getBoundingClientRect()
   const pct = (((e as MouseEvent).clientX - rect.left) / rect.width) * 100
   seekPercent(pct)
+}
+
+function handleTogglePiP() {
+  pip.toggle().catch(() => {
+    // PiP not supported or user denied — silently fail
+  })
 }
 
 function onOverflowClickOutside(e: MouseEvent) {
@@ -624,6 +798,22 @@ onBeforeUnmount(() => document.removeEventListener('click', onOverflowClickOutsi
 .bar-slide-enter-from,
 .bar-slide-leave-to {
   transform: translateY(100%);
+}
+
+/* ── Expand/Collapse Transition ────────────────── */
+.expand-enter-active {
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+.expand-leave-active {
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.expand-enter-from {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+.expand-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 @keyframes bounce {
@@ -665,10 +855,17 @@ onBeforeUnmount(() => document.removeEventListener('click', onOverflowClickOutsi
 
 @media (prefers-reduced-motion: reduce) {
   .bar-slide-enter-active,
-  .bar-slide-leave-active { transition: none; }
+  .bar-slide-leave-active,
+  .expand-enter-active,
+  .expand-leave-active { transition: none; }
   .bar-slide-enter-from,
-  .bar-slide-leave-to { transform: none; }
+  .bar-slide-leave-to,
+  .expand-enter-from,
+  .expand-leave-to,
+  .expand-enter-to,
+  .expand-leave-from { opacity: 1; transform: none; }
   .animate-bounce { animation: none; }
   .progress-bar-fill::after { animation: none; opacity: 0; }
+  .transition-opacity { transition: none; }
 }
 </style>

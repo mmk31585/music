@@ -101,6 +101,7 @@ func (r *Repository) Create(ctx context.Context, req CreateRequest) (*Album, err
 	var item Album
 	err = tx.GetContext(ctx, &item, `
 		INSERT INTO albums (
+			id,
 			artist_id,
 			title,
 			slug,
@@ -109,7 +110,7 @@ func (r *Repository) Create(ctx context.Context, req CreateRequest) (*Album, err
 			release_date,
 			album_type
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7)
 		RETURNING
 			id,
 			artist_id,

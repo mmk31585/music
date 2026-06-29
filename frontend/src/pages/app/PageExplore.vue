@@ -168,7 +168,7 @@ async function loadVideos() {
 }
 
 async function loadMore() {
-  if (loadingMore.value || hasMore.value!) return
+  if (loadingMore.value || !hasMore.value) return
   loadingMore.value = true
   try {
     const response = await videoApi.getExploreVideos({ limit: LIMIT, offset: offset.value })

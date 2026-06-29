@@ -283,6 +283,30 @@ func (r *Repository) MarkDraftStale(ctx context.Context, id string) error {
 	return err
 }
 
+func (r *Repository) DeleteDraft(ctx context.Context, id string) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM ingestion_draft_assets WHERE draft_id = $1`, id); err != nil {
+		return fmt.Errorf("delete assets: %w", err)
+	}
+
+	result, err := tx.ExecContext(ctx, `DELETE FROM ingestion_drafts WHERE id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("delete draft: %w", err)
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return sql.ErrNoRows
+	}
+
+	return tx.Commit()
+}
+
 func (r *Repository) CountDraftsByStatus(ctx context.Context) (map[DraftStatus]int, error) {
 	type row struct {
 		Status DraftStatus `db:"status"`

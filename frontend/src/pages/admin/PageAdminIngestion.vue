@@ -339,16 +339,26 @@
                 {{ formatDate(data.createdAt) }}
               </template>
             </Column>
-            <Column header="Actions" class="w-24">
+            <Column header="Actions" class="w-32">
               <template #body="{ data }">
-                <Button
-                  v-if="data.status === 'review'"
-                  label="Review"
-                  icon="pi pi-eye"
-                  size="small"
-                  severity="info"
-                  @click="openReview(data.id)"
-                />
+                <div class="flex items-center gap-1">
+                  <Button
+                    v-if="data.status === 'review'"
+                    label="Review"
+                    icon="pi pi-eye"
+                    size="small"
+                    severity="info"
+                    @click="openReview(data.id)"
+                  />
+                  <Button
+                    icon="pi pi-trash"
+                    size="small"
+                    severity="danger"
+                    text
+                    aria-label="Delete draft"
+                    @click="confirmDelete(data.id)"
+                  />
+                </div>
               </template>
             </Column>
           </DataTable>
@@ -364,17 +374,42 @@
         </template>
       </Card>
     </div>
+
+    <!-- Delete Confirmation Dialog -->
+    <Dialog
+      v-model:visible="deleteDialogVisible"
+      header="Delete Draft"
+      :modal="true"
+      class="w-full max-w-md"
+    >
+      <div class="flex items-start gap-4">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/15">
+          <i aria-hidden="true" class="pi pi-exclamation-triangle text-xl text-red-400"></i>
+        </div>
+        <div>
+          <p class="text-sm text-white">Are you sure you want to delete this draft?</p>
+          <p class="mt-1 text-xs text-surface-400">This action cannot be undone. The audio file and all associated metadata will be permanently removed.</p>
+        </div>
+      </div>
+      <template #footer>
+        <Button label="Cancel" severity="secondary" text @click="deleteDialogVisible = false" :disabled="deleting" />
+        <Button label="Delete" severity="danger" icon="pi pi-trash" :loading="deleting" @click="handleDelete" />
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from 'primevue/usetoast'
 import AdminSectionHeader from '@/components/admin/AdminSectionHeader.vue'
 import { useIngestionApi } from '@/services/api/ingestion/routes'
 import type { UploadResponse, DraftListItem, EnrichmentResult } from '@/services/api/ingestion/types'
+import { formatDuration } from '@/utils/format'
 
 const router = useRouter()
+const toast = useToast()
 const ingestionApi = useIngestionApi()
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -415,9 +450,14 @@ const enrichPercent = computed(() => (enrichAttempt.value / enrichMaxAttempts) *
 const bulkReviewHint = computed(() => draftsInReview.value >= 10)
 const draftsInReview = computed(() => drafts.value.filter(d => d.status === 'review').length)
 
+// ── Delete draft ──
+const deleteDialogVisible = ref(false)
+const deleteTargetId = ref<string | null>(null)
+const deleting = ref(false)
+
 const lyricsSnippet = computed(() => {
   const lyrics = uploadResult.value?.extractedMetadata?.lyrics
-  if (lyrics!) return ''
+  if (!lyrics) return ''
   return lyrics.split('\n').slice(0, 5).join('\n')
 })
 
@@ -456,7 +496,7 @@ const spotifyArtistImage = computed(() => enrichmentResult.value?.spotify?.artis
 
 const musicBrainzInfo = computed(() => {
   const mb = enrichmentResult.value?.musicbrainz
-  if (mb!) return null
+  if (!mb) return null
   if (mb.artistName! && mb.albumName! && mb.releaseYear!) return null
   const parts: string[] = []
   if (mb.artistName) parts.push(`Artist: ${mb.artistName}`)
@@ -468,8 +508,8 @@ const musicBrainzInfo = computed(() => {
 
 const lastFmInfo = computed(() => {
   const lf = enrichmentResult.value?.lastfm
-  if (lf!) return null
-  if (lf.playCount! && lf.listenerCount! && lf.tags!?.length) return null
+  if (!lf) return null
+  if (lf.playCount! && lf.listenerCount! && lf.tags?.length) return null
   const parts: string[] = []
   if (lf.playCount) parts.push(`${lf.playCount.toLocaleString()} plays`)
   if (lf.listenerCount) parts.push(`${lf.listenerCount.toLocaleString()} listeners`)
@@ -527,7 +567,7 @@ function goBulkReview() {
 }
 
 function triggerFileInput() {
-  if (uploading.value!) {
+  if (!uploading.value) {
     fileInputRef.value?.click()
   }
 }
@@ -680,15 +720,8 @@ function hasFeatArtists(artist: string): boolean {
   return /feat\.|ft\.|featuring/i.test(artist)
 }
 
-function formatDuration(seconds?: number): string {
-  if (seconds!) return ''
-  const m = Math.floor(seconds / 60)
-  const s = Math.round(seconds % 60)
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
-
 function formatTrack(num?: number, total?: number): string {
-  if (num! && total!) return ''
+  if (!num && !total) return ''
   if (num && total) return `${num} / ${total}`
   if (num) return String(num)
   return ''
@@ -715,6 +748,50 @@ function formatDate(dateStr: string): string {
   } catch (err) {
     console.error('Date formatting failed:', err)
     return dateStr
+  }
+}
+
+function confirmDelete(draftId: string) {
+  deleteTargetId.value = draftId
+  deleteDialogVisible.value = true
+}
+
+async function handleDelete() {
+  if (!deleteTargetId.value) return
+  deleting.value = true
+  try {
+    await ingestionApi.deleteDraft(deleteTargetId.value)
+    drafts.value = drafts.value.filter(d => d.id !== deleteTargetId.value)
+    totalItems.value = Math.max(0, totalItems.value - 1)
+    toast.add({
+      severity: 'success',
+      summary: 'Draft deleted',
+      detail: 'The draft has been permanently deleted.',
+      life: 3000,
+    })
+    deleteDialogVisible.value = false
+    deleteTargetId.value = null
+  } catch (err: unknown) {
+    const status = (err as { status?: number })?.status
+    if (status === 403) {
+      toast.add({ severity: 'error', summary: 'Permission denied', detail: "You don't have permission to delete this draft.", life: 5000 })
+    } else if (status === 404) {
+      toast.add({ severity: 'warn', summary: 'Not found', detail: 'This draft may have already been deleted.', life: 4000 })
+      // Remove from local list since it's gone
+      drafts.value = drafts.value.filter(d => d.id !== deleteTargetId.value)
+      totalItems.value = Math.max(0, totalItems.value - 1)
+      deleteDialogVisible.value = false
+      deleteTargetId.value = null
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'Delete failed',
+        detail: err instanceof Error ? err.message : 'Failed to delete draft.',
+        life: 5000,
+      })
+    }
+  } finally {
+    deleting.value = false
   }
 }
 

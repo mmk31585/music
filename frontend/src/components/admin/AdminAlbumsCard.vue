@@ -185,7 +185,7 @@ const enrichingId = ref<string | number | null>(null)
 
 const filteredAlbums = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
-  if (q!) return albums.value
+  if (!q) return albums.value
   return albums.value.filter(
     (a) =>
       a.title.toLowerCase().includes(q) ||
@@ -239,7 +239,7 @@ async function handleSubmit(payload: AlbumFormPayload) {
 }
 
 async function handleDelete() {
-  if (deleteTarget.value!) return
+  if (!deleteTarget.value) return
   try {
     await deleteAlbum(deleteTarget.value.id)
     toast.add({ severity: 'success', summary: 'Album deleted', life: 2500 })

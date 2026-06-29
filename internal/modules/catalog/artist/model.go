@@ -53,10 +53,10 @@ type ArtistAlbum struct {
 
 type Overview struct {
 	Artist    *Artist       `json:"artist"`
-	TopTracks []ArtistTrack `json:"topTracks"`
+	TopTracks []ArtistTrack `json:"top_tracks"`
 	Albums    []ArtistAlbum `json:"albums"`
 	Singles   []ArtistAlbum `json:"singles"`
-	AppearsOn []ArtistTrack `json:"appearsOn"`
+	AppearsOn []ArtistTrack `json:"appears_on"`
 }
 
 type RelatedArtist struct {
@@ -79,36 +79,36 @@ type RelatedArtist struct {
 type CreateRequest struct {
 	Name     string  `json:"name"`
 	Bio      *string `json:"bio"`
-	ImageURL *string `json:"imageUrl"`
+	ImageURL *string `json:"image_url"`
 
-	AvatarMediaID *uuid.UUID `json:"avatarMediaId"`
-	BannerMediaID *uuid.UUID `json:"bannerMediaId"`
+	AvatarMediaID *uuid.UUID `json:"avatar_media_id"`
+	BannerMediaID *uuid.UUID `json:"banner_media_id"`
 	Country       *string    `json:"country"`
 
-	IsVerified       *bool  `json:"isVerified"`
-	MonthlyListeners *int64 `json:"monthlyListeners"`
+	IsVerified       *bool  `json:"is_verified"`
+	MonthlyListeners *int64 `json:"monthly_listeners"`
 }
 
 type UpdateRequest struct {
 	Name     *string `json:"name"`
 	Bio      *string `json:"bio"`
-	ImageURL *string `json:"imageUrl"`
+	ImageURL *string `json:"image_url"`
 
-	AvatarMediaID *uuid.UUID `json:"avatarMediaId"`
-	BannerMediaID *uuid.UUID `json:"bannerMediaId"`
+	AvatarMediaID *uuid.UUID `json:"avatar_media_id"`
+	BannerMediaID *uuid.UUID `json:"banner_media_id"`
 	Country       *string    `json:"country"`
 
-	IsVerified       *bool  `json:"isVerified"`
-	MonthlyListeners *int64 `json:"monthlyListeners"`
+	IsVerified       *bool  `json:"is_verified"`
+	MonthlyListeners *int64 `json:"monthly_listeners"`
 }
 
 type RelatedArtistRequest struct {
-	RelatedArtistID uuid.UUID `json:"relatedArtistId" validate:"required"`
+	RelatedArtistID uuid.UUID `json:"related_artist_id" validate:"required"`
 	Score           float64   `json:"score"`
 	Source          string    `json:"source"`
 }
 
 type ArtistTopTrackRequest struct {
-	TrackID  uuid.UUID `json:"trackId" validate:"required"`
+	TrackID  uuid.UUID `json:"track_id" validate:"required"`
 	Position int       `json:"position"`
 }

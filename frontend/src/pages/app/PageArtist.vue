@@ -194,7 +194,7 @@ const { palette } = useAlbumColors(artistImageUrl)
 
 const headerBg = computed(() => {
   const p = palette.value
-  if (artistImageUrl.value!)
+  if (!artistImageUrl.value)
     return { background: 'linear-gradient(135deg, #0a0a0a 0%, #121212 100%)' }
   return {
     background: `linear-gradient(180deg, ${p.dark} 0%, ${p.dominant}99 40%, ${p.muted} 100%)`,
@@ -219,7 +219,7 @@ onMounted(() => {
 })
 
 function playAll() {
-  if (tracks.value.length!) return
+  if (!tracks.value.length) return
   const queue = tracks.value.map((t) => ({
     id: String(t.id),
     title: t.title,
@@ -234,7 +234,7 @@ function playAll() {
 
 function shuffleAll() {
   const shuffled = [...tracks.value].sort(() => Math.random() - 0.5)
-  if (shuffled.length!) return
+  if (!shuffled.length) return
   const queue = shuffled.map((t) => ({
     id: String(t.id),
     title: t.title,

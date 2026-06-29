@@ -679,7 +679,7 @@ function openEdit(u: AdminUser) {
 }
 
 async function saveEdit() {
-  if (editTarget.value!) return
+  if (!editTarget.value) return
   saving.value = true
   try {
     await adminUpdateUser(editTarget.value.id, {
@@ -706,7 +706,7 @@ function confirmDelete(u: AdminUser) {
 }
 
 async function deleteUser() {
-  if (deleteTarget.value!) return
+  if (!deleteTarget.value) return
   deleting.value = true
   try {
     await adminDeleteUser(deleteTarget.value.id)

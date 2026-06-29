@@ -109,15 +109,17 @@ type GenerationLog struct {
 }
 
 type TrackMeta struct {
-	ID       string  `json:"id"`
-	Title    string  `json:"title"`
-	ArtistID string  `json:"artist_id,omitempty"`
-	Artist   string  `json:"artist,omitempty"`
-	Album    string  `json:"album,omitempty"`
-	Genre    string  `json:"genre,omitempty"`
-	Year     int     `json:"year,omitempty"`
-	Duration int     `json:"duration,omitempty"`
-	CoverURL string  `db:"cover_url" json:"cover_url,omitempty"`
-	Energy   float64 `json:"energy,omitempty"`
-	Valence  float64 `json:"valence,omitempty"`
+	ID           string  `json:"id"`
+	Title        string  `json:"title"`
+	ArtistID     string  `json:"artist_id,omitempty"`
+	Artist       string  `json:"artist,omitempty"`
+	Album        string  `json:"album,omitempty"`
+	Genre        string  `json:"genre,omitempty"`
+	Year         int     `json:"year,omitempty"`
+	Duration     int     `json:"duration,omitempty"`
+	CoverURL     string  `db:"cover_url" json:"cover_url,omitempty"`
+	Energy       float64 `json:"energy,omitempty"`
+	Valence      float64 `json:"valence,omitempty"`
+	Tempo        float64 `json:"tempo,omitempty"`
+	Danceability float64 `json:"danceability,omitempty"`
 }

@@ -8,6 +8,48 @@
       </p>
     </div>
 
+    <!-- Profile & Stats -->
+    <div class="glass-strong rounded-2xl p-6 md:p-8">
+      <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <!-- User Profile -->
+        <div class="flex flex-1 items-center gap-4">
+          <div class="relative">
+            <div class="h-16 w-16 rounded-full bg-gradient-to-br from-spotify to-spotify/60 p-0.5">
+              <div class="h-full w-full rounded-full bg-[#1a1a1a] flex items-center justify-center">
+                <span class="text-xl font-bold text-white">{{ profile?.username?.charAt(0) || 'U' }}</span>
+              </div>
+            </div>
+            <div class="absolute -right-1 -bottom-1 flex h-5 w-5 items-center justify-center rounded-full bg-green-500 ring-2 ring-[#121212]">
+              <span class="text-xs">✓</span>
+            </div>
+          </div>
+          <div class="min-w-0 flex-1">
+            <h2 class="truncate text-lg font-bold text-white">{{ profile?.username || 'Guest' }}</h2>
+            <p class="text-sm text-white/40">Level {{ profile?.level || 1 }} • Rank #{{ profile?.rank || '—' }}</p>
+          </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid flex-1 grid-cols-3 gap-4 text-center md:grid-cols-3">
+          <!-- XP -->
+          <div class="rounded-lg bg-white/5 p-3 transition-all hover:bg-white/10">
+            <div class="text-xs uppercase tracking-wider text-white/40">XP</div>
+            <div class="mt-1 text-lg font-bold text-white">{{ profile?.current_xp ?? 0 }}</div>
+          </div>
+          <!-- Badges -->
+          <div class="rounded-lg bg-white/5 p-3 transition-all hover:bg-white/10">
+            <div class="text-xs uppercase tracking-wider text-white/40">Badges</div>
+            <div class="mt-1 text-lg font-bold text-white">{{ profile?.badges || 0 }}</div>
+          </div>
+          <!-- Challenges -->
+          <div class="rounded-lg bg-white/5 p-3 transition-all hover:bg-white/10">
+            <div class="text-xs uppercase tracking-wider text-white/40">Challenges</div>
+            <div class="mt-1 text-lg font-bold text-white">{{ profile?.challenges || 0 }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- XP Bar -->
     <GamificationXPBar :profile="profile" />
 
@@ -29,23 +71,7 @@
     </div>
 
     <KeepAlive>
-    <!-- Badges -->
-    <GamificationBadges
-      v-if="activeTab === 'badges'"
-      :all-badges="badgesData.all"
-      :user-badges="badgesData.mine"
-    />
-
-    <!-- Challenges -->
-    <GamificationChallenges
-      v-if="activeTab === 'challenges'"
-      :challenges="challengesData.challenges"
-      :progress="challengesData.progress"
-      :earnedXP="challengesData.earned_xp"
-    />
-
-    <!-- Leaderboard -->
-    <GamificationLeaderboard v-if="activeTab === 'leaderboard'" :entries="leaderboardData" />
+      <component :is="activeComponent" v-bind="(activeProps as any)" :key="activeTab" />
     </KeepAlive>
 
     <!-- Loading state -->
@@ -58,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { SkeletonLoader } from '@/components/common'
 import { useGamificationApi } from '@/services/api/gamification'
 import GamificationXPBar from '@/components/gamification/GamificationXPBar.vue'
@@ -88,6 +114,61 @@ const tabs = [
 
 const activeTab = ref('badges')
 
+const activeComponent = computed(() => {
+  switch (activeTab.value) {
+    case 'badges': return GamificationBadges
+    case 'challenges': return GamificationChallenges
+    case 'leaderboard': return GamificationLeaderboard
+    default: return GamificationBadges
+  }
+})
+
+const leaderboardType = ref('all')
+
+const activeProps = computed(() => {
+  switch (activeTab.value) {
+    case 'badges':
+      return { allBadges: badgesData.value.all ?? [], userBadges: badgesData.value.mine ?? [] }
+    case 'challenges':
+      return { challenges: challengesData.value.challenges, progress: challengesData.value.progress, earnedXP: challengesData.value.earned_xp }
+    case 'leaderboard':
+      return { entries: leaderboardData.value, type: leaderboardType.value, onTypeChange: onLeaderboardTypeChange }
+    default:
+      return {}
+  }
+})
+
+function onLeaderboardTypeChange(type: string) {
+  leaderboardType.value = type
+  api.getLeaderboard({ type, limit: 50 }).then((res) => {
+    if (res) leaderboardData.value = res.entries
+  })
+}
+
+// ─── Live polling for challenges ─────────────────────────────
+// Challenges progress is updated in the backend as the user
+// performs actions (playing tracks, liking songs, etc.). Poll
+// every 12 seconds so the user sees their progress update live.
+const CHALLENGE_POLL_MS = 12_000
+let pollTimer: ReturnType<typeof setInterval> | undefined
+
+async function refreshChallenges() {
+  const res = await api.getChallenges()
+  if (res) challengesData.value = res
+}
+
+// Poll only when the challenges tab is visible
+watch(activeTab, (tab) => {
+  clearInterval(pollTimer)
+  if (tab === 'challenges') {
+    refreshChallenges() // immediate refresh on tab switch
+    pollTimer = setInterval(refreshChallenges, CHALLENGE_POLL_MS)
+  }
+})
+
+onUnmounted(() => clearInterval(pollTimer))
+
+// ─── Initial load ────────────────────────────────────────────
 onMounted(async () => {
   try {
     const [profileRes, badgesRes, challengesRes, leaderboardRes] = await Promise.all([

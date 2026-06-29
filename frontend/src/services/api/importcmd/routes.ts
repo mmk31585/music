@@ -30,6 +30,7 @@ export const useImportApi = () => {
     }
     if (track.title) data.title = track.title
     if (track.artist) data.artist = track.artist
+    if ('album' in track && track.album) data.album = track.album
     if (track.duration) data.duration = track.duration
     if ('isrc' in track && track.isrc && typeof track.isrc === 'string') data.isrc = track.isrc
     if (track.external_ids && Object.keys(track.external_ids).length > 0) {

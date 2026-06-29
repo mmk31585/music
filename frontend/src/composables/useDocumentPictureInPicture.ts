@@ -4,6 +4,7 @@ export interface UseDocumentPiPOptions {
   width?: number
   height?: number
   title?: string
+  copyStyles?: boolean
   onClose?: () => void
 }
 
@@ -118,7 +119,11 @@ export function useDocumentPictureInPicture(options: UseDocumentPiPOptions = {})
 
     syncBodyStyles()
 
-    copyDocumentStyles(document, pip.document)
+    // Optionally copy app styles into the PiP window (needed for class-based CSS).
+    // PiPPlayerContent uses inline styles so this can be skipped for speed.
+    if (options.copyStyles !== false) {
+      copyDocumentStyles(document, pip.document)
+    }
 
     const appRoot = pip.document.createElement('div')
     appRoot.id = 'pip-player-root'

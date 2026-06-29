@@ -22,7 +22,7 @@
           label="Search Artist"
           icon="pi pi-search"
           :loading="searching"
-          :disabled="artistName.trim!()"
+          :disabled="!artistName.trim()"
           @click="doSearch"
         />
       </div>
@@ -288,6 +288,7 @@ import { useToast } from 'primevue/usetoast'
 import { AdminSectionHeader } from '@/components/admin'
 import { useImportApi } from '@/services/api/importcmd'
 import type { AlbumGroup, TrackResult, BatchJobResult, ImportResponse } from '@/services/api/importcmd'
+import { formatDuration } from '@/utils/format'
 
 const router = useRouter()
 const toast = useToast()
@@ -308,7 +309,7 @@ const filterQuery = ref('')
 const filterSource = ref('')
 
 const sourceOptions = computed(() => {
-  if (discography.value!) return []
+  if (!discography.value) return []
   const sources = new Set<string>()
   for (const album of discography.value.albums) {
     for (const track of album.tracks) {
@@ -329,18 +330,18 @@ function trackMatchesFilter(track: TrackResult): boolean {
 
 function albumHasVisibleTracks(albumIdx: number): boolean {
   const album = discography.value?.albums[albumIdx]
-  if (album!) return false
+  if (!album) return false
   return album.tracks.some(t => trackMatchesFilter(t))
 }
 
 function visibleAlbumTrackCount(albumIdx: number): number {
   const album = discography.value?.albums[albumIdx]
-  if (album!) return 0
+  if (!album) return 0
   return album.tracks.filter(t => trackMatchesFilter(t)).length
 }
 
 const visibleTrackCount = computed(() => {
-  if (discography.value!) return 0
+  if (!discography.value) return 0
   let count = 0
   for (const album of discography.value.albums) {
     count += album.tracks.filter(t => trackMatchesFilter(t)).length
@@ -349,7 +350,7 @@ const visibleTrackCount = computed(() => {
 })
 
 const visibleAlbumCount = computed(() => {
-  if (discography.value!) return 0
+  if (!discography.value) return 0
   let count = 0
   for (let ai = 0; ai < discography.value.albums.length; ai++) {
     if (albumHasVisibleTracks(ai)) count++
@@ -358,7 +359,7 @@ const visibleAlbumCount = computed(() => {
 })
 
 const visibleSelectedCount = computed(() => {
-  if (discography.value!) return 0
+  if (!discography.value) return 0
   let count = 0
   for (const key of selectedTracks.value) {
     const parts = key.split(':').map(Number)
@@ -394,14 +395,14 @@ const batchJobs = ref<BatchJobResult[]>([])
 let progressTimer: ReturnType<typeof setInterval> | null = null
 
 const totalTracks = computed(() => {
-  if (discography.value!) return 0
+  if (!discography.value) return 0
   return discography.value.albums.reduce((sum, a) => sum + a.tracks.length, 0)
 })
 
 const selectedCount = computed(() => selectedTracks.value.size)
 
 const allTracksSelected = computed(() => {
-  if (discography.value! || visibleTrackCount.value === 0) return false
+  if (!discography.value || visibleTrackCount.value === 0) return false
   return visibleSelectedCount.value === visibleTrackCount.value
 })
 
@@ -429,9 +430,9 @@ function toggleTrack(albumIdx: number, trackIdx: number, val: boolean) {
 }
 
 function albumTracksSelected(albumIdx: number): boolean {
-  if (discography.value!) return false
+  if (!discography.value) return false
   const album = discography.value.albums[albumIdx]
-  if (album!) return false
+  if (!album) return false
   for (let ti = 0; ti < album.tracks.length; ti++) {
     if (isTrackSelected!(albumIdx, ti)) return false
   }
@@ -439,9 +440,9 @@ function albumTracksSelected(albumIdx: number): boolean {
 }
 
 function albumPartiallySelected(albumIdx: number): boolean {
-  if (discography.value!) return false
+  if (!discography.value) return false
   const album = discography.value.albums[albumIdx]
-  if (album!) return false
+  if (!album) return false
   let count = 0
   for (let ti = 0; ti < album.tracks.length; ti++) {
     if (isTrackSelected(albumIdx, ti)) count++
@@ -450,9 +451,9 @@ function albumPartiallySelected(albumIdx: number): boolean {
 }
 
 function toggleAlbumTracks(albumIdx: number, val: boolean) {
-  if (discography.value!) return
+  if (!discography.value) return
   const album = discography.value.albums[albumIdx]
-  if (album!) return
+  if (!album) return
   for (let ti = 0; ti < album.tracks.length; ti++) {
     const key = trackKey(albumIdx, ti)
     if (val) {
@@ -465,12 +466,12 @@ function toggleAlbumTracks(albumIdx: number, val: boolean) {
 }
 
 function toggleSelectAll(val: boolean) {
-  if (discography.value!) return
+  if (!discography.value) return
   selectedTracks.value = new Set()
   if (val) {
     for (let ai = 0; ai < discography.value.albums.length; ai++) {
       const album = discography.value.albums[ai]
-      if (album!) continue
+      if (!album) continue
       for (let ti = 0; ti < album.tracks.length; ti++) {
         const track = album.tracks[ti]
         if (track && trackMatchesFilter(track)) {
@@ -501,7 +502,7 @@ function sourceBadge(source: string): string {
 
 async function doSearch() {
   const name = artistName.value.trim()
-  if (name!) return
+  if (!name) return
 
   searching.value = true
   searchError.value = ''
@@ -528,7 +529,7 @@ async function doSearch() {
 }
 
 async function doBatchImport() {
-  if (discography.value! || selectedCount.value === 0) return
+  if (!discography.value || selectedCount.value === 0) return
 
   const tracks: Array<{
     title: string
@@ -597,7 +598,7 @@ function startBatchProgressPolling(batchIdVal: string) {
   progressTimer = setInterval(async () => {
     try {
       const progress = await importApi.getBatchProgress(batchIdVal)
-      if (progress!) return
+      if (!progress) return
 
       batchCompleted.value = progress.completed
       batchFailed.value = progress.failed
@@ -608,7 +609,7 @@ function startBatchProgressPolling(batchIdVal: string) {
         const updatedJobs = [...batchJobs.value]
         for (let i = 0; i < updatedJobs.length; i++) {
           const job = updatedJobs[i]
-          if (job!) continue
+          if (!job) continue
           if (job.jobId) {
             try {
               const jobProgress = await importApi.getProgress(job.jobId)
@@ -661,7 +662,7 @@ onUnmounted(() => {
 
 function batchJobStatusClass(job: BatchJobResult & { status?: string }): string {
   if (job.error) return 'text-red-400!'
-  if (job.jobId!) return 'text-slate-500!'
+  if (!job.jobId) return 'text-slate-500!'
   if (job.status === 'complete') return 'text-emerald-400!'
   if (job.status === 'failed') return 'text-red-400!'
   if (job.status === 'downloading' || job.status === 'uploading') return 'text-amber-400!'
@@ -671,7 +672,7 @@ function batchJobStatusClass(job: BatchJobResult & { status?: string }): string 
 
 function batchJobStatusLabel(job: BatchJobResult & { status?: string }): string {
   if (job.error) return 'Failed'
-  if (job.jobId!) return 'Skipped'
+  if (!job.jobId) return 'Skipped'
   if (job.status === 'complete') return 'Complete ✓'
   if (job.status === 'failed') return 'Failed ✗'
   if (job.status) return job.status.charAt(0).toUpperCase() + job.status.slice(1)
@@ -695,10 +696,4 @@ function resetAll() {
   clearFilters()
 }
 
-function formatDuration(seconds: number): string {
-  if (seconds! || seconds <= 0) return '—'
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
 </script>

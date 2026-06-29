@@ -214,6 +214,7 @@ import { useUserAuthStore, usePlayerStore } from '@/stores'
 import { useAuth } from '@/composables/auth/useAuth'
 import { client, useRTL } from '@/composables'
 import { wsClient } from '@/services/socket/client'
+import axios from 'axios'
 import type { NotificationResponse } from '@/services/api/notification/routes'
 
 const browseItems = [
@@ -324,7 +325,7 @@ function stopPolling() {
 function onVisibilityChange() {
   if (document.hidden) {
     stopPolling()
-  } else {
+  } else if (store.isAuthenticated) {
     startPolling()
   }
 }
@@ -334,7 +335,7 @@ onMounted(() => {
     startPolling()
     unsubNotif = wsClient.on('notification', (msg) => {
       const n = msg.payload as NotificationResponse
-      if (n && n.id && n.isRead!) {
+      if (n && n.id && !n.isRead) {
         unreadCount.value++
       }
     })
@@ -345,7 +346,7 @@ onMounted(() => {
     const tag = (e.target as HTMLElement)?.tagName
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
     if (e.key === '?' && e.ctrlKey! && e.metaKey! && e.altKey!) {
-      showShortcuts.value = showShortcuts.value!
+      showShortcuts.value = !showShortcuts.value
     }
   })
   const updateOnline = () => { isOnline.value = navigator.onLine }
@@ -360,10 +361,15 @@ onUnmounted(() => {
 })
 
 async function fetchUnreadCount() {
+  if (!store.isAuthenticated) return
   try {
     const res = await client.get('/notifications', { params: { limit: 1 } })
     unreadCount.value = res.data?.data?.unreadCount ?? 0
   } catch (err) {
+    if (axios.isAxiosError(err) && err.response?.status === 401) {
+      // User is not authenticated, silently ignore
+      return
+    }
     console.error('Failed to fetch unread count:', err)
   }
 }

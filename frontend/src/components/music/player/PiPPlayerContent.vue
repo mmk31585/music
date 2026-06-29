@@ -1,9 +1,11 @@
 <template>
   <div :style="rootStyle">
+    <!-- Background image + gradient overlay (same as FullscreenPlayer) -->
     <div :style="bgImageStyle" />
     <div :style="bgOverlay" />
 
     <div :style="contentStyle">
+      <!-- Top: Cover + Title/Artist -->
       <div :style="topSectionStyle">
         <div :style="coverWrapStyle">
           <img
@@ -14,7 +16,7 @@
             @error="onImgError"
           />
           <div v-else :style="coverFallbackStyle">
-            <span style="font-size: 18px">♪</span>
+            <span style="font-size: 22px; opacity: 0.4">♪</span>
           </div>
         </div>
         <div :style="metaStyle">
@@ -23,9 +25,27 @@
         </div>
       </div>
 
+      <!-- Progress: Matches FullscreenPlayer style (glow + shadow + thumb) -->
       <div :style="progressSectionStyle">
-        <div :style="progressBarStyle" ref="progressRef" role="button" tabindex="0" @click="seekFromEvent" @keydown.enter="seekFromEvent" @keydown.space.prevent="seekFromEvent">
-          <div :style="{ ...progressFillStyle, width: `${progressPercent}%` }" />
+        <div
+          ref="progressRef"
+          :style="progressTrackStyle"
+          role="slider"
+          tabindex="0"
+          aria-label="Seek"
+          :aria-valuemin="0"
+          :aria-valuemax="pc.duration.value || 0"
+          :aria-valuenow="pc.currentTime.value"
+          @click="seekFromEvent"
+          @keydown.enter="seekFromEvent"
+          @keydown.space.prevent="seekFromEvent"
+        >
+          <!-- Glow layer behind fill (like FullscreenPlayer's blur layer) -->
+          <div v-if="isPlaying" :style="progressGlowStyle" />
+          <!-- Main fill with shadow (like FullscreenPlayer) -->
+          <div :style="progressFillStyle" />
+          <!-- Thumb dot (always visible in PiP, smaller) -->
+          <div :style="progressThumbStyle" />
         </div>
         <div :style="progressLabelsStyle">
           <span>{{ currentTimeLabel }}</span>
@@ -33,21 +53,23 @@
         </div>
       </div>
 
+      <!-- Controls -->
       <div :style="controlsStyle">
         <button :style="ctrlBtnStyle" aria-label="Previous track" @click="playPrevious" :disabled="hasPrevious!">⏮</button>
         <button
-          :style="{ ...playBtnBase, background: accentColor, boxShadow: `0 0 12px ${accentColor}44` }"
+          :style="{ ...playBtnBase, background: accentColor, boxShadow: `0 0 0 3px ${accentColor}22, 0 4px 20px ${accentColor}44` }"
           :aria-label="isPlaying ? 'Pause' : 'Play'"
           @click="togglePlayPause"
         >
-          {{ isPlaying ? '⏸' : '▶' }}
+          <span :style="playIconStyle">{{ isPlaying ? '⏸' : '▶' }}</span>
         </button>
         <button :style="ctrlBtnStyle" aria-label="Next track" @click="playNext" :disabled="hasNext!">⏭</button>
         <div :style="{ flex: 1 }" />
-        <button :style="closeBtnStyle" aria-label="Close player" @click="close">✕</button>
+        <button :style="closeBtnStyle" aria-label="Close PiP player" @click="close">✕</button>
       </div>
     </div>
 
+    <!-- Live indicator -->
     <div v-if="isPlaying" :style="liveDotStyle" />
   </div>
 </template>
@@ -82,6 +104,8 @@ const bgDark = computed(() => palette.value.dark || '#1a1a2e')
 const bgDominant = computed(() => palette.value.dominant || '#121212')
 const bgMuted = computed(() => palette.value.muted || '#0a0a0a')
 
+// ─── Root / Background ──────────────────────────────────────
+
 const rootStyle = computed(() => ({
   width: '100vw',
   height: '100vh',
@@ -103,15 +127,17 @@ const bgImageStyle = computed(() => ({
   backgroundImage: coverUrl.value ? `url(${coverUrl.value})` : 'none',
   backgroundSize: 'cover' as const,
   backgroundPosition: 'center',
-  opacity: 0.12,
+  opacity: 0.15,
   transition: 'opacity 0.5s',
 }))
 
 const bgOverlay = {
   position: 'absolute' as const,
   inset: 0,
-  background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%, rgba(0,0,0,0.2) 100%)',
+  background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 55%, rgba(0,0,0,0.3) 100%)',
 }
+
+// ─── Content Layout ─────────────────────────────────────────
 
 const contentStyle = {
   position: 'relative' as const,
@@ -119,9 +145,11 @@ const contentStyle = {
   display: 'flex' as const,
   flexDirection: 'column' as const,
   height: '100%',
-  padding: '12px',
+  padding: '10px 12px 10px',
   boxSizing: 'border-box' as const,
 }
+
+// ─── Top: Cover + Meta ──────────────────────────────────────
 
 const topSectionStyle = {
   display: 'flex' as const,
@@ -132,12 +160,12 @@ const topSectionStyle = {
 }
 
 const coverWrapStyle = {
-  width: '52px',
-  height: '52px',
-  borderRadius: '10px',
+  width: '60px',
+  height: '60px',
+  borderRadius: '12px',
   overflow: 'hidden',
   flexShrink: 0,
-  boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+  boxShadow: '0 3px 16px rgba(0,0,0,0.5)',
 }
 
 const coverFallbackStyle = {
@@ -146,48 +174,87 @@ const coverFallbackStyle = {
   display: 'flex' as const,
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'rgba(255,255,255,0.05)',
+  background: 'rgba(255,255,255,0.06)',
+  borderRadius: '12px',
 }
 
 const metaStyle = { flex: 1, minWidth: 0 }
 
 const titleStyle = {
   fontWeight: 700,
-  fontSize: '13px',
+  fontSize: '14px',
+  lineHeight: '1.2',
   whiteSpace: 'nowrap' as const,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
 }
 
 const artistStyle = {
-  fontSize: '11px',
+  fontSize: '12px',
   color: 'rgba(255,255,255,0.5)',
   whiteSpace: 'nowrap' as const,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
-  marginTop: '2px',
+  marginTop: '3px',
 }
 
+// ─── Progress Bar (matches FullscreenPlayer style) ──────────
+
 const progressSectionStyle = {
-  marginTop: '8px',
+  marginTop: '6px',
   display: 'flex' as const,
   flexDirection: 'column' as const,
   gap: '3px',
 }
 
-const progressBarStyle = {
-  height: '3px',
-  borderRadius: '2px',
+const progressTrackStyle = {
+  position: 'relative' as const,
+  height: '4px',
+  borderRadius: '3px',
   background: 'rgba(255,255,255,0.1)',
-  overflow: 'hidden',
   cursor: 'pointer' as const,
+  overflow: 'visible' as const,  // so thumb can overflow
 }
 
-const progressFillStyle = computed(() => ({
+/** Glow layer behind the fill (matches FullscreenPlayer's .blur-[3px] layer) */
+const progressGlowStyle = computed(() => ({
+  position: 'absolute' as const,
+  left: 0,
+  top: 0,
   height: '100%',
-  borderRadius: '2px',
-  background: `linear-gradient(to right, ${accentColor.value}, ${accentColor.value}dd)`,
+  width: `${progressPercent.value}%`,
+  borderRadius: '3px',
+  background: accentColor.value,
+  opacity: 0.35,
+  filter: 'blur(3px)',
   transition: 'width 0.2s linear',
+}))
+
+/** Main fill bar with box-shadow glow (matches FullscreenPlayer) */
+const progressFillStyle = computed(() => ({
+  position: 'absolute' as const,
+  left: 0,
+  top: 0,
+  height: '100%',
+  width: `${progressPercent.value}%`,
+  borderRadius: '3px',
+  background: `linear-gradient(to right, ${accentColor.value}, ${accentColor.value}dd)`,
+  boxShadow: `0 0 8px ${accentColor.value}66`,
+  transition: 'width 0.2s linear',
+}))
+
+/** Thumb dot at progress position (always visible in PiP) */
+const progressThumbStyle = computed(() => ({
+  position: 'absolute' as const,
+  top: '50%',
+  left: `calc(${progressPercent.value}% - 5px)`,
+  transform: 'translateY(-50%)',
+  width: '10px',
+  height: '10px',
+  borderRadius: '50%',
+  background: accentColor.value,
+  boxShadow: `0 0 0 2px ${accentColor.value}22, 0 2px 6px rgba(0,0,0,0.5)`,
+  transition: 'left 0.2s linear',
 }))
 
 const progressLabelsStyle = {
@@ -198,36 +265,39 @@ const progressLabelsStyle = {
   fontVariantNumeric: 'tabular-nums' as const,
 }
 
+// ─── Controls ───────────────────────────────────────────────
+
 const controlsStyle = {
   display: 'flex' as const,
   alignItems: 'center',
-  gap: '12px',
-  marginTop: '8px',
+  gap: '14px',
+  marginTop: '6px',
 }
 
 const ctrlBtnStyle = {
-  width: '26px',
-  height: '26px',
+  width: '36px',
+  height: '36px',
   borderRadius: '50%',
   border: 'none',
   background: 'rgba(255,255,255,0.08)',
-  color: 'rgba(255,255,255,0.6)',
-  fontSize: '10px',
+  color: 'rgba(255,255,255,0.7)',
+  fontSize: '14px',
   cursor: 'pointer' as const,
   display: 'flex' as const,
   alignItems: 'center' as const,
   justifyContent: 'center' as const,
   transition: 'all 0.15s',
   flexShrink: 0 as const,
+  backdropFilter: 'blur(4px)',
 }
 
 const playBtnBase = {
-  width: '34px',
-  height: '34px',
+  width: '44px',
+  height: '44px',
   borderRadius: '50%',
   border: 'none',
   color: '#fff',
-  fontSize: '13px',
+  fontSize: '14px',
   cursor: 'pointer' as const,
   display: 'flex' as const,
   alignItems: 'center' as const,
@@ -236,19 +306,24 @@ const playBtnBase = {
   flexShrink: 0 as const,
 }
 
+const playIconStyle = {
+  position: 'relative' as const,
+  left: '1px',       // optical centering for ▶
+}
+
 const closeBtnStyle = {
-  width: '22px',
-  height: '22px',
+  width: '28px',
+  height: '28px',
   borderRadius: '50%',
   border: 'none',
   background: 'rgba(255,255,255,0.08)',
-  color: 'rgba(255,255,255,0.4)',
-  fontSize: '9px',
+  color: 'rgba(255,255,255,0.5)',
+  fontSize: '11px',
   cursor: 'pointer' as const,
   display: 'flex' as const,
   alignItems: 'center' as const,
   justifyContent: 'center' as const,
-  transition: 'opacity 0.2s',
+  transition: 'opacity 0.15s',
   flexShrink: 0 as const,
 }
 
@@ -256,11 +331,11 @@ const liveDotStyle = {
   position: 'absolute' as const,
   top: '6px',
   left: '6px',
-  width: '5px',
-  height: '5px',
+  width: '6px',
+  height: '6px',
   borderRadius: '50%',
   background: '#1db954',
-  boxShadow: '0 0 6px rgba(29,185,84,0.6)',
+  boxShadow: '0 0 8px rgba(29,185,84,0.7)',
 }
 
 const timeCache = new Map<number, string>()
@@ -281,7 +356,7 @@ const durationLabel = computed(() =>
 
 function seekFromEvent(e: MouseEvent | KeyboardEvent) {
   const el = progressRef.value
-  if (el!) return
+  if (!el) return
   const rect = el.getBoundingClientRect()
   const ratio = Math.max(0, Math.min(1, ((e as MouseEvent).clientX - rect.left) / rect.width))
   pc.seek(ratio * (pc.duration.value || pc.currentTrack.value?.durationSeconds || 0))

@@ -114,6 +114,66 @@ func (s *Service) GetLeaderboard(ctx context.Context, lbType string, limit int) 
 	}, nil
 }
 
+func (s *Service) IncrementChallengeProgress(ctx context.Context, userID, challengeType string) error {
+	challenges, err := s.repo.GetActiveChallengesByType(ctx, challengeType)
+	if err != nil {
+		return err
+	}
+	if len(challenges) == 0 {
+		return nil
+	}
+
+	// Exclude already-completed challenges — each event should only increment
+	// and reward unfinished challenges.
+	activeIDs := make([]string, 0, len(challenges))
+	activeChallenges := make([]DailyChallenge, 0, len(challenges))
+	for _, c := range challenges {
+		done, err := s.repo.IsChallengeCompleted(ctx, userID, c.ID, c.TargetCount)
+		if err != nil {
+			continue
+		}
+		if !done {
+			activeIDs = append(activeIDs, c.ID)
+			activeChallenges = append(activeChallenges, c)
+		}
+	}
+	if len(activeIDs) == 0 {
+		return nil
+	}
+
+	err = s.repo.IncrementChallengeProgress(ctx, userID, activeIDs)
+	if err != nil {
+		return err
+	}
+
+	// Check each challenge for completion and award rewards
+	for _, c := range activeChallenges {
+		completed, err := s.repo.IsChallengeCompleted(ctx, userID, c.ID, c.TargetCount)
+		if err != nil || !completed {
+			continue
+		}
+
+		// Mark as completed
+		if err := s.repo.CompleteChallenge(ctx, userID, c.ID); err != nil {
+			continue
+		}
+
+		// Award challenge XP
+		if c.XPReward > 0 {
+			meta := fmt.Sprintf(`{"challenge_id": "%s", "challenge_type": "%s"}`, c.ID, c.ChallengeType)
+			metaPtr := &meta
+			_, _ = s.repo.AddXP(ctx, userID, c.XPReward, fmt.Sprintf("challenge_%s", c.ChallengeType), metaPtr)
+		}
+
+		// Award linked badge
+		if c.BadgeRewardID != nil && *c.BadgeRewardID != "" {
+			_ = s.repo.AwardBadge(ctx, userID, *c.BadgeRewardID)
+		}
+	}
+
+	return nil
+}
+
 func (s *Service) CheckBadges(ctx context.Context, userID string) ([]Badge, error) {
 	return s.repo.CheckAndAwardBadges(ctx, userID)
 }

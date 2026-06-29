@@ -254,6 +254,35 @@ func (h *Handler) SaveFinalMetadata(c *gin.Context) {
 	response.OK(c, "final metadata saved and draft accepted", gin.H{})
 }
 
+func (h *Handler) DeleteDraft(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		response.Error(c, appErr.BadRequest("draft ID is required", nil))
+		return
+	}
+
+	userID := auth.UserIDFromContext(c)
+	if userID == "" {
+		response.Error(c, appErr.Unauthorized("user not authenticated", nil))
+		return
+	}
+
+	if err := h.service.DeleteDraft(c.Request.Context(), id, userID); err != nil {
+		if errors.Is(err, ErrDraftNotFound) {
+			response.Error(c, appErr.NotFound("draft not found", nil))
+			return
+		}
+		if errors.Is(err, ErrUnauthorized) {
+			response.Error(c, appErr.Forbidden("you do not have permission to delete this draft", nil))
+			return
+		}
+		response.Error(c, appErr.Internal("failed to delete draft", err))
+		return
+	}
+
+	response.SuccessNoContent(c)
+}
+
 func (h *Handler) RejectDraft(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {

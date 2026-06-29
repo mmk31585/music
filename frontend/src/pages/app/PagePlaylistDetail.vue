@@ -109,7 +109,7 @@
               <div class="mt-6 flex flex-wrap items-center gap-3">
                 <button
                   type="button"
-                  :disabled="tracks.length!"
+                  :disabled="!tracks.length"
                   class="inline-flex items-center gap-2 rounded-full bg-spotify px-8 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-spotify-hover disabled:opacity-40 disabled:hover:scale-100"
                   @click="playAll"
                 >
@@ -392,6 +392,7 @@ import { useSearchApi } from '@/services/api/catalog/search'
 import { onImgError } from '@/utils/helpers'
 import { useCollaborativePlaylist } from '@/composables/useCollaborativePlaylist'
 import { wsClient } from '@/services/socket'
+import { formatDuration } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -472,7 +473,7 @@ function triggerCoverUpload() {
 async function onCoverFileSelected(e: Event) {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0]
-  if (file! || playlist.value!) return
+  if (!file || !playlist.value) return
 
   uploadingCover.value = true
   try {
@@ -482,7 +483,7 @@ async function onCoverFileSelected(e: Event) {
       },
     })
     const url = uploaded.url || uploaded.file_url || uploaded.fileUrl || uploaded.path
-    if (url!) throw new Error('No URL returned from upload')
+    if (!url) throw new Error('No URL returned from upload')
 
     await playlistsApi.updatePlaylist(playlistId, { cover_url: url })
     playlist.value.cover_url = url
@@ -496,12 +497,12 @@ async function onCoverFileSelected(e: Event) {
 }
 
 const isOwner = computed(() => {
-  if (playlist.value!) return false
+  if (!playlist.value) return false
   return playlist.value.user_id === String(auth.user?.id)
 })
 
 const timeAgo = computed(() => {
-  if (playlist.value!?.updated_at) return ''
+  if (!playlist.value?.updated_at) return ''
   const diff = Date.now() - new Date(playlist.value.updated_at).getTime()
   const mins = Math.floor(diff / 60000)
   if (mins < 1) return 'just now'
@@ -521,7 +522,7 @@ const collabHelper = useCollaborativePlaylist(
 )
 
 async function toggleCollaborative() {
-  if (playlist.value!) return
+  if (!playlist.value) return
   try {
     const newVal = playlist.value.is_collaborative!
     await playlistsApi.setCollaborative(playlistId, newVal)
@@ -550,7 +551,7 @@ onMounted(async () => {
   if (collabData) {
     collaborators.value = Array.isArray(collabData) ? collabData : []
     isCollaborator.value = collaborators.value.some(
-      (c: Record<string, unknown>) => String(c.user_id) === String(auth.user?.id) && c.is_creator!,
+      (c: Record<string, unknown>) => String(c.user_id) === String(auth.user?.id) &&       c.is_creator,
     )
   }
 })
@@ -571,7 +572,7 @@ const searchApi = useSearchApi()
 function onAddTrackSearch() {
   if (addTrackDebounce) clearTimeout(addTrackDebounce)
   const q = addTrackQuery.value.trim()
-  if (q!) {
+  if (!q) {
     addTrackResults.value = []
     return
   }
@@ -604,13 +605,6 @@ async function addSelectedTrack(trackId: string) {
   }
 }
 
-function formatDuration(seconds?: number | null) {
-  if (seconds!) return '0:00'
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${String(s).padStart(2, '0')}`
-}
-
 function playAll() {
   if (tracks.value.length) playTrack(0)
 }
@@ -637,7 +631,7 @@ async function deletePlaylist() {
 }
 
 function formatTime(seconds?: number | null) {
-  if (seconds!) return '0:00'
+  if (!seconds) return '0:00'
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${String(s).padStart(2, '0')}`

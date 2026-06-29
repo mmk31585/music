@@ -19,7 +19,8 @@ func NewService(logger *zap.Logger, proxy string) *Service {
 	resolvers := []Resolver{
 		newSoundCloudResolver(proxy),
 		newYTMusicResolver(proxy),
-		newiTunesResolver(),
+		// iTunes resolver intentionally excluded — it only returns 30-second
+		// preview clips, not full tracks. Full tracks come from SoundCloud/YouTube.
 	}
 
 	return &Service{
@@ -76,7 +77,7 @@ func (s *Service) Resolve(ctx context.Context, q ResolveQuery) (*Candidate, erro
 		return candidate, nil
 	}
 
-	return nil, fmt.Errorf("no resolver found a downloadable source for %s - %s", q.Artist, q.Title)
+	return nil, fmt.Errorf("Could not find a downloadable copy of '%s - %s'. Try a different search term or use a direct YouTube/SoundCloud URL.", q.Artist, q.Title)
 }
 
 func sortByPriority(resolvers []Resolver) []Resolver {

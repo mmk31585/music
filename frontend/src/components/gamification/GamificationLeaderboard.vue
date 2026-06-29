@@ -71,12 +71,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { onImgError } from '@/utils/helpers'
 import type { LeaderboardEntry } from '@/services/api/gamification'
 
 const props = defineProps<{
   entries: LeaderboardEntry[]
+  type?: string
+  onTypeChange?: (type: string) => void
 }>()
 
 const tabs = [
@@ -86,7 +88,15 @@ const tabs = [
   { key: 'daily', label: 'Daily' },
 ]
 
-const activeTab = ref('all')
+const activeTab = ref(props.type ?? 'all')
+
+watch(() => props.type, (val) => {
+  if (val) activeTab.value = val
+})
+
+watch(activeTab, (tab) => {
+  props.onTypeChange?.(tab)
+})
 
 function rankClass(rank: number): string {
   if (rank === 1) return 'text-amber-400'

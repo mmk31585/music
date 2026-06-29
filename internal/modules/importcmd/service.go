@@ -130,6 +130,7 @@ func (s *Service) Search(ctx context.Context, query string) ([]SearchResult, err
 
 func (s *Service) searchSource(ctx context.Context, searchPrefix, source, query string) ([]SearchResult, error) {
 	args := []string{
+		"--js-runtimes", "node",
 		"--flat-playlist",
 		"--dump-json",
 		"--no-warnings",
@@ -227,6 +228,7 @@ func (s *Service) Download(ctx context.Context, url, dir string) (*YtDlpEntry, s
 	timestamp := strconv.FormatInt(time.Now().UnixMilli(), 36)
 
 	infoArgs := []string{
+		"--js-runtimes", "node",
 		"--dump-json",
 		"--no-warnings",
 		"--no-update",
@@ -255,6 +257,7 @@ func (s *Service) Download(ctx context.Context, url, dir string) (*YtDlpEntry, s
 	outputTemplate := filepath.Join(dir, "%(title)s-"+timestamp+".%(ext)s")
 
 	dlArgs := []string{
+		"--js-runtimes", "node",
 		"-x",
 		"--audio-format", "mp3",
 		"--audio-quality", "0",

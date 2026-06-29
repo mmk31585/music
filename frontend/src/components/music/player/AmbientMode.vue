@@ -92,7 +92,7 @@
               :max="100"
               :step="0.1"
               class="w-full max-w-md"
-              :disabled="currentTrack!"
+              :disabled="!currentTrack"
               aria-label="Seek"
             />
 
@@ -101,7 +101,7 @@
                 type="button"
                 class="spring relative flex h-10 w-10 items-center justify-center rounded-full text-white/40 backdrop-blur-xs transition-all hover:bg-white/15 hover:text-white"
                 :class="{ 'text-spotify!': shuffleMode !== 'off' }"
-                :disabled="currentTrack!"
+                :disabled="!currentTrack"
                 aria-label="Shuffle"
                 @click="toggleShuffle"
               >
@@ -115,7 +115,7 @@
               <button
                 type="button"
                 class="spring flex h-12 w-12 items-center justify-center rounded-full text-white/50 backdrop-blur-xs transition-all hover:bg-white/15 hover:text-white disabled:opacity-20"
-                :disabled="hasPrevious!"
+                :disabled="!hasPrevious"
                 aria-label="Previous track"
                 @click="playPrevious"
               >
@@ -126,7 +126,7 @@
                 type="button"
                 class="glow-green spring relative flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-black shadow-2xl backdrop-blur-xs transition-all hover:scale-105 hover:bg-spotify hover:text-white disabled:opacity-40"
                 :class="{ 'bg-spotify! text-white!': isPlaying }"
-                :disabled="currentTrack! || isLoadingTrack"
+                :disabled="!currentTrack || isLoadingTrack"
                 :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'"
                 @click="togglePlayPause"
               >
@@ -145,7 +145,7 @@
               <button
                 type="button"
                 class="spring flex h-12 w-12 items-center justify-center rounded-full text-white/50 backdrop-blur-xs transition-all hover:bg-white/15 hover:text-white disabled:opacity-20"
-                :disabled="hasNext!"
+                :disabled="!hasNext"
                 aria-label="Next track"
                 @click="playNext"
               >
@@ -156,7 +156,7 @@
                 type="button"
                 class="spring relative flex h-10 w-10 items-center justify-center rounded-full text-white/40 backdrop-blur-xs transition-all hover:bg-white/15 hover:text-white"
                 :class="{ 'text-spotify!': repeatMode !== 'off' }"
-                :disabled="currentTrack!"
+                :disabled="!currentTrack"
                 aria-label="Repeat"
                 @click="toggleRepeat"
               >
@@ -217,7 +217,7 @@ const coverUrl = computed(() => currentTrack.value?.coverUrl || '')
 const { palette: albumPalette } = useAlbumColors(coverUrl)
 
 const bgStyle = computed(() => {
-  if (coverUrl.value!) {
+  if (!coverUrl.value) {
     return {
       background: 'linear-gradient(135deg, #0a0a0a 0%, #121212 100%)',
     }
@@ -228,8 +228,8 @@ const bgStyle = computed(() => {
 })
 
 
-function onSeek(val: number) {
-  seekPercent(val)
+function onSeek(val: number | number[]) {
+  seekPercent(typeof val === 'number' ? val : val[0] ?? 0)
 }
 
 function close() {
@@ -261,9 +261,9 @@ let particleCtx: CanvasRenderingContext2D | null = null
 
 function initParticles() {
   const canvas = particleCanvas.value
-  if (canvas!) return
+  if (!canvas) return
   particleCtx = canvas.getContext('2d')
-  if (particleCtx!) return
+  if (!particleCtx) return
 
   resizeParticles()
   window.addEventListener('resize', resizeParticles)
@@ -275,7 +275,7 @@ function initParticles() {
 
 function resizeParticles() {
   const canvas = particleCanvas.value
-  if (canvas!) return
+  if (!canvas) return
   canvas.width = canvas.offsetWidth * window.devicePixelRatio
   canvas.height = canvas.offsetHeight * window.devicePixelRatio
 }
@@ -298,13 +298,14 @@ function createAmbParticle(): AmbParticle {
 function startParticleLoop() {
   function draw() {
     const canvas = particleCanvas.value
-    if (particleCtx! || canvas!) return
+    const ctx = particleCtx
+    if (!ctx || !canvas) return
     const dpr = window.devicePixelRatio
     const w = canvas.offsetWidth
     const h = canvas.offsetHeight
 
-    particleCtx.clearRect(0, 0, w * dpr, h * dpr)
-    particleCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, w * dpr, h * dpr)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
     particles.forEach((p) => {
       p.x += p.vx
@@ -317,10 +318,10 @@ function startParticleLoop() {
         p.y = h + 5
       }
 
-      particleCtx.beginPath!()
-      particleCtx.arc!(p.x, p.y, p.size, 0, Math.PI * 2)
-      particleCtx.fillStyle! = `rgba(255, 255, 255, ${p.alpha})`
-      particleCtx.fill!()
+      ctx.beginPath()
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+      ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`
+      ctx.fill()
     })
 
     animFrameId = window.requestAnimationFrame(draw)

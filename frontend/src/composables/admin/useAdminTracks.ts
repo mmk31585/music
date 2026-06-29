@@ -52,7 +52,7 @@ export type TrackFormPayload = {
 function buildArtistsFromPayload(payload: TrackFormPayload): TrackArtistRequest[] {
   if (payload.credits?.length) {
     return payload.credits.map((credit, index) => ({
-      artistId: credit.artist_id,
+      artist_id: credit.artist_id,
       role: credit.role,
       position: index,
     }))
@@ -60,7 +60,7 @@ function buildArtistsFromPayload(payload: TrackFormPayload): TrackArtistRequest[
 
   if (payload.artists?.length) {
     return payload.artists.map((artist, index) => ({
-      artistId: artist.artist_id,
+      artist_id: artist.artist_id,
       role: artist.role || (index === 0 ? 'primary' : 'featured'),
       position: artist.position ?? index,
     }))
@@ -74,7 +74,7 @@ function buildArtistsFromPayload(payload: TrackFormPayload): TrackArtistRequest[
 
   return [
     {
-      artistId: primaryArtistId,
+      artist_id: primaryArtistId,
       role: 'primary',
       position: 0,
     },
@@ -90,36 +90,51 @@ function toCreatePayload(payload: TrackFormPayload): TrackCreatePayload {
 
   return {
     title: payload.title,
-    artistId: primaryArtistId,
+    artist_id: primaryArtistId,
     artists: buildArtistsFromPayload(payload),
-    albumId: payload.album_id ?? null,
-    durationSeconds: payload.duration_seconds ?? null,
-    audioUrl: payload.audio_url ?? null,
-    coverUrl: payload.cover_url ?? null,
-    genreIds: payload.genre_ids ?? [],
-    trackNumber: payload.track_number ?? null,
+    album_id: payload.album_id ?? null,
+    duration_seconds: payload.duration_seconds ?? null,
+    audio_url: payload.audio_url ?? null,
+    cover_url: payload.cover_url ?? null,
+    genre_ids: payload.genre_ids ?? [],
+    track_number: payload.track_number ?? null,
     explicit: payload.explicit ?? false,
-    isPublic: true,
+    is_public: true,
   }
 }
 
 
-function toUpdatePayload(payload: TrackFormPayload): TrackUpdatePayload {
+function toUpdatePayload(payload: TrackFormPayload, currentTrack?: TrackUpdatePayload): TrackUpdatePayload {
   const primaryArtistId = payload.artist_ids?.[0] ?? payload.artist_id
 
-  return {
-    title: payload.title,
-    artistId: primaryArtistId ?? null,
-    artists: buildArtistsFromPayload(payload),
-    albumId: payload.album_id ?? null,
-    durationSeconds: payload.duration_seconds ?? null,
-    audioUrl: payload.audio_url ?? null,
-    coverUrl: payload.cover_url ?? null,
-    genreIds: payload.genre_ids ?? [],
-    trackNumber: payload.track_number ?? null,
-    explicit: payload.explicit ?? false,
-    isPublic: true,
+  // Compute clear_fields: fields that are null in payload but had a value in currentTrack
+  const clearFields: string[] = []
+  if (currentTrack) {
+    if (payload.album_id === null && currentTrack.album_id != null) clearFields.push('album_id')
+    if (payload.duration_seconds === null && currentTrack.duration_seconds != null) clearFields.push('duration_seconds')
+    if (payload.track_number === null && currentTrack.track_number != null) clearFields.push('track_number')
+    if (payload.cover_url === null && currentTrack.cover_url != null) clearFields.push('cover_url')
+    if (payload.audio_url === null && currentTrack.audio_url != null) clearFields.push('audio_url')
   }
+
+  const result: TrackUpdatePayload = {
+    title: payload.title,
+    artist_id: primaryArtistId ?? null,
+    artists: buildArtistsFromPayload(payload),
+    genre_ids: payload.genre_ids ?? [],
+    explicit: payload.explicit ?? false,
+    is_public: true,
+  }
+
+  // Only include nullable fields if they have a value or are explicitly being cleared
+  if (payload.album_id !== null || clearFields.includes('album_id')) result.album_id = payload.album_id ?? null
+  if (payload.duration_seconds !== null || clearFields.includes('duration_seconds')) result.duration_seconds = payload.duration_seconds ?? null
+  if (payload.track_number !== null || clearFields.includes('track_number')) result.track_number = payload.track_number ?? null
+  if (payload.cover_url !== null || clearFields.includes('cover_url')) result.cover_url = payload.cover_url ?? null
+  if (payload.audio_url !== null || clearFields.includes('audio_url')) result.audio_url = payload.audio_url ?? null
+  if (clearFields.length > 0) result.clear_fields = clearFields
+
+  return result
 }
 
 function getUploadedAudioUrl(uploaded: UploadResponse): string | null {
@@ -210,12 +225,18 @@ export function useAdminTracks() {
       // no old lyrics to delete
     }
 
-    await adminCreateLyrics({
-      track_id: trackId,
-      content,
-      language,
-      type,
-    })
+    try {
+      await adminCreateLyrics({
+        track_id: trackId,
+        content,
+        language,
+        type,
+      })
+    } catch (err) {
+      // Don't throw — track was already created successfully.
+      // This prevents duplicate tracks when lyrics creation temporarily fails.
+      console.error('[syncTrackLyrics] failed to create lyrics:', err)
+    }
   }
 
   async function createTrack(payload: TrackFormPayload) {
@@ -226,18 +247,23 @@ export function useAdminTracks() {
       let createPayload = toCreatePayload(payload)
 
       if (payload.audioFile) {
+        console.log('[createTrack] audioFile present, type:', typeof payload.audioFile, 'name:', (payload.audioFile as File).name)
         const uploadedAudio = await adminUploadTrackAudio(payload.audioFile)
+        const audioUrl = getUploadedAudioUrl(uploadedAudio)
+        console.log('[createTrack] uploadedAudio response:', uploadedAudio, 'extracted URL:', audioUrl)
         createPayload = {
           ...createPayload,
-          audioUrl: getUploadedAudioUrl(uploadedAudio),
+          audio_url: audioUrl,
         }
+      } else {
+        console.log('[createTrack] NO audioFile — payload.audioFile is:', payload.audioFile)
       }
 
       if (payload.coverFile) {
         const uploadedCover = await adminUploadTrackCover(payload.coverFile)
         createPayload = {
           ...createPayload,
-          coverUrl: getUploadedCoverUrl(uploadedCover),
+          cover_url: getUploadedCoverUrl(uploadedCover),
         }
       }
 
@@ -254,18 +280,18 @@ export function useAdminTracks() {
     }
   }
 
-  async function updateTrack(id: string | number, payload: TrackFormPayload) {
+  async function updateTrack(id: string | number, payload: TrackFormPayload, currentTrack?: TrackUpdatePayload) {
     saving.value = true
     error.value = null
 
     try {
-      let updatePayload = toUpdatePayload(payload)
+      let updatePayload = toUpdatePayload(payload, currentTrack)
 
       if (payload.audioFile) {
         const uploadedAudio = await adminUploadTrackAudio(payload.audioFile)
         updatePayload = {
           ...updatePayload,
-          audioUrl: getUploadedAudioUrl(uploadedAudio),
+          audio_url: getUploadedAudioUrl(uploadedAudio),
         }
       }
 
@@ -273,7 +299,7 @@ export function useAdminTracks() {
         const uploadedCover = await adminUploadTrackCover(payload.coverFile)
         updatePayload = {
           ...updatePayload,
-          coverUrl: getUploadedCoverUrl(uploadedCover),
+          cover_url: getUploadedCoverUrl(uploadedCover),
         }
       }
 

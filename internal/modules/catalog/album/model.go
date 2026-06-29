@@ -50,37 +50,32 @@ type AlbumTrack struct {
 	CreatedAt       time.Time  `db:"created_at"`
 }
 
-// CreateRequest is the payload for creating an album.
-// JSON tags use camelCase for modern API standards.
 type CreateRequest struct {
-	// Deprecated compatibility field.
-	ArtistID uuid.UUID `json:"artistId"`
+	ArtistID uuid.UUID `json:"artist_id"`
 
 	Artists []AlbumArtistRequest `json:"artists"`
 
 	Title        string     `json:"title"`
-	CoverURL     *string    `json:"coverUrl"`
-	CoverMediaID *uuid.UUID `json:"coverMediaId"`
+	CoverURL     *string    `json:"cover_url"`
+	CoverMediaID *uuid.UUID `json:"cover_media_id"`
 
-	ReleaseDate *string `json:"releaseDate"`
-	AlbumType   *string `json:"albumType"`
+	ReleaseDate *string `json:"release_date"`
+	AlbumType   *string `json:"album_type"`
 }
 
-// UpdateRequest is the payload for updating an album.
-// JSON tags use camelCase for modern API standards.
 type UpdateRequest struct {
 	Artists []AlbumArtistRequest `json:"artists"`
 
 	Title        *string    `json:"title"`
-	CoverURL     *string    `json:"coverUrl"`
-	CoverMediaID *uuid.UUID `json:"coverMediaId"`
+	CoverURL     *string    `json:"cover_url"`
+	CoverMediaID *uuid.UUID `json:"cover_media_id"`
 
-	ReleaseDate *string `json:"releaseDate"`
-	AlbumType   *string `json:"albumType"`
+	ReleaseDate *string `json:"release_date"`
+	AlbumType   *string `json:"album_type"`
 }
 
 type AlbumArtistRequest struct {
-	ArtistID uuid.UUID `json:"artistId" validate:"required"`
+	ArtistID uuid.UUID `json:"artist_id" validate:"required"`
 	Role     string    `json:"role"`
 	Position int       `json:"position"`
 }

@@ -141,21 +141,21 @@ type EnrichDraftRequest struct {
 }
 
 type ArtistSearchResult struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Slug     string `json:"slug"`
-	Bio      string `json:"bio,omitempty"`
-	ImageURL string `json:"imageUrl,omitempty"`
-	Country  string `json:"country,omitempty"`
+	ID       string `json:"id" db:"id"`
+	Name     string `json:"name" db:"name"`
+	Slug     string `json:"slug" db:"slug"`
+	Bio      string `json:"bio,omitempty" db:"bio"`
+	ImageURL string `json:"imageUrl,omitempty" db:"image_url"`
+	Country  string `json:"country,omitempty" db:"country"`
 }
 
 type AlbumSearchResult struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Slug        string `json:"slug"`
-	ArtistName  string `json:"artistName"`
-	CoverURL    string `json:"coverUrl,omitempty"`
-	ReleaseYear *int   `json:"releaseYear,omitempty"`
+	ID          string `json:"id" db:"id"`
+	Title       string `json:"title" db:"title"`
+	Slug        string `json:"slug" db:"slug"`
+	ArtistName  string `json:"artistName" db:"artist_name"`
+	CoverURL    string `json:"coverUrl,omitempty" db:"cover_url"`
+	ReleaseYear *int   `json:"releaseYear,omitempty" db:"release_year"`
 }
 
 type IngestionStats struct {

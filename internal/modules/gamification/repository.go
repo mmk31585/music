@@ -161,6 +161,53 @@ func (r *Repository) GetUserChallenges(ctx context.Context, userID string) ([]Us
 	return items, rows.Err()
 }
 
+func (r *Repository) GetActiveChallengesByType(ctx context.Context, challengeType string) ([]DailyChallenge, error) {
+	query := `SELECT id, title, COALESCE(description, ''), challenge_type, target_count, xp_reward, badge_reward_id, is_active, valid_from, valid_until FROM daily_challenges WHERE is_active = true AND valid_from <= NOW() AND valid_until >= NOW() AND challenge_type = $1 ORDER BY valid_until ASC`
+	rows, err := r.db.QueryContext(ctx, query, challengeType)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []DailyChallenge
+	for rows.Next() {
+		var c DailyChallenge
+		if err := rows.Scan(&c.ID, &c.Title, &c.Description, &c.ChallengeType, &c.TargetCount, &c.XPReward, &c.BadgeRewardID, &c.IsActive, &c.ValidFrom, &c.ValidUntil); err != nil {
+			return nil, err
+		}
+		items = append(items, c)
+	}
+	return items, rows.Err()
+}
+
+func (r *Repository) IncrementChallengeProgress(ctx context.Context, userID string, challengeIDs []string) error {
+	for _, challengeID := range challengeIDs {
+		_, err := r.db.ExecContext(ctx, `
+			INSERT INTO user_challenges (user_id, challenge_id, progress) VALUES ($1, $2, 1)
+			ON CONFLICT (user_id, challenge_id) DO UPDATE SET progress = user_challenges.progress + 1
+		`, userID, challengeID)
+		if err != nil {
+			return fmt.Errorf("failed to increment challenge progress: %w", err)
+		}
+	}
+	return nil
+}
+
+func (r *Repository) IsChallengeCompleted(ctx context.Context, userID, challengeID string, targetCount int) (bool, error) {
+	var progress int
+	err := r.db.QueryRowContext(ctx,
+		`SELECT progress FROM user_challenges WHERE user_id = $1 AND challenge_id = $2`,
+		userID, challengeID,
+	).Scan(&progress)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return progress >= targetCount, nil
+}
+
 func (r *Repository) UpsertChallengeProgress(ctx context.Context, userID, challengeID string, progress int) error {
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO user_challenges (user_id, challenge_id, progress) VALUES ($1, $2, $3)

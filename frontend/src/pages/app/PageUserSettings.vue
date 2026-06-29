@@ -389,7 +389,7 @@ function triggerAvatarUpload() {
 
 function handleAvatar(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
-  if (file!) return
+  if (!file) return
   previewAvatar.value = URL.createObjectURL(file)
   toast.add({ severity: 'info', summary: 'Avatar upload coming soon', life: 2000 })
 }
@@ -423,7 +423,7 @@ async function saveProfile() {
 }
 
 async function savePassword() {
-  if (passwordForm.currentPassword! || passwordForm.newPassword!) {
+  if (!passwordForm.currentPassword || !passwordForm.newPassword) {
     passwordMessage.value = 'Both fields are required'
     passwordError.value = true
     return

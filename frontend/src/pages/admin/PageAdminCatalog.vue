@@ -186,7 +186,7 @@
                 class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/6"
               >
                 <img
-                  v-if="artist.image_url"
+                  v-if="artist.image_url && artist.image_url.length > 5"
                   :src="artist.image_url"
                   :alt="artist.name"
                   class="h-full w-full object-cover"
@@ -310,6 +310,7 @@ import { useAlbumsApi, type Album } from '@/services/api/catalog/albums'
 import { useGenresApi, type Genre } from '@/services/api/catalog/genres'
 import { usePlayer } from '@/composables/player'
 import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
+import { formatDuration } from '@/utils/format'
 
 const { getTracks } = useTracksApi()
 const { getArtists } = useArtistsApi()
@@ -377,12 +378,5 @@ async function fetchCatalog() {
 }
 
 // TODO MEDIUM: formatDuration treats 0 as falsy — 0-second tracks show '—' instead of '0:00'.
-function formatDuration(value?: number | null): string {
-  if (value === null || value === undefined || value <= 0) return '—'
-  const mins = Math.floor(value / 60)
-  const secs = value % 60
-  return `${mins}:${String(secs).padStart(2, '0')}`
-}
-
 onMounted(fetchCatalog)
 </script>

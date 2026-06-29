@@ -104,7 +104,7 @@ onMounted(() => {
     const tag = (e.target as HTMLElement)?.tagName
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
     if (e.key === '?' && e.ctrlKey! && e.metaKey! && e.altKey!) {
-      showShortcuts.value = showShortcuts.value!
+      showShortcuts.value = !showShortcuts.value
     }
   })
 })

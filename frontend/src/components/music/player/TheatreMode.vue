@@ -54,7 +54,7 @@
                   :alt="title"
                   loading="lazy"
                   class="h-full w-full object-cover"
-                  :class="{ 'vinyl-spin': isPlaying, 'vinyl-spin-paused': isPlaying! }"
+                  :class="{ 'vinyl-spin': isPlaying, 'vinyl-spin-paused': !isPlaying }"
                   @error="onImgError"
                 />
                 <div
@@ -84,7 +84,7 @@
                   type="button"
                   class="spring relative flex h-10 w-10 items-center justify-center rounded-full text-white/40 transition-all hover:bg-white/10 hover:text-white"
                   :class="{ 'text-spotify!': shuffleMode !== 'off' }"
-                  :disabled="currentTrack!"
+                  :disabled="!currentTrack"
                   aria-label="Shuffle"
                   @click="toggleShuffle"
                 >
@@ -109,7 +109,7 @@
                   type="button"
                   class="glow-green spring relative flex h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-2xl transition-all hover:scale-105 hover:bg-spotify hover:text-white disabled:opacity-40"
                   :class="{ 'bg-spotify! text-white!': isPlaying }"
-                  :disabled="currentTrack! || isLoadingTrack"
+                  :disabled="!currentTrack || isLoadingTrack"
                   :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'"
                   @click="togglePlayPause"
                 >
@@ -139,7 +139,7 @@
                   type="button"
                   class="spring relative flex h-10 w-10 items-center justify-center rounded-full text-white/40 transition-all hover:bg-white/10 hover:text-white"
                   :class="{ 'text-spotify!': repeatMode !== 'off' }"
-                  :disabled="currentTrack!"
+                  :disabled="!currentTrack"
                   aria-label="Repeat"
                   @click="toggleRepeat"
                 >
@@ -162,7 +162,7 @@
                   class="fullscreen-range w-full"
                   :style="progressStyle"
                   :value="progressPercent"
-                  :disabled="currentTrack!"
+                  :disabled="!currentTrack"
                   @input="onSeek"
                 />
                 <div class="mt-1 flex justify-between text-[11px] text-white/40 tabular-nums">
@@ -247,7 +247,7 @@ const { palette: albumPalette } = useAlbumColors(coverUrl)
 
 const bgStyle = computed(() => {
   const p = albumPalette.value
-  if (coverUrl.value!) {
+  if (!coverUrl.value) {
     return { background: 'linear-gradient(135deg, #0a0a0a 0%, #121212 100%)' }
   }
   return {

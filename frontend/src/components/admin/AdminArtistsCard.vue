@@ -208,7 +208,7 @@ const enrichingId = ref<string | number | null>(null)
 
 const filteredArtists = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
-  if (q!) return artists.value
+  if (!q) return artists.value
   return artists.value.filter(
     (a) =>
       a.name.toLowerCase().includes(q) ||
@@ -262,7 +262,7 @@ async function handleSubmit(payload: ArtistFormPayload) {
 }
 
 async function handleDelete() {
-  if (deleteTarget.value!) return
+  if (!deleteTarget.value) return
   try {
     await deleteArtist(deleteTarget.value.id)
     toast.add({ severity: 'success', summary: 'Artist deleted', life: 2500 })

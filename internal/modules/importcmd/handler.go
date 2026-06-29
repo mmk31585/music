@@ -78,7 +78,7 @@ func (h *Handler) Import(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.importSvc.Import(c.Request.Context(), req.URL, req.Source, req.Title, req.Artist, req.ExternalIDs, userID)
+	resp, err := h.importSvc.Import(c.Request.Context(), req.URL, req.Source, req.Title, req.Artist, req.Album, req.ExternalIDs, userID)
 	if err != nil {
 		response.Error(c, appErr.Internal("import failed: "+err.Error(), err))
 		return

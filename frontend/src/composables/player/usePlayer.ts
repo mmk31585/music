@@ -28,6 +28,7 @@ export function usePlayer() {
     playNext: player.playNext,
     playPrevious: player.playPrevious,
 
+    remainingShuffledQueue: player.remainingShuffledQueue,
     setShuffleMode: player.setShuffleMode,
     toggleShuffle: player.toggleShuffle,
     toggleRepeat: player.toggleRepeat,

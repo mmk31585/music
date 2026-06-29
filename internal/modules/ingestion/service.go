@@ -681,6 +681,56 @@ func (s *Service) GetDraftRaw(ctx context.Context, id string) (*IngestionDraft, 
 	return draft, nil
 }
 
+func (s *Service) DeleteDraft(ctx context.Context, id, requestingUserID string) error {
+	draft, err := s.repo.GetDraftByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if draft == nil {
+		return ErrDraftNotFound
+	}
+
+	// Only the uploader or an admin can delete a draft.
+	// Admin check is enforced at the route level (RequireRole("admin")).
+	if draft.UploadedBy != requestingUserID {
+		return ErrUnauthorized
+	}
+
+	// Clean up storage files associated with the draft.
+	if draft.FilePath != "" {
+		if err := s.storage.Delete(ctx, draft.FilePath); err != nil {
+			zap.L().Warn("failed to delete draft audio file from storage",
+				zap.String("draft_id", id),
+				zap.String("file_path", draft.FilePath),
+				zap.Error(err),
+			)
+		}
+	}
+
+	// Clean up assets (cover art, images, etc.)
+	assets, err := s.repo.GetAssetsByDraftID(ctx, id)
+	if err != nil {
+		zap.L().Warn("failed to fetch assets for cleanup", zap.String("draft_id", id), zap.Error(err))
+	} else {
+		for _, a := range assets {
+			if a.URL != "" {
+				// Extract storage key from URL if needed
+				if key, ok := extractStorageKey(a.URL); ok {
+					if err := s.storage.Delete(ctx, key); err != nil {
+						zap.L().Warn("failed to delete asset from storage",
+							zap.String("draft_id", id),
+							zap.String("asset_url", a.URL),
+							zap.Error(err),
+						)
+					}
+				}
+			}
+		}
+	}
+
+	return s.repo.DeleteDraft(ctx, id)
+}
+
 func (s *Service) GetIngestionStats(ctx context.Context) (*IngestionStats, error) {
 	published, err := s.repo.CountPublishedThisMonth(ctx)
 	if err != nil {
@@ -700,6 +750,21 @@ func (s *Service) GetIngestionStats(ctx context.Context) (*IngestionStats, error
 		TotalDrafts:        total,
 		ByStatus:           map[string]int{"pending": byStatus[DraftStatusPending], "enriching": byStatus[DraftStatusEnriching], "review": byStatus[DraftStatusReview], "accepted": byStatus[DraftStatusAccepted], "rejected": byStatus[DraftStatusRejected], "published": byStatus[DraftStatusPublished], "enrichment_failed": byStatus[DraftStatusEnrichmentFailed]},
 	}, nil
+}
+
+// extractStorageKey attempts to extract a storage key from a stored URL.
+// Returns the key and true if successful, or ("", false) if the URL doesn't
+// match the local storage pattern (meaning it's an external URL, not stored).
+//
+// This is a best-effort helper for cleanup — it only handles local storage URLs
+// that contain the known storage directory prefixes.
+func extractStorageKey(url string) (string, bool) {
+	for _, prefix := range []string{StorageAudioDir, StorageCoverDir, StorageEnrichDir} {
+		if idx := strings.Index(url, prefix); idx != -1 {
+			return url[idx:], true
+		}
+	}
+	return "", false
 }
 
 func jsonToMap(rawJSON string) map[string]interface{} {

@@ -157,38 +157,88 @@
           </div>
 
           <!-- Inline AI Mood Results -->
-          <div v-if="loadingMoodPlaylist" class="mt-4 flex items-center gap-3 rounded-2xl bg-white/2 px-6 py-4">
-            <i aria-hidden="true" class="pi pi-spin pi-spinner text-spotify" />
-            <span class="text-sm text-white/60">AI is curating tracks for your mood...</span>
+          <div v-if="loadingMoodPlaylist" class="mt-4">
+            <div class="flex items-center gap-3 rounded-2xl bg-white/2 px-6 py-4">
+              <i aria-hidden="true" class="pi pi-spin pi-sparkles text-spotify" />
+              <div>
+                <span class="text-sm font-medium text-white">AI is curating tracks</span>
+                <p class="text-xs text-white/40">Finding tracks that match this feeling...</p>
+              </div>
+            </div>
+            <div class="mt-2 space-y-2">
+              <div v-for="i in 3" :key="i" class="flex animate-pulse items-center gap-3 rounded-2xl bg-white/2 px-4 py-3">
+                <div class="h-10 w-10 shrink-0 rounded-lg bg-white/6" />
+                <div class="flex-1 space-y-2">
+                  <div class="h-3 w-3/4 rounded bg-white/6" />
+                  <div class="h-2 w-1/2 rounded bg-white/4" />
+                </div>
+                <div class="h-3 w-16 rounded bg-white/4" />
+              </div>
+            </div>
           </div>
           <div
             v-else-if="moodPlaylist && moodPlaylist.tracks.length"
             class="mt-4 overflow-hidden rounded-2xl border border-white/6 bg-white/2"
           >
+            <!-- Header with mood info -->
             <div class="flex items-center justify-between px-4 py-3">
-              <div class="flex items-center gap-2">
-                <i aria-hidden="true" class="pi pi-sparkles text-xs text-spotify" />
-                <span class="text-xs font-bold text-white">{{ moodPlaylist.name }}</span>
+              <div class="flex items-center gap-2.5">
+                <div
+                  class="flex h-8 w-8 items-center justify-center rounded-lg text-xs"
+                  :class="getMoodIconBg(String(selectedMood))"
+                >
+                  <i
+                    aria-hidden="true"
+                    :class="getMoodIcon(String(selectedMood))"
+                  />
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold text-white">{{ moodPlaylist.name }}</span>
+                    <span class="rounded-full bg-white/6 px-2 py-0.5 text-[9px] font-medium text-white/40">
+                      {{ moodPlaylist.tracks.length }} tracks
+                    </span>
+                    <span class="flex items-center gap-1 rounded-full bg-spotify/10 px-2 py-0.5 text-[9px] font-medium text-spotify">
+                      <i aria-hidden="true" class="pi pi-sparkles text-[8px]" />
+                      AI
+                    </span>
+                  </div>
+                  <p class="mt-0.5 text-[10px] text-white/30">
+                    {{ getMoodDescription(String(selectedMood)) }}
+                  </p>
+                </div>
               </div>
-              <button
-                type="button"
-                class="text-[10px] text-white/40 transition hover:text-white"
-                @click="selectedMood = ''; moodPlaylist = null"
-              >
-                Dismiss
-              </button>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  class="flex items-center gap-1.5 rounded-full border border-white/8 px-3 py-1.5 text-[10px] text-white/40 transition hover:border-white/20 hover:text-white"
+                  title="Regenerate with AI"
+                  @click="handleMoodPick(String(selectedMood))"
+                >
+                  <i aria-hidden="true" class="pi pi-refresh text-[9px]" />
+                  Regenerate
+                </button>
+                <button
+                  type="button"
+                  class="text-[10px] text-white/30 transition hover:text-white"
+                  @click="selectedMood = ''; moodPlaylist = null"
+                >
+                  <i aria-hidden="true" class="pi pi-times" />
+                </button>
+              </div>
             </div>
+            <!-- Track list -->
             <div class="border-t border-white/6">
               <div
                 v-for="(track, index) in moodPlaylist.tracks.slice(0, 5)"
                 :key="track.id"
                 role="button"
                 tabindex="0"
-                class="group flex cursor-pointer items-center gap-3 px-4 py-2 transition hover:bg-white/4"
+                class="group flex cursor-pointer items-center gap-3 px-4 py-2.5 transition hover:bg-white/4"
                 @click="playTrack(track, index)"
                 @keydown.enter="playTrack(track, index)"
               >
-                <div class="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-white/10">
+                <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
                   <img
                     v-if="track.cover_url"
                     :src="track.cover_url"
@@ -198,17 +248,30 @@
                     @error="onImgError"
                   />
                   <div v-else class="flex h-full items-center justify-center">
-                    <i aria-hidden="true" class="pi pi-music text-[10px] text-white/30" />
+                    <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
                   </div>
                   <div
-                    class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100"
+                    class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
                   >
-                    <i aria-hidden="true" class="pi pi-play-fill text-[10px] text-white" />
+                    <i aria-hidden="true" class="pi pi-play-fill text-xs text-white" />
                   </div>
                 </div>
                 <div class="min-w-0 flex-1">
                   <p class="truncate text-sm font-medium text-white">{{ track.title }}</p>
                   <p class="truncate text-xs text-white/40">{{ track.artist || 'Unknown' }}</p>
+                </div>
+                <!-- Energy bar -->
+                <div class="hidden items-center gap-1.5 md:flex">
+                  <div class="flex h-1.5 w-12 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      class="h-full rounded-full transition-all duration-500"
+                      :class="getEnergyBarColor(track.energy ?? 0)"
+                      :style="{ width: `${Math.min((track.energy ?? 0) * 100, 100)}%` }"
+                    />
+                  </div>
+                  <span class="w-7 text-right text-[9px] text-white/30 tabular-nums">
+                    {{ Math.round((track.energy ?? 0) * 100) }}%
+                  </span>
                 </div>
                 <span class="shrink-0 text-xs text-white/30 tabular-nums">
                   {{ formatDuration(track.duration) }}
@@ -216,13 +279,14 @@
               </div>
               <div
                 v-if="moodPlaylist.tracks.length > 5"
-                class="border-t border-white/4 px-4 py-2 text-center"
+                class="border-t border-white/4 px-4 py-2.5 text-center"
               >
                 <RouterLink
                   to="/ai/mood-explorer"
                   class="text-xs text-white/30 transition hover:text-white"
                 >
                   View all {{ moodPlaylist.tracks.length }} tracks
+                  <i aria-hidden="true" class="pi pi-arrow-right ml-0.5 text-[9px]" />
                 </RouterLink>
               </div>
             </div>
@@ -449,7 +513,7 @@
                 </h2>
                 <p class="mt-2 max-w-lg text-sm text-white/60">
                   AI-curated playlist updated every Monday.
-                  {{ discoverWeekly.playlist.track_count }} fresh tracks based on your taste.
+                  {{ discoverWeekly.playlist?.track_count ?? 0 }} fresh tracks based on your taste.
                 </p>
               </div>
               <RouterLink
@@ -658,6 +722,60 @@ const {
 const selectedMood = ref('')
 
 const moodOptions = [...MOOD_OPTIONS]
+const moodIcons: Record<string, string> = {
+  energetic: 'pi pi-bolt',
+  happy: 'pi pi-sun',
+  chill: 'pi pi-cloud',
+  calm: 'pi pi-moon',
+  sad: 'pi pi-flag',
+  focus: 'pi pi-eye',
+  romantic: 'pi pi-heart',
+  intense: 'pi pi-trophy',
+  confident: 'pi pi-star',
+  sleep: 'pi pi-moon',
+}
+const moodIconBgColors: Record<string, string> = {
+  energetic: 'bg-orange-500/20 text-orange-400',
+  happy: 'bg-amber-400/20 text-amber-300',
+  chill: 'bg-teal-400/20 text-teal-300',
+  calm: 'bg-blue-400/20 text-blue-300',
+  sad: 'bg-indigo-400/20 text-indigo-300',
+  focus: 'bg-emerald-400/20 text-emerald-300',
+  romantic: 'bg-pink-400/20 text-pink-300',
+  intense: 'bg-red-500/20 text-red-400',
+  confident: 'bg-purple-400/20 text-purple-300',
+  sleep: 'bg-slate-400/20 text-slate-300',
+}
+const moodDescriptions: Record<string, string> = {
+  energetic: 'High energy, fast tempo — perfect for getting pumped up',
+  happy: 'Upbeat, positive vibes — feels like sunshine',
+  chill: 'Laid back, easy going — relax and unwind',
+  calm: 'Peaceful, slow tempo — find your center',
+  sad: 'Melancholic, emotional — let it out',
+  focus: 'Concentration flow — deep work music',
+  romantic: 'Warm, intimate mood — set the mood',
+  intense: 'Powerful, dramatic — adrenaline rush',
+  confident: 'Bold, self-assured — unstoppable energy',
+  sleep: 'Gentle, restful sounds — drift off',
+}
+
+function getMoodIcon(mood: string): string {
+  return moodIcons[mood] || 'pi pi-sparkles'
+}
+
+function getMoodIconBg(mood: string): string {
+  return moodIconBgColors[mood] || 'bg-spotify/20 text-spotify'
+}
+
+function getMoodDescription(mood: string): string {
+  return moodDescriptions[mood] || ''
+}
+
+function getEnergyBarColor(energy: number): string {
+  if (energy > 0.7) return 'bg-green-400'
+  if (energy > 0.4) return 'bg-yellow-400'
+  return 'bg-blue-400'
+}
 
 const dominantMoodLabel = computed(() => {
   const mood = moodOptions.find((m) => m.value === dominantMood.value)
@@ -716,7 +834,13 @@ const categoryCards = [
 ]
 
 async function handleMoodPick(mood: string) {
+  if (selectedMood.value === mood && moodPlaylist.value) {
+    // Regenerate: re-fetch with the same mood
+    await fetchMoodPlaylist(mood)
+    return
+  }
   if (selectedMood.value === mood) {
+    // Deselect
     selectedMood.value = ''
     moodPlaylist.value = null
     return

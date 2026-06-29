@@ -500,6 +500,50 @@ export class PlayerEngine {
     return this.repeatMode
   }
 
+  /**
+   * Peek at the next track that will play, without advancing.
+   * Respects shuffle mode: 'queue' → peek into shuffleOrder,
+   * 'catalog'/'similar' → null (can't predict API call).
+   */
+  peekNextTrack(): PlaybackTrack | null {
+    if (this.shuffleMode === 'queue') {
+      return this.peekShuffleQueue()
+    }
+    // catalog/similar fetch from an API — we can't predict
+    if (this.shuffleMode === 'catalog' || this.shuffleMode === 'similar') {
+      return null
+    }
+    return this.queue.getNext()
+  }
+
+  private peekShuffleQueue(): PlaybackTrack | null {
+    const q = this.queue.all()
+    if (this.shuffleOrder.length === 0) return null
+
+    let pos = this.shufflePosition + 1
+    const currentId = this._currentTrack?.id
+
+    while (pos < this.shuffleOrder.length) {
+      const realIdx = this.shuffleOrder[pos]!
+      const candidate = q[realIdx]
+      if (candidate && candidate.id !== currentId) return candidate
+      pos++
+    }
+
+    // Wrap around if repeat-all is on
+    if (this.repeatMode === 'all' && this.shuffleOrder.length > 0) {
+      pos = 0
+      while (pos < this.shuffleOrder.length) {
+        const realIdx = this.shuffleOrder[pos]!
+        const candidate = q[realIdx]
+        if (candidate && candidate.id !== currentId) return candidate
+        pos++
+      }
+    }
+
+    return null
+  }
+
   setPlaybackRate(rate: number) {
     this.audio.setPlaybackRate(rate)
   }
@@ -510,6 +554,22 @@ export class PlayerEngine {
     if (this.shuffleMode === 'queue') {
       this.buildShuffleOrder()
     }
+  }
+
+  /**
+   * Returns the remaining queue items in the playback order they'll be played.
+   * For 'queue' shuffle mode, this orders items by the internal shuffle order
+   * starting from the current position (excluding the currently playing track).
+   * For other modes ('off', 'catalog', 'similar'), returns the raw queue.
+   *
+   * Always returns a **new array** for proper Vue reactivity.
+   */
+  getRemainingShuffledQueue(): PlaybackTrack[] {
+    if (this.shuffleMode !== 'queue') return [...this.queue.all()]
+    const q = this.queue.all()
+    // Start from current position + 1 (skip the playing track)
+    const remaining = this.shuffleOrder.slice(Math.max(0, this.shufflePosition + 1))
+    return remaining.map((i) => q[i]).filter(Boolean) as PlaybackTrack[]
   }
 
   getAnalyserNode() {

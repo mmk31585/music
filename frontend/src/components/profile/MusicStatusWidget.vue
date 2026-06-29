@@ -146,7 +146,7 @@ onMounted(() => {
 watch(
   () => playerStore.currentTrack,
   (track) => {
-    if (props.isOwnProfile!) return
+    if (!props.isOwnProfile) return
     if (track) {
       isPlayingAny.value = true
       setFromPlayerTrack(track)
@@ -204,7 +204,7 @@ async function setPrivacy(value: PrivacyLevel) {
   // setting just affects the next play.  Sending track_id: '' would
   // incorrectly nil out the current status on the server.
   const track = playerStore.currentTrack
-  if (track!) return
+  if (!track) return
 
   try {
     await videoApi.updateMusicStatus({ track_id: track.id })

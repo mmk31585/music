@@ -307,11 +307,11 @@ const mappedTracks = computed(() => playlistTracks.value.map(t => ({
 })))
 
 const coverBg = computed(() => {
-  if (detail.value!?.club.cover_url) {
+  if (detail.value?.club.cover_url) {
     return { background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)' }
   }
   return {
-    backgroundImage: `url(${detail.value.club.cover_url})`,
+    backgroundImage: `url(${detail.value?.club.cover_url})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
   }
@@ -326,7 +326,7 @@ const overflowCount = computed(() => {
 })
 
 function initials(userId: string): string {
-  if (userId!) return '?'
+  if (!userId) return '?'
   return userId.charAt(0).toUpperCase()
 }
 
@@ -431,7 +431,7 @@ async function handleLaunchParty() {
 async function handleAddTrack(track: Track) {
   try {
     const pid = playlistId.value
-    if (pid!) return
+    if (!pid) return
     toast.info('Adding track...')
     await playlistApi.addTrack(pid, { track_id: String(track.id) })
     showTrackPicker.value = false

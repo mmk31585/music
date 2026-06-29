@@ -3,6 +3,7 @@ package importcmd
 type SearchResult struct {
 	Title       string            `json:"title"`
 	Artist      string            `json:"artist"`
+	Album       string            `json:"album,omitempty"`
 	URL         string            `json:"url"`
 	Duration    int               `json:"duration"`
 	Thumbnail   string            `json:"thumbnail"`
@@ -22,6 +23,7 @@ type ImportRequest struct {
 	// Metadata fields — used when URL is empty to resolve a downloadable copy.
 	Title       string            `json:"title,omitempty"`
 	Artist      string            `json:"artist,omitempty"`
+	Album       string            `json:"album,omitempty"`
 	Duration    int               `json:"duration,omitempty"`
 	ISRC        string            `json:"isrc,omitempty"`
 	ExternalIDs map[string]string `json:"external_ids,omitempty"`
@@ -34,6 +36,7 @@ type ImportResponse struct {
 	Artist   string `json:"artist,omitempty"`
 	Duration int    `json:"duration,omitempty"`
 	Message  string `json:"message"`
+	Warning  string `json:"warning,omitempty"`
 }
 
 type ProgressResponse struct {

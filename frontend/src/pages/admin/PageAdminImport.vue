@@ -21,7 +21,7 @@
           label="Search"
           icon="pi pi-search"
           :loading="searching"
-          :disabled="query.trim!()"
+          :disabled="!query.trim()"
           @click="doSearch"
         />
       </div>
@@ -34,6 +34,45 @@
 
     <div v-else-if="searchError" class="mt-6">
       <Message severity="error" :closable="false">{{ searchError }}</Message>
+    </div>
+
+    <!-- No-source error (shows alongside results, not replacing them) -->
+    <div v-if="importError && !searching && !importJobId" class="mt-6">
+      <div class="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
+        <div class="flex items-start gap-3">
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/15">
+            <i aria-hidden="true" class="pi pi-info-circle text-lg text-amber-400"></i>
+          </div>
+          <div class="flex-1">
+            <h4 class="text-sm font-semibold text-amber-300">No downloadable source found</h4>
+            <p class="mt-1 text-xs text-slate-400">
+              We couldn't find a downloadable version of this track. Try these alternatives:
+            </p>
+            <ul class="mt-2 space-y-1 text-xs text-slate-400">
+              <li class="flex items-center gap-1.5">
+                <i aria-hidden="true" class="pi pi-youtube text-[10px] text-red-400"></i>
+                Paste a YouTube URL directly in the search box
+              </li>
+              <li class="flex items-center gap-1.5">
+                <i aria-hidden="true" class="pi pi-cloud text-[10px] text-orange-400"></i>
+                Paste a SoundCloud URL directly in the search box
+              </li>
+              <li class="flex items-center gap-1.5">
+                <i aria-hidden="true" class="pi pi-search text-[10px] text-slate-400"></i>
+                Try a different search term or check for spelling errors
+              </li>
+            </ul>
+            <Button
+              label="Dismiss"
+              size="small"
+              severity="secondary"
+              text
+              class="mt-3"
+              @click="importError = ''"
+            />
+          </div>
+        </div>
+      </div>
     </div>
 
     <div v-else-if="importJobId" class="mt-6">
@@ -92,7 +131,7 @@
           :label="importingUrl === r.url ? 'Importing...' : 'Import'"
           :icon="importingUrl === r.url ? 'pi pi-spin pi-spinner' : 'pi pi-download'"
           :loading="importingUrl === r.url"
-          :disabled="!importingUrl!"
+          :disabled="!!importingUrl && importingUrl !== r.url"
           size="small"
           @click="doImport(r)"
         />
@@ -118,6 +157,7 @@ import { useToast } from 'primevue/usetoast'
 import { AdminSectionHeader } from '@/components/admin'
 import { useImportApi } from '@/services/api/importcmd'
 import type { SearchResult } from '@/services/api/importcmd'
+import { formatDuration } from '@/utils/format'
 
 const router = useRouter()
 const toast = useToast()
@@ -132,6 +172,7 @@ const importingUrl = ref('')
 const importJobId = ref('')
 const importProgress = ref(0)
 const importStage = ref('')
+const importError = ref('')
 let progressTimer: ReturnType<typeof setInterval> | null = null
 
 function sourceBadge(source: string): string {
@@ -151,7 +192,7 @@ function sourceBadge(source: string): string {
 
 async function doSearch() {
   const q = query.value.trim()
-  if (q!) return
+  if (!q) return
 
   searching.value = true
   searchError.value = ''
@@ -170,6 +211,7 @@ async function doSearch() {
 
 async function doImport(r: SearchResult) {
   importingUrl.value = r.url || r.title
+  importError.value = ''
   try {
     const res = await importApi.importTrack(r)
     if (res.jobId) {
@@ -193,15 +235,47 @@ async function doImport(r: SearchResult) {
       router.push({ name: 'admin.ingestion.review', params: { id: res.draftId } })
     }
   } catch (err: unknown) {
-    toast.add({
-      severity: 'error',
-      summary: 'Import failed',
-      detail: err instanceof Error ? err.message : 'Could not import track.',
-      life: 5000,
-    })
+    const msg = err instanceof Error ? err.message : 'Could not import track.'
+    const isNoSourceError = /could not find.*downloadable|no downloadable source|no suitable source|unable to find.*source/i.test(msg)
+    if (isNoSourceError) {
+      importError.value = msg
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'Import failed',
+        detail: msg,
+        life: 5000,
+      })
+    }
   } finally {
     importingUrl.value = ''
   }
+}
+
+function stageLabel(stage: string): string {
+  const labels: Record<string, string> = {
+    queued: 'Waiting in queue...',
+    resolving: 'Searching for a downloadable source...',
+    downloading: 'Downloading track...',
+    extracting: 'Extracting metadata...',
+    uploading: 'Uploading...',
+    complete: 'Import complete!',
+    failed: 'Import failed',
+  }
+  return labels[stage] || stage || 'Processing...'
+}
+
+function stageIcon(stage: string): string {
+  const icons: Record<string, string> = {
+    queued: 'pi pi-clock',
+    resolving: 'pi pi-search',
+    downloading: 'pi pi-cloud-download',
+    extracting: 'pi pi-file',
+    uploading: 'pi pi-cloud-upload',
+    complete: 'pi pi-check-circle',
+    failed: 'pi pi-times-circle',
+  }
+  return icons[stage] || 'pi pi-spin pi-spinner'
 }
 
 function startProgressPolling(jobId: string) {
@@ -209,34 +283,43 @@ function startProgressPolling(jobId: string) {
     try {
       const progress = await importApi.getProgress(jobId)
       importProgress.value = progress.progress
-      importStage.value = progress.stage || progress.status
+      importStage.value = stageLabel(progress.stage || progress.status)
 
       if (progress.status === 'complete') {
         stopProgressPolling()
         toast.add({
           severity: 'success',
           summary: 'Import complete',
-          detail: 'Track added to ingestion.',
-          life: 4000,
+          detail: 'Track added to ingestion. Redirecting to review...',
+          life: 3000,
         })
         if (progress.draftId) {
-          router.push({ name: 'admin.ingestion.review', params: { id: progress.draftId } })
+          setTimeout(() => {
+            router.push({ name: 'admin.ingestion.review', params: { id: progress.draftId } })
+          }, 1000)
         }
       } else if (progress.status === 'failed') {
         stopProgressPolling()
-        toast.add({
-          severity: 'error',
-          summary: 'Import failed',
-          detail: progress.error || 'Unknown error',
-          life: 5000,
-        })
-        importJobId.value = ''
+        const errorMsg = progress.error || 'Unknown error'
+        const isNoSource = /could not find.*downloadable|no downloadable source|no suitable source|unable to find.*source/i.test(errorMsg)
+        if (isNoSource) {
+          importError.value = errorMsg
+          importJobId.value = ''
+        } else {
+          toast.add({
+            severity: 'error',
+            summary: 'Import failed',
+            detail: errorMsg,
+            life: 5000,
+          })
+          importJobId.value = ''
+        }
       }
     } catch {
       stopProgressPolling()
       importJobId.value = ''
     }
-  }, 1000)
+  }, 3000)
 }
 
 function stopProgressPolling() {
@@ -250,10 +333,4 @@ onUnmounted(() => {
   stopProgressPolling()
 })
 
-function formatDuration(seconds: number): string {
-  if (seconds! || seconds <= 0) return '—'
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
 </script>

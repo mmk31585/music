@@ -127,6 +127,7 @@ func NewArtistSearcher(logger *zap.Logger) *ArtistSearcher {
 
 // SearchArtist finds all albums and tracks for an artist using
 // Deezer (free, no key) and MusicBrainz (free, no key) in parallel.
+// Falls back to iTunes if both fail.
 // Returns whichever returns first with results.
 //
 // Each provider gets its own short timeout so a slow provider
@@ -212,7 +213,33 @@ func (as *ArtistSearcher) SearchArtist(ctx context.Context, name string) (*Artis
 		}
 	}
 
-	// Both done, neither returned results
+	// Both failed — try iTunes as fallback
+	as.logger.Info("both Deezer and MusicBrainz failed, trying iTunes fallback",
+		zap.String("artist", name),
+		zap.Duration("elapsed", time.Since(start)),
+	)
+
+	itunesCtx, itunesCancel := context.WithTimeout(ctx, 10*time.Second)
+	defer itunesCancel()
+
+	itunesResult, itunesErr := as.searchiTunes(itunesCtx, name)
+	if itunesErr == nil && itunesResult != nil && len(itunesResult.Albums) > 0 {
+		as.logger.Info("artist discography found via iTunes",
+			zap.String("artist", name),
+			zap.Int("albums", len(itunesResult.Albums)),
+			zap.Duration("elapsed", time.Since(start)),
+		)
+		return itunesResult, nil
+	}
+
+	if itunesErr != nil {
+		as.logger.Warn("iTunes fallback also failed",
+			zap.String("artist", name),
+			zap.Error(itunesErr),
+		)
+	}
+
+	// All providers failed
 	if lastErr != nil {
 		return nil, fmt.Errorf("all providers failed for '%s': %w", name, lastErr)
 	}
@@ -714,4 +741,206 @@ func (as *ArtistSearcher) getCoverArtURL(ctx context.Context, releaseID string) 
 	}
 
 	return ""
+}
+
+// ── iTunes / Apple Music fallback ──────────────────────────────────
+
+func (as *ArtistSearcher) searchiTunes(ctx context.Context, name string) (*ArtistDiscography, error) {
+	start := time.Now()
+
+	// Step 1: Find artist on iTunes
+	u, _ := url.Parse("https://itunes.apple.com/search")
+	u.RawQuery = url.Values{
+		"term":   {name},
+		"entity": {"musicArtist"},
+		"limit":  {"5"},
+	}.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("create itunes request: %w", err)
+	}
+
+	resp, err := as.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("itunes request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("itunes: status %d", resp.StatusCode)
+	}
+
+	var searchResp struct {
+		ResultCount int `json:"resultCount"`
+		Results     []struct {
+			ArtistID   int    `json:"artistId"`
+			ArtistName string `json:"artistName"`
+			ArtworkURL string `json:"artworkUrl100"`
+		} `json:"results"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&searchResp); err != nil {
+		return nil, fmt.Errorf("itunes decode: %w", err)
+	}
+
+	if searchResp.ResultCount == 0 {
+		return nil, fmt.Errorf("artist '%s' not found on iTunes", name)
+	}
+
+	// Find best match
+	bestIdx := -1
+	nameLower := strings.ToLower(name)
+	for i, a := range searchResp.Results {
+		if strings.EqualFold(a.ArtistName, name) || strings.Contains(strings.ToLower(a.ArtistName), nameLower) {
+			bestIdx = i
+			break
+		}
+	}
+	if bestIdx == -1 {
+		bestIdx = 0
+	}
+	bestArtist := searchResp.Results[bestIdx]
+
+	// Upgrade artwork URL: replace 100x100 with 600x600
+	artwork := strings.Replace(bestArtist.ArtworkURL, "100x100bb", "600x600bb", 1)
+
+	info := ArtistInfo{
+		Name:  bestArtist.ArtistName,
+		Image: artwork,
+	}
+
+	as.logger.Info("found itunes artist",
+		zap.String("name", bestArtist.ArtistName),
+		zap.Int("id", bestArtist.ArtistID),
+		zap.Duration("elapsed", time.Since(start)),
+	)
+
+	// Step 2: Get artist's albums via iTunes lookup
+	lookupURL := fmt.Sprintf("https://itunes.apple.com/lookup?id=%d&entity=album&limit=50", bestArtist.ArtistID)
+	lookupReq, err := http.NewRequestWithContext(ctx, http.MethodGet, lookupURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create itunes lookup request: %w", err)
+	}
+
+	lookupResp, err := as.client.Do(lookupReq)
+	if err != nil {
+		return nil, fmt.Errorf("itunes lookup request: %w", err)
+	}
+	defer lookupResp.Body.Close()
+
+	if lookupResp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("itunes lookup: status %d", lookupResp.StatusCode)
+	}
+
+	var albumResp struct {
+		ResultCount int `json:"resultCount"`
+		Results     []struct {
+			CollectionID   int    `json:"collectionId"`
+			CollectionName string `json:"collectionName"`
+			ArtworkURL     string `json:"artworkUrl100"`
+			TrackCount     int    `json:"trackCount"`
+			ReleaseDate    string `json:"releaseDate"`
+		} `json:"results"`
+	}
+
+	if err := json.NewDecoder(lookupResp.Body).Decode(&albumResp); err != nil {
+		return nil, fmt.Errorf("itunes lookup decode: %w", err)
+	}
+
+	// Filter to only albums (not singles or compilations) and get tracks
+	albumGroups := make([]AlbumGroup, 0)
+	for _, alb := range albumResp.Results {
+		if alb.TrackCount == 0 {
+			continue
+		}
+
+		albumCover := strings.Replace(alb.ArtworkURL, "100x100bb", "600x600bb", 1)
+
+		// Get tracks for this album
+		tracks, err := as.getiTunesAlbumTracks(ctx, alb.CollectionID)
+		if err != nil {
+			as.logger.Warn("failed to get itunes album tracks, skipping",
+				zap.String("album", alb.CollectionName),
+				zap.Error(err),
+			)
+			continue
+		}
+
+		albumGroups = append(albumGroups, AlbumGroup{
+			Title:  alb.CollectionName,
+			Cover:  albumCover,
+			Source: "itunes",
+			Tracks: tracks,
+		})
+	}
+
+	as.logger.Info("itunes search completed",
+		zap.Int("albums", len(albumGroups)),
+		zap.Duration("elapsed", time.Since(start)),
+	)
+
+	return &ArtistDiscography{
+		ArtistInfo: info,
+		Albums:     albumGroups,
+	}, nil
+}
+
+func (as *ArtistSearcher) getiTunesAlbumTracks(ctx context.Context, albumID int) ([]TrackResult, error) {
+	u := fmt.Sprintf("https://itunes.apple.com/lookup?id=%d&entity=song&limit=200", albumID)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := as.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("itunes tracks: status %d", resp.StatusCode)
+	}
+
+	var trackResp struct {
+		ResultCount int `json:"resultCount"`
+		Results     []struct {
+			TrackName   string `json:"trackName"`
+			Duration    int    `json:"trackTimeMillis"`
+			TrackID     int64  `json:"trackId"`
+			PreviewURL  string `json:"previewUrl"`
+			ReleaseDate string `json:"releaseDate"`
+			DiscNumber  int    `json:"discNumber"`
+			TrackNumber int    `json:"trackNumber"`
+		} `json:"results"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&trackResp); err != nil {
+		return nil, fmt.Errorf("itunes tracks decode: %w", err)
+	}
+
+	tracks := make([]TrackResult, 0, len(trackResp.Results))
+	for _, t := range trackResp.Results {
+		if t.TrackName == "" {
+			continue
+		}
+
+		duration := 0
+		if t.Duration > 0 {
+			duration = t.Duration / 1000
+		}
+
+		tracks = append(tracks, TrackResult{
+			Title:    t.TrackName,
+			Duration: duration,
+			Source:   "itunes",
+			ExternalIDs: map[string]string{
+				"itunes_id": fmt.Sprintf("%d", t.TrackID),
+			},
+		})
+	}
+
+	return tracks, nil
 }

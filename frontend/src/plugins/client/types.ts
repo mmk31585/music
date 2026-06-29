@@ -46,6 +46,11 @@ export interface PaginatedProps<T = unknown> {
   total?: number
   page?: number
   limit?: number
+  page_size?: number
+  total_count?: number
+  count?: number
+  offset?: number
+  has_more?: boolean
 }
 
 /**

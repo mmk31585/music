@@ -152,8 +152,8 @@ const tracks = ref<RecommendationTrack[]>([])
 const playlistMeta = ref<DiscoverWeeklyPlaylistMeta | null>(null)
 
 const weekLabel = computed(() => {
-  if (playlistMeta.value!?.week_of) return ''
-  const d = new Date(playlistMeta.value.week_of)
+  if (playlistMeta.value?.week_of) return ''
+  const d = new Date(playlistMeta.value?.week_of ?? '')
   const end = new Date(d)
   end.setDate(end.getDate() + 6)
   const fmt = (date: Date) =>

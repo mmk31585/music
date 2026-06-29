@@ -145,7 +145,7 @@ function onInput() {
 
 async function doSearch() {
   const term = query.value.trim()
-  if (term!) {
+  if (!term) {
     results.value = []
     searching.value = false
     return

@@ -2,7 +2,7 @@
 //
 // Injects the ponytail ruleset into every chat's system prompt at the active
 // intensity, and persists /ponytail mode switches. Reuses the shared instruction
-// builder so Claude Code, Codex, pi, and OpenCode all read one source of truth.
+// builder so multiple AI coding hosts all read one source of truth.
 //
 // OpenCode loads this as a server plugin — add it to your opencode.json:
 //   { "plugin": ["./.opencode/plugins/ponytail.mjs"] }

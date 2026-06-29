@@ -18,6 +18,8 @@ func RegisterRoutes(api *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
 		admin.POST("/lyrics", h.CreateLyrics)
 		admin.POST("/lyrics/fetch/:trackId", h.FetchFromLRC)
 		admin.POST("/lyrics/fetch-or-generate/:trackId", h.FetchOrGenerateLyrics)
+		admin.POST("/lyrics/sync", h.SyncWithAI)
+		admin.POST("/lyrics/review", h.ReviewWithAI)
 		admin.GET("/lyrics/ai-status/:trackId", h.AILyricsStatus)
 		admin.PUT("/lyrics/:id", h.UpdateLyrics)
 		admin.DELETE("/lyrics/:id", h.DeleteLyrics)

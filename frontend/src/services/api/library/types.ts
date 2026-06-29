@@ -31,7 +31,6 @@ export const LibraryArtistSchema = z.object({
   artist_id: z.string(),
   name: z.string(),
   cover_url: NullableString,
-  monthly_listeners: z.number().optional(),
   followed_at: z.string(),
 })
 

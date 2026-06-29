@@ -100,21 +100,21 @@ defineEmits<{
 }>()
 
 const auroraStyle = computed(() => {
-  if (props.nowPlaying!?.track.cover_url) return {}
+  if (props.nowPlaying?.track.cover_url) return {}
   return {
     background: `radial-gradient(ellipse at 50% 0%, rgba(29,185,84,0.15) 0%, transparent 70%)`,
   }
 })
 
 const sourceLabel = computed(() => {
-  if (props.nowPlaying!) return ''
+  if (!props.nowPlaying) return ''
   return props.nowPlaying.source === 'autofill'
     ? 'پخش خودکار از پرشنیده‌ها'
     : 'پیشنهاد شده'
 })
 
 const sourceBadgeClass = computed(() => {
-  if (props.nowPlaying!) return ''
+  if (!props.nowPlaying) return ''
   return props.nowPlaying.source === 'autofill'
     ? 'bg-white/10 text-white/50'
     : 'bg-green-500/10 text-green-400'

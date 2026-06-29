@@ -3,7 +3,7 @@ import { useToast } from 'primevue/usetoast'
 interface Shareable {
   id: string | number
   title: string
-  type: 'track' | 'album' | 'artist' | 'playlist'
+  type: 'track' | 'album' | 'artist' | 'playlist' | 'video'
   artistName?: string | null
   coverUrl?: string | null
 }
@@ -22,7 +22,10 @@ export function useSocialShare() {
         return `${base}/artist/${item.id}`
       case 'playlist':
         return `${base}/playlists/${item.id}`
+      case 'video':
+        return `${base}/video/${item.id}`
     }
+    return ''
   }
 
   function getShareText(item: Shareable): string {
@@ -35,7 +38,10 @@ export function useSocialShare() {
         return `🎤 ${item.title}`
       case 'playlist':
         return `📋 ${item.title}`
+      case 'video':
+        return `🎬 ${item.title}`
     }
+    return ''
   }
 
   async function copyLink(item: Shareable): Promise<boolean> {

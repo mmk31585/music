@@ -7,13 +7,14 @@
     @click="$emit('play', item)"
     @keydown.enter="$emit('play', item)"
     @keydown.space.prevent="$emit('play', item)"
+    @contextmenu.prevent="ctxRef?.show($event)"
   >
     <div
       class="relative aspect-square overflow-hidden rounded-xl bg-white/6 ring-1 ring-white/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:ring-spotify/40"
       :style="{ borderRadius: radius + 'px' }"
     >
       <img
-        v-if="item.cover_url || item.coverUrl"
+        v-if="item.cover_url || item.coverUrl || item.track_cover_url"
         :src="coverSrc"
         :alt="altText"
         class="h-full w-full object-cover transition duration-500 group-hover:scale-110"
@@ -61,14 +62,20 @@
       </p>
     </div>
   </div>
+
+  <ContextMenu :model="model" ref="ctxRef" />
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import ContextMenu from 'primevue/contextmenu'
+import { useTrackContextMenu, type TrackContextItem } from '@/composables/useTrackContextMenu'
 
-interface TrackCardItem {
+interface TrackCardItem extends TrackContextItem {
+  [key: string]: unknown
   cover_url?: string | null
   coverUrl?: string | null
+  track_cover_url?: string | null
   title?: string | null
   track_title?: string | null
   artist_name?: string | null
@@ -94,13 +101,18 @@ const artistName = computed(() => {
   return props.item.artist_name || props.item.artistName || ''
 })
 
-const coverSrc = computed((): string | undefined => (props.item.cover_url || props.item.coverUrl) ?? undefined)
+const coverSrc = computed((): string | undefined => (props.item.cover_url || props.item.coverUrl || props.item.track_cover_url) ?? undefined)
 
 const altText = computed(() => {
   const title = props.item.title || props.item.track_title || ''
   const artist = artistName.value
   return artist ? `${title} - ${artist}` : title
 })
+
+// ── Context menu ──────────────────────────────────────────────────
+const trackRef = computed(() => props.item)
+const { model } = useTrackContextMenu(trackRef)
+const ctxRef = ref<InstanceType<typeof ContextMenu> | null>(null)
 </script>
 
 <style scoped>

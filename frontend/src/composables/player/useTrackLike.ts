@@ -3,8 +3,19 @@ import { useLibraryApi } from '@/services/api/library'
 import { useUserAuthStore } from '@/stores/user-auth'
 
 /**
+ * Singleton set of liked track IDs shared across all instances.
+ * Only the first caller fetches from the API; subsequent instances
+ * read the cached set and stay in sync.
+ */
+let _fetched = false
+const _likedTrackIds = ref<Set<string>>(new Set())
+
+/**
  * Manages the liked state for a track, syncing with the backend library API.
  * Pass a reactive trackId ref to automatically check liked status on change.
+ *
+ * All instances share the same liked-track cache, so liking a track in one
+ * component immediately reflects in all others.
  */
 export function useTrackLike(trackIdRef: import('vue').Ref<string | undefined>) {
   const libraryApi = useLibraryApi()
@@ -12,14 +23,18 @@ export function useTrackLike(trackIdRef: import('vue').Ref<string | undefined>) 
 
   const liked = ref(false)
   const loading = ref(false)
-  const likedTrackIds = ref<Set<string>>(new Set())
 
-  // Fetch all liked track IDs once on mount
+  // Fetch all liked track IDs once — singleton across all callers
+  if (!_fetched) {
+    _fetched = true
+    fetchLikedTracks()
+  }
+
   async function fetchLikedTracks() {
     if (!auth.isAuthenticated) return
     try {
       const tracks = await libraryApi.getLikedTracks()
-      likedTrackIds.value = new Set((tracks || []).map((t: any) => String(t.track_id)))
+      _likedTrackIds.value = new Set((tracks || []).map((t: any) => String(t.track_id)))
     } catch {
       // silently fail
     }
@@ -31,7 +46,7 @@ export function useTrackLike(trackIdRef: import('vue').Ref<string | undefined>) 
       liked.value = false
       return
     }
-    liked.value = likedTrackIds.value.has(trackId)
+    liked.value = _likedTrackIds.value.has(trackId)
   }
 
   // Watch track changes
@@ -45,11 +60,11 @@ export function useTrackLike(trackIdRef: import('vue').Ref<string | undefined>) 
     try {
       if (liked.value) {
         await libraryApi.unlikeTrack(trackId)
-        likedTrackIds.value.delete(trackId)
+        _likedTrackIds.value.delete(trackId)
         liked.value = false
       } else {
         await libraryApi.likeTrack({ track_id: trackId })
-        likedTrackIds.value.add(trackId)
+        _likedTrackIds.value.add(trackId)
         liked.value = true
       }
     } catch {
@@ -59,9 +74,6 @@ export function useTrackLike(trackIdRef: import('vue').Ref<string | undefined>) 
       loading.value = false
     }
   }
-
-  // Initialize
-  fetchLikedTracks()
 
   return {
     liked,

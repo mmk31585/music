@@ -93,10 +93,12 @@ type MusicBrainzClient interface {
 
 type LastFMClient interface {
 	SearchTrack(ctx context.Context, query TrackQuery) (*LastFMResult, error)
+	SearchArtist(ctx context.Context, name string) (*LastFMResult, error)
 }
 
 type SpotifyClient interface {
 	SearchTrack(ctx context.Context, query TrackQuery) (*SpotifyResult, error)
+	SearchArtistImage(ctx context.Context, name string) (string, error)
 }
 
 type MLClient interface {
@@ -106,6 +108,7 @@ type MLClient interface {
 
 type DeezerClient interface {
 	SearchArtistImage(ctx context.Context, name string) (string, error)
+	SearchAlbumCover(ctx context.Context, albumTitle, artistName string) (string, error)
 }
 
 type CoverArtClient interface {

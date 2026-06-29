@@ -108,7 +108,7 @@ For LRC format: [00:00.00]Line 1&#10;[00:05.00]Line 2"
         </button>
         <button
           type="button"
-          :disabled="canSubmit! || submitting"
+          :disabled="!canSubmit || submitting"
           class="spring flex-1 rounded-xl bg-spotify py-3 text-sm font-bold text-black transition-all hover:bg-spotify-hover disabled:opacity-40"
           @click="submit"
         >
@@ -200,7 +200,7 @@ function reset() {
 }
 
 async function submit() {
-  if (canSubmit.value! || selectedType.value!) return
+  if (!canSubmit.value || !selectedType.value) return
   submitting.value = true
   error.value = ''
   success.value = false

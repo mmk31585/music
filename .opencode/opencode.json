@@ -19,49 +19,49 @@
   },
   "agent": {
     "muse": {
-      "description": "Coordinator for the Muse Persian music ecosystem. Knows the full stack and delegates work across 8 specialized sub-agents (@auth, @player, @catalog, @social, @creator, @admin, @ui, @infra). Use for multi-domain tasks, cross-cutting changes, and architecture decisions.",
+      "description": "Coordinator for the Muse Persian music ecosystem. Knows the full stack and delegates work across 8 specialized sub-agents (@auth, @player, @catalog, @social, @creator, @admin, @ui, @infra). Scans project state, checks server health, self-generates task plans. For tightly-coupled cross-domain work, delegate to @muse-team for peer-to-peer coordination.",
       "mode": "primary"
     },
     "muse-sre": {
-      "description": "Site Reliability Engineer for Muse. Monitors frontend (:5173) and API (:8080) health, detects crashes/runtime errors, restarts servers, and delegates fixes to the right sub-agent. Run the watchdog script with `bash scripts/watchdog.sh` for background monitoring.",
+      "description": "Site Reliability Engineer for Muse — autonomous guardian. Monitors frontend (:5173) and API (:8080) health, detects crashes/runtime errors, scans logs, restarts failed servers, delegates fixes to domain agents, and verifies resolution. Run `bash scripts/watchdog.sh` for background monitoring.",
       "mode": "primary",
       "color": "error"
     },
     "muse-auth": {
-      "description": "Auth & Security agent for Muse. Login/register flows, JWT, token refresh, auth guards, session restoration.",
+      "description": "Auth & Security agent for Muse. Login/register flows, JWT, token refresh, auth guards, session restoration. Self-diagnoses auth problems, checks token expiry, fixes broken login flows. Communicates directly with @muse-infra (API client, router guards) and @muse-ui (layout, toast) in team mode.",
       "mode": "subagent",
       "hidden": false
     },
     "muse-player": {
-      "description": "Player & Audio agent for Muse. Audio engine, queue, radio mode, visualizer, theatre, mini player, PiP, lyrics.",
+      "description": "Player & Audio agent for Muse. Audio engine, queue, radio mode, visualizer, theatre, mini player, PiP, lyrics. Self-diagnoses playback issues, checks audio engine state, fixes broken player components. Communicates directly with @muse-catalog (track types) and @muse-infra (WebSocket) in team mode.",
       "mode": "subagent"
     },
     "muse-catalog": {
-      "description": "Catalog & Search agent for Muse. Tracks, albums, artists, genres, search, playlists, library, history, recommendations, AI features.",
+      "description": "Catalog & Search agent for Muse. Tracks, albums, artists, genres, search, playlists, library, history, recommendations, AI features. Self-diagnoses broken pages, search failures, playlist issues. Communicates directly with @muse-player (play action) and @muse-infra (API barrel) in team mode.",
       "mode": "subagent"
     },
     "muse-social": {
-      "description": "Social & Community agent for Muse. Social features, rooms, clubs, parties, notifications, reactions.",
+      "description": "Social & Community agent for Muse. Activity feeds, listening parties, live rooms, music clubs, notifications, reactions. Self-diagnoses broken social features, notification failures, WebSocket issues. Communicates directly with @muse-player (party sync) and @muse-infra (socket channels) in team mode.",
       "mode": "subagent"
     },
     "muse-creator": {
-      "description": "Creator & Gamification agent for Muse. Creator dashboard, badges, challenges, leaderboard, XP, tips, contributions, subscriptions.",
+      "description": "Creator & Gamification agent for Muse. Creator dashboard, badges, challenges, leaderboard, XP, tips, contributions, subscriptions. Self-diagnoses broken creator features, gamification issues. Communicates directly with @muse-catalog (analytics data) and @muse-ui (dashboard components) in team mode.",
       "mode": "subagent"
     },
     "muse-admin": {
-      "description": "Admin & Moderation agent for Muse. Admin panel, user management, track/album/artist CRUD, media upload, moderation.",
+      "description": "Admin & Moderation agent for Muse. Admin panel, user management, track/album/artist CRUD, media upload, moderation, ingestion. Self-diagnoses broken admin features, CRUD issues, moderation pipeline. Communicates directly with @muse-catalog (CRUD ops) and @muse-auth (permissions) in team mode.",
       "mode": "subagent"
     },
     "muse-ui": {
-      "description": "UI/UX & Layout agent for Muse. App shell, common components, error pages, styling, utils, global stores.",
+      "description": "UI/UX & Layout agent for Muse. App shell, common components, error pages, styling, utils, global stores, design system application. Self-diagnoses layout breaks, styling issues, missing components. Communicates directly with all domain agents in team mode for component integration.",
       "mode": "subagent"
     },
     "muse-infra": {
-      "description": "Infrastructure agent for Muse. API barrel, router config, stores, services, plugins, composables root.",
+      "description": "Infrastructure agent for Muse — base layer. API barrel, router config, stores, services, plugins, composables root, WebSocket, storage. Self-diagnoses broken API client, router misconfigurations, store issues, WebSocket failures. Has no deps; all other agents depend on @muse-infra.",
       "mode": "subagent"
     },
     "muse-team": {
-      "description": "Agent Team supervisor for Muse. Owns the shared task list, coordinates teammates (frontend/backend/infra) that communicate directly peer-to-peer instead of through the main agent. Teammates unblock each other directly (e.g., frontend requests a schema from backend and is unblocked immediately). The supervisor only monitors progress, resolves conflicts, and approves the main goal.",
+      "description": "Agent Team supervisor for Muse. Owns the shared task list, deploys teammates (backend: @muse-auth/@muse-catalog/@muse-creator/@muse-admin, frontend: @muse-player/@muse-social/@muse-ui, infra: @muse-infra) that communicate peer-to-peer — no isolation, no roundtrip. Supervisor monitors progress, resolves conflicts, approves goal. Use for end-to-end features, cross-domain refactoring, multi-layer debugging.",
       "mode": "primary",
       "color": "success"
     }

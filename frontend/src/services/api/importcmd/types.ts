@@ -1,6 +1,7 @@
 export interface SearchResult {
   title: string
   artist: string
+  album?: string
   url: string
   duration: number
   thumbnail: string
@@ -70,6 +71,7 @@ export interface TrackResult {
 export interface BatchImportItem {
   title: string
   artist: string
+  url?: string
   album?: string
   duration?: number
   source?: string

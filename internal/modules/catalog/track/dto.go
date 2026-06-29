@@ -12,33 +12,35 @@ type TrackResponse struct {
 	ID uuid.UUID `json:"id"`
 
 	// Deprecated compatibility field.
-	ArtistID uuid.UUID `json:"artistId"`
+	ArtistID uuid.UUID `json:"artist_id"`
 
-	AlbumID         *uuid.UUID `json:"albumId,omitempty"`
+	AlbumID         *uuid.UUID `json:"album_id"`
 	Title           string     `json:"title"`
 	Slug            string     `json:"slug"`
-	DurationSeconds int        `json:"durationSeconds"`
-	TrackNumber     *int       `json:"trackNumber,omitempty"`
+	DurationSeconds int        `json:"duration_seconds"`
+	TrackNumber     *int       `json:"track_number"`
 	Explicit        bool       `json:"explicit"`
 
-	AudioURL *string `json:"audioUrl,omitempty"`
-	CoverURL *string `json:"coverUrl,omitempty"`
+	AudioURL *string `json:"audio_url"`
+	CoverURL *string `json:"cover_url"`
 
-	AudioMediaID *uuid.UUID `json:"audioMediaId,omitempty"`
-	CoverMediaID *uuid.UUID `json:"coverMediaId,omitempty"`
+	AudioMediaID *uuid.UUID `json:"audio_media_id"`
+	CoverMediaID *uuid.UUID `json:"cover_media_id"`
 
-	PlayCount int64 `json:"playCount"`
-	IsPublic  bool  `json:"isPublic"`
+	ArtistName *string `json:"artist_name"`
 
-	CreatedAt time.Time  `json:"createdAt"`
-	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
+	PlayCount int64 `json:"play_count"`
+	IsPublic  bool  `json:"is_public"`
+
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 
 	Artists []TrackArtistResponse `json:"artists,omitempty"`
 	Genres  []GenreResponse       `json:"genres,omitempty"`
 }
 
 type TrackArtistResponse struct {
-	ArtistID uuid.UUID `json:"artistId"`
+	ArtistID uuid.UUID `json:"artist_id"`
 	Name     string    `json:"name"`
 	Slug     string    `json:"slug"`
 	Role     string    `json:"role"`
@@ -49,18 +51,18 @@ type GenreResponse struct {
 	ID        uuid.UUID `json:"id"`
 	Name      string    `json:"name"`
 	Slug      string    `json:"slug"`
-	CreatedAt time.Time `json:"createdAt"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type TrackCreditResponse struct {
 	ID         uuid.UUID `json:"id"`
-	TrackID    uuid.UUID `json:"trackId"`
-	ArtistID   uuid.UUID `json:"artistId"`
-	ArtistName string    `json:"artistName"`
-	ArtistSlug string    `json:"artistSlug"`
-	CreditType string    `json:"creditType"`
+	TrackID    uuid.UUID `json:"track_id"`
+	ArtistID   uuid.UUID `json:"artist_id"`
+	ArtistName string    `json:"artist_name"`
+	ArtistSlug string    `json:"artist_slug"`
+	CreditType string    `json:"credit_type"`
 	Position   int       `json:"position"`
-	CreatedAt  time.Time `json:"createdAt"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 // Mapper functions
@@ -88,6 +90,12 @@ func TrackToResponse(t *Track) *TrackResponse {
 			CreatedAt: g.CreatedAt,
 		}
 	}
+	var artistName *string
+	if len(t.Artists) > 0 {
+		name := t.Artists[0].Name
+		artistName = &name
+	}
+
 	return &TrackResponse{
 		ID:              t.ID,
 		ArtistID:        t.ArtistID,
@@ -101,6 +109,7 @@ func TrackToResponse(t *Track) *TrackResponse {
 		CoverURL:        t.CoverURL,
 		AudioMediaID:    t.AudioMediaID,
 		CoverMediaID:    t.CoverMediaID,
+		ArtistName:      artistName,
 		PlayCount:       t.PlayCount,
 		IsPublic:        t.IsPublic,
 		CreatedAt:       t.CreatedAt,

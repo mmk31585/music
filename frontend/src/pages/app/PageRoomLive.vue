@@ -81,7 +81,7 @@
           <div v-if="isHost" class="flex flex-wrap gap-3">
             <button
               class="inline-flex items-center gap-1.5 rounded-xl bg-white/5 px-4 py-2 text-sm font-semibold text-white/60 transition hover:bg-white/10 hover:text-white disabled:opacity-40"
-              :disabled="currentTrack! || isTrackTransitioning"
+              :disabled="!currentTrack || isTrackTransitioning"
               @click="skipTrack"
             >
               <i aria-hidden="true" class="pi pi-forward text-xs" />
@@ -154,7 +154,7 @@
               <button
                 type="submit"
                 class="rounded-xl bg-spotify/10 px-4 py-2.5 text-sm font-semibold text-spotify transition hover:bg-spotify/20 disabled:opacity-40"
-                :disabled="chatInput.trim!()"
+                :disabled="!chatInput.trim()"
               >
                 Send
               </button>
@@ -331,7 +331,7 @@ async function loadRoom() {
 
 async function togglePlay() {
   const np = queueState.value?.now_playing
-  if (np!?.track?.id) return
+  if (!np?.track?.id) return
   const trackId = np.track.id
 
   // If there was a previous playback error, clear it before retry
@@ -356,7 +356,7 @@ async function togglePlay() {
 /** Retry playback after an error */
 async function retryPlayback() {
   const trackId = currentTrack.value?.id
-  if (trackId!) return
+  if (!trackId) return
   playerStore.error = null
   isTrackTransitioning.value = true
   try {
@@ -369,7 +369,7 @@ async function retryPlayback() {
 /** Skip the current track (host only) */
 async function skipTrack() {
   const np = queueState.value?.now_playing
-  if (np!?.track?.id || isHost.value!) return
+  if (!np?.track?.id || !isHost.value) return
   try {
     await queueSocket.reportEnded(np.track.id)
   } catch {
@@ -396,7 +396,7 @@ watch(
 watch(
   () => playerStore.isLoadingTrack,
   (loading) => {
-    if (loading!) {
+    if (!loading) {
       // Give a tick for the player to emit its final state
       setTimeout(() => {
         isTrackTransitioning.value = false
@@ -415,7 +415,7 @@ function setupWebSocket() {
 
   wsClient.on('room.message', (msg: { payload?: { user_id: string; content: string } }) => {
     const uid = msg.payload?.user_id || ''
-    if (uid && userNames.value[uid]!) fetchUserName(uid)
+    if (uid && !userNames.value[uid]) fetchUserName(uid)
     messages.value.push({
       user_id: uid,
       userName: userName(uid),

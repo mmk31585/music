@@ -263,7 +263,7 @@ const menuItems = computed<Array<{ label: string; icon: string; iconBg: string; 
 })
 
 function toggleUserMenu() {
-  showUserMenu.value = showUserMenu.value!
+  showUserMenu.value = !showUserMenu.value
 }
 
 function closeUserMenu() {
@@ -307,7 +307,7 @@ onMounted(() => {
   document.addEventListener('click', onClickOutside)
   document.addEventListener('keydown', onKeyDown)
 
-  if (headerRef.value!) return
+  if (!headerRef.value) return
   const sentinel = document.createElement('div')
   sentinel.style.position = 'absolute'
   sentinel.style.top = '0'

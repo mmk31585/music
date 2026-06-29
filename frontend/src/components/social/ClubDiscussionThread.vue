@@ -90,7 +90,7 @@
                 />
                 <button
                   class="inline-flex items-center gap-1 rounded-lg bg-spotify/10 px-3 py-2 text-xs font-medium text-spotify transition hover:bg-spotify/20 disabled:opacity-40"
-                  :disabled="replyInputs[d.id]!?.trim() || repliesLoading[d.id]"
+                  :disabled="!replyInputs[d.id]?.trim() || repliesLoading[d.id]"
                   @click="submitReply(d.id)"
                 >
                   <span v-if="repliesLoading[d.id]" class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-spotify border-t-transparent" />
@@ -150,7 +150,7 @@ async function toggleReplies(discussionId: string) {
     return
   }
   openReplies[discussionId] = true
-  if (loadedReplies[discussionId]!) {
+  if (!loadedReplies[discussionId]) {
     await loadReplies(discussionId)
   }
 }
@@ -172,7 +172,7 @@ async function loadReplies(discussionId: string) {
 
 async function submitReply(discussionId: string) {
   const text = replyInputs[discussionId]?.trim()
-  if (text! || repliesLoading[discussionId]) return
+  if (!text || repliesLoading[discussionId]) return
   repliesLoading[discussionId] = true
   replyError[discussionId] = ''
   try {
@@ -233,7 +233,7 @@ watch(() => props.discussions, (list) => {
 }, { immediate: true })
 
 function formatTime(dateStr: string): string {
-  if (dateStr!) return ''
+  if (!dateStr) return ''
   const d = new Date(dateStr)
   const now = new Date()
   const diff = now.getTime() - d.getTime()

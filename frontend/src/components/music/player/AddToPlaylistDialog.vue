@@ -109,7 +109,7 @@ const playlists = ref<PlaylistListItem[]>([])
 
 const filteredPlaylists = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
-  if (q!) return playlists.value
+  if (!q) return playlists.value
   return playlists.value.filter(
     (p) => p.name.toLowerCase().includes(q),
   )

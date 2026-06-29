@@ -2,7 +2,12 @@ package video
 
 import (
 	"errors"
+	"io"
 	"net/http"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -231,11 +236,19 @@ func (h *Handler) AdminUpdateVideo(c *gin.Context) {
 // CreateUserEdit godoc
 // @Summary Upload a user edit video
 // @Description Upload a user-created video edit for a track. Requires authentication.
+// Accepts both JSON (with pre-uploaded raw_video_url) and multipart/form-data (with video file).
 // @Tags videos
 // @Accept json
+// @Accept multipart/form-data
 // @Produce json
 // @Security Bearer
-// @Param request body CreateVideoRequest true "Video upload payload"
+// @Param request body CreateVideoRequest false "Video upload payload (JSON)"
+// @Param video formData file false "Video file (multipart)"
+// @Param track_id formData string false "Track ID (multipart)"
+// @Param title formData string false "Edit title (multipart)"
+// @Param description formData string false "Edit description (multipart)"
+// @Param track_start_ms formData int false "Track start ms (multipart)"
+// @Param track_end_ms formData int false "Track end ms (multipart)"
 // @Success 201 {object} response.SuccessResponseData
 // @Failure 400 {object} response.ErrorResponse
 // @Failure 401 {object} response.ErrorResponse
@@ -250,9 +263,83 @@ func (h *Handler) CreateUserEdit(c *gin.Context) {
 	}
 
 	var req CreateVideoRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, apperrors.BadRequest("invalid request body", err))
-		return
+	contentType := c.GetHeader("Content-Type")
+
+	if strings.Contains(contentType, "multipart/form-data") {
+		// ── Handle multipart file upload ──────────────────────────────
+		const maxSize int64 = 200 << 20 // 200 MB
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSize)
+
+		if err := c.Request.ParseMultipartForm(maxSize); err != nil {
+			response.Error(c, apperrors.BadRequest("video file too large or invalid form", err))
+			return
+		}
+		defer c.Request.MultipartForm.RemoveAll() //nolint:errcheck
+
+		req.TrackID = c.PostForm("track_id")
+		req.Title = c.PostForm("title")
+		req.Description = c.PostForm("description")
+
+		if req.TrackID == "" {
+			response.Error(c, apperrors.BadRequest("track_id is required", nil))
+			return
+		}
+
+		file, header, err := c.Request.FormFile("video")
+		if err != nil {
+			response.Error(c, apperrors.BadRequest("video file is required", err))
+			return
+		}
+		defer file.Close()
+
+		// MIME type check: read first 512 bytes
+		buf := make([]byte, 512)
+		if _, err := file.Read(buf); err != nil {
+			response.Error(c, apperrors.BadRequest("failed to read video file", err))
+			return
+		}
+		if _, err := file.Seek(0, io.SeekStart); err != nil {
+			response.Error(c, apperrors.Internal("failed to seek video file", nil))
+			return
+		}
+
+		mimeType := http.DetectContentType(buf)
+		if !strings.HasPrefix(mimeType, "video/") {
+			response.Error(c, apperrors.BadRequest("file must be a video", nil))
+			return
+		}
+
+		// Save to uploads/videos/{uuid}.{ext}
+		ext := path.Ext(header.Filename)
+		fileName := uuid.New().String() + ext
+		savePath := filepath.Join("uploads", "videos", fileName)
+
+		if err := os.MkdirAll(filepath.Dir(savePath), 0755); err != nil {
+			response.Error(c, apperrors.Internal("failed to create upload directory", err))
+			return
+		}
+
+		dst, err := os.Create(savePath)
+		if err != nil {
+			response.Error(c, apperrors.Internal("failed to save video file", err))
+			return
+		}
+		defer dst.Close()
+
+		written, err := io.Copy(dst, file)
+		if err != nil {
+			response.Error(c, apperrors.Internal("failed to write video file", err))
+			return
+		}
+
+		req.RawVideoURL = "/uploads/videos/" + fileName
+		req.FileSizeBytes = written
+	} else {
+		// ── Handle JSON payload ──────────────────────────────────────
+		if err := c.ShouldBindJSON(&req); err != nil {
+			response.Error(c, apperrors.BadRequest("invalid request body", err))
+			return
+		}
 	}
 
 	video, err := h.service.CreateUserEdit(c.Request.Context(), userID, req)

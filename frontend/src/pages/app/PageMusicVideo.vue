@@ -264,7 +264,7 @@
                 />
                 <div class="mt-1.5 flex items-center justify-between">
                   <span class="text-[10px] text-white/20">{{ commentContent.length }}/1000</span>
-                  <Button label="Post" size="small" :loading="submittingComment" :disabled="commentContent.trim!() || submittingComment"
+                  <Button label="Post" size="small" :loading="submittingComment" :disabled="!commentContent.trim() || submittingComment"
                     class="rounded-xl! bg-white/10! text-white! hover:bg-white/20! text-xs! py-1.5! px-4!" @click="postComment" />
                 </div>
               </div>
@@ -373,7 +373,7 @@ const trackInfo = ref<Pick<Track, 'id' | 'title' | 'artist_name' | 'cover_url' |
 const loadingTrack = ref(false)
 
 const isTrackPlaying = computed(() => {
-  if (trackInfo.value!) return false
+  if (!trackInfo.value) return false
   return String(player.currentTrack.value?.id) === String(trackInfo.value.id) && player.isPlaying.value
 })
 
@@ -401,24 +401,24 @@ const volume = ref(1)
 const isLiked = ref(false)
 const videoError = ref(false)
 let controlsTimer: ReturnType<typeof setTimeout> | null = null
-let hideTimer: ReturnType<typeof setTimeout> | null = null
+const hideTimer: ReturnType<typeof setTimeout> | null = null
 
 const duration = computed(() => (video.value ? video.value.duration_ms / 1000 : 0))
-const progressPercent = computed(() => { if (duration.value!) return 0; return (currentTime.value / duration.value) * 100 })
+const progressPercent = computed(() => { if (!duration.value) return 0; return (currentTime.value / duration.value) * 100 })
 const volumePercent = computed(() => volume.value * 100)
 
 const videoSrc = computed(() => {
-  if (video.value!) return undefined
+  if (!video.value) return undefined
   if (video.value.final_video_url) return video.value.final_video_url
   return `/api/v1/videos/${video.value.id}/stream`
 })
 
 const videoPoster = computed(() => {
-  if (video.value!) return undefined
+  if (!video.value) return undefined
   return video.value.thumbnail_url || video.value.thumbnail_path || video.value.track_cover_url || (trackInfo.value?.cover_url || undefined) || undefined
 })
 
-function formatTime(s: number): string { if (s! || isFinite!(s)) return '0:00'; return `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, '0')}` }
+function formatTime(s: number): string { if (!s || !isFinite(s)) return '0:00'; return `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, '0')}` }
 function timeAgo(d: string): string { const diff = Math.floor((Date.now() - new Date(d).getTime()) / 1000); if (diff < 60) return 'just now'; if (diff < 3600) return `${Math.floor(diff / 60)}m ago`; if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`; return `${Math.floor(diff / 86400)}d ago` }
 
 async function fetchVideo() {
@@ -442,7 +442,7 @@ async function fetchTrackInfo(trackId: string) {
 
 async function fetchRelated() {
   const tid = video.value?.track_id || video.value?.track?.id
-  if (tid!) return
+  if (!tid) return
   try {
     const res = await useRequest<{ items: VideoItem[] }>(`/tracks/${tid}/videos`, { method: 'GET' })
     relatedVideos.value = (res?.items || []).filter(v => String(v.id) !== videoId.value)
@@ -450,17 +450,17 @@ async function fetchRelated() {
 }
 
 function togglePlay() {
-  if (videoError.value) return; const el = videoRef.value; if (el!) return
+  if (videoError.value) return; const el = videoRef.value; if (!el) return
   el.paused ? el.play().catch(() => {}) : el.pause()
 }
 function onPlay() { isPlaying.value = true; startHideTimer() }
 function onPause() { isPlaying.value = false; cancelHideTimer(); controlsVisible.value = true }
 function onVideoError() { videoError.value = true; isPlaying.value = false; buffering.value = false }
 function retryVideo() { videoError.value = false; buffering.value = true; videoRef.value?.load() }
-function toggleMute() { const el = videoRef.value; if (el!) return; el.muted = el.muted!; isMuted.value = el.muted }
-function seekTo(e: MouseEvent) { const el = videoRef.value; if (el! || duration.value!) return; const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); el.currentTime = ((e.clientX - r.left) / r.width) * duration.value }
-function seekVolume(e: MouseEvent) { const el = videoRef.value; if (el!) return; const pct = Math.max(0, Math.min(1, (e.clientX - (e.currentTarget as HTMLElement).getBoundingClientRect().left) / (e.currentTarget as HTMLElement).offsetWidth)); volume.value = pct; el.volume = pct; if (pct > 0 && el.muted) { el.muted = false; isMuted.value = false } }
-function toggleFullscreen() { const c = playerContainerRef.value; if (c!) return; document.fullscreenElement! ? c.requestFullscreen().catch(() => {}) : document.exitFullscreen().catch(() => {}) }
+function toggleMute() { const el = videoRef.value; if (!el) return; el.muted = !el.muted; isMuted.value = el.muted }
+function seekTo(e: MouseEvent) { const el = videoRef.value; if (!el || !duration.value) return; const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); el.currentTime = ((e.clientX - r.left) / r.width) * duration.value }
+function seekVolume(e: MouseEvent) { const el = videoRef.value; if (!el) return; const pct = Math.max(0, Math.min(1, (e.clientX - (e.currentTarget as HTMLElement).getBoundingClientRect().left) / (e.currentTarget as HTMLElement).offsetWidth)); volume.value = pct; el.volume = pct; if (pct > 0 && el.muted) { el.muted = false; isMuted.value = false } }
+function toggleFullscreen() { const c = playerContainerRef.value; if (!c) return; document.fullscreenElement ? c.requestFullscreen().catch(() => {}) : document.exitFullscreen().catch(() => {}) }
 function onTimeUpdate() { const el = videoRef.value; if (el) currentTime.value = el.currentTime }
 function onLoaded() { buffering.value = false; videoError.value = false; const el = videoRef.value; if (el) el.volume = volume.value }
 function onEnded() { isPlaying.value = false; controlsVisible.value = true }
@@ -469,27 +469,27 @@ function startHideTimer() { cancelHideTimer(); controlsTimer = setTimeout(() => 
 function cancelHideTimer() { if (controlsTimer) { clearTimeout(controlsTimer); controlsTimer = null } }
 
 async function toggleLike() {
-  if (video.value!) return; const prev = isLiked.value; isLiked.value = isLiked.value!
+  if (!video.value) return; const prev = isLiked.value; isLiked.value = !isLiked.value
   try { isLiked.value ? await videoApi.likeVideo(String(video.value.id)) : await videoApi.unlikeVideo(String(video.value.id)) }
   catch { isLiked.value = prev; toast.add({ severity: 'error', summary: 'Failed to update like', life: 3000 }) }
 }
 function playTrack() { const tid = trackInfo.value?.id || video.value?.track_id || video.value?.track?.id; if (tid) player.playTrackById(String(tid)) }
-function shareVideo() { if (video.value!) return; copyLink({ id: String(video.value.id), title: video.value.title, type: 'video' }) }
+function shareVideo() { if (!video.value) return; copyLink({ id: String(video.value.id), title: video.value.title, type: 'video' }) }
 function openVideo(rel: VideoItem) { if (String(rel.id) === videoId.value) return; router.push(`/music-video/${rel.id}`) }
 function goBack() { router.back() }
 
 async function fetchComments() {
-  if (video.value!?.id) return; loadingComments.value = true
+  if (!video.value?.id) return; loadingComments.value = true
   try { const r = await useRequest<{ items: CommentItem[]; total: number }>(`/videos/${video.value.id}/comments?limit=20&offset=0`, { method: 'GET' }); comments.value = r?.items || []; commentsTotal.value = r?.total || 0 }
   catch { comments.value = [] } finally { loadingComments.value = false }
 }
 async function postComment() {
-  if (video.value!?.id || commentContent.value.trim!()) return; submittingComment.value = true
+  if (!video.value?.id || !commentContent.value.trim()) return; submittingComment.value = true
   try { await useRequest(`/videos/${video.value.id}/comments`, { method: 'POST', data: { content: commentContent.value.trim() } }, { silent: true }); commentContent.value = ''; toast.add({ severity: 'success', summary: 'Comment posted', life: 3000 }); fetchComments() }
   catch { toast.add({ severity: 'error', summary: 'Failed to post comment', life: 3000 }) } finally { submittingComment.value = false }
 }
 
-function onFullscreenChange() { isFullscreen.value = document.fullscreenElement!! }
+function onFullscreenChange() { isFullscreen.value = !!document.fullscreenElement }
 function onKeydown(e: KeyboardEvent) {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
   switch (e.key) {

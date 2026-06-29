@@ -72,14 +72,35 @@ func main() {
 		}
 	}()
 
+	// ── Background workers (import, notifications, etc.) ──
+	workerCtx, cancelWorkers := context.WithCancel(context.Background())
+	defer cancelWorkers()
+
+	workerContainer := app.NewWorkerContainer(application)
+	go func() {
+		log.Info("starting background workers",
+			zap.String("env", application.Config.App.Env),
+		)
+		if err := workerContainer.Run(workerCtx); err != nil && err != context.Canceled {
+			log.Fatal("background workers failed", zap.Error(err))
+		}
+	}()
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
 
 	log.Info("shutdown signal received")
 
+	// Cancel workers first so they stop accepting jobs
+	cancelWorkers()
+
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), application.Config.App.ShutdownTimeout)
 	defer cancel()
+
+	if err := workerContainer.Shutdown(shutdownCtx); err != nil {
+		log.Error("worker shutdown failed", zap.Error(err))
+	}
 
 	if err := application.Shutdown(shutdownCtx); err != nil {
 		log.Error("graceful shutdown failed", zap.Error(err))

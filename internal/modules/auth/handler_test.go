@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	apperrors "music/internal/common/errors"
 	"music/internal/common/validator"
 
 	"github.com/gin-gonic/gin"
@@ -76,7 +76,7 @@ func setupAuthTest() (*Handler, *mockAuthService, *gin.Engine) {
 	h.logger = zap.NewNop()
 
 	r := gin.New()
-	rg := r.Group("/api/v1/auth")
+	rg := r.Group("/api/v1") // match production: RegisterRoutes is called with /api/v1 group
 	RegisterRoutes(rg, h, func(c *gin.Context) { c.Next() })
 	return h, mockSvc, r
 }
@@ -132,7 +132,7 @@ func TestRegister_ValidationError(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 }
 
 func TestLogin_Success(t *testing.T) {
@@ -174,7 +174,7 @@ func TestLogin_InvalidCredentials(t *testing.T) {
 	}
 
 	mockSvc.On("Login", mock.Anything, reqBody, mock.Anything, mock.Anything).
-		Return(AuthResponse{}, errors.New("invalid credentials"))
+		Return(AuthResponse{}, apperrors.Unauthorized("invalid credentials", nil))
 
 	body, _ := json.Marshal(reqBody)
 	w := httptest.NewRecorder()
@@ -207,13 +207,71 @@ func TestRefresh_Success(t *testing.T) {
 	mockSvc.AssertExpectations(t)
 }
 
+// Regression test for Bug #3: empty login body must return 400, not 500
+func TestLogin_EmptyBody_Returns400(t *testing.T) {
+	_, _, r := setupAuthTest()
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/v1/auth/login", bytes.NewReader([]byte("{}")))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code, "empty login body should return 400, not 500")
+
+	// Also test completely missing body
+	w2 := httptest.NewRecorder()
+	req2, _ := http.NewRequest("POST", "/api/v1/auth/login", bytes.NewReader([]byte("")))
+	req2.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w2, req2)
+
+	assert.Equal(t, http.StatusBadRequest, w2.Code, "missing login body should return 400, not 500")
+}
+
+// Regression test for Bug #2: empty refresh body must not return 500
+func TestRefresh_EmptyBody_Returns422(t *testing.T) {
+	_, _, r := setupAuthTest()
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/v1/auth/refresh", bytes.NewReader([]byte("{}")))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	// {} passes binding (zero values), fails validation → 422, not 500
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code, "empty refresh body should return 422, not 500")
+}
+
+// Regression test for Bug #4: verify routes register only in RegisterRoutes, not in bootstrap
+func TestAuth_RoutesAreRegistered(t *testing.T) {
+	_, _, r := setupAuthTest()
+
+	// Verify all auth endpoints exist (return 4xx from validation, not 404)
+	tests := []struct {
+		method string
+		path   string
+	}{
+		{"POST", "/api/v1/auth/login"},
+		{"POST", "/api/v1/auth/refresh"},
+		{"POST", "/api/v1/auth/register"},
+		{"POST", "/api/v1/auth/logout"},
+	}
+
+	for _, tt := range tests {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(tt.method, tt.path, bytes.NewReader([]byte("{}")))
+		req.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(w, req)
+		assert.NotEqual(t, http.StatusNotFound, w.Code,
+			"route %s %s should be registered (got %d)", tt.method, tt.path, w.Code)
+	}
+}
+
 func TestRefresh_InvalidToken(t *testing.T) {
 	_, mockSvc, r := setupAuthTest()
 
 	reqBody := RefreshRequest{RefreshToken: "expired_token"}
 
 	mockSvc.On("Refresh", mock.Anything, RefreshRequest{RefreshToken: "expired_token"}, mock.Anything, mock.Anything).
-		Return(AuthResponse{}, errors.New("invalid or expired refresh token"))
+		Return(AuthResponse{}, apperrors.Unauthorized("invalid or expired refresh token", nil))
 
 	body, _ := json.Marshal(reqBody)
 	w := httptest.NewRecorder()

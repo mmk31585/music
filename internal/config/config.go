@@ -21,6 +21,7 @@ type Config struct {
 	AI         AIConfig
 	Payment    PaymentConfig
 	MLService  MLServiceConfig
+	OpenRouter OpenRouterConfig
 
 	// Legacy song module compatibility. The active upload path lives in
 	// internal/modules/media, but these keep old packages buildable until the
@@ -48,6 +49,7 @@ func Load() (*Config, error) {
 		AI:         loadAIConfig(),
 		Payment:    loadPaymentConfig(),
 		MLService:  loadMLServiceConfig(),
+		OpenRouter: loadOpenRouterConfig(),
 	}
 
 	cfg.applyLegacyUploadCompatibility()

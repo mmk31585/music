@@ -2,6 +2,7 @@ package enrichment
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 )
 
@@ -39,6 +40,16 @@ func (m *mockLastFM) SearchTrack(ctx context.Context, query TrackQuery) (*LastFM
 	return m.result, nil
 }
 
+func (m *mockLastFM) SearchArtist(ctx context.Context, name string) (*LastFMResult, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.callCount++
+	if m.err != nil {
+		return nil, m.err
+	}
+	return m.result, nil
+}
+
 type mockSpotify struct {
 	mu        sync.Mutex
 	result    *SpotifyResult
@@ -54,6 +65,11 @@ func (m *mockSpotify) SearchTrack(ctx context.Context, query TrackQuery) (*Spoti
 		return nil, m.err
 	}
 	return m.result, nil
+}
+
+func (m *mockSpotify) SearchArtistImage(ctx context.Context, name string) (string, error) {
+	// For tests, just return empty — we don't test artist image enrichment here
+	return "", nil
 }
 
 func fullMusicBrainzResult() *MusicBrainzResult {
@@ -103,7 +119,7 @@ func fullLRCLibResult() *LRCLibResult {
 		TrackName:    "Test Song",
 		ArtistName:   "Test Artist",
 		AlbumName:    "Test Album",
-		Duration:     240,
+		Duration:     json.Number("240"),
 		Synced:       true,
 		SyncedLyrics: "[00:00.00]Test lyric line\n[00:05.00]Another test line",
 	}

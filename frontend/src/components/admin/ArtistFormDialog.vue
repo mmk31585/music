@@ -86,24 +86,43 @@
 
       <!-- Image Preview -->
       <div
-        v-if="form.image_url"
+        v-if="form.image_url && form.image_url.length > 5"
         class="h-32 overflow-hidden rounded-xl border border-white/6 bg-white/2"
       >
         <img
           :src="form.image_url"
-          :alt="form.name"
+          :alt="form.name || 'Artist'"
           class="h-full w-full object-cover"
           @error="onImageError"
         />
+      </div>
+      <div
+        v-else
+        class="flex h-32 items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/2"
+      >
+        <div class="text-center">
+          <i class="pi pi-image text-2xl text-slate-500"></i>
+          <p class="mt-1 text-xs text-slate-500">No image</p>
+        </div>
       </div>
     </form>
 
     <template #footer>
       <div class="flex justify-end gap-2">
         <Button
+          v-if="isEditing"
+          icon="pi pi-refresh"
+          label="Enrich data"
+          severity="info"
+          text
+          :loading="enriching"
+          class="mr-auto text-slate-500! hover:text-emerald-400!"
+          @click="handleEnrich"
+        />
+        <Button
           label="Cancel"
           text
-          :disabled="saving"
+          :disabled="saving || enriching"
           class="text-slate-400! hover:text-white!"
           @click="visible = false"
         />
@@ -123,6 +142,7 @@
 import { reactive, computed, watch, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useMediaApi } from '@/services/api/media/routes'
+import { useArtistsApi } from '@/services/api/catalog/artists'
 import type { Artist } from '@/services/api/catalog/artists'
 import type { ArtistFormPayload } from '@/composables/admin/useAdminArtists'
 
@@ -131,17 +151,20 @@ const visible = defineModel<boolean>({ default: false })
 const props = defineProps<{
   artist?: Artist | null
   saving?: boolean
+  prefillName?: string
 }>()
 
 const emit = defineEmits<{
   submit: [payload: ArtistFormPayload]
 }>()
 
-const isEditing = computed(() => props.artist!!)
+const isEditing = computed(() => props.artist!)
 const toast = useToast()
 const mediaApi = useMediaApi()
+const artistsApi = useArtistsApi()
 const fileInput = ref<HTMLInputElement | null>(null)
 const uploading = ref(false)
+const enriching = ref(false)
 
 const form = reactive<ArtistFormPayload>({
   name: '',
@@ -152,14 +175,14 @@ const form = reactive<ArtistFormPayload>({
 const errors = reactive<Record<string, string>>({})
 
 watch(
-  () => props.artist,
-  (artist) => {
+  [() => props.artist, () => props.prefillName],
+  ([artist, prefillName]) => {
     if (artist) {
       form.name = artist.name
       form.bio = artist.bio
       form.image_url = artist.image_url
     } else {
-      form.name = ''
+      form.name = prefillName ?? ''
       form.bio = null
       form.image_url = null
     }
@@ -169,7 +192,7 @@ watch(
 )
 
 watch(visible, (val) => {
-  if (val!) {
+  if (val) {
     clearErrors()
   }
 })
@@ -180,7 +203,7 @@ function clearErrors() {
 
 function validate(): boolean {
   clearErrors()
-  if (form.name!?.trim()) {
+  if (!form.name?.trim()) {
     errors.name = 'Name is required'
     return false
   }
@@ -188,7 +211,7 @@ function validate(): boolean {
 }
 
 function handleSubmit() {
-  if (validate!()) return
+  if (!validate()) return
   emit('submit', { ...form })
 }
 
@@ -204,7 +227,7 @@ function triggerFileInput() {
 async function handleFileUpload(e: Event) {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0]
-  if (file!) return
+  if (!file) return
 
   uploading.value = true
   try {
@@ -218,6 +241,31 @@ async function handleFileUpload(e: Event) {
   } finally {
     uploading.value = false
     input.value = ''
+  }
+}
+
+// ── Enrich from external source ──
+async function handleEnrich() {
+  if (!props.artist?.id) return
+  enriching.value = true
+  try {
+    await artistsApi.adminEnrichArtist(props.artist.id)
+    // Refetch the artist from the API to sync the form with persisted state
+    const refreshed = await artistsApi.getArtist(props.artist.id)
+    if (refreshed) {
+      form.name = refreshed.name
+      if (refreshed.bio) form.bio = refreshed.bio
+      else form.bio = null
+      // Only set image_url if it's a real URL (not empty string)
+      if (refreshed.image_url && refreshed.image_url.length > 5) {
+        form.image_url = refreshed.image_url
+      }
+    }
+    toast.add({ severity: 'success', summary: 'Enriched', detail: 'Artist data fetched from external sources', life: 3000 })
+  } catch {
+    toast.add({ severity: 'error', summary: 'Enrich failed', detail: 'Could not enrich artist. Check external service connectivity.', life: 4000 })
+  } finally {
+    enriching.value = false
   }
 }
 </script>

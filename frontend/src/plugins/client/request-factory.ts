@@ -183,14 +183,23 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
     type DataType = IsArray extends true ? T[] : T
 
     function isPaginatedResponse(value: any): value is PaginatedProps<T> {
-      return (
-        value !== null &&
-        typeof value === 'object' &&
-        Array.isArray((value as Record<string, unknown>).items) &&
-        // Require a total count — excludes non-paginated objects that happen
-        // to have an `items` array (e.g. RecommendationResponse: { type, items, limit })
-        typeof (value as Record<string, unknown>).total === 'number'
-      ) as boolean
+      if (value === null || typeof value !== 'object') return false
+      if (!Array.isArray((value as Record<string, unknown>).items)) return false
+
+      const v = value as Record<string, unknown>
+
+      // Detect page-based pagination (total + page + limit | page_size) —
+      // the standard ingestion/catalog/auth-admin pattern.
+      if (typeof v.total === 'number') return true
+
+      // Detect total_count (snake_case variant used by social/follow).
+      if (typeof v.total_count === 'number') return true
+
+      // Detect offset-based pagination (count + limit + offset) —
+      // used by video, reactions, moderation (flat; not nested in pagination meta).
+      if (typeof v.count === 'number' && typeof v.limit === 'number') return true
+
+      return false
     }
 
     function invalidZodSchema(
@@ -238,7 +247,10 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
         .then((response) => {
           // The server may wrap the payload in a `data` field or return it directly.
           const raw = response.data ?? {}
-          let dataValue = raw?.data ?? raw
+          // Only use fallback to `raw` when the response doesn't have its own `data` key.
+          // If `data` exists but is null/undefined, use empty object/array instead of the
+          // whole response wrapper (which would fail Zod schema validation downstream).
+          let dataValue = Object.prototype.hasOwnProperty.call(raw, 'data') ? (raw.data ?? {}) : raw
 
           // Merge pagination metadata when the backend sends data as a plain
           // array with pagination info in a top-level `meta` field.
@@ -255,6 +267,16 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
 
           // ----- zod validation -----------------------------------------
           if (resultConfig?.schema) {
+            // Skip schema validation for error responses. When the
+            // backend explicitly signals failure (success=false), there
+            // is no data payload to validate — the error object would
+            // fail every field check and produce a misleading schema
+            // error like "expected string, received undefined" for
+            // every field.
+            if (raw.success === false) {
+              // Fall through: resolve with the error payload as-is,
+              // without Zod validation.
+            } else {
             const schema = resultConfig.schema as z.ZodTypeAny
             const data = payload.data
 
@@ -272,8 +294,23 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
               }
 
               // Extract meta from either explicit meta field or flattened pagination fields,
-              // then spread it alongside items for caller convenience (items + total + page + limit).
-              const meta = (data.meta ?? (typeof data.total === 'number' ? { total: data.total, page: data.page, limit: data.limit } : {})) as Record<string, unknown>
+              // then spread it alongside items for caller convenience.
+              // Supports:
+              //   - page-based pagination: { total, page, limit|page_size }
+              //   - total_count variant: { total_count, limit, offset } (social/follow)
+              //   - offset-based pagination: { count, limit, offset, has_more }
+              let meta: Record<string, unknown>
+              if (data.meta) {
+                meta = data.meta as unknown as Record<string, unknown>
+              } else if (typeof data.total === 'number') {
+                meta = { total: data.total, page: data.page, limit: data.limit ?? data.page_size }
+              } else if (typeof data.total_count === 'number') {
+                meta = { total_count: data.total_count, limit: data.limit, offset: data.offset }
+              } else if (typeof data.count === 'number') {
+                meta = { count: data.count, limit: data.limit, offset: data.offset, has_more: data.has_more }
+              } else {
+                meta = {}
+              }
 
               payload.data = {
                 ...meta,
@@ -295,12 +332,17 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
               // If it succeeded, replace `payload.data` with the parsed value
               payload.data = validation.data as DataType
             }
+            } // end else (raw.success !== false)
           }
 
           // ----- total count logic --------------------------------------
           let total = 0
           if (raw?.meta?.total) {
             total = raw.meta.total
+          } else if (typeof raw?.meta?.count === 'number') {
+            total = raw.meta.count
+          } else if (typeof (payload.data as Record<string, unknown>)?.count === 'number') {
+            total = (payload.data as Record<string, unknown>).count as number
           } else if (Array.isArray(payload.data)) {
             total = payload.data.length
           } else if (payload.data && typeof payload.data === 'object') {
@@ -336,7 +378,9 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
           const errRaw = errResp?.data ?? {}
           const errPayload: ApiResponseProps = {
             type: errRaw?.type,
-            data: errRaw?.data ?? errRaw,
+            // Same safety as the success path: only use fallback when the
+            // error response genuinely has no `data` key of its own.
+            data: Object.prototype.hasOwnProperty.call(errRaw, 'data') ? (errRaw.data ?? {}) : errRaw,
             message: errRaw?.message ?? errResp?.statusText ?? error?.message ?? 'خطای ناشناخته',
             run_time: errRaw?.run_time,
           }
