@@ -51,6 +51,15 @@ jobs:
         working-directory: frontend
         run: npm run lint
 
+      - name: go mod tidy check
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum || {
+            echo "FAIL: go.mod or go.sum has uncommitted changes after 'go mod tidy'"
+            echo "Run 'go mod tidy' locally and commit the changes."
+            exit 1
+          }
+
   # ── Security Scanning ─────────────────────────────────────────────
   security:
     name: Security Scan
@@ -185,6 +194,39 @@ jobs:
 
       - name: Build
         run: npm run build-only
+
+  # ── ML Service Lint ──────────────────────────────────────────────
+  ml-lint:
+    name: ML Service Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: moja-ml-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: moja-ml-service/pyproject.toml
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]" 2>/dev/null || pip install pyright ruff
+
+      - name: Python syntax check
+        run: python -m py_compile $(find . -name '*.py' -not -path './.venv/*' -not -path './__pycache__/*')
+
+      - name: Ruff lint
+        continue-on-error: true
+        run: python -m ruff check . --ignore=E501,F401
 
   # ── Docker Build & Push ───────────────────────────────────────────
   docker:

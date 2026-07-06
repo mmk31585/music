@@ -21,14 +21,21 @@
           <InputText
             id="register-display-name"
             v-model.trim="form.displayName"
+            autocomplete="name"
             placeholder="Your name"
             class="auth-input w-full pl-10"
             :class="{ 'ring-1 ring-red-500/50': errors.displayName }"
-            aria-label="Display name"
+            :aria-describedby="errors.displayName ? 'register-display-name-error' : undefined"
+            aria-required="true"
           />
         </span>
         <Transition name="fade-slide">
-          <small v-if="errors.displayName" class="mt-1 block text-xs text-red-400" role="alert">
+          <small
+            v-if="errors.displayName"
+            id="register-display-name-error"
+            class="mt-1 block text-xs text-red-400"
+            role="alert"
+          >
             {{ errors.displayName }}
           </small>
         </Transition>
@@ -44,14 +51,21 @@
           <InputText
             id="register-username"
             v-model.trim="form.username"
+            autocomplete="username"
             placeholder="your_username"
             class="auth-input w-full pl-10"
             :class="{ 'ring-1 ring-red-500/50': errors.username }"
-            aria-label="Username"
+            :aria-describedby="errors.username ? 'register-username-error' : undefined"
+            aria-required="true"
           />
         </span>
         <Transition name="fade-slide">
-          <small v-if="errors.username" class="mt-1 block text-xs text-red-400" role="alert">
+          <small
+            v-if="errors.username"
+            id="register-username-error"
+            class="mt-1 block text-xs text-red-400"
+            role="alert"
+          >
             {{ errors.username }}
           </small>
         </Transition>
@@ -68,14 +82,21 @@
             id="register-email"
             v-model.trim="form.email"
             type="email"
+            autocomplete="email"
             placeholder="you@example.com"
             class="auth-input w-full pl-10"
             :class="{ 'ring-1 ring-red-500/50': errors.email }"
-            aria-label="Email"
+            :aria-describedby="errors.email ? 'register-email-error' : undefined"
+            aria-required="true"
           />
         </span>
         <Transition name="fade-slide">
-          <small v-if="errors.email" class="mt-1 block text-xs text-red-400" role="alert">
+          <small
+            v-if="errors.email"
+            id="register-email-error"
+            class="mt-1 block text-xs text-red-400"
+            role="alert"
+          >
             {{ errors.email }}
           </small>
         </Transition>
@@ -91,17 +112,24 @@
           <Password
             id="register-password"
             v-model="form.password"
+            autocomplete="new-password"
             placeholder="Create password"
             class="w-full"
             input-class="auth-input w-full pl-10"
             :feedback="true"
             toggle-mask
             :class="{ 'ring-1 ring-red-500/50': errors.password }"
-            aria-label="Password"
+            :aria-describedby="errors.password ? 'register-password-error' : undefined"
+            aria-required="true"
           />
         </span>
         <Transition name="fade-slide">
-          <small v-if="errors.password" class="mt-1 block text-xs text-red-400" role="alert">
+          <small
+            v-if="errors.password"
+            id="register-password-error"
+            class="mt-1 block text-xs text-red-400"
+            role="alert"
+          >
             {{ errors.password }}
           </small>
         </Transition>
@@ -182,7 +210,7 @@ const { form, errors, apiError, loading, onSubmit } = useRegisterForm()
 }
 
 :deep(.auth-input::placeholder) {
-  color: rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.4) !important;
 }
 
 :deep(.auth-btn) {

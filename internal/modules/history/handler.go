@@ -58,6 +58,62 @@ func (h *Handler) GetHistory(c *gin.Context) {
 	})
 }
 
+// DeleteHistoryItem godoc
+// @Summary Delete a history entry
+// @Description Removes a single listening history entry by its ID.
+// @Tags history
+// @Produce json
+// @Security Bearer
+// @Param id path string true "History entry ID"
+// @Success 204
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /history/{id} [delete]
+func (h *Handler) DeleteHistoryItem(c *gin.Context) {
+	userID, ok := getUserIDFromGin(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	historyID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid history id"})
+		return
+	}
+
+	if err := h.service.DeleteItem(c.Request.Context(), userID, historyID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "history entry not found"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+// ClearHistory godoc
+// @Summary Clear all history
+// @Description Removes all listening history for the current user.
+// @Tags history
+// @Produce json
+// @Security Bearer
+// @Success 204
+// @Failure 401 {object} map[string]interface{}
+// @Router /history [delete]
+func (h *Handler) ClearHistory(c *gin.Context) {
+	userID, ok := getUserIDFromGin(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	if err := h.service.ClearAll(c.Request.Context(), userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to clear history"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
 func getUserIDFromGin(c *gin.Context) (uuid.UUID, bool) {
 	value, exists := c.Get("auth_user_id")
 	if !exists {

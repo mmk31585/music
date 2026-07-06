@@ -5,6 +5,7 @@ import (
 	"errors"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
@@ -56,7 +57,7 @@ func TestService_GenerateEmbedding(t *testing.T) {
 	repo := NewRepository(sqlxDB)
 	svc := NewService(repo, &aiClient{embedding: []float64{0.1, 0.2, 0.3}}, zap.NewNop(), true)
 
-	result, err := svc.GenerateEmbedding(context.Background(), "test-id")
+	result, err := svc.GenerateEmbedding(context.Background(), uuid.New().String())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,8 +88,8 @@ func TestService_GeneratePlaylist_FallbackSelect(t *testing.T) {
 		AddRow("2", "B", "Artist", "Album", "Rock", 180, "", 0.3, 0.4, 90.0, 0.3)
 	mock.ExpectQuery(`SELECT t\.id::text`).WillReturnRows(moodRow)
 
-	// GetTracksByIDs — use AnyArg for the []string/ANY($1) pq driver issue
-	mock.ExpectQuery(`WHERE t\.id = ANY`).WithArgs(sqlmock.AnyArg()).
+	// GetTracksByIDs
+	mock.ExpectQuery(`WHERE t\.id IN \(`).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "title", "artist", "album", "genre", "duration", "cover_url"}).
 			AddRow("1", "A", "Artist", "Album", "Pop", 200, ""))
 
@@ -132,7 +133,7 @@ func TestService_GeneratePlaylist_AllFallbackLevels(t *testing.T) {
 	// filterTracksByMood keeps track 1 (calm: energy 0-0.35, valence 0.3-0.7)
 	// AI fails → fallbackSelect picks from filtered candidates
 	// GetTracksByIDs for the selected IDs
-	mock.ExpectQuery(`WHERE t\.id = ANY`).
+	mock.ExpectQuery(`WHERE t\.id IN \(`).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "title", "artist", "album", "genre", "duration", "cover_url"}).
 			AddRow("1", "A", "Artist", "Album", "Pop", 200, ""))
 
@@ -185,7 +186,7 @@ func TestService_GetSimilarByMood_ByTrack(t *testing.T) {
 
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT track_id, mood_tags, energy, valence, tempo`)).
 		WillReturnRows(sqlmock.NewRows([]string{"track_id", "mood_tags", "energy", "valence", "tempo", "danceability", "acousticness", "instrumentalness", "liveness", "speechiness", "updated_at"}).
-			AddRow(uuid.New(), `[]`, 0.5, 0.5, 120.0, 0.5, 0.3, 0.1, 0.3, 0.1, nil))
+			AddRow(uuid.New(), []byte(`[]`), 0.5, 0.5, 120.0, 0.5, 0.3, 0.1, 0.3, 0.1, time.Now()))
 
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT t.id, t.title FROM tracks t`)).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "title"}).AddRow("2", "B"))
@@ -211,7 +212,7 @@ func TestService_GetSimilarByEmbedding(t *testing.T) {
 
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT track_id, embedding, model_version, updated_at FROM track_embeddings_text`)).
 		WillReturnRows(sqlmock.NewRows([]string{"track_id", "embedding", "model_version", "updated_at"}).
-			AddRow(uuid.New(), "{0.1,0.2}", "v1", nil))
+			AddRow(uuid.New(), "{0.1,0.2}", "v1", time.Now()))
 
 	mock.ExpectQuery(regexp.QuoteMeta(`FROM track_embeddings_audio te`)).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "title", "artist", "album", "genre", "duration", "cover_url"}).

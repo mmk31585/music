@@ -156,7 +156,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { usePlayer } from '@/composables/player'
-import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
+import { buildPlaybackTrack } from '@/factories/playbackTrack'
 import { useSocialShare } from '@/composables/social'
 import { onImgError } from '@/utils/helpers'
 import { formatDuration } from '@/utils/format'
@@ -191,25 +191,19 @@ const emit = defineEmits<{
 }>()
 
 const player = usePlayer()
-const playerApi = usePlayerApi()
 const { copyLink } = useSocialShare()
 
 const isCurrentTrack = computed(() => player.currentTrack.value?.id === props.trackId)
 
-function buildPlaybackTrack(): PlaybackTrack {
-  return {
+function handlePlay() {
+  const pb = buildPlaybackTrack({
     id: props.trackId,
     title: props.title,
-    artistName: props.artistName || 'Unknown',
-    albumTitle: props.albumTitle || null,
-    coverUrl: props.coverUrl || null,
-    durationSeconds: props.durationSeconds ?? null,
-    streamUrl: playerApi.getTrackStreamUrl(props.trackId),
-  }
-}
-
-function handlePlay() {
-  const pb = buildPlaybackTrack()
+    artist_name: props.artistName || 'Unknown',
+    album_title: props.albumTitle || null,
+    cover_url: props.coverUrl || null,
+    duration_seconds: props.durationSeconds ?? null,
+  })
   if (isCurrentTrack.value && player.isPlaying.value) {
     player.pause()
   } else {
@@ -219,7 +213,14 @@ function handlePlay() {
 }
 
 function addToQueue() {
-  const pb = buildPlaybackTrack()
+  const pb = buildPlaybackTrack({
+    id: props.trackId,
+    title: props.title,
+    artist_name: props.artistName || 'Unknown',
+    album_title: props.albumTitle || null,
+    cover_url: props.coverUrl || null,
+    duration_seconds: props.durationSeconds ?? null,
+  })
   player.updateQueue([...player.queue.value, pb])
   emit('update:visible', false)
 }

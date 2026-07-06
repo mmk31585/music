@@ -47,6 +47,11 @@ export function useAlbum(id: string | number) {
 
     try {
       const albumData = await albumsApi.getAlbum(id)
+
+      if (!albumData) {
+        throw new Error('Album not found')
+      }
+
       album.value = albumData
 
       const [tracksData, likedAlbums] = await Promise.all([

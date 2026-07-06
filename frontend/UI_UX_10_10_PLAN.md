@@ -1,4 +1,4 @@
-# 10/10 UI/UX Plan — Soundify
+# 10/10 UI/UX Plan — Muse
 
 Target: All categories → 10/10. Priority: Player experience + Mobile responsiveness.
 

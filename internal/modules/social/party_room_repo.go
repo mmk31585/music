@@ -46,6 +46,18 @@ func (r *repository) ListActiveParties(ctx context.Context, limit, offset int) (
 	return items, err
 }
 
+func (r *repository) GetPartyHost(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	var hostID uuid.UUID
+	err := r.db.GetContext(ctx, &hostID, `SELECT host_id FROM listening_parties WHERE id = $1`, id)
+	return hostID, err
+}
+
+func (r *repository) GetRoomHost(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	var hostID uuid.UUID
+	err := r.db.GetContext(ctx, &hostID, `SELECT host_id FROM live_rooms WHERE id = $1`, id)
+	return hostID, err
+}
+
 func (r *repository) UpdatePartyStatus(ctx context.Context, id uuid.UUID, status string, trackID *uuid.UUID) error {
 	if trackID != nil {
 		_, err := r.db.ExecContext(ctx, `

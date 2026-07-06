@@ -83,6 +83,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from 'primevue/usetoast'
 import { useGenresApi } from '@/services/api/catalog/genres'
 import { client } from '@/composables'
 
@@ -92,6 +93,7 @@ interface GenreItem {
 }
 
 const router = useRouter()
+const toast = useToast()
 const genresApi = useGenresApi()
 
 const genres = ref<GenreItem[]>([])
@@ -127,6 +129,12 @@ async function saveGenres() {
 
   try {
     await client.post('/onboarding/genres', { genre_ids: selectedIds.value })
+    toast.add({
+      severity: 'success',
+      summary: 'Saved',
+      detail: 'Your genre preferences have been saved.',
+      life: 3000,
+    })
     await router.replace({ name: 'app.home' })
   } catch {
     apiError.value = 'ذخیره‌سازی با مشکل مواجه شد. دوباره تلاش کن.'
@@ -135,7 +143,16 @@ async function saveGenres() {
   }
 }
 
-function skip() {
+async function skip() {
+  // Auto-save with a few popular defaults so recommendations work
+  if (genres.value.length > 0) {
+    const autoSelect = genres.value.slice(0, 3).map((g) => g.id)
+    try {
+      await client.post('/onboarding/genres', { genre_ids: autoSelect })
+    } catch {
+      // Silently ignore — user chose to skip, no need to block navigation
+    }
+  }
   router.replace({ name: 'app.home' })
 }
 </script>

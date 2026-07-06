@@ -175,7 +175,32 @@ func (r *Repository) UpdateSignalExplicitLike(ctx context.Context, userID, track
 			ORDER BY played_at DESC
 			LIMIT 1
 		)
-	`)
+	`, userID, trackID)
+	return err
+}
+
+// DeleteByID removes a single listening history entry by its ID.
+func (r *Repository) DeleteByID(ctx context.Context, userID, historyID uuid.UUID) error {
+	result, err := r.db.ExecContext(ctx, `
+		DELETE FROM listening_history
+		WHERE id = $1 AND user_id = $2
+	`, historyID, userID)
+	if err != nil {
+		return err
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return errors.New("history entry not found")
+	}
+	return nil
+}
+
+// ClearAll removes all listening history for a user.
+func (r *Repository) ClearAll(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx, `
+		DELETE FROM listening_history
+		WHERE user_id = $1
+	`, userID)
 	return err
 }
 

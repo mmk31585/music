@@ -355,6 +355,8 @@ func (r *Repository) Random(ctx context.Context, limit int) ([]Track, error) {
 			updated_at
 		FROM tracks
 		WHERE is_public = TRUE
+		-- Random sampling: filter ~95% of rows before sort to avoid full-table seq scan
+		AND random() < 0.05
 		ORDER BY RANDOM()
 		LIMIT $1
 	`, limit)

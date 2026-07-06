@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { PlaybackTrack } from '@/services/api/player/types'
+import { buildPlaybackTrack, mapToPlaybackTracks } from '@/factories/playbackTrack'
 import { usePlayerApi } from '@/services/api/player/routes'
 import { useTracksApi } from '@/services/api/catalog/tracks'
 import { useRecommendationsApi } from '@/services/api/recommendation'
@@ -13,12 +14,36 @@ import {
   type RepeatMode,
 } from '@/services/player'
 import { audioEngine } from '@/services/player/audio-engine'
+import { queueManager } from '@/services/player/queue-manager'
 
 const QUEUE_STORAGE_KEY = 'player-queue-track-ids'
+const QUEUE_META_KEY = 'player-queue-metadata'
+const SESSION_STORAGE_KEY = 'player-session-state'
 
 interface QueuePersistData {
   trackIds: string[]
   hydratedAt: number
+}
+
+/** Serialisable subset of PlaybackTrack for cache fallback */
+interface CachedTrackMeta {
+  id: string
+  title: string
+  artistName: string
+  albumTitle?: string | null
+  coverUrl?: string | null
+  durationSeconds?: number | null
+  streamUrl: string
+}
+
+interface SessionPersistData {
+  currentTrackId: string | null
+  currentTime: number
+  updatedAt: number
+  isPlaying: boolean
+  shuffleMode: ShuffleMode
+  repeatMode: RepeatMode
+  currentIndex: number
 }
 
 export const usePlayerStore = defineStore('player', () => {
@@ -124,6 +149,7 @@ const repeatMode = ref<RepeatMode>('off')
   let musicStatusTimer: ReturnType<typeof setTimeout> | null = null
   let pendingStatusTrackId: string | null = null
   let _beforeUnloadHandler: (() => void) | null = null
+  let _pageHideHandler: (() => void) | null = null
 
   /**
    * Register the pagehide handler — must be called from a component's
@@ -197,8 +223,8 @@ const repeatMode = ref<RepeatMode>('off')
     }, 3000)
   }
 
-  /** Helper: map raw API track data to PlaybackTrack shape */
-  function mapToPlaybackTrack(t: {
+  /** @deprecated Use buildPlaybackTrack from @/factories/playbackTrack instead */
+  function mapItemToPlaybackTrack(item: {
     id: string | number
     title?: string
     artist_name?: string | null
@@ -207,27 +233,7 @@ const repeatMode = ref<RepeatMode>('off')
     duration_seconds?: number | null
     audio_url?: string | null
   }): PlaybackTrack {
-    return {
-      id: String(t.id),
-      title: t.title ?? 'Unknown Track',
-      artistName: t.artist_name ?? 'Unknown artist',
-      albumTitle: t.album_title ?? null,
-      coverUrl: t.cover_url ?? null,
-      durationSeconds: t.duration_seconds ?? null,
-      streamUrl: t.audio_url ?? '',
-    }
-  }
-
-  function mapItemToPlaybackTrack(item: {
-    id: string
-    title?: string
-    artist_name?: string | null
-    album_title?: string | null
-    cover_url?: string | null
-    duration_seconds?: number | null
-    audio_url?: string | null
-  }): PlaybackTrack {
-    return mapToPlaybackTrack(item)
+    return buildPlaybackTrack(item)
   }
 
   function initialize() {
@@ -238,27 +244,73 @@ const repeatMode = ref<RepeatMode>('off')
       fetchTrack: (id: string) => playerApi.getPlaybackTrack(id),
       fetchRandomTracks: (limit: number) =>
         tracksApi.getRandomTracks({ limit }).then((tracks) =>
-          tracks.map(mapToPlaybackTrack),
+          mapToPlaybackTracks(tracks),
         ),
       fetchSimilarTracks: (trackId: string, limit: number) =>
         recsApi.getSimilar(trackId, { limit }).then((res) =>
-          (res.items || []).map(mapItemToPlaybackTrack),
+          mapToPlaybackTracks(res.items || []),
         ),
       onPlayHistory: (trackId: string, dur: number) => {
-        libraryApi.addPlayHistory({ track_id: trackId, duration: dur })
+        libraryApi.addPlayHistory({ track_id: trackId, duration: dur }).catch(() => { /* silent fail */ })
       },
     })
 
     engine.setVolume(volume.value)
     if (muted.value) engine.toggleMute()
+    if (crossfadeDuration.value > 0) {
+      engine.setCrossfadeDuration(crossfadeDuration.value)
+    }
 
-    // Restore persisted queue (async, best-effort)
-    restorePersistedQueue().then((restored) => {
+    // Restore persisted queue + session (async, best-effort)
+    restorePersistedQueue().then(async (restored) => {
       if (restored.length > 0) {
         queue.value = restored
         engine?.updateQueue(restored)
       }
+
+      // Try to auto-resume playback from saved session
+      const sessionRestored = await restoreSession()
+
+      // If session had a current track not in the queue, insert it at position 0
+      // (This handles the case where the queue was saved but current track was elsewhere)
+      if (!sessionRestored) {
+        try {
+          const raw = localStorage.getItem(SESSION_STORAGE_KEY)
+          if (raw) {
+            const data = JSON.parse(raw) as SessionPersistData
+            if (data.currentTrackId && queue.value.length > 0) {
+              // Check if current track is already in queue
+              const inQueue = queue.value.some(t => t.id === data.currentTrackId)
+              if (!inQueue) {
+                // Try to fetch and prepend
+                const track = await playerApi.getPlaybackTrack(data.currentTrackId)
+                if (track) {
+                  queue.value = [track, ...queue.value]
+                  engine?.updateQueue(queue.value)
+                  currentTrack.value = track
+                  currentTime.value = data.currentTime
+                }
+              } else {
+                // Already in queue — find its index and seek
+                currentTime.value = data.currentTime
+              }
+            }
+          }
+        } catch {
+          // Best-effort
+        }
+      }
     })
+
+    // Persist session on page hide (covers refresh, tab switch, navigate away)
+    if (typeof window !== 'undefined') {
+      _pageHideHandler = () => {
+        if (currentTrack.value) {
+          persistSession()
+        }
+      }
+      window.addEventListener('pagehide', _pageHideHandler)
+    }
 
     unsubs.push(
       engine.on('trackchange', (track) => {
@@ -270,6 +322,14 @@ const repeatMode = ref<RepeatMode>('off')
     unsubs.push(
       engine.on('playstate', (state) => {
         isPlaying.value = state === 'playing'
+        // Start/stop periodic session persistence
+        if (isPlaying.value) {
+          startSessionPersist()
+        } else {
+          stopSessionPersist()
+          // Save final state on pause/stop
+          if (currentTrack.value) persistSession()
+        }
       }),
     )
 
@@ -317,8 +377,19 @@ const repeatMode = ref<RepeatMode>('off')
           return
         }
 
-        // Skip to the next track in queue (don't retry — if the backend
-        // is down every retry will fail and the queue advances anyway)
+        // Exponential backoff: 1s, 2s, then skip
+        const backoffMs = Math.min(1000 * Math.pow(2, consecutiveFailures - 1), 4000)
+        if (consecutiveFailures < maxConsecutiveFailures - 1 && currentTrack.value?.streamUrl) {
+          if (import.meta.env.DEV) {
+            console.warn(`[Player] Retrying track in ${backoffMs}ms: ${currentTrack.value.title}`)
+          }
+          setTimeout(() => {
+            engine?.play(currentTrack.value!.streamUrl!).catch(() => {})
+          }, backoffMs)
+          return
+        }
+
+        // Last retry failed — skip to the next track
         if (import.meta.env.DEV) {
           console.warn(`[Player] Skipping track due to error: ${currentTrack.value?.title ?? msg}`)
         }
@@ -345,7 +416,8 @@ const repeatMode = ref<RepeatMode>('off')
     return fallback
   }
 
-  // ── Queue persistence (track IDs only) ──────────────────────────────
+  // ── Queue persistence ──────────────────────────────────────────────
+  /** Persist both track IDs (primary) and full metadata (cache fallback). */
   function persistQueue(tracks: PlaybackTrack[]) {
     try {
       const data: QueuePersistData = {
@@ -353,12 +425,23 @@ const repeatMode = ref<RepeatMode>('off')
         hydratedAt: Date.now(),
       }
       localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(data))
+      // Cache full metadata as fallback when API is unavailable
+      const meta: CachedTrackMeta[] = tracks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        artistName: t.artistName,
+        albumTitle: t.albumTitle,
+        coverUrl: t.coverUrl,
+        durationSeconds: t.durationSeconds,
+        streamUrl: t.streamUrl,
+      }))
+      localStorage.setItem(QUEUE_META_KEY, JSON.stringify(meta))
     } catch {
       // Storage full or blocked — silently skip
     }
   }
 
-  /** Try to restore a previously persisted queue by fetching fresh metadata. */
+  /** Try to restore a previously persisted queue, falling back to cached metadata. */
   async function restorePersistedQueue(): Promise<PlaybackTrack[]> {
     try {
       const raw = localStorage.getItem(QUEUE_STORAGE_KEY)
@@ -372,11 +455,21 @@ const repeatMode = ref<RepeatMode>('off')
       )
 
       const restored: PlaybackTrack[] = []
-      for (const result of results) {
+      const cacheRaw = localStorage.getItem(QUEUE_META_KEY)
+      let cache: CachedTrackMeta[] = []
+      if (cacheRaw) {
+        try { cache = JSON.parse(cacheRaw) as CachedTrackMeta[] } catch { /* ignore */ }
+      }
+
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i]!
         if (result.status === 'fulfilled' && result.value) {
           restored.push(result.value)
+        } else if (cache[i]) {
+          // Fall back to cached metadata when API fails
+          restored.push(cache[i] as PlaybackTrack)
         }
-        // Silently skip tracks that no longer exist
+        // Silently skip tracks that no longer exist in either source
       }
 
       return restored
@@ -385,10 +478,174 @@ const repeatMode = ref<RepeatMode>('off')
     }
   }
 
+  // ── Session persistence (current track, time, queue position, playback state) ──────
+  function persistSession() {
+    try {
+      const data: SessionPersistData = {
+        currentTrackId: currentTrack.value?.id ?? null,
+        currentTime: currentTime.value,
+        updatedAt: Date.now(),
+        isPlaying: isPlaying.value,
+        shuffleMode: shuffleMode.value,
+        repeatMode: repeatMode.value,
+        currentIndex: queue.value.findIndex((t) => t.id === currentTrack.value?.id),
+      }
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(data))
+    } catch {
+      // Silently skip
+    }
+  }
+
+  /** Save current playback position periodically (every 5s while playing). */
+  let _sessionPersistTimer: ReturnType<typeof setInterval> | null = null
+  function startSessionPersist() {
+    stopSessionPersist()
+    _sessionPersistTimer = setInterval(() => {
+      if (isPlaying.value && currentTrack.value) {
+        persistSession()
+      }
+    }, 5000)
+  }
+  function stopSessionPersist() {
+    if (_sessionPersistTimer) {
+      clearInterval(_sessionPersistTimer)
+      _sessionPersistTimer = null
+    }
+  }
+
+  /** Try to restore session state and auto-resume playback. */
+  async function restoreSession(): Promise<boolean> {
+    try {
+      const raw = localStorage.getItem(SESSION_STORAGE_KEY)
+      if (!raw) return false
+      const data = JSON.parse(raw) as SessionPersistData
+      if (!data.currentTrackId) return false
+
+      // Check freshness: if session is older than 1 hour, don't resume
+      const age = Date.now() - data.updatedAt
+      if (age > 3600_000) {
+        localStorage.removeItem(SESSION_STORAGE_KEY)
+        return false
+      }
+
+      // Restore mode preferences
+      shuffleMode.value = data.shuffleMode || 'off'
+      repeatMode.value = data.repeatMode || 'off'
+      // Sync modes to the engine's internal state
+      if (engine) {
+        engine.setShuffleMode(shuffleMode.value)
+        // Sync repeat mode: cycle engine to the correct mode
+        while (engine.repeatModeValue !== repeatMode.value) {
+          engine.toggleRepeat()
+        }
+      }
+
+      // Restore playback from the persisted track
+      try {
+        const track = await playerApi.getPlaybackTrack(data.currentTrackId)
+        if (!track) return false
+
+        // Preserve queue position when restoring within the existing queue
+        const existingIdx = queue.value.findIndex((t) => t.id === data.currentTrackId)
+        if (existingIdx >= 0) {
+          // Track is already in the restored queue — seek to position within it
+          currentTrack.value = track
+          currentTime.value = data.currentTime
+          if (engine) {
+            // Move queue position to the correct index
+            const q = queueManager.all()
+            const idx = data.currentIndex >= 0 && data.currentIndex < q.length ? data.currentIndex : 0
+            if (idx > 0) {
+              queueManager.setQueue(q, idx)
+              engine?.updateQueue(q)
+            }
+          }
+        } else {
+          // Track not in queue — create single-item queue
+          queue.value = [track]
+          engine?.updateQueue([track])
+          currentTrack.value = track
+          currentTime.value = data.currentTime
+        }
+
+        // Auto-resume if was playing
+        if (data.isPlaying && engine) {
+          await engine.play(track)
+          if (data.currentTime > 0) {
+            engine.seek(data.currentTime)
+          }
+        }
+        return true
+      } catch {
+        return false
+      }
+    } catch {
+      return false
+    }
+  }
+
+  /** Reset all player state to defaults — used on logout / full teardown. */
+  function $reset() {
+    stop()
+    clearSleepTimer()
+    stopSessionPersist()
+    // Clean up pagehide listener
+    if (_pageHideHandler && typeof window !== 'undefined') {
+      window.removeEventListener('pagehide', _pageHideHandler)
+      _pageHideHandler = null
+    }
+    unregisterBeforeUnload()
+    if (musicStatusTimer) {
+      clearTimeout(musicStatusTimer)
+      musicStatusTimer = null
+    }
+    pendingStatusTrackId = null
+    unsubs.forEach((fn) => fn())
+    unsubs.length = 0
+    initialized = false
+    engine = null
+
+    currentTrack.value = null
+    queue.value = []
+    isPlaying.value = false
+    isBuffering.value = false
+    isLoadingTrack.value = false
+    currentTime.value = 0
+    duration.value = 0
+    volume.value = 0.85
+    muted.value = false
+    shuffleMode.value = 'off'
+    repeatMode.value = 'off'
+    playbackRate.value = 1
+    sleepTimerMinutes.value = 0
+    crossfadeDuration.value = 0
+    audioQuality.value = 'auto'
+    error.value = null
+    consecutiveFailures = 0
+    playbackStopped = false
+  }
+
   /** Reset the consecutive-failure guard so new playback can start fresh. */
   function resetFailureGuard() {
     consecutiveFailures = 0
     playbackStopped = false
+  }
+
+  /** Manually retry the current track after a playback error. */
+  async function retryCurrentTrack() {
+    if (!engine || !currentTrack.value) return
+
+    resetFailureGuard()
+    error.value = null
+    isLoadingTrack.value = true
+
+    try {
+      await engine.play(currentTrack.value)
+    } catch (err: unknown) {
+      error.value = getErrorMessage(err, 'Could not retry track')
+    } finally {
+      isLoadingTrack.value = false
+    }
   }
 
   async function playTrack(track: PlaybackTrack) {
@@ -434,6 +691,18 @@ const repeatMode = ref<RepeatMode>('off')
     shuffleMode.value = engine.shuffleModeValue
 
     await engine.setQueueAndPlay(tracks, startIndex)
+  }
+
+  /** Append tracks to the queue without replacing existing content. */
+  async function appendQueueAndPlay(tracks: PlaybackTrack[], playIndex?: number) {
+    initialize()
+    if (!engine) return
+    if (!tracks.length) return
+
+    resetFailureGuard()
+    shuffleMode.value = engine.shuffleModeValue
+
+    await engine.appendQueueAndPlay(tracks, playIndex)
   }
 
   async function toggleTrack(track: PlaybackTrack) {
@@ -545,6 +814,23 @@ const repeatMode = ref<RepeatMode>('off')
     if (engine) shuffleMode.value = engine.shuffleModeValue
   }
 
+  function addToQueue(track: PlaybackTrack) {
+    queueManager.addToQueue(track)
+    queue.value = queueManager.all()
+    engine?.emit('queuechange', queue.value)
+  }
+
+  function playNextInQueue(track: PlaybackTrack) {
+    queueManager.playNext(track)
+    queue.value = queueManager.all()
+    engine?.emit('queuechange', queue.value)
+  }
+
+  function setCrossfadeDuration(seconds: number) {
+    crossfadeDuration.value = Math.max(0, seconds)
+    engine?.setCrossfadeDuration(crossfadeDuration.value)
+  }
+
   function setSleepTimer(minutes: number) {
     clearSleepTimer()
     sleepTimerMinutes.value = minutes
@@ -595,6 +881,7 @@ const repeatMode = ref<RepeatMode>('off')
     playTrack,
     playTrackById,
     setQueueAndPlay,
+    appendQueueAndPlay,
     toggleTrack,
     resume,
     pause,
@@ -610,10 +897,17 @@ const repeatMode = ref<RepeatMode>('off')
     toggleRepeat,
     setPlaybackRate,
     updateQueue,
+    addToQueue,
+    playNextInQueue,
+    retryCurrentTrack,
+    setCrossfadeDuration,
     setSleepTimer,
     clearSleepTimer,
     registerBeforeUnload,
     unregisterBeforeUnload,
     restorePersistedQueue,
+    persistSession,
+    restoreSession,
+    $reset,
   }
 })

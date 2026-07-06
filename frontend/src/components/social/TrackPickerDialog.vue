@@ -30,7 +30,7 @@
               placeholder="Search tracks..."
               aria-label="Search tracks"
               autofocus
-              class="flex-1 bg-transparent px-3 py-3 text-sm text-white outline-hidden placeholder:text-slate-500"
+              class="flex-1 bg-transparent px-3 py-3 text-sm text-white outline-hidden placeholder:text-slate-500 focus-visible:ring-2 focus-visible:ring-[var(--color-primary-400)]/50"
               @input="onInput"
               @keydown="onKeydown"
             />

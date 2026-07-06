@@ -609,7 +609,7 @@ func (c *Container) buildVideo() {
 }
 
 func (c *Container) buildDashboard() {
-	c.DashboardHandler = dashboard.NewHandler(c.SQLX)
+	c.DashboardHandler = dashboard.NewHandler(c.SQLX, c.RDB)
 }
 
 func (c *Container) buildContribution() {

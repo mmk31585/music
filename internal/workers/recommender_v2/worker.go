@@ -23,6 +23,12 @@ func NewWorker(db *sqlx.DB, rdb *redis.Client, logger *zap.Logger) *Worker {
 func (w *Worker) Name() string { return "recommender_v2" }
 
 func (w *Worker) Run(ctx context.Context) error {
+	defer func() {
+		if r := recover(); r != nil {
+			w.logger.Error("recommender_v2 worker panicked", zap.Any("recover", r))
+		}
+	}()
+
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 

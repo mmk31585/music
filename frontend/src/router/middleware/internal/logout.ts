@@ -1,5 +1,6 @@
-import { useUserAuthStore } from '@/stores'
+import { useUserAuthStore, usePlayerStore } from '@/stores'
 import { isValidInternalRedirectLink } from '@/utils'
+import { wsClient } from '@/services/socket/client'
 import type {
   NavigationGuardNext,
   RouteLocationNormalized,
@@ -15,15 +16,18 @@ export const logoutMiddleware = async (
 
   let route = null
 
-  // Check if the user is authenticated
+  // Check if the user is NOT authenticated — nothing to do
   if (!store.user || !store.token) {
-    // User is authenticated, continue navigation to the original destination
     next(from)
     return
   }
 
   // Logout the user
   await store.logout().then(() => {
+    // Clean up WebSocket and player state
+    wsClient.disconnect()
+    usePlayerStore().$reset()
+
     if (from.meta.requiresAuth) {
       // If the original route requires authentication, redirect to log in
       route = { name: 'auth.login', query: {} }

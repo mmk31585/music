@@ -151,14 +151,6 @@
                 >
                   <i aria-hidden="true" class="pi pi-user text-[10px]" />
                   <span>{{ c.is_creator ? 'You' : `User #${String(c.user_id)}` }}</span>
-                  <button
-                    v-if="!c.is_creator"
-                    type="button"
-                    class="text-white/30 transition hover:text-red-400"
-                    @click="removeCollab(String(c.user_id))"
-                  >
-                    <i aria-hidden="true" class="pi pi-times text-[10px]" />
-                  </button>
                 </div>
               </div>
             </div>
@@ -387,8 +379,8 @@ import { usePlaylistDetail } from '@/composables/catalog/usePlaylistDetail'
 import { usePlaylistsApi } from '@/services/api/playlist'
 import { useMediaApi } from '@/services/api/media'
 import { usePlayer } from '@/composables/player'
-import { usePlayerApi } from '@/services/api/player'
 import { useSearchApi } from '@/services/api/catalog/search'
+import { mapToPlaybackTracks } from '@/factories/playbackTrack'
 import { onImgError } from '@/utils/helpers'
 import { useCollaborativePlaylist } from '@/composables/useCollaborativePlaylist'
 import { wsClient } from '@/services/socket'
@@ -409,7 +401,6 @@ const {
   deletePlaylist: remove,
 } = usePlaylistDetail(playlistId)
 const player = usePlayer()
-const playerApi = usePlayerApi()
 const auth = useUserAuthStore()
 const playlistsApi = usePlaylistsApi()
 
@@ -441,11 +432,11 @@ async function onDrop(targetIndex: number) {
   const [moved] = reordered.splice(dragIndex.value, 1)
   reordered.splice(targetIndex, 0, moved!)
 
-  const newOrder = reordered.map((t) => t.track_id)
   tracks.value = reordered
 
   try {
-    await playlistsApi.reorderTracks(playlistId, newOrder)
+    // Backend expects { track_id, new_position } (1-indexed position)
+    await playlistsApi.reorderTracks(playlistId, moved!.track_id, targetIndex + 1)
   } catch {
     await fetchPlaylist()
     toast.add({ severity: 'error', summary: 'Failed to reorder', life: 3000 })
@@ -524,7 +515,7 @@ const collabHelper = useCollaborativePlaylist(
 async function toggleCollaborative() {
   if (!playlist.value) return
   try {
-    const newVal = playlist.value.is_collaborative!
+    const newVal = !playlist.value.is_collaborative
     await playlistsApi.setCollaborative(playlistId, newVal)
     playlist.value.is_collaborative = newVal
     toast.add({ severity: 'success', summary: newVal ? 'Collaborative mode on' : 'Collaborative mode off', life: 2000 })
@@ -533,15 +524,17 @@ async function toggleCollaborative() {
   }
 }
 
-async function removeCollab(userId: string) {
-  try {
-    await playlistsApi.removeCollaborator(playlistId, userId)
-    collaborators.value = collaborators.value.filter((c) => String(c.user_id) !== userId)
-    toast.add({ severity: 'success', summary: 'Collaborator removed', life: 2000 })
-  } catch {
-    toast.add({ severity: 'error', summary: 'Failed to remove', life: 3000 })
-  }
-}
+// TODO: Backend route POST/DELETE /playlists/:id/collaborators not yet registered.
+// Re-enable when backend exposes these routes.
+// async function removeCollab(userId: string) {
+//   try {
+//     await playlistsApi.removeCollaborator(playlistId, userId)
+//     collaborators.value = collaborators.value.filter((c) => String(c.user_id) !== userId)
+//     toast.add({ severity: 'success', summary: 'Collaborator removed', life: 2000 })
+//   } catch {
+//     toast.add({ severity: 'error', summary: 'Failed to remove', life: 3000 })
+//   }
+// }
 
 onMounted(async () => {
   await fetchPlaylist()
@@ -610,15 +603,7 @@ function playAll() {
 }
 
 function playTrack(index: number) {
-  const queue = tracks.value.map((t) => ({
-    id: String(t.track_id),
-    title: t.title,
-    artistName: t.artist_name || 'Unknown',
-    albumTitle: t.album_title || null,
-    coverUrl: t.cover_url || null,
-    durationSeconds: t.duration_seconds ?? null,
-    streamUrl: playerApi.getTrackStreamUrl(String(t.track_id)),
-  }))
+  const queue = mapToPlaybackTracks(tracks.value)
   player.setQueueAndPlay(queue, index)
 }
 

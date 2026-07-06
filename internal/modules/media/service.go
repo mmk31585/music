@@ -1,6 +1,7 @@
 package media
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"music/internal/pkg/audioinfo"
 	platformstorage "music/internal/platform/storage"
 )
 
@@ -94,6 +96,20 @@ func (s *Service) Upload(
 		return nil, ErrInvalidMimeType
 	}
 
+	// ── Audio duration extraction (track audio only) ──
+	var durationSec *int
+	if category == UploadCategoryTrackAudio {
+		info, infoErr := readAudioDuration(file)
+		if infoErr != nil {
+			log.Printf("[AUDIO INFO] could not extract duration: %v", infoErr)
+		} else {
+			d := int(info.Duration)
+			durationSec = &d
+			log.Printf("[AUDIO INFO] extracted duration=%.2fs format=%s bitrate=%d", info.Duration, info.Format, info.Bitrate)
+		}
+		// detectMimeType already seeked back to 0; file is at start
+	}
+
 	// Streaming upload with inline SHA256 computation
 	hasher := sha256.New()
 	teeReader := io.TeeReader(file, hasher)
@@ -127,7 +143,7 @@ func (s *Service) Upload(
 	if existing != nil {
 		// Duplicate found — remove the uploaded file and return existing
 		_ = s.storage.Delete(ctx, key)
-		log.Printf("[UPLOAD DUPLICATE] existing key=%s url=%s", existing.ObjectKey, existing.PublicURL)
+		log.Printf("[UPLOAD DUPLICATE] existing key=%s url=%v", existing.ObjectKey, existing.PublicURL)
 		return uploadResponseFromMedia(existing, true), nil
 	}
 
@@ -154,7 +170,7 @@ func (s *Service) Upload(
 		MimeType:         &mimeType,
 		FileSize:         &size,
 		ChecksumSHA256:   &hash,
-		DurationSeconds:  nil,
+		DurationSeconds:  durationSec,
 		Width:            nil,
 		Height:           nil,
 		OriginalFilename: &header.Filename,
@@ -177,6 +193,29 @@ func (s *Service) Upload(
 
 	return resp, nil
 }
+
+// readAudioDuration reads the audio file header to extract duration and other info.
+// The caller must ensure the file is seeked back to position 0 before and after calling.
+func readAudioDuration(file io.ReadSeeker) (*audioinfo.Info, error) {
+	buf := make([]byte, 128*1024) // 128KB covers all known audio headers (ID3v2, FLAC, OGG, MP4)
+	n, err := io.ReadFull(file, buf)
+	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+		_, seekErr := file.Seek(0, io.SeekStart)
+		if seekErr != nil {
+			return nil, fmt.Errorf("read audio header: %w (seek: %v)", err, seekErr)
+		}
+		return nil, fmt.Errorf("read audio header: %w", err)
+	}
+	buf = buf[:n]
+
+	_, seekErr := file.Seek(0, io.SeekStart)
+	if seekErr != nil {
+		return nil, fmt.Errorf("seek after audio header read: %w", seekErr)
+	}
+
+	return audioinfo.Extract(bytes.NewReader(buf))
+}
+
 func sanitizeFilename(name string) string {
 	name = strings.ToLower(name)
 

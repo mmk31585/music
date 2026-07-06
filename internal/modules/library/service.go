@@ -113,16 +113,37 @@ func (s *Service) AddPlayHistory(ctx context.Context, input AddPlayHistoryInput)
 	return s.repo.AddPlayHistory(ctx, input.UserID, input.TrackID, input.Duration, input.Completed)
 }
 
-func (s *Service) ListLikedTracks(ctx context.Context, userID string) ([]LibraryTrackItem, error) {
-	return s.repo.ListLikedTracks(ctx, userID)
+func (s *Service) ListLikedTracks(ctx context.Context, userID string, page, limit int) ([]LibraryTrackItem, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	offset := (page - 1) * limit
+	return s.repo.ListLikedTracks(ctx, userID, limit, offset)
 }
 
-func (s *Service) ListLikedAlbums(ctx context.Context, userID string) ([]LibraryAlbumItem, error) {
-	return s.repo.ListLikedAlbums(ctx, userID)
+func (s *Service) ListLikedAlbums(ctx context.Context, userID string, page, limit int) ([]LibraryAlbumItem, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	offset := (page - 1) * limit
+	return s.repo.ListLikedAlbums(ctx, userID, limit, offset)
 }
 
-func (s *Service) ListFollowedArtists(ctx context.Context, userID string) ([]LibraryArtistItem, error) {
-	return s.repo.ListFollowedArtists(ctx, userID)
+func (s *Service) ListFollowedArtists(ctx context.Context, userID string, page, limit int) ([]LibraryArtistItem, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	offset := (page - 1) * limit
+	return s.repo.ListFollowedArtists(ctx, userID, limit, offset)
 }
 
 func (s *Service) ListPlayHistory(ctx context.Context, userID string, limit int) ([]LibraryTrackItem, error) {

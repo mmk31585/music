@@ -39,6 +39,12 @@ func NewWorker(db *sqlx.DB, logger *zap.Logger, cfg *config.Config) *Worker {
 func (w *Worker) Name() string { return "ai" }
 
 func (w *Worker) Run(ctx context.Context) error {
+	defer func() {
+		if r := recover(); r != nil {
+			w.logger.Error("ai worker panicked", zap.Any("recover", r))
+		}
+	}()
+
 	ticker := time.NewTicker(10 * time.Minute)
 	defer ticker.Stop()
 

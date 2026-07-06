@@ -8,7 +8,7 @@ export const MoodTagSchema = z.object({
 
 export const MoodResponseSchema = z.object({
   track_id: z.string(),
-  mood_tags: z.array(MoodTagSchema).optional(),
+  mood_tags: z.array(MoodTagSchema).nullable().optional().default([]),
   energy: z.number(),
   valence: z.number(),
   tempo: z.number(),
@@ -37,7 +37,7 @@ export const AIPlaylistResponseSchema = z.object({
   id: z.string().catch(''),
   name: z.string().catch(''),
   description: z.string().catch(''),
-  tracks: z.array(AITrackItemSchema).optional().default([]),
+  tracks: z.array(AITrackItemSchema).nullable().optional().default([]),
   generated_at: z.string().catch(''),
 })
 
@@ -76,6 +76,15 @@ export interface AnalyzeMoodPayload {
 export interface EmbeddingPayload {
   track_ids: string[]
 }
+
+export const EmbeddingResponseSchema = z.object({
+  track_id: z.string(),
+  model_version: z.string(),
+  dimensions: z.number(),
+  vector: z.array(z.number()).optional(),
+})
+
+export type EmbeddingResponse = z.infer<typeof EmbeddingResponseSchema>
 
 export const MOOD_OPTIONS = [
   { label: 'Energetic', value: 'energetic', icon: 'pi pi-bolt' },

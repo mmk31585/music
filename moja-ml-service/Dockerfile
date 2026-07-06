@@ -22,8 +22,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# ── Install uv ────────────────────────────────────────────────────────
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# ── Install uv (pinned version for reproducibility) ───────────────────
+COPY --from=ghcr.io/astral-sh/uv:0.6.3 /uv /uvx /bin/
 
 # ── Application code ──────────────────────────────────────────────────
 WORKDIR /app
@@ -36,6 +36,11 @@ RUN uv sync --frozen --no-dev
 
 # Copy the rest of the application
 COPY . .
+
+# ── Non-root user for security ─────────────────────────────────────────
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser && \
+    chown -R appuser:appgroup /app
+USER appuser
 
 # ── Runtime ───────────────────────────────────────────────────────────
 EXPOSE 8000

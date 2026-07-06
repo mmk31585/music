@@ -24,7 +24,7 @@ export interface RequestHooks {
   /** Store reset helper */
   resetAuthStore?: () => void
   /** Refresh token */
-  refreshToken?: () => Promise<RefreshToken> | null
+  refreshToken?: () => Promise<RefreshToken>
   refreshTokenUrlRejecter?: (config: AxiosRequestConfig) => boolean
   /** Extras */
   extraHeaders?: () => Record<string, string>

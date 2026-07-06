@@ -32,8 +32,10 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 
 	"music/internal/platform/events"
 )
@@ -121,7 +123,14 @@ func (s *Service) Record(
 
 	// Compute and store signal (non-blocking, async)
 	go func() {
-		sigCtx := context.Background()
+		defer func() {
+			if r := recover(); r != nil {
+				zap.L().Error("history recording panicked", zap.Any("recover", r))
+			}
+		}()
+
+		sigCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
 
 		playedMs := int64(req.Duration) * 1000
 		trackMs := req.TrackDurationMs
@@ -209,6 +218,16 @@ func (s *Service) RecordSignal(
 // ListSignalsByUser returns signal-enriched history for taste profile recomputation.
 func (s *Service) ListSignalsByUser(ctx context.Context, userID uuid.UUID, days int) ([]PlaybackSignal, error) {
 	return s.repo.ListSignalsByUser(ctx, userID, days)
+}
+
+// DeleteItem removes a single history entry by ID.
+func (s *Service) DeleteItem(ctx context.Context, userID, historyID uuid.UUID) error {
+	return s.repo.DeleteByID(ctx, userID, historyID)
+}
+
+// ClearAll removes all listening history for the user.
+func (s *Service) ClearAll(ctx context.Context, userID uuid.UUID) error {
+	return s.repo.ClearAll(ctx, userID)
 }
 
 // GetRepo exposes the repository for cross-module usage (taste profile).

@@ -7,11 +7,11 @@
         :class="moodBgClass"
       />
       <div
-        class="absolute -top-1/3 -right-1/4 h-125 w-125 rounded-full opacity-30 blur-[150px] transition-all duration-1000"
+        class="absolute -top-1/3 -end-1/4 h-125 w-125 rounded-full opacity-30 blur-[150px] transition-all duration-1000"
         :class="moodSpotClass"
       />
       <div
-        class="absolute -bottom-1/3 -left-1/4 h-100 w-100 rounded-full opacity-20 blur-[120px] transition-all duration-1000"
+        class="absolute -bottom-1/3 -start-1/4 h-100 w-100 rounded-full opacity-20 blur-[120px] transition-all duration-1000"
         :class="moodSpotClass2"
       />
     </div>
@@ -252,13 +252,12 @@ import { computed, ref } from 'vue'
 import { useAIApi } from '@/services/api/ai'
 import { MOOD_OPTIONS } from '@/services/api/ai/types'
 import { usePlayer } from '@/composables/player'
-import { usePlayerApi } from '@/services/api/player'
 import { onImgError } from '@/utils/helpers'
+import { mapToPlaybackTracks } from '@/factories/playbackTrack'
 import { useToast } from 'primevue/usetoast'
 
 const aiApi = useAIApi()
 const player = usePlayer()
-const playerApi = usePlayerApi()
 const toast = useToast()
 
 const selectedMood = ref('')
@@ -446,14 +445,7 @@ async function toggleMood(mood: string) {
 
 function playTrack(index: number) {
   if (!tracks.value.length) return
-  const queue = tracks.value.map((t) => ({
-    id: String(t.id),
-    title: String(t.title ?? ''),
-    artistName: String(t.artist || 'Unknown'),
-    coverUrl: String(t.cover_url || ''),
-    durationSeconds: (t.duration as number) ?? null,
-    streamUrl: playerApi.getTrackStreamUrl(String(t.id)),
-  }))
+  const queue = mapToPlaybackTracks(tracks.value)
   player.setQueueAndPlay(queue, index)
 }
 

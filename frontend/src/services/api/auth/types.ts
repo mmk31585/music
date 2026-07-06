@@ -17,23 +17,21 @@ export const LoginPayloadSchema = z.object({
 
 export const RegisterPayloadSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
-  username: z.string().min(2).optional(),
-  displayName: z.string().min(2).optional(),
-  name: z.string().min(2).optional(),
+  password: z.string().min(8).max(72),
+  username: z.string().min(3).max(50),
+  displayName: z.string().min(2).max(100),
 })
 
 export const LogoutPayloadSchema = z.object({
-  refreshToken: z.string().optional(),
+  refreshToken: z.string(),
 })
 
 const AuthDataSchema = z.object({
   user: UserSchema,
   access_token: z.string(),
-  refresh_token: z.string().optional(),
-  token: z.string().optional(),
-  token_type: z.string().optional(),
-  expires_in: z.number().optional(),
+  refresh_token: z.string(),
+  token_type: z.string(),
+  expires_in: z.number(),
 })
 
 /**
@@ -123,7 +121,6 @@ export const AdminUserSchema = z.object({
   email: z.string().email(),
   username: z.string().optional(),
   display_name: z.string().optional(),
-  displayName: z.string().optional(),
   role: z.string(),
   is_active: z.boolean(),
   email_verified: z.boolean(),

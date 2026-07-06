@@ -1,9 +1,9 @@
 import { ref, watch } from 'vue'
 import { usePlayer } from '@/composables/player'
-import { usePlayerApi } from '@/services/api/player'
 import { useRadioApi, type RadioSession } from '@/services/api/recommendation/radio'
 import { useAppToast } from '@/composables/useAppToast'
 import type { PlaybackTrack } from '@/services/api/player'
+import { buildPlaybackTrack } from '@/factories/playbackTrack'
 
 const REFILL_THRESHOLD = 3
 const BATCH_SIZE = 10
@@ -15,20 +15,11 @@ export function useRadio() {
   const radioSeedLabel = ref('')
 
   const player = usePlayer()
-  const playerApi = usePlayerApi()
   const radioApi = useRadioApi()
   const toast = useAppToast()
 
   function mapToPlaybackTrack(t: any): PlaybackTrack {
-    return {
-      id: t.id,
-      title: t.title,
-      artistName: t.artist_name || 'Unknown',
-      albumTitle: t.album_title || null,
-      coverUrl: t.cover_url || null,
-      durationSeconds: t.duration_seconds ?? null,
-      streamUrl: playerApi.getTrackStreamUrl(t.id),
-    }
+    return buildPlaybackTrack(t)
   }
 
   async function startFromTrack(trackId: string, trackName?: string) {

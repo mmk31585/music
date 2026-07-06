@@ -80,7 +80,7 @@ import { computed, inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayer } from '@/composables/player'
 import { onImgError } from '@/utils/helpers'
-import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
+import { buildPlaybackTrack } from '@/factories/playbackTrack'
 import AppContextMenu from '@/components/common/AppContextMenu.vue'
 
 interface TrackRowTrack {
@@ -110,7 +110,6 @@ const props = defineProps<{
 }>()
 
 const player = usePlayer()
-const playerApi = usePlayerApi()
 
 const title = computed(() => props.track.title || 'Untitled')
 
@@ -166,18 +165,19 @@ const menuY = ref(0)
 
 const openRadioFromTrack = inject<(trackId: string, seedLabel?: string) => void>('openRadio', () => {})
 
+const queueTrackInput = () => ({
+  id: trackId.value,
+  title: title.value,
+  artist_name: String(artistName.value),
+  album_title: props.track.albumTitle || props.track.album_title || props.track.album?.title || null,
+  cover_url: coverUrl.value,
+  duration_seconds: durationSeconds.value,
+})
+
 const menuItems = [
   { label: 'Play Now', icon: 'pi pi-play', action: () => handlePlay() },
-  { label: 'Play next', icon: 'pi pi-step-forward', action: () => {
-    if (player.queue.value.length > 0) {
-      const items = [...player.queue.value]
-      items.splice(0, 0, buildPlaybackTrack())
-      player.updateQueue(items)
-    } else {
-      player.updateQueue([buildPlaybackTrack()])
-    }
-  }},
-  { label: 'Add to queue', icon: 'pi pi-list', action: () => player.updateQueue([...player.queue.value, buildPlaybackTrack()]) },
+  { label: 'Play next', icon: 'pi pi-step-forward', action: () => player.playNextInQueue(buildPlaybackTrack(queueTrackInput())) },
+  { label: 'Add to queue', icon: 'pi pi-list', action: () => player.addToQueue(buildPlaybackTrack(queueTrackInput())) },
   { label: 'Start Radio', icon: 'pi pi-wave-pulse', separator: true, action: () => {
     openRadioFromTrack(trackId.value, `${title.value} • ${artistName.value}`)
   }},
@@ -205,22 +205,15 @@ const buttonIcon = computed(() => {
   return 'pi pi-play'
 })
 
-function buildPlaybackTrack(): PlaybackTrack {
-  const id = trackId.value
-  return {
-    id,
-    title: title.value,
-    artistName: String(artistName.value),
-    albumTitle:
-      props.track.albumTitle || props.track.album_title || props.track.album?.title || null,
-    coverUrl: coverUrl.value,
-    durationSeconds: durationSeconds.value,
-    streamUrl: playerApi.getTrackStreamUrl(id),
-  }
-}
-
 async function handlePlay() {
-  await player.toggleTrack(buildPlaybackTrack())
+  await player.toggleTrack(buildPlaybackTrack({
+    id: trackId.value,
+    title: title.value,
+    artist_name: String(artistName.value),
+    album_title: props.track.albumTitle || props.track.album_title || props.track.album?.title || null,
+    cover_url: coverUrl.value,
+    duration_seconds: durationSeconds.value,
+  }))
 }
 </script>
 

@@ -11,8 +11,10 @@ import (
 
 	"music/internal/app"
 	"music/internal/common/middleware"
+	"music/internal/platform/tracing"
 
 	"github.com/gin-gonic/gin"
+	otelgin "go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.uber.org/zap"
 )
 
@@ -42,11 +44,22 @@ func main() {
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	docs.SwaggerInfo.Schemes = []string{"http"}
 
+	// ── OpenTelemetry Tracing ──────────────────────────────────────
+	otelShutdown, err := tracing.Init(ctx, tracing.Config{
+		ServiceName: "music-api",
+		Environment: application.Config.App.Env,
+	})
+	if err != nil {
+		log.Fatal("failed to init tracing", zap.Error(err))
+	}
+	defer otelShutdown()
+
 	// ── Router setup (exactly once, all middleware explicit) ──
 	router := gin.New()
 	router.Use(
 		middleware.SecurityHeaders(),
 		middleware.CORS(application.Config.CORS.AllowedOrigins),
+		otelgin.Middleware("music-api"),
 		middleware.GinZapLogger(log),
 		middleware.GinZapRecovery(log),
 	)

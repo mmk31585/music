@@ -9,17 +9,19 @@ export function useMaintenance() {
   const getSecret = computed(() => secret.value)
 
   const check = async () => {
-    const maintenanceState = useMaintenanceStore()
+    const maintenanceStore = useMaintenanceStore()
     const s = getSecret.value
 
     if (import.meta.env.VITE_IN_MAINTENANCE_MODE === 'true') {
       const bypassCode = import.meta.env.VITE_IN_MAINTENANCE_MODE_CODE as string | undefined
       if (!(s && bypassCode && bypassCode === s)) {
-        maintenanceState.state = { inMaintenance: true, checked: true }
+        maintenanceStore.inMaintenance = true
+        maintenanceStore.checked = true
         return
       }
     }
-    maintenanceState.state = { inMaintenance: false, checked: true }
+    maintenanceStore.inMaintenance = false
+    maintenanceStore.checked = true
   }
 
   return { check, getSecret }

@@ -164,7 +164,7 @@ import { useRoute } from 'vue-router'
 import { SkeletonLoader, AppEmptyState } from '@/components/common'
 import { useArtist } from '@/composables/catalog/useArtist'
 import { usePlayer } from '@/composables/player'
-import { usePlayerApi } from '@/services/api/player'
+import { mapToPlaybackTracks } from '@/factories/playbackTrack'
 import { useAlbumColors } from '@/composables/useAlbumColors'
 import {
   HomeCarousel,
@@ -202,7 +202,6 @@ const headerBg = computed(() => {
 })
 
 const player = usePlayer()
-const playerApi = usePlayerApi()
 const showAllTracks = ref(false)
 const bioExpanded = ref(false)
 
@@ -220,30 +219,14 @@ onMounted(() => {
 
 function playAll() {
   if (!tracks.value.length) return
-  const queue = tracks.value.map((t) => ({
-    id: String(t.id),
-    title: t.title,
-    artistName: t.artist_name || 'Unknown',
-    albumTitle: t.album_title || null,
-    coverUrl: t.cover_url || null,
-    durationSeconds: t.duration_seconds ?? null,
-    streamUrl: playerApi.getTrackStreamUrl(String(t.id)),
-  }))
+  const queue = mapToPlaybackTracks(tracks.value)
   player.setQueueAndPlay(queue, 0)
 }
 
 function shuffleAll() {
   const shuffled = [...tracks.value].sort(() => Math.random() - 0.5)
   if (!shuffled.length) return
-  const queue = shuffled.map((t) => ({
-    id: String(t.id),
-    title: t.title,
-    artistName: t.artist_name || 'Unknown',
-    albumTitle: t.album_title || null,
-    coverUrl: t.cover_url || null,
-    durationSeconds: t.duration_seconds ?? null,
-    streamUrl: playerApi.getTrackStreamUrl(String(t.id)),
-  }))
+  const queue = mapToPlaybackTracks(shuffled)
   player.setQueueAndPlay(queue, 0)
 }
 </script>

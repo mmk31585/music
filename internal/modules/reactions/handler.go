@@ -64,7 +64,11 @@ func (h *Handler) GetCounts(c *gin.Context) {
 }
 
 func (h *Handler) GetLikedTracks(c *gin.Context) {
-	userID := c.DefaultQuery("user_id", c.GetString("auth_user_id"))
+	userID := c.GetString("auth_user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
 	items, err := h.service.GetUserLikedTracks(c.Request.Context(), userID, limit, offset)
@@ -76,7 +80,11 @@ func (h *Handler) GetLikedTracks(c *gin.Context) {
 }
 
 func (h *Handler) GetLikedAlbums(c *gin.Context) {
-	userID := c.DefaultQuery("user_id", c.GetString("auth_user_id"))
+	userID := c.GetString("auth_user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
 	items, err := h.service.GetUserLikedAlbums(c.Request.Context(), userID, limit, offset)

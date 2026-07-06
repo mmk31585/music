@@ -1,5 +1,19 @@
 <template>
   <div class="h-screen overflow-hidden bg-black text-white" :dir="dir">
+    <!-- Skip link for keyboard users -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Offline banner -->
+    <div
+      v-if="!isOnline"
+      role="alert"
+      class="fixed top-0 left-0 right-0 z-9999 flex items-center justify-center gap-2 bg-red-600/90 px-4 py-2 text-sm font-medium text-white backdrop-blur-xs"
+      style="padding-top: max(0.5rem, env(safe-area-inset-top, 0.5rem))"
+    >
+      <i class="pi pi-wifi text-xs" aria-hidden="true" />
+      <span>You are offline. Some features may be unavailable.</span>
+    </div>
+
     <div class="flex h-full">
       <!-- Desktop sidebar -->
       <AdminSidebar
@@ -43,7 +57,9 @@
           class="flex-1 overflow-y-auto bg-linear-to-b from-[#151515] to-black"
           :class="mainPadding"
         >
-          <router-view />
+          <ErrorBoundary>
+            <router-view />
+          </ErrorBoundary>
         </main>
       </div>
     </div>
@@ -65,8 +81,9 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRTL } from '@/composables'
+import { useRTL, useOnlineStatus } from '@/composables'
 import { AdminSidebar, AdminTopbar } from '@/components/admin'
+import ErrorBoundary from '@/components/common/ErrorBoundary.vue'
 import {
   NowPlayingBar,
   FullscreenPlayer,
@@ -78,6 +95,7 @@ import {
 import { usePlayerStore, useFeatureFlagsStore } from '@/stores'
 
 const { dir } = useRTL()
+const { isOnline } = useOnlineStatus()
 const sidebarCollapsed = ref(false)
 const mobileOpen = ref(false)
 const fullscreenOpen = ref(false)

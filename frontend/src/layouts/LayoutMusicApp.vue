@@ -6,7 +6,7 @@
     <div
       v-if="!isOnline"
       role="alert"
-      class="fixed top-0 left-0 right-0 z-9999 flex items-center justify-center gap-2 bg-red-600/90 px-4 py-2 text-sm font-medium text-white backdrop-blur-xs"
+      class="fixed top-0 start-0 end-0 z-9999 flex items-center justify-center gap-2 bg-red-600/90 px-4 py-2 text-sm font-medium text-white backdrop-blur-xs"
       style="padding-top: max(0.5rem, env(safe-area-inset-top, 0.5rem))"
     >
       <i class="pi pi-wifi text-xs" aria-hidden="true" />
@@ -34,13 +34,15 @@
         class="flex-1 overflow-y-auto scroll-smooth scroll-bar"
         :class="mainPadding"
       >
-        <RouterView v-slot="{ Component }">
-          <Transition name="page" mode="out-in">
-            <KeepAlive :max="3">
-              <component :is="Component" />
-            </KeepAlive>
-          </Transition>
-        </RouterView>
+        <ErrorBoundary>
+          <RouterView v-slot="{ Component }">
+            <Transition name="page" mode="out-in">
+              <KeepAlive :max="3">
+                <component :is="Component" />
+              </KeepAlive>
+            </Transition>
+          </RouterView>
+        </ErrorBoundary>
       </main>
     </div>
 
@@ -54,7 +56,6 @@
       <div
         v-if="mobileOpen"
         class="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs lg:hidden"
-        :aria-hidden="!mobileOpen"
         role="button"
         tabindex="0"
         @click="mobileOpen = false"
@@ -212,6 +213,8 @@ import MusicRightPane from '@/components/music/layout/MusicRightPane.vue'
 import { MobileBottomNav, MusicAppHeader  } from '@/components/layouts'
 import { useUserAuthStore, usePlayerStore } from '@/stores'
 import { useAuth } from '@/composables/auth/useAuth'
+import { useOnlineStatus } from '@/composables'
+import ErrorBoundary from '@/components/common/ErrorBoundary.vue'
 import { client, useRTL } from '@/composables'
 import { wsClient } from '@/services/socket/client'
 import axios from 'axios'
@@ -290,7 +293,7 @@ provide('openRadio', openRadio)
 const { dir: rtlDir } = useRTL()
 
 const barCollapsed = ref(localStorage.getItem('player-bar-collapsed') === 'true')
-const isOnline = ref(navigator.onLine)
+const { isOnline } = useOnlineStatus()
 
 onMounted(() => {
   const handler = (e: Event) => {
@@ -349,9 +352,6 @@ onMounted(() => {
       showShortcuts.value = !showShortcuts.value
     }
   })
-  const updateOnline = () => { isOnline.value = navigator.onLine }
-  window.addEventListener('online', updateOnline)
-  window.addEventListener('offline', updateOnline)
 })
 
 onUnmounted(() => {

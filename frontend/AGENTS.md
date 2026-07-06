@@ -1,6 +1,6 @@
 # Agent Team Architecture
 
-Parallel agent system for the Soundify frontend. Each agent owns a set of files and can work independently. A coordinator agent (`@muse`) manages cross-cutting changes. For tightly coupled cross-domain work (frontend + backend + infra), use the **Team Supervisor** (`@muse-team`) which deploys teammates that communicate peer-to-peer.
+Parallel agent system for the Muse frontend. Each agent owns a set of files and can work independently. A coordinator agent (`@muse`) manages cross-cutting changes. For tightly coupled cross-domain work (frontend + backend + infra), use the **Team Supervisor** (`@muse-team`) which deploys teammates that communicate peer-to-peer.
 
 ## How to Use
 

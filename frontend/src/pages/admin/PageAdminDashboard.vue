@@ -312,7 +312,7 @@ import { useTracksApi, type Track } from '@/services/api/catalog/tracks'
 import { useIngestionApi } from '@/services/api/ingestion/routes'
 import type { IngestionStats } from '@/services/api/ingestion/types'
 import { usePlayer } from '@/composables/player'
-import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
+import { buildPlaybackTrack } from '@/factories/playbackTrack'
 import { client } from '@/composables/useRequest'
 import { formatDuration } from '@/utils/format'
 
@@ -323,20 +323,6 @@ const loading = ref(false)
 const error = ref<unknown>(null)
 const loadingTrackId = ref<string | null>(null)
 const player = usePlayer()
-const playerApi = usePlayerApi()
-
-function buildPlaybackTrack(track: Track): PlaybackTrack {
-  const id = String(track.id)
-  return {
-    id,
-    title: track.title || 'Untitled',
-    artistName: track.artist_name || 'Unknown artist',
-    albumTitle: track.album_title || null,
-    coverUrl: track.cover_url || null,
-    durationSeconds: track.duration_seconds ?? null,
-    streamUrl: playerApi.getTrackStreamUrl(id),
-  }
-}
 
 async function handlePlayTrack(track: Track) {
   loadingTrackId.value = String(track.id)

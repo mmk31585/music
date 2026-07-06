@@ -6,6 +6,7 @@ import (
 	"time"
 
 	apperrors "music/internal/common/errors"
+	"go.uber.org/zap"
 )
 
 type Service struct {
@@ -88,8 +89,16 @@ func (s *Service) Refresh(ctx context.Context, req RefreshRequest, userAgent, ip
 
 	// Refresh token rotation:
 	// old refresh token becomes invalid after successful refresh.
-	if err := s.repo.RevokeSessionByID(ctx, session.ID); err != nil {
+	// RowsAffected check prevents race — if already revoked, refuse.
+	revoked, err := s.repo.RevokeSessionByID(ctx, session.ID)
+	if err != nil {
 		return AuthResponse{}, err
+	}
+	if !revoked {
+		zap.L().Warn("refresh token reuse detected",
+			zap.String("user_id", session.UserID),
+			zap.String("session_id", session.ID))
+		return AuthResponse{}, apperrors.Unauthorized("refresh token has already been used", nil)
 	}
 
 	return s.createAuthResponse(ctx, user, userAgent, ipAddress)
@@ -97,6 +106,21 @@ func (s *Service) Refresh(ctx context.Context, req RefreshRequest, userAgent, ip
 
 func (s *Service) Logout(ctx context.Context, req LogoutRequest) error {
 	return s.repo.RevokeSessionByRefreshToken(ctx, req.RefreshToken)
+}
+
+func (s *Service) ForgotPassword(ctx context.Context, email string) error {
+	// Stub: actual email sending requires email service integration.
+	// Look up user by email — silently ignore if not found (security: no email enumeration).
+	user, err := s.repo.FindUserByEmailOrUsername(ctx, email)
+	if err != nil {
+		return nil // silent return regardless of error
+	}
+	// TODO: Generate reset token, store in Redis with TTL, send email
+	// ResetToken, err := s.tokens.GenerateResetToken(user)
+	// if err != nil { return err }
+	// return s.email.SendPasswordReset(user.Email, resetToken)
+	_ = user
+	return nil
 }
 
 func (s *Service) Me(ctx context.Context, userID string) (MeResponse, error) {

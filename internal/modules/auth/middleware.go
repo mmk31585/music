@@ -49,17 +49,18 @@ func AuthMiddleware(tokens *TokenManager) gin.HandlerFunc {
 }
 
 // RequireRole returns a Gin middleware that ensures the authenticated user
-// has the required role.
-// TODO LOW: RequireRole is exact-match only — no hierarchy (e.g., super-admin > admin). Extend when needed.
-func RequireRole(role string) gin.HandlerFunc {
+// has one of the required roles.
+func RequireRole(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		currentRole := UserRoleFromContext(c)
-		if currentRole != role {
-			response.Error(c, apperrors.Forbidden("insufficient permissions", nil))
-			c.Abort()
-			return
+		for _, role := range roles {
+			if currentRole == role {
+				c.Next()
+				return
+			}
 		}
-		c.Next()
+		response.Error(c, apperrors.Forbidden("insufficient permissions", nil))
+		c.Abort()
 	}
 }
 

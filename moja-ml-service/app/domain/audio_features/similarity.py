@@ -128,6 +128,7 @@ class SimilarityService:
     async def _query_nearest_neighbors(
         self,
         seed_embedding: list[float],
+        seed_track_id: str | None = None,
         exclude_track_ids: list[str] | None = None,
         genre_filter: list[str] | None = None,
         limit: int = 20,
@@ -139,7 +140,8 @@ class SimilarityService:
 
         Args:
             seed_embedding: The 512-dim query vector.
-            exclude_track_ids: Tracks to exclude from results.
+            seed_track_id: The seed track ID to exclude from results.
+            exclude_track_ids: Additional tracks to exclude from results.
             genre_filter: If provided, ONLY tracks matching ANY of these
                 genres are returned (hard filter, not a boost).
             limit: Maximum number of results.
@@ -150,11 +152,15 @@ class SimilarityService:
         candidate_limit = limit * CANDIDATE_MULTIPLIER
 
         # Build the WHERE clause dynamically.
-        conditions = ["track_id != :seed_id"]
+        conditions: list[str] = []
         params: dict[str, Any] = {
-            "seed_id": seed_embedding,
+            "query_vec": seed_embedding,
             "candidate_limit": candidate_limit,
         }
+
+        if seed_track_id:
+            conditions.append("track_id != :seed_track_id")
+            params["seed_track_id"] = seed_track_id
 
         if exclude_track_ids:
             conditions.append("track_id != ALL(:exclude_ids)")
@@ -164,19 +170,19 @@ class SimilarityService:
             conditions.append("genre_ids && :genre_filter")
             params["genre_filter"] = genre_filter
 
-        where_clause = " AND ".join(conditions)
+        where_clause = " AND ".join(conditions) if conditions else "TRUE"
 
-        # Cosine distance: ``embedding <=> :seed_id`` returns 0.0 for
+        # Cosine distance: ``embedding <=> :query_vec`` returns 0.0 for
         # identical vectors, 2.0 for opposite.  ``1 - distance`` gives
         # a similarity score in [0, 1].
         sql = text(f"""
             SELECT
                 track_id,
-                1 - (embedding <=> :seed_id) AS similarity,
+                1 - (embedding <=> :query_vec) AS similarity,
                 genre_ids
             FROM track_embeddings_audio
             WHERE {where_clause}
-            ORDER BY embedding <=> :seed_id
+            ORDER BY embedding <=> :query_vec
             LIMIT :candidate_limit
         """)
 
@@ -226,6 +232,7 @@ class SimilarityService:
 
         candidates = await self._query_nearest_neighbors(
             seed_embedding=seed_embedding,
+            seed_track_id=track_id,
             exclude_track_ids=exclude_track_ids,
             genre_filter=genre_filter,
             limit=limit,

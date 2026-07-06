@@ -64,6 +64,9 @@ func (m *mockAuthService) UpdateProfile(ctx context.Context, userID string, req 
 func (m *mockAuthService) ChangePassword(ctx context.Context, userID string, req ChangePasswordRequest) error {
 	return nil
 }
+func (m *mockAuthService) ForgotPassword(ctx context.Context, email string) error {
+	return nil
+}
 func (m *mockAuthService) GetPublicProfile(ctx context.Context, id string) (*User, error) {
 	return nil, nil
 }
@@ -77,7 +80,7 @@ func setupAuthTest() (*Handler, *mockAuthService, *gin.Engine) {
 
 	r := gin.New()
 	rg := r.Group("/api/v1") // match production: RegisterRoutes is called with /api/v1 group
-	RegisterRoutes(rg, h, func(c *gin.Context) { c.Next() })
+	RegisterRoutes(rg, h, func(c *gin.Context) { c.Next() }, nil)
 	return h, mockSvc, r
 }
 

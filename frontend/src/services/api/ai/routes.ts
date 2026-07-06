@@ -4,8 +4,10 @@ import { AIApiRoutes } from './enums'
 import {
   MoodResponseSchema,
   AIPlaylistResponseSchema,
+  EmbeddingResponseSchema,
   type MoodResponse,
   type AIPlaylistResponse,
+  type EmbeddingResponse,
   type GeneratePlaylistPayload,
   type AnalyzeMoodPayload,
   type EmbeddingPayload,
@@ -43,11 +45,11 @@ export const useAIApi = () => {
     )
   }
 
-  const generateEmbedding = async (payload: EmbeddingPayload, config?: UseRequestConfig<any>) => {
-    return useRequest<any>(
+  const generateEmbedding = async (payload: EmbeddingPayload, config?: UseRequestConfig<EmbeddingResponse[]>) => {
+    return useRequest<EmbeddingResponse[]>(
       AIApiRoutes.GENERATE_EMBEDDING,
       { method: 'POST', data: payload },
-      { silent: false, ...config },
+      { silent: false, schema: EmbeddingResponseSchema, ...config },
     )
   }
 

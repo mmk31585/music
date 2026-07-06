@@ -1,8 +1,9 @@
-export function formatCount(count?: number | null): string {
-  if (!count && count !== 0) return '0'
-  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
-  if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`
-  return String(count)
+export function formatCount(count?: number | null, locale?: string): string {
+  const loc = locale || (typeof navigator !== 'undefined' ? navigator.language : 'en')
+  if (!count && count !== 0) return new Intl.NumberFormat(loc).format(0)
+  if (count >= 1_000_000) return `${new Intl.NumberFormat(loc).format(count / 1_000_000)}M`
+  if (count >= 1_000) return `${new Intl.NumberFormat(loc).format(count / 1_000)}K`
+  return new Intl.NumberFormat(loc).format(count)
 }
 
 export const numberUtil = {

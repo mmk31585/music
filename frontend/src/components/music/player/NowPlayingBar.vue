@@ -54,7 +54,7 @@
 
           <div role="button" tabindex="0" aria-label="Open fullscreen player" class="min-w-0 flex-1 cursor-pointer" @click="emit('toggle-fullscreen')" @keydown.enter="emit('toggle-fullscreen')" @keydown.space.prevent="emit('toggle-fullscreen')">
             <p class="truncate text-sm font-bold text-white leading-tight">{{ currentTrack.title }}</p>
-            <p class="truncate text-xs text-white/50 leading-tight">{{ currentTrack.artistName }}</p>
+            <p class="truncate text-xs text-white/60 leading-tight">{{ currentTrack.artistName }}</p>
           </div>
 
           <div class="flex items-center gap-2">
@@ -158,13 +158,20 @@
                 <Transition name="fade">
                   <div
                     v-if="showShuffleMenu"
+                    ref="shuffleMenuRef"
+                    role="menu"
+                    aria-label="Select shuffle mode"
                     class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-60 min-w-37.5 rounded-xl border border-white/10 bg-surface-raised p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
                     style="backdrop-filter: blur(24px);"
+                    @keydown="onMenuKeydown($event, 'shuffle')"
                   >
                     <button
-                      v-for="mode in shuffleModes"
+                      v-for="(mode, idx) in shuffleModes"
                       :key="mode.value"
+                      :ref="(el) => { if (el) shuffleItemRefs[idx] = el as HTMLElement }"
                       type="button"
+                      role="menuitem"
+                      :tabindex="idx === 0 ? 0 : -1"
                       class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/8"
                       :class="shuffleMode === mode.value ? 'text-aurora-purple bg-white/6' : 'text-slate-400 hover:text-white'"
                       @click="setShuffleMode(mode.value)"
@@ -232,13 +239,20 @@
                 <Transition name="fade">
                   <div
                     v-if="showRepeatMenu"
+                    ref="repeatMenuRef"
+                    role="menu"
+                    aria-label="Select repeat mode"
                     class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[60] min-w-[130px] rounded-xl border border-white/10 bg-surface-raised p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
                     style="backdrop-filter: blur(24px);"
+                    @keydown="onMenuKeydown($event, 'repeat')"
                   >
                     <button
-                      v-for="mode in repeatModes"
+                      v-for="(mode, idx) in repeatModes"
                       :key="mode.value"
+                      :ref="(el) => { if (el) repeatItemRefs[idx] = el as HTMLElement }"
                       type="button"
+                      role="menuitem"
+                      :tabindex="idx === 0 ? 0 : -1"
                       class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/8"
                       :class="repeatMode === mode.value ? 'text-aurora-pink bg-white/6' : 'text-slate-400 hover:text-white'"
                       @click="setRepeatMode(mode.value)"
@@ -399,16 +413,16 @@
               >
                 <i aria-hidden="true" :class="volumeIcon" class="text-sm" />
               </button>
-              <div class="w-20" dir="ltr">
-                <Slider
-                  :model-value="muted ? 0 : volume"
-                  @update:model-value="onVolume"
-                  :min="0"
-                  :max="1"
-                  :step="0.01"
-                  aria-label="Volume"
-                />
-              </div>
+            <div class="w-20">
+              <Slider
+                :model-value="muted ? 0 : volume"
+                @update:model-value="onVolume"
+                :min="0"
+                :max="1"
+                :step="0.01"
+                aria-label="Volume"
+              />
+            </div>
 
               <div class="mx-1 h-6 w-px bg-white/10" />
 
@@ -457,6 +471,10 @@
               @click="onSeekClick"
               @keydown.enter="onSeekClick"
               @keydown.space.prevent="onSeekClick"
+              @keydown.arrow-left.prevent="seekRelative(-5)"
+              @keydown.arrow-right.prevent="seekRelative(5)"
+              @keydown.home.prevent="seekPercent(0)"
+              @keydown.end.prevent="seekPercent(100)"
             >
               <!-- Base track glow -->
               <div
@@ -584,7 +602,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { usePlayerControls, useTrackLike } from '@/composables/player'
 import { usePlayerStore } from '@/stores/player'
@@ -607,11 +625,62 @@ const showAddToPlaylist = ref(false)
 const collapsed = ref(localStorage.getItem('player-bar-collapsed') === 'true')
 const showShuffleMenu = ref(false)
 const shuffleBtnRef = ref<HTMLElement | null>(null)
+const shuffleMenuRef = ref<HTMLElement | null>(null)
+const shuffleItemRefs = ref<HTMLElement[]>([])
 const showRepeatMenu = ref(false)
 const repeatBtnRef = ref<HTMLElement | null>(null)
+const repeatMenuRef = ref<HTMLElement | null>(null)
+const repeatItemRefs = ref<HTMLElement[]>([])
 const showQueuePreview = ref(false)
 const queueBtnRef = ref<HTMLElement | null>(null)
 const showFullQueue = ref(false)
+
+// Auto-focus first menu item when menu opens
+watch(showShuffleMenu, async (v) => {
+  if (v) await nextTick(); shuffleItemRefs.value[0]?.focus()
+})
+watch(showRepeatMenu, async (v) => {
+  if (v) await nextTick(); repeatItemRefs.value[0]?.focus()
+})
+
+function onMenuKeydown(e: KeyboardEvent, type: 'shuffle' | 'repeat') {
+  const items = type === 'shuffle' ? shuffleItemRefs.value : repeatItemRefs.value
+  const currentIdx = items.findIndex((el) => el === document.activeElement)
+
+  switch (e.key) {
+    case 'ArrowDown': {
+      e.preventDefault()
+      const next = (currentIdx + 1) % items.length
+      items[next]?.focus()
+      break
+    }
+    case 'ArrowUp': {
+      e.preventDefault()
+      const prev = (currentIdx - 1 + items.length) % items.length
+      items[prev]?.focus()
+      break
+    }
+    case 'Home': {
+      e.preventDefault()
+      items[0]?.focus()
+      break
+    }
+    case 'End': {
+      e.preventDefault()
+      items[items.length - 1]?.focus()
+      break
+    }
+    case 'Escape':
+    case 'Tab': {
+      if (type === 'shuffle') showShuffleMenu.value = false
+      else showRepeatMenu.value = false
+      // Restore focus to trigger button
+      const trigger = type === 'shuffle' ? shuffleBtnRef.value : repeatBtnRef.value
+      trigger?.focus()
+      break
+    }
+  }
+}
 
 const shuffleModes = [
   { value: 'off' as const, label: 'Off', icon: 'pi pi-ban' },
@@ -769,6 +838,12 @@ function onSeekClick(e: MouseEvent | KeyboardEvent) {
   const bar = e.currentTarget as HTMLElement
   const rect = bar.getBoundingClientRect()
   const pct = (((e as MouseEvent).clientX - rect.left) / rect.width) * 100
+  seekPercent(pct)
+}
+
+function seekRelative(seconds: number) {
+  const newTime = Math.max(0, Math.min(duration.value, currentTime.value + seconds))
+  const pct = duration.value > 0 ? (newTime / duration.value) * 100 : 0
   seekPercent(pct)
 }
 

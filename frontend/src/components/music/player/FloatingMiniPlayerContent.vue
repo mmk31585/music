@@ -58,7 +58,7 @@
       </div>
 
       <div class="popout-progress">
-        <div role="button" tabindex="0" class="popout-progress-bar" ref="progressRef" @click="seekFromEvent" @keydown.enter="seekFromEvent" @keydown.space.prevent="seekFromEvent">
+        <div role="button" tabindex="0" class="popout-progress-bar" ref="progressRef" @click="seekFromEvent" @keydown.enter="seekFromEvent" @keydown.space.prevent="seekFromEvent" @keydown.arrow-left.prevent="seekTo(currentTime - 5)" @keydown.arrow-right.prevent="seekTo(currentTime + 5)" @keydown.home.prevent="seekTo(0)" @keydown.end.prevent="seekTo(duration)">
           <div class="popout-progress-fill" :style="{ transform: `scaleX(${progressPercent / 100})` }" />
         </div>
         <div class="popout-progress-labels">
@@ -264,6 +264,12 @@ function seekFromEvent(e: MouseEvent | KeyboardEvent) {
   const rect = el.getBoundingClientRect()
   const ratio = Math.max(0, Math.min(1, ((e as MouseEvent).clientX - rect.left) / rect.width))
   pc.seek(ratio * (duration.value || currentTrack.value?.durationSeconds || 0))
+}
+
+function seekTo(seconds: number) {
+  const totalDuration = duration.value || currentTrack.value?.durationSeconds || 0
+  if (!totalDuration) return
+  pc.seek(Math.max(0, Math.min(seconds, totalDuration)))
 }
 
 function close() { emit('update:visible', false) }

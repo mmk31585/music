@@ -32,6 +32,10 @@ export function useArtist(id: string | number) {
         libraryApi.getFollowedArtists().catch(() => []),
       ])
 
+      if (!artistData) {
+        throw new Error('Artist not found')
+      }
+
       artist.value = artistData
 
       tracks.value = Array.isArray(tracksData) ? tracksData.slice(0, 10) : []

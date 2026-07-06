@@ -192,7 +192,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserAuthStore } from '@/stores'
+import { useUserAuthStore, usePlayerStore } from '@/stores'
+import { wsClient } from '@/services/socket/client'
 
 defineEmits<{
   'toggle-mobile': []
@@ -278,6 +279,8 @@ function onAvatarError(e: Event) {
 async function handleLogout() {
   closeUserMenu()
   await store.logout()
+  wsClient.disconnect()
+  usePlayerStore().$reset()
   router.push('/')
 }
 

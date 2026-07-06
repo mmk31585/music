@@ -25,6 +25,14 @@ export const authRoutes: RouteRecordRaw[] = [
           title: 'Register',
         },
       },
+      {
+        path: 'forgot-password',
+        name: 'auth.forgot-password',
+        component: () => import('@/pages/auth/PageForgotPassword.vue'),
+        meta: {
+          title: 'Forgot Password',
+        },
+      },
     ],
   },
 ]

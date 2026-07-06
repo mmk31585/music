@@ -161,6 +161,7 @@ func TestClubService_LaunchParty_Member_Succeeds(t *testing.T) {
 	m.On("JoinParty", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	m.On("CreateParty", mock.Anything, mock.Anything).Return(nil)
 	m.On("JoinParty", mock.Anything, mock.Anything, userID).Return(nil)
+	m.On("GetPartyHost", mock.Anything, mock.Anything).Return(userID, nil)
 	m.On("UpdatePartyStatus", mock.Anything, mock.Anything, "active", mock.Anything).Return(nil)
 	mp.On("ListPlaylistTracks", mock.Anything, playlistID.String()).Return([]playlist.PlaylistTrackItem{
 		{TrackID: trackID},

@@ -19,35 +19,43 @@ const TrackArtistSchema = z.object({
 export const TrackSchema = z.object({
   id: IdSchema,
   title: z.string(),
+  slug: z.string().optional(),
   duration_seconds: z.number().default(0),
   audio_url: z.string().optional().nullable().default(null),
   cover_url: z.string().optional().nullable().default(null),
+  audio_media_id: z.string().optional().nullable().default(null),
+  cover_media_id: z.string().optional().nullable().default(null),
   artist_id: IdSchema.optional().nullable().default(null),
-  album_id: IdSchema.optional().nullable().default(null),
-  genre_id: IdSchema.optional().nullable().default(null),
   artist_name: z.string().optional().nullable().default(null),
-  album_title: z.string().optional().nullable().default(null),
+  album_id: IdSchema.optional().nullable().default(null),
   genres: z.array(GenreSchema).optional().default([]),
   play_count: z.number().default(0),
   track_number: z.number().optional().nullable().default(null),
   explicit: z.boolean().default(false),
+  is_public: z.boolean().optional().default(true),
+  created_at: z.string().optional().nullable().default(null),
+  updated_at: z.string().optional().nullable().default(null),
 })
 
 export type Track = {
   id: string | number
   title: string
+  slug?: string
   duration_seconds: number
   audio_url: string | null
   cover_url: string | null
+  audio_media_id: string | null
+  cover_media_id: string | null
   artist_id: string | number | null
-  album_id: string | number | null
-  genre_id: string | number | null
   artist_name: string | null
-  album_title: string | null
+  album_id: string | number | null
   genres: any[]
   play_count: number
   track_number: number | null
   explicit: boolean
+  is_public: boolean
+  created_at: string | null
+  updated_at: string | null
 }
 export type TrackArtistRequest = z.infer<typeof TrackArtistRequestSchema>
 
@@ -55,10 +63,14 @@ export interface TrackCreatePayload {
   title: string
   artist_id: string | number
   artists?: TrackArtistRequest[]
+  artist_ids?: Array<string | number>
+  credits?: TrackArtistRequest[]
   album_id?: string | number | null
   duration_seconds?: number | null
   audio_url?: string | null
   cover_url?: string | null
+  audio_media_id?: string | null
+  cover_media_id?: string | null
   genre_ids?: Array<string | number>
   track_number?: number | null
   explicit?: boolean | null
@@ -66,13 +78,15 @@ export interface TrackCreatePayload {
 }
 
 export interface TrackUpdatePayload {
-  title?: string
+  title?: string | null
   artist_id?: string | number | null
   artists?: TrackArtistRequest[]
   album_id?: string | number | null
   duration_seconds?: number | null
   audio_url?: string | null
   cover_url?: string | null
+  audio_media_id?: string | null
+  cover_media_id?: string | null
   genre_ids?: Array<string | number>
   track_number?: number | null
   explicit?: boolean | null
@@ -85,7 +99,7 @@ export interface TrackUploadPayload extends TrackCreatePayload {
   audioFile: File
 }
 
-export function toTrackMutationPayload(payload: Partial<Track>): TrackCreatePayload {
+export function toTrackMutationPayload(payload: Partial<Track> & { genre_ids?: Array<string | number> }): TrackCreatePayload {
   if (!payload.title) {
     throw new Error('title is required')
   }
@@ -106,11 +120,14 @@ export function toTrackMutationPayload(payload: Partial<Track>): TrackCreatePayl
         },
       ]
       : [],
+    artist_ids: payload.artist_ids ?? [],
     album_id: payload.album_id ?? null,
     duration_seconds: payload.duration_seconds ?? 0,
     audio_url: payload.audio_url ?? null,
     cover_url: payload.cover_url ?? null,
-    genre_ids: payload.genre_id ? [payload.genre_id] : [],
+    audio_media_id: payload.audio_media_id ?? null,
+    cover_media_id: payload.cover_media_id ?? null,
+    genre_ids: payload.genre_ids ?? [],
     track_number: payload.track_number ?? null,
     explicit: payload.explicit ?? false,
   }

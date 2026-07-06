@@ -41,7 +41,7 @@ export enum SocialApiRoutes {
   // Club Discussions (Phase 6)
   CLUB_DISCUSSIONS = '/social/clubs/:clubId/discussions',
   CLUB_DISCUSSION = '/social/discussions/:id',
-  CLUB_DISCUSSION_REPLIES = '/social/clubs/discussions/:id/replies',
+  CLUB_DISCUSSION_REPLIES = '/social/discussions/:id/replies',
   CLUB_DISCUSSION_REPLY_DELETE = '/social/discussions/:id/replies/:replyId',
 
   // Track Ratings

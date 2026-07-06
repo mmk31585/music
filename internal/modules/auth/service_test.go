@@ -61,8 +61,9 @@ func (m *mockRepo) RevokeSessionByRefreshToken(ctx context.Context, refreshToken
 	return m.Called(ctx, refreshToken).Error(0)
 }
 
-func (m *mockRepo) RevokeSessionByID(ctx context.Context, sessionID string) error {
-	return m.Called(ctx, sessionID).Error(0)
+func (m *mockRepo) RevokeSessionByID(ctx context.Context, sessionID string) (bool, error) {
+	args := m.Called(ctx, sessionID)
+	return args.Bool(0), args.Error(1)
 }
 
 func (m *mockRepo) DeleteUser(ctx context.Context, id string) error {

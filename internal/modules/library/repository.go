@@ -170,7 +170,7 @@ func (r *Repository) AddPlayHistory(ctx context.Context, userID, trackID string,
 	return err
 }
 
-func (r *Repository) ListLikedTracks(ctx context.Context, userID string) ([]LibraryTrackItem, error) {
+func (r *Repository) ListLikedTracks(ctx context.Context, userID string, limit, offset int) ([]LibraryTrackItem, error) {
 	query := `
 		SELECT
 			t.id,
@@ -190,9 +190,10 @@ func (r *Repository) ListLikedTracks(ctx context.Context, userID string) ([]Libr
 		LEFT JOIN albums al ON al.id = t.album_id
 		WHERE lt.user_id = $1
 		ORDER BY lt.created_at DESC
+		LIMIT $2 OFFSET $3
 	`
 
-	rows, err := r.db.QueryContext(ctx, query, userID)
+	rows, err := r.db.QueryContext(ctx, query, userID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +223,7 @@ func (r *Repository) ListLikedTracks(ctx context.Context, userID string) ([]Libr
 	return items, rows.Err()
 }
 
-func (r *Repository) ListLikedAlbums(ctx context.Context, userID string) ([]LibraryAlbumItem, error) {
+func (r *Repository) ListLikedAlbums(ctx context.Context, userID string, limit, offset int) ([]LibraryAlbumItem, error) {
 	query := `
 		SELECT
 			al.id,
@@ -237,9 +238,10 @@ func (r *Repository) ListLikedAlbums(ctx context.Context, userID string) ([]Libr
 		LEFT JOIN artists ar ON ar.id = al.artist_id
 		WHERE la.user_id = $1
 		ORDER BY la.created_at DESC
+		LIMIT $2 OFFSET $3
 	`
 
-	rows, err := r.db.QueryContext(ctx, query, userID)
+	rows, err := r.db.QueryContext(ctx, query, userID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +267,7 @@ func (r *Repository) ListLikedAlbums(ctx context.Context, userID string) ([]Libr
 	return items, rows.Err()
 }
 
-func (r *Repository) ListFollowedArtists(ctx context.Context, userID string) ([]LibraryArtistItem, error) {
+func (r *Repository) ListFollowedArtists(ctx context.Context, userID string, limit, offset int) ([]LibraryArtistItem, error) {
 	query := `
 		SELECT
 			ar.id,
@@ -276,9 +278,10 @@ func (r *Repository) ListFollowedArtists(ctx context.Context, userID string) ([]
 		JOIN artists ar ON ar.id = fa.artist_id
 		WHERE fa.user_id = $1
 		ORDER BY fa.created_at DESC
+		LIMIT $2 OFFSET $3
 	`
 
-	rows, err := r.db.QueryContext(ctx, query, userID)
+	rows, err := r.db.QueryContext(ctx, query, userID, limit, offset)
 	if err != nil {
 		return nil, err
 	}

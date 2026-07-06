@@ -22,14 +22,22 @@
             id="login-email"
             v-model="form.email"
             type="email"
+            autocomplete="email"
             placeholder="you@example.com"
             class="auth-input w-full pl-10"
             :class="{ 'ring-1 ring-red-500/50': errors.email }"
-            aria-label="Email"
+            :aria-describedby="errors.email ? 'login-email-error' : undefined"
+            aria-required="true"
+            @blur="validateField('email')"
           />
         </span>
         <Transition name="fade-slide">
-          <small v-if="errors.email" class="mt-1 block text-xs text-red-400" role="alert">
+          <small
+            v-if="errors.email"
+            id="login-email-error"
+            class="mt-1 block text-xs text-red-400"
+            role="alert"
+          >
             {{ errors.email }}
           </small>
         </Transition>
@@ -45,20 +53,51 @@
           <Password
             id="login-password"
             v-model="form.password"
+            autocomplete="current-password"
             placeholder="Enter password"
             class="w-full"
             input-class="auth-input w-full pl-10"
             :feedback="false"
             toggle-mask
             :class="{ 'ring-1 ring-red-500/50': errors.password }"
-            aria-label="Password"
+            :aria-describedby="errors.password ? 'login-password-error' : undefined"
+            aria-required="true"
+            @blur="validateField('password')"
           />
         </span>
         <Transition name="fade-slide">
-          <small v-if="errors.password" class="mt-1 block text-xs text-red-400" role="alert">
+          <small
+            v-if="errors.password"
+            id="login-password-error"
+            class="mt-1 block text-xs text-red-400"
+            role="alert"
+          >
             {{ errors.password }}
           </small>
         </Transition>
+      </div>
+
+      <!-- Forgot password -->
+      <div class="flex justify-end -mt-3">
+        <RouterLink
+          to="/auth/forgot-password"
+          class="text-xs text-white/40 transition hover:text-spotify"
+        >
+          Forgot password?
+        </RouterLink>
+      </div>
+
+      <!-- Remember me -->
+      <div class="flex items-center gap-2">
+        <Checkbox
+          id="login-remember"
+          v-model="rememberMe"
+          :binary="true"
+          input-id="login-remember-input"
+        />
+        <label for="login-remember-input" class="cursor-pointer text-sm text-white/50 select-none hover:text-white/70 transition-colors">
+          Remember me for 30 days
+        </label>
       </div>
 
       <!-- API error -->
@@ -116,7 +155,7 @@
 <script setup lang="ts">
 import { useLoginForm } from '@/composables/auth/useLoginForm.ts'
 
-const { form, errors, apiError, loading, onSubmit } = useLoginForm()
+const { form, errors, apiError, loading, rememberMe, validateField, onSubmit } = useLoginForm()
 </script>
 
 <style scoped>
@@ -154,7 +193,7 @@ const { form, errors, apiError, loading, onSubmit } = useLoginForm()
 }
 
 :deep(.auth-input::placeholder) {
-  color: rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.4) !important;
 }
 
 :deep(.auth-btn) {

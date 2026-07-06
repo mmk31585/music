@@ -130,6 +130,12 @@ export const adminRoutes: RouteRecordRaw[] = [
         component: () => import('@/pages/admin/PageAdminContributions.vue'),
         meta: { title: 'Contributions' },
       },
+      {
+        path: 'settings',
+        name: 'admin.settings',
+        component: () => import('@/pages/admin/PageAdminSettings.vue'),
+        meta: { title: 'Settings' },
+      },
     ],
   },
 ]

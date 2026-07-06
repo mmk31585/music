@@ -362,13 +362,12 @@ import { useAIApi } from '@/services/api/ai'
 import { MOOD_OPTIONS, ACTIVITY_OPTIONS } from '@/services/api/ai/types'
 import type { AIPlaylistResponse } from '@/services/api/ai/types'
 import { usePlayer } from '@/composables/player'
-import { usePlayerApi } from '@/services/api/player'
 import { onImgError } from '@/utils/helpers'
+import { mapToPlaybackTracks } from '@/factories/playbackTrack'
 import { useToast } from 'primevue/usetoast'
 
 const aiApi = useAIApi()
 const player = usePlayer()
-const playerApi = usePlayerApi()
 const toast = useToast()
 
 const prompt = ref('')
@@ -439,14 +438,7 @@ async function handleGenerate() {
 
 function playTrack(index: number) {
   if (!result.value) return
-  const queue = result.value.tracks.map((t) => ({
-    id: t.id,
-    title: t.title,
-    artistName: t.artist || 'Unknown',
-    coverUrl: t.cover_url || null,
-    durationSeconds: t.duration ?? null,
-    streamUrl: playerApi.getTrackStreamUrl(t.id),
-  }))
+  const queue = mapToPlaybackTracks(result.value.tracks)
   player.setQueueAndPlay(queue, index)
 }
 

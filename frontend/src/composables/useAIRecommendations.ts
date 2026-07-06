@@ -5,8 +5,8 @@ import { usePlayerApi } from '@/services/api/player'
 import { usePlayer } from '@/composables/player'
 import type { RecommendationTrack, ListeningStats, DiscoverWeeklyResponse } from '@/services/api/recommendation/types'
 import type { AIPlaylistResponse, TrackMeta } from '@/services/api/ai/types'
-import type { PlaybackTrack } from '@/services/api/player/types'
 import { formatDuration } from '@/utils/format'
+import { mapToPlaybackTracks } from '@/factories/playbackTrack'
 
 interface PlayQueueItem {
   id: string
@@ -152,15 +152,7 @@ export function useAIRecommendations() {
   }
 
   function buildPlayQueue(tracks: PlayQueueItem[], startIndex = 0): void {
-    const playbackTracks: PlaybackTrack[] = tracks.map((t) => ({
-      id: t.id,
-      title: t.title,
-      artistName: t.artist ?? t.artist_name ?? 'Unknown artist',
-      albumTitle: t.album ?? t.album_title,
-      coverUrl: t.cover_url,
-      durationSeconds: t.duration ?? t.duration_seconds,
-      streamUrl: playerApi.getTrackStreamUrl(t.id),
-    }))
+    const playbackTracks = mapToPlaybackTracks(tracks)
     player.setQueueAndPlay(playbackTracks, startIndex)
   }
 
@@ -224,15 +216,7 @@ export function usePlayFromRecommendation() {
   const playerApi = usePlayerApi()
 
   function playFromRecommendation(tracks: PlayQueueItem[], startIndex = 0): void {
-    const playbackTracks: PlaybackTrack[] = tracks.map((t) => ({
-      id: t.id,
-      title: t.title,
-      artistName: t.artist ?? t.artist_name ?? 'Unknown artist',
-      albumTitle: t.album ?? t.album_title,
-      coverUrl: t.cover_url,
-      durationSeconds: t.duration ?? t.duration_seconds,
-      streamUrl: playerApi.getTrackStreamUrl(t.id),
-    }))
+    const playbackTracks = mapToPlaybackTracks(tracks)
     player.setQueueAndPlay(playbackTracks, startIndex)
   }
 

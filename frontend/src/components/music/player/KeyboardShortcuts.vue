@@ -3,13 +3,18 @@
     <Transition name="fade">
       <div
         v-if="visible"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Keyboard Shortcuts"
         class="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-xs"
         @click.self="visible = false"
+        @keydown.escape="visible = false"
       >
         <div class="mx-4 w-full max-w-md rounded-2xl border border-white/8 bg-[#141414] p-6 shadow-2xl">
           <div class="mb-6 flex items-center justify-between">
             <h2 class="text-lg font-bold text-white">Keyboard Shortcuts</h2>
             <button
+              ref="closeBtnRef"
               type="button"
               aria-label="Close shortcuts"
               class="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white"
@@ -46,7 +51,18 @@
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue'
+import { useTemplateRef } from 'vue'
+
 const visible = defineModel<boolean>('visible', { default: false })
+const closeBtnRef = useTemplateRef<HTMLButtonElement>('closeBtnRef')
+
+// Focus trap: focus close button when dialog opens
+watch(visible, (val) => {
+  if (val) {
+    requestAnimationFrame(() => closeBtnRef.value?.focus())
+  }
+})
 
 const shortcuts = [
   { label: 'Play / Pause', keys: ['Space'] },

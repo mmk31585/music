@@ -3,7 +3,12 @@
     ref="container"
     class="visualizer-container relative h-full w-full overflow-hidden"
   >
-    <canvas ref="canvas" class="h-full w-full" />
+    <canvas
+      ref="canvas"
+      class="h-full w-full"
+      role="img"
+      aria-label="Audio visualizer — ambient particles and bars responding to the current track"
+    />
     <div
       v-if="!hasAudioData && isPlaying"
       class="absolute inset-0 flex items-center justify-center"
@@ -74,7 +79,14 @@ const hasAudioData = ref(false)
 
 const perfTier = detectPerformanceTier()
 const isLowTier = perfTier === 'low'
-const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+const prefersReducedMotion = ref(window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+// React to mid-session preference changes (WCAG 2.2: 1.4.4 Resize text)
+if (typeof window !== 'undefined') {
+  const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+  const handler = (e: MediaQueryListEvent) => { prefersReducedMotion.value = e.matches }
+  mq.addEventListener('change', handler)
+  onBeforeUnmount(() => mq.removeEventListener('change', handler))
+}
 
 const effectiveMode = computed<VisualizerMode>(() => {
   if (isLowTier && props.mode !== 'spectrum') return 'spectrum'
@@ -722,7 +734,7 @@ function loop(time: number) {
   lastTime = time
   frameCount++
 
-  const render = renderers[isLowTier || prefersReducedMotion ? 'spectrum' : effectiveMode.value]
+  const render = renderers[isLowTier || prefersReducedMotion.value ? 'spectrum' : effectiveMode.value]
   render?.(time, dt)
 
   if (props.isPlaying) {

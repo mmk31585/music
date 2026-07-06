@@ -479,7 +479,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { SkeletonLoader } from '@/components/common'
 import { useCreatorApi } from '@/services/api/creator'
-import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
+import { buildPlaybackTrack } from '@/factories/playbackTrack'
 import { usePlayer } from '@/composables/player'
 import { onImgError } from '@/utils/helpers'
 import CreatorMetricCard from '@/components/creator/CreatorMetricCard.vue'
@@ -493,7 +493,6 @@ import type {
 
 const creatorApi = useCreatorApi()
 const player = usePlayer()
-const playerApi = usePlayerApi()
 
 const loading = ref(true)
 const refreshing = ref(false)
@@ -618,16 +617,13 @@ async function refreshStats() {
 }
 
 function playTrack(track: Record<string, unknown>) {
-  const pb: PlaybackTrack = {
+  player.playTrack(buildPlaybackTrack({
     id: String(track.track_id ?? ''),
     title: String(track.title ?? ''),
-    artistName: String(track.artist_name || 'Unknown'),
-    albumTitle: null,
-    coverUrl: String(track.cover_url ?? ''),
-    durationSeconds: Number(track.duration ?? 0),
-    streamUrl: playerApi.getTrackStreamUrl(String(track.track_id ?? '')),
-  }
-  player.playTrack(pb)
+    artist_name: String(track.artist_name || 'Unknown'),
+    cover_url: String(track.cover_url ?? ''),
+    duration_seconds: Number(track.duration ?? 0),
+  }))
 }
 
 async function saveTrack() {

@@ -1,7 +1,14 @@
 <template>
   <Teleport to="body">
     <Transition name="fullscreen">
-      <div v-if="isOpen" class="fixed inset-0 z-9999 flex flex-col" :style="{ ...dynamicBg, transition: 'background 0.8s cubic-bezier(0.19, 1, 0.22, 1)' }">
+      <div
+        v-if="isOpen"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Now Playing"
+        class="fixed inset-0 z-9999 flex flex-col"
+        :style="{ ...dynamicBg, transition: 'background 0.8s cubic-bezier(0.19, 1, 0.22, 1)' }"
+      >
 
         <!-- Background blur layer with crossfade -->
         <div class="pointer-events-none absolute -inset-5 z-0 scale-110">
@@ -119,6 +126,10 @@
                   @mousedown="startDrag"
                   @keydown.enter="seek"
                   @keydown.space.prevent="seek"
+                  @keydown.arrow-left.prevent="seekTo(currentTime - 5)"
+                  @keydown.arrow-right.prevent="seekTo(currentTime + 5)"
+                  @keydown.home.prevent="seekTo(0)"
+                  @keydown.end.prevent="seekTo(duration)"
                   @mousemove="onSeekHover"
                   @mouseleave="seekHoverTime = null"
                 >
@@ -194,7 +205,7 @@
                 <button class="flex h-8 w-8 items-center justify-center text-white/40 transition-colors hover:text-white shrink-0" :aria-label="muted ? 'Unmute' : 'Mute'" @click="toggleMute">
                   <i aria-hidden="true" :class="muted ? 'pi pi-volume-off' : 'pi pi-volume-up'" class="text-xs" />
                 </button>
-                <div class="relative flex-1 flex items-center group/vol h-4" dir="ltr">
+                <div class="relative flex-1 flex items-center group/vol h-4">
                   <div class="absolute inset-x-0 h-0.5 rounded-full bg-white/15" />
                   <div class="absolute left-0 h-0.5 rounded-full transition-all" :style="{ width: `${muted ? 0 : Number(volume) * 100}%`, background: progressColor }" />
                   <Slider :model-value="muted ? 0 : volume" @update:model-value="onVolume" :min="0" :max="1" :step="0.01" class="w-full z-10" aria-label="Volume" />
@@ -395,6 +406,10 @@
                 @touchstart.prevent="startTouchDrag"
                 @keydown.enter="seek"
                 @keydown.space.prevent="seek"
+                @keydown.arrow-left.prevent="seekTo(currentTime - 5)"
+                @keydown.arrow-right.prevent="seekTo(currentTime + 5)"
+                @keydown.home.prevent="seekTo(0)"
+                @keydown.end.prevent="seekTo(duration)"
                 @mousemove="onSeekHoverMobile"
                 @mouseleave="mobileSeekHoverTime = null"
               >
@@ -454,8 +469,17 @@
         <!-- ── Shared shuffle / repeat popups (rendered here, positioned by JS) ── -->
         <div class="relative z-50">
           <Transition name="fade">
-            <div v-if="showShuffleMenu" class="shuffle-menu fixed z-9999 min-w-37.5 rounded-xl border border-white/10 bg-surface-raised p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl" :style="shuffleMenuPos" style="backdrop-filter: blur(24px);">
-              <button v-for="mode in shuffleModes" :key="mode.value" type="button" class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/8" :class="shuffleMode === mode.value ? 'text-aurora-purple bg-white/6' : 'text-slate-400 hover:text-white'" @click="setShuffleMode(mode.value)">
+            <div
+              v-if="showShuffleMenu"
+              ref="shuffleMenuRef"
+              role="menu"
+              aria-label="Select shuffle mode"
+              class="shuffle-menu fixed z-9999 min-w-37.5 rounded-xl border border-white/10 bg-surface-raised p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
+              :style="shuffleMenuPos"
+              style="backdrop-filter: blur(24px);"
+              @keydown="onMenuKeydown($event, 'shuffle')"
+            >
+              <button v-for="(mode, idx) in shuffleModes" :key="mode.value" type="button" :ref="(el) => { if (el) shuffleItemRefs[idx] = el as HTMLElement }" role="menuitem" :tabindex="idx === 0 ? 0 : -1" class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/8" :class="shuffleMode === mode.value ? 'text-aurora-purple bg-white/6' : 'text-slate-400 hover:text-white'" @click="setShuffleMode(mode.value)">
                 <i aria-hidden="true" :class="mode.icon" class="text-sm" />
                 <span class="flex-1 text-left">{{ mode.label }}</span>
                 <span v-if="shuffleMode === mode.value" class="h-2 w-2 rounded-full bg-aurora-purple" />
@@ -463,8 +487,17 @@
             </div>
           </Transition>
           <Transition name="fade">
-            <div v-if="showRepeatMenu" class="repeat-menu fixed z-9999 min-w-32.5 rounded-xl border border-white/10 bg-surface-raised p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl" :style="repeatMenuPos" style="backdrop-filter: blur(24px);">
-              <button v-for="mode in repeatModes" :key="mode.value" type="button" class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/8" :class="repeatMode === mode.value ? 'text-aurora-pink bg-white/6' : 'text-slate-400 hover:text-white'" @click="setRepeatMode(mode.value)">
+            <div
+              v-if="showRepeatMenu"
+              ref="repeatMenuRef"
+              role="menu"
+              aria-label="Select repeat mode"
+              class="repeat-menu fixed z-9999 min-w-32.5 rounded-xl border border-white/10 bg-surface-raised p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
+              :style="repeatMenuPos"
+              style="backdrop-filter: blur(24px);"
+              @keydown="onMenuKeydown($event, 'repeat')"
+            >
+              <button v-for="(mode, idx) in repeatModes" :key="mode.value" type="button" :ref="(el) => { if (el) repeatItemRefs[idx] = el as HTMLElement }" role="menuitem" :tabindex="idx === 0 ? 0 : -1" class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/8" :class="repeatMode === mode.value ? 'text-aurora-pink bg-white/6' : 'text-slate-400 hover:text-white'" @click="setRepeatMode(mode.value)">
                 <i aria-hidden="true" :class="mode.icon" class="text-sm" />
                 <span class="flex-1 text-left">{{ mode.label }}</span>
                 <span v-if="repeatMode === mode.value" class="h-2 w-2 rounded-full bg-aurora-pink" />
@@ -570,6 +603,10 @@ const {
 
 const showShuffleMenu = ref(false)
 const showRepeatMenu = ref(false)
+const shuffleMenuRef = ref<HTMLElement | null>(null)
+const shuffleItemRefs = ref<HTMLElement[]>([])
+const repeatMenuRef = ref<HTMLElement | null>(null)
+const repeatItemRefs = ref<HTMLElement[]>([])
 const shuffleMenuPos = ref({ top: '0px', left: '0px' })
 const repeatMenuPos = ref({ top: '0px', left: '0px' })
 const shuffleModes = [
@@ -591,6 +628,32 @@ function setRepeatMode(mode: 'off' | 'all' | 'one') {
   usePlayerStore().repeatMode = mode
   showRepeatMenu.value = false
 }
+
+// Auto-focus first menu item when menu opens
+watch(showShuffleMenu, async (v) => {
+  if (v) await nextTick(); shuffleItemRefs.value[0]?.focus()
+})
+watch(showRepeatMenu, async (v) => {
+  if (v) await nextTick(); repeatItemRefs.value[0]?.focus()
+})
+
+function onMenuKeydown(e: KeyboardEvent, type: 'shuffle' | 'repeat') {
+  const items = type === 'shuffle' ? shuffleItemRefs.value : repeatItemRefs.value
+  const currentIdx = items.findIndex((el) => el === document.activeElement)
+  switch (e.key) {
+    case 'ArrowDown': { e.preventDefault(); const next = (currentIdx + 1) % items.length; items[next]?.focus(); break }
+    case 'ArrowUp': { e.preventDefault(); const prev = (currentIdx - 1 + items.length) % items.length; items[prev]?.focus(); break }
+    case 'Home': { e.preventDefault(); items[0]?.focus(); break }
+    case 'End': { e.preventDefault(); items[items.length - 1]?.focus(); break }
+    case 'Escape':
+    case 'Tab': {
+      if (type === 'shuffle') showShuffleMenu.value = false
+      else showRepeatMenu.value = false
+      break
+    }
+  }
+}
+
 function openShuffleMenu(e: MouseEvent) {
   const btn = e.currentTarget as HTMLElement
   const rect = btn.getBoundingClientRect()

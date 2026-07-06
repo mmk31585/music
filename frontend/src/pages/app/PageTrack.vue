@@ -647,7 +647,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { SkeletonLoader } from '@/components/common'
 import { useTrack } from '@/composables/catalog/useTrack'
 import { usePlayer } from '@/composables/player'
-import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
+import { usePlayerApi } from '@/services/api/player'
+import { buildPlaybackTrack, mapToPlaybackTracks } from '@/factories/playbackTrack'
 import { useAlbumColors } from '@/composables/useAlbumColors'
 import { useSocialShare } from '@/composables/social'
 import { useVideoApi } from '@/services/api/video'
@@ -739,15 +740,15 @@ function openVideo(v: VideoItem) {
 // ── Playback ──
 function togglePlay() {
   if (!track.value) return
-  const pb: PlaybackTrack = {
+  const pb = buildPlaybackTrack({
     id: trackId,
     title: track.value.title,
-    artistName: track.value.artist_name || 'Unknown',
-    albumTitle: track.value.album_title || null,
-    coverUrl: track.value.cover_url || null,
-    durationSeconds: track.value.duration_seconds ?? null,
-    streamUrl: track.value.audio_url || playerApi.getTrackStreamUrl(trackId),
-  }
+    artist_name: track.value.artist_name || 'Unknown',
+    album_title: track.value.album_title || null,
+    cover_url: track.value.cover_url || null,
+    duration_seconds: track.value.duration_seconds ?? null,
+    audio_url: track.value.audio_url || undefined,
+  })
 
   if (isPlaying.value && player.currentTrack.value?.id === trackId) {
     player.pause()
@@ -766,15 +767,10 @@ function playSimilar(
   },
   index: number,
 ) {
-  const queue: PlaybackTrack[] = similarTracks.value.map((t) => ({
-    id: String(t.id),
-    title: t.title,
-    artistName: t.artist_name || 'Unknown',
-    albumTitle: t.album_title || null,
-    coverUrl: t.cover_url || null,
-    durationSeconds: t.duration_seconds ?? null,
-    streamUrl: t.audio_url || playerApi.getTrackStreamUrl(String(t.id)),
-  }))
+  const queue = mapToPlaybackTracks(similarTracks.value.map((t) => ({
+    ...t,
+    audio_url: t.audio_url || undefined,
+  })))
 
   player.setQueueAndPlay(queue, index)
 }

@@ -25,7 +25,7 @@ func (r *Repository) UpsertEmbedding(ctx context.Context, trackID uuid.UUID, emb
 		ON CONFLICT (track_id)
 		DO UPDATE SET embedding = $2, model_version = $3, updated_at = NOW()
 	`
-	_, err := r.db.ExecContext(ctx, query, trackID, embedding, modelVersion)
+	_, err := r.db.ExecContext(ctx, query, trackID, Float64Array(embedding), modelVersion)
 	return err
 }
 
@@ -213,9 +213,14 @@ func (r *Repository) GetTracksByIDs(ctx context.Context, ids []string) ([]TrackM
 		LEFT JOIN albums al ON al.id = t.album_id
 		LEFT JOIN track_genres tg ON tg.track_id = t.id
 		LEFT JOIN genres g ON g.id = tg.genre_id
-		WHERE t.id = ANY($1)
+		WHERE t.id IN (?)
 	`
-	rows, err := r.db.QueryContext(ctx, query, ids)
+	query, args, err := sqlx.In(query, ids)
+	if err != nil {
+		return nil, err
+	}
+	query = r.db.Rebind(query)
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +259,7 @@ func (r *Repository) GetSimilarByEmbedding(ctx context.Context, embedding []floa
 		ORDER BY cosine_distance(te.embedding, $1)
 		LIMIT $2
 	`, tableName)
-	rows, err := r.db.QueryContext(ctx, query, embedding, limit)
+	rows, err := r.db.QueryContext(ctx, query, Float64Array(embedding), limit)
 	if err != nil {
 		return nil, err
 	}

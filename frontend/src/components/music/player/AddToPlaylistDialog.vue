@@ -3,6 +3,7 @@
     :visible="visible"
     modal
     :draggable="false"
+    aria-labelledby="add-to-playlist-title"
     :style="{ maxWidth: '420px', width: '90vw' }"
     :pt="{
       root: 'border-none',
@@ -16,7 +17,7 @@
     <template #header>
       <div class="flex items-center gap-2 px-1">
         <i aria-hidden="true" class="pi pi-list text-sm text-spotify" />
-        <span>Add to Playlist</span>
+        <span id="add-to-playlist-title">Add to Playlist</span>
       </div>
     </template>
 
@@ -130,6 +131,19 @@ async function fetch() {
 async function addTo(playlistId: string) {
   addingId.value = playlistId
   try {
+    // Duplicate check: fetch playlist detail to see if track already exists
+    const detail = await playlistsApi.getPlaylist(playlistId)
+    const alreadyIn = (detail.tracks || []).some((t) => t.track_id === props.trackId)
+    if (alreadyIn) {
+      toast.add({
+        severity: 'info',
+        summary: 'Already in this playlist',
+        life: 2500,
+      })
+      addingId.value = null
+      return
+    }
+
     await playlistsApi.addTrack(playlistId, { track_id: props.trackId })
     toast.add({
       severity: 'success',

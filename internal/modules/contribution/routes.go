@@ -15,10 +15,16 @@ func RegisterRoutes(api *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
 		{
 			protected.POST("", h.Create)
 			protected.GET("", h.ListMyContributions)
-			protected.GET("/pending", h.ListPending)
 			protected.GET("/:id", h.GetByID)
-			protected.POST("/:id/review", h.Review)
 			protected.GET("/:id/history", h.GetHistory)
+		}
+
+		// Moderator/admin review routes
+		modProtected := contributions.Group("")
+		modProtected.Use(authMW, auth.RequireRole("moderator", "admin"))
+		{
+			modProtected.GET("/pending", h.ListPending)
+			modProtected.POST("/:id/review", h.Review)
 		}
 	}
 

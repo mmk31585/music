@@ -65,12 +65,28 @@
           >
             <template #item="{ element: track, index }">
               <div
-                class="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 cursor-pointer hover:bg-white/6 active:scale-[0.99]"
+                :id="'queue-item-' + index"
+                class="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200"
+                :class="canReorder ? 'cursor-pointer' : ''"
+                role="button"
+                :tabindex="canReorder ? 0 : -1"
+                :aria-label="`${track.title} by ${track.artistName}. Press Enter to play, Arrow Up or Down to reorder.`"
                 @click="$emit('playFromQueue', index)"
+                @keydown.enter.prevent="$emit('playFromQueue', index)"
+                @keydown.space.prevent="$emit('playFromQueue', index)"
+                @keydown.up.prevent="moveItem(index, -1)"
+                @keydown.down.prevent="moveItem(index, 1)"
               >
                 <span
-                  class="drag-handle flex w-5 items-center justify-center text-white/20 transition-colors me-3"
-                  :class="canReorder ? 'cursor-grab active:cursor-grabbing hover:text-white/60' : 'cursor-default opacity-30'"
+                  v-if="canReorder"
+                  class="drag-handle flex w-5 items-center justify-center text-white/20 transition-colors me-3 cursor-grab active:cursor-grabbing hover:text-white/60"
+                  aria-label="Drag to reorder, or use Arrow Up/Down keys"
+                >
+                  <i aria-hidden="true" class="pi pi-bars text-xs" />
+                </span>
+                <span
+                  v-else
+                  class="flex w-5 items-center justify-center text-white/20 me-3 opacity-30"
                 >
                   <i aria-hidden="true" class="pi pi-bars text-xs" />
                 </span>
@@ -129,7 +145,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import draggable from 'vuedraggable'
 import { onImgError } from '@/utils/helpers'
 import { usePlayer } from '@/composables/player'
@@ -193,6 +209,26 @@ function onReorder(event: { oldIndex: number; newIndex: number }) {
   const reordered = queueManager.all()
   player.queue.value = [...reordered]
   localQueue.value = reordered
+}
+
+/**
+ * Keyboard alternative for drag-to-reorder.
+ * Arrow Up moves the item up (earlier in queue), Arrow Down moves it down.
+ */
+function moveItem(currentIndex: number, direction: -1 | 1) {
+  const newIndex = currentIndex + direction
+  if (newIndex < 0 || newIndex >= localQueue.value.length) return
+
+  queueManager.reorderQueue(currentIndex, newIndex)
+  const reordered = queueManager.all()
+  player.queue.value = [...reordered]
+  localQueue.value = reordered
+
+  // Move focus to the item at its new position
+  nextTick(() => {
+    const el = document.getElementById('queue-item-' + newIndex)
+    el?.focus()
+  })
 }
 
 function formatTime(seconds?: number | null) {

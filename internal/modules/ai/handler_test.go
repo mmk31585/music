@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gin-gonic/gin"
@@ -41,7 +42,7 @@ func TestHandler_GenerateEmbedding(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 
-	body := EmbeddingRequest{TrackIDs: []string{"test-id"}}
+	body := EmbeddingRequest{TrackIDs: []string{uuid.New().String()}}
 	data, _ := json.Marshal(body)
 	c.Request = httptest.NewRequest(http.MethodPost, "/embeddings", bytes.NewReader(data))
 	c.Request.Header.Set("Content-Type", "application/json")
@@ -159,7 +160,7 @@ func TestHandler_SimilarByEmbedding(t *testing.T) {
 
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT track_id, embedding, model_version, updated_at FROM track_embeddings_text`)).
 		WillReturnRows(sqlmock.NewRows([]string{"track_id", "embedding", "model_version", "updated_at"}).
-			AddRow(uuid.New(), "{0.1,0.2}", "v1", nil))
+			AddRow(uuid.New(), "{0.1,0.2}", "v1", time.Now()))
 
 	mock.ExpectQuery(regexp.QuoteMeta(`FROM track_embeddings_audio te`)).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "title", "artist", "album", "genre", "duration", "cover_url"}).

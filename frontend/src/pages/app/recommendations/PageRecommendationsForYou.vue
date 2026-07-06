@@ -140,11 +140,10 @@ import type { RecommendationTrack } from '@/services/api/recommendation'
 import type { DiscoverWeeklyPlaylistMeta } from '@/services/api/recommendation'
 import { usePlayer } from '@/composables/player'
 import { onImgError } from '@/utils/helpers'
-import { usePlayerApi } from '@/services/api/player'
+import { mapToPlaybackTracks } from '@/factories/playbackTrack'
 
 const api = useRecommendationsApi()
 const player = usePlayer()
-const playerApi = usePlayerApi()
 
 const loading = ref(true)
 const error = ref<string | null>(null)
@@ -177,15 +176,7 @@ async function fetchDiscoverWeekly() {
 }
 
 function play(track: RecommendationTrack, index: number) {
-  const allTracks = tracks.value.map((t) => ({
-    id: String(t.id),
-    title: t.title,
-    artistName: t.artist_name || 'Unknown',
-    albumTitle: t.album_title || null,
-    coverUrl: t.cover_url || null,
-    durationSeconds: t.duration_seconds ?? null,
-    streamUrl: playerApi.getTrackStreamUrl(String(t.id)),
-  }))
+  const allTracks = mapToPlaybackTracks(tracks.value)
   player.setQueueAndPlay(allTracks, index)
 }
 

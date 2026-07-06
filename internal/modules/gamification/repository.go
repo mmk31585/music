@@ -345,9 +345,9 @@ func (r *Repository) CheckAndAwardBadges(ctx context.Context, userID string) ([]
 		case "Curator":
 			r.db.QueryRowContext(ctx, `SELECT COUNT(*) >= 10 FROM playlists WHERE owner_id = $1`, userID).Scan(&met)
 		case "Networker":
-			r.db.QueryRowContext(ctx, `SELECT COUNT(*) >= 100 FROM follows WHERE followee_id = $1`, userID).Scan(&met)
+			r.db.QueryRowContext(ctx, `SELECT COUNT(*) >= 100 FROM user_follows WHERE followee_id = $1`, userID).Scan(&met)
 		case "Community Hero":
-			r.db.QueryRowContext(ctx, `SELECT COUNT(*) >= 50 FROM moderation_queue WHERE resolved_by = $1`, userID).Scan(&met)
+			r.db.QueryRowContext(ctx, `SELECT COUNT(*) >= 50 FROM content_reports WHERE moderator_id = $1 AND status = 'resolved'`, userID).Scan(&met)
 		case "Chart Climber":
 			rank, _ := r.GetUserRank(ctx, userID)
 			met = rank <= 10

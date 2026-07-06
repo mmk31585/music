@@ -74,10 +74,16 @@ const UIHooks: RequestHooks = {
     useUserAuthStore().clearToken()
   },
   resetAuthStore() {
-    useUserAuthStore().clearUser()
+    const store = useUserAuthStore()
+    store.clearUser()
+    store.clearToken()
   },
-  async redirectToLogin() {
-    await router?.push({ name: 'auth.login' })
+  async redirectToLogin(currentPath?: string) {
+    await router?.push(
+      currentPath
+        ? { name: 'auth.login', query: { redirect: currentPath } }
+        : { name: 'auth.login' },
+    )
   },
 
   // ---------------- Refresh token ----------------

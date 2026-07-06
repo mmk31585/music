@@ -4,6 +4,7 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue'
+import { useLocaleStore } from '@/stores/locale'
 
 const props = withDefaults(
   defineProps<{
@@ -13,11 +14,12 @@ const props = withDefaults(
   { duration: 1000 },
 )
 
+const localeStore = useLocaleStore()
 const current = ref(0)
 let animationId: number | null = null
 
 const formattedValue = computed(() =>
-  current.value.toLocaleString('fa-IR'),
+  current.value.toLocaleString(localeStore.locale === 'fa' ? 'fa-IR' : 'en-US'),
 )
 
 function prefersReducedMotion(): boolean {

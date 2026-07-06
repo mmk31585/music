@@ -1,35 +1,26 @@
-import { computed, ref, watch } from 'vue'
-
-const STORAGE_KEY = 'muse-rtl'
+import { computed } from 'vue'
+import { useLocaleStore } from '@/stores/locale'
 
 /**
  * Composable for managing RTL (right-to-left) direction state.
- * Persists to localStorage and updates <html> dir attribute.
+ * Derives direction from the locale store (single source of truth).
+ *
+ * The locale store syncs <html dir>, <html lang>, and PrimeVue locale.
+ * This composable provides a convenience interface for components that
+ * need RTL-aware logic (e.g., animation direction).
  */
-function getInitialRTL(): boolean {
-  const stored = localStorage.getItem(STORAGE_KEY)
-  if (stored !== null) return stored === 'true'
-  // Default based on <html> dir attribute
-  return document.documentElement.getAttribute('dir') === 'rtl'
-}
-
-const isRTL = ref(getInitialRTL())
-
-// Sync <html> dir attribute
-watch(isRTL, (val) => {
-  document.documentElement.setAttribute('dir', val ? 'rtl' : 'ltr')
-  localStorage.setItem(STORAGE_KEY, String(val))
-}, { immediate: true })
-
 export function useRTL() {
-  const dir = computed(() => isRTL.value ? 'rtl' : 'ltr')
+  const localeStore = useLocaleStore()
+
+  const isRTL = computed(() => localeStore.locale === 'fa')
+  const dir = computed(() => localeStore.dir())
 
   function toggleRTL() {
-    isRTL.value = !isRTL.value
+    localeStore.toggleLocale()
   }
 
   function setRTL(val: boolean) {
-    isRTL.value = val
+    localeStore.setLocale(val ? 'fa' : 'en')
   }
 
   return {

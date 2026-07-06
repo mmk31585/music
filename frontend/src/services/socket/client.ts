@@ -20,6 +20,31 @@ const subscriptions = new Set<string>()
 const isConnected = ref(false)
 let unsubscribeTokenWatch: (() => void) | null = null
 
+// ── Event replay buffer ──
+const MAX_BUFFER_SIZE = 50
+const eventBuffer: { type: string; payload?: unknown }[] = []
+
+function pushToBuffer(msg: { type: string; payload?: unknown }) {
+  eventBuffer.push(msg)
+  if (eventBuffer.length > MAX_BUFFER_SIZE) {
+    eventBuffer.splice(0, eventBuffer.length - MAX_BUFFER_SIZE)
+  }
+}
+
+function replayBuffer() {
+  if (eventBuffer.length === 0) return
+  if (import.meta.env.DEV) {
+    console.log(`[WS] Replaying ${eventBuffer.length} buffered events`)
+  }
+  for (const msg of eventBuffer) {
+    const typeHandlers = handlers.get(msg.type)
+    if (typeHandlers) {
+      typeHandlers.forEach((h) => h(msg))
+    }
+    globalHandlers.forEach((h) => h(msg))
+  }
+}
+
 function getToken(): string | null {
   const auth = useUserAuthStore()
   return auth.token
@@ -50,19 +75,33 @@ function connectInner() {
     reconnectAttempts = 0
     resubscribeAll()
     flushQueue()
+    // Replay buffered events so recently-registered handlers catch up
+    replayBuffer()
     startPing()
   }
 
   socket.onmessage = (event) => {
     try {
-      const msg = JSON.parse(event.data)
+      const raw = JSON.parse(event.data)
+      // Validate message structure: must be an object with a string `type`
+      if (!raw || typeof raw !== 'object' || typeof raw.type !== 'string') {
+        if (import.meta.env.DEV) {
+          console.warn('[WS] Ignoring malformed message:', raw)
+        }
+        return
+      }
+      const msg = raw as { type: string; payload?: unknown }
+      // Buffer for replay on reconnect
+      pushToBuffer(msg)
       const typeHandlers = handlers.get(msg.type)
       if (typeHandlers) {
         typeHandlers.forEach((h) => h(msg))
       }
       globalHandlers.forEach((h) => h(msg))
     } catch {
-      /* ignore parse errors */
+      if (import.meta.env.DEV) {
+        console.warn('[WS] Failed to parse message:', event.data)
+      }
     }
   }
 
@@ -133,9 +172,18 @@ export const wsClient = {
     this.setupTokenWatch()
   },
 
+  getEventBuffer() {
+    return eventBuffer
+  },
+
+  clearEventBuffer() {
+    eventBuffer.length = 0
+  },
+
   disconnect() {
     intentionalClose = true
     stopPing()
+    eventBuffer.length = 0
     if (reconnectTimer) {
       clearTimeout(reconnectTimer)
       reconnectTimer = null

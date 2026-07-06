@@ -180,7 +180,8 @@ function setTimer(minutes: number) {
 
 function onCrossfadeChange(val: number | number[]) {
   const player = usePlayer()
-  player.crossfadeDuration.value = typeof val === 'number' ? val : val[0] ?? 0
+  const seconds = typeof val === 'number' ? val : val[0] ?? 0
+  player.setCrossfadeDuration(seconds)
 }
 
 const qualityOptions: AudioQuality[] = ['auto', 'low', 'medium', 'high', 'lossless']

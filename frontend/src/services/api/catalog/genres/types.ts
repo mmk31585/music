@@ -4,8 +4,8 @@ import { IdSchema } from '../common'
 export const GenreSchema = z.object({
   id: IdSchema,
   name: z.string(),
-  slug: z.string().optional().nullable().default(null),
-  track_count: z.number().default(0),
+  slug: z.string(),
+  created_at: z.string().optional().nullable().default(null),
 })
 
 export type Genre = z.infer<typeof GenreSchema>

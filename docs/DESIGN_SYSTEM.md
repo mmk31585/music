@@ -85,14 +85,16 @@ The font stack uses a layered approach -- Persian text uses `IRANYekanWeb` as th
 * { font-family: 'IRANYekanWeb', Arial, sans-serif; }
 
 /* Display / headlines */
---font-display: 'Cabinet Grotesk', 'IRANYekanWeb', sans-serif;
+--font-display: 'Lexend', 'IRANYekanWeb', sans-serif;
 
 /* UI elements, body */
 --font-ui:      'Inter', 'IRANYekanWeb', sans-serif;
 
 /* Music metadata, lyrics */
---font-music:   'Satoshi', 'IRANYekanWeb', sans-serif;
+--font-music:   'Inter', 'IRANYekanWeb', sans-serif;
 ```
+
+> **Note:** The spec originally called for `Cabinet Grotesk` (display) and `Satoshi` (music), which are premium fonts. The implementation uses `Lexend` and `Inter` (free Google Font alternatives) for licensing simplicity. These provide similar aesthetics and are already bundled via Google Fonts in `index.html`. To switch to the premium fonts, download from [Fonts Share](https://www.fontshare.com/) and add woff2 files to `assets/fonts/`.
 
 Font files bundled: `IRANYekanWeb` in 3 weights (light, regular, bold) as woff2.
 

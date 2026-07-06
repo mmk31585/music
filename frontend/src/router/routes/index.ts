@@ -4,6 +4,15 @@ import { appRoutes } from './app'
 import { adminRoutes } from './admin'
 
 const routes: RouteRecordRaw[] = [
+  {
+    path: '/maintenance',
+    name: 'maintenance',
+    component: () => import('@/pages/errors/PageMaintenance.vue'),
+    meta: {
+      title: 'Under Maintenance',
+      layout: 'layout-empty',
+    },
+  },
   ...authRoutes,
   {
     path: '/onboarding',

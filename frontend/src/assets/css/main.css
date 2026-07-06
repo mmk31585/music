@@ -130,6 +130,7 @@
 
   --color-pink: #f472b6;
   --color-blue: #60a5fa;
+  --surface-dark: #050505;
   --surface-base: #0a0a0a;
   --surface-raised: #121212;
   --surface-overlay: #1a1a1a;
@@ -890,7 +891,7 @@ body {
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: rgba(255, 255, 255, 0.4);
-    text-align: left;
+    text-align: start;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     white-space: nowrap;
   }
@@ -920,7 +921,7 @@ body {
 @keyframes row-enter {
   from {
     opacity: 0;
-    transform: translateX(-8px);
+    transform: translateX(calc(var(--dir-multiplier, 1) * -8px));
   }
   to {
     opacity: 1;
@@ -1079,7 +1080,7 @@ body {
 .skip-link {
   position: absolute;
   top: -100%;
-  left: 1rem;
+  inset-inline-start: 1rem;
   z-index: 1000;
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;

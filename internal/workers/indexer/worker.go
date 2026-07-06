@@ -60,6 +60,12 @@ func NewWorker(db *sqlx.DB, osClient *osclient.Client, logger *zap.Logger) *Work
 func (w *Worker) Name() string { return "indexer" }
 
 func (w *Worker) Run(ctx context.Context) error {
+	defer func() {
+		if r := recover(); r != nil {
+			w.logger.Error("indexer worker panicked", zap.Any("recover", r))
+		}
+	}()
+
 	if w.osClient == nil || !w.osClient.IsHealthy() {
 		w.logger.Warn("opensearch not available, indexer worker idling")
 		return nil

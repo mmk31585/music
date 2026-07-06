@@ -89,10 +89,12 @@ func (h *Handler) UnlikeTrack(c *gin.Context) {
 
 // ListLikedTracks godoc
 // @Summary List liked tracks
-// @Description Returns all liked tracks for the authenticated user.
+// @Description Returns paginated liked tracks for the authenticated user.
 // @Tags library
 // @Produce json
 // @Security Bearer
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(20)
 // @Success 200 {object} map[string]interface{}
 // @Failure 401 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
@@ -104,13 +106,14 @@ func (h *Handler) ListLikedTracks(c *gin.Context) {
 		return
 	}
 
-	items, err := h.service.ListLikedTracks(c.Request.Context(), userID)
+	page, limit := parsePagination(c)
+	items, err := h.service.ListLikedTracks(c.Request.Context(), userID, page, limit)
 	if err != nil {
 		h.handleError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": items})
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": items, "page": page, "limit": limit})
 }
 
 // LikeAlbum godoc
@@ -186,10 +189,12 @@ func (h *Handler) UnlikeAlbum(c *gin.Context) {
 
 // ListLikedAlbums godoc
 // @Summary List liked albums
-// @Description Returns all liked albums for the authenticated user.
+// @Description Returns paginated liked albums for the authenticated user.
 // @Tags library
 // @Produce json
 // @Security Bearer
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(20)
 // @Success 200 {object} map[string]interface{}
 // @Failure 401 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
@@ -201,13 +206,14 @@ func (h *Handler) ListLikedAlbums(c *gin.Context) {
 		return
 	}
 
-	items, err := h.service.ListLikedAlbums(c.Request.Context(), userID)
+	page, limit := parsePagination(c)
+	items, err := h.service.ListLikedAlbums(c.Request.Context(), userID, page, limit)
 	if err != nil {
 		h.handleError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": items})
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": items, "page": page, "limit": limit})
 }
 
 // FollowArtist godoc
@@ -283,10 +289,12 @@ func (h *Handler) UnfollowArtist(c *gin.Context) {
 
 // ListFollowedArtists godoc
 // @Summary List followed artists
-// @Description Returns all followed artists for the authenticated user.
+// @Description Returns paginated followed artists for the authenticated user.
 // @Tags library
 // @Produce json
 // @Security Bearer
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(20)
 // @Success 200 {object} map[string]interface{}
 // @Failure 401 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
@@ -298,13 +306,14 @@ func (h *Handler) ListFollowedArtists(c *gin.Context) {
 		return
 	}
 
-	items, err := h.service.ListFollowedArtists(c.Request.Context(), userID)
+	page, limit := parsePagination(c)
+	items, err := h.service.ListFollowedArtists(c.Request.Context(), userID, page, limit)
 	if err != nil {
 		h.handleError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": items})
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": items, "page": page, "limit": limit})
 }
 
 // AddPlayHistory godoc
@@ -452,4 +461,23 @@ func parseLimit(c *gin.Context, defaultValue int) int {
 		return defaultValue
 	}
 	return n
+}
+
+func parsePagination(c *gin.Context) (page, limit int) {
+	page = 1
+	if v := c.Query("page"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			page = n
+		}
+	}
+	limit = 20
+	if v := c.Query("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			limit = n
+		}
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	return
 }

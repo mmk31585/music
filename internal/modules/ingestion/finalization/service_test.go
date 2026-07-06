@@ -114,18 +114,18 @@ func TestFinalize_ArtistLink(t *testing.T) {
 		"track": {"title": "Test Track", "durationSeconds": 180, "trackNumber": 1, "explicit": false}
 	}`
 
-	mock.ExpectBegin()
-
 	mock.ExpectQuery(`SELECT asset_type, url FROM ingestion_draft_assets WHERE`).
 		WithArgs("draft-1").
 		WillReturnRows(sqlmock.NewRows([]string{"asset_type", "url"}))
+
+	mock.ExpectBegin()
 
 	mock.ExpectQuery(`INSERT INTO tracks`).
 		WithArgs("550e8400-e29b-41d4-a716-446655440000", nil, "Test Track", "test-track", 180, 1, false, "/storage/catalog-audio/550e8400-e29b-41d4-a716-446655440000/draft-1-file.mp3", "").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("660e8400-e29b-41d4-a716-446655440001"))
 
 	mock.ExpectExec(`INSERT INTO track_artists`).
-		WithArgs("660e8400-e29b-41d4-a716-446655440001", "550e8400-e29b-41d4-a716-446655440000").
+		WithArgs("660e8400-e29b-41d4-a716-446655440001", "550e8400-e29b-41d4-a716-446655440000", "primary", 1).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	mock.ExpectExec(`UPDATE ingestion_drafts`).
@@ -160,6 +160,10 @@ func TestFinalize_CreateArtistAndAlbum(t *testing.T) {
 		"track": {"title": "New Track", "durationSeconds": 240, "trackNumber": 1, "explicit": true, "genre": "Rock, Pop"}
 	}`
 
+	mock.ExpectQuery(`SELECT asset_type, url FROM ingestion_draft_assets WHERE`).
+		WithArgs("draft-2").
+		WillReturnRows(sqlmock.NewRows([]string{"asset_type", "url"}))
+
 	mock.ExpectBegin()
 
 	mock.ExpectQuery(`INSERT INTO artists`).
@@ -174,20 +178,16 @@ func TestFinalize_CreateArtistAndAlbum(t *testing.T) {
 		WithArgs("bb0e8400-e29b-41d4-a716-446655440001", "aa0e8400-e29b-41d4-a716-446655440000").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	mock.ExpectQuery(`SELECT asset_type, url FROM ingestion_draft_assets WHERE`).
-		WithArgs("draft-2").
-		WillReturnRows(sqlmock.NewRows([]string{"asset_type", "url"}))
-
 	mock.ExpectQuery(`INSERT INTO genres`).
 		WithArgs("Rock", "rock", "Pop", "pop").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("cc0e8400-e29b-41d4-a716-446655440002").AddRow("dd0e8400-e29b-41d4-a716-446655440003"))
 
 	mock.ExpectQuery(`INSERT INTO tracks`).
-		WithArgs("aa0e8400-e29b-41d4-a716-446655440000", sqlmock.AnyArg(), "New Track", "new-track", 240, 1, true, "/storage/catalog-audio/aa0e8400-e29b-41d4-a716-446655440000/draft-2-file.mp3", "https://img/cover.jpg").
+		WithArgs("aa0e8400-e29b-41d4-a716-446655440000", sqlmock.AnyArg(), "New Track", "new-track", 240, 1, true, "/storage/catalog-audio/aa0e8400-e29b-41d4-a716-446655440000/draft-2-file.mp3", "").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("ee0e8400-e29b-41d4-a716-446655440004"))
 
 	mock.ExpectExec(`INSERT INTO track_artists`).
-		WithArgs("ee0e8400-e29b-41d4-a716-446655440004", "aa0e8400-e29b-41d4-a716-446655440000").
+		WithArgs("ee0e8400-e29b-41d4-a716-446655440004", "aa0e8400-e29b-41d4-a716-446655440000", "primary", 1).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	mock.ExpectExec(`INSERT INTO track_genres`).
@@ -236,6 +236,10 @@ func TestFinalize_StorageCopyFailure(t *testing.T) {
 		"track": {"title": "Test", "durationSeconds": 100, "trackNumber": 1}
 	}`
 
+	mock.ExpectQuery(`SELECT asset_type, url FROM ingestion_draft_assets WHERE`).
+		WithArgs("draft-3").
+		WillReturnRows(sqlmock.NewRows([]string{"asset_type", "url"}))
+
 	mock.ExpectBegin()
 	mock.ExpectRollback()
 
@@ -261,6 +265,10 @@ func TestFinalize_DBInsertFailure(t *testing.T) {
 		"album": {"action": "skip"},
 		"track": {"title": "Fail Track", "durationSeconds": 100}
 	}`
+
+	mock.ExpectQuery(`SELECT asset_type, url FROM ingestion_draft_assets WHERE`).
+		WithArgs("draft-4").
+		WillReturnRows(sqlmock.NewRows([]string{"asset_type", "url"}))
 
 	mock.ExpectBegin()
 

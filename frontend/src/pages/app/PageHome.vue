@@ -377,12 +377,12 @@ import { computed, onMounted } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useHomeFeed } from '@/composables/useHomeFeed'
 import { usePlayer } from '@/composables/player'
-import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
 import type { RecommendationTrack } from '@/services/api/recommendation'
 import { onImgError } from '@/utils/helpers'
 import { HomeHero, HomeCarousel, HomeTrackCard } from '@/components/music'
 import HomeSectionHeader from '@/components/music/home/HomeSectionHeader.vue'
 import type { HeroItem } from '@/components/music/home/HomeHero.vue'
+import { buildPlaybackTrack } from '@/factories/playbackTrack'
 
 const {
   popular,
@@ -400,7 +400,6 @@ const {
 } = useHomeFeed()
 
 const player = usePlayer()
-const playerApi = usePlayerApi()
 
 const heroItems = computed<HeroItem[]>(() => {
   const tracks = popular.value.slice(0, 5)
@@ -425,18 +424,6 @@ function isCurrentlyPlaying(item: RecommendationTrack): boolean {
   const currentId = player.currentTrack.value?.id
   if (!currentId) return false
   return currentId === item.id
-}
-
-function buildPlaybackTrack(item: RecommendationTrack): PlaybackTrack {
-  return {
-    id: item.id,
-    title: item.title || 'Untitled',
-    artistName: item.artist_name || 'Unknown artist',
-    albumTitle: item.album_title || null,
-    coverUrl: item.cover_url || null,
-    durationSeconds: item.duration_seconds ?? null,
-    streamUrl: playerApi.getTrackStreamUrl(item.id),
-  }
 }
 
 function handlePlay(item: any) {

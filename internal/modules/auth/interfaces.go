@@ -15,7 +15,7 @@ type RepositoryInterface interface {
 	FindValidSessionByRefreshToken(ctx context.Context, refreshToken string) (AuthSession, error)
 	CreateSession(ctx context.Context, userID, refreshToken string, userAgent, ipAddress *string, expiresAt time.Time) error
 	RevokeSessionByRefreshToken(ctx context.Context, refreshToken string) error
-	RevokeSessionByID(ctx context.Context, sessionID string) error
+	RevokeSessionByID(ctx context.Context, sessionID string) (bool, error)
 	UpdateUser(ctx context.Context, id string, updates map[string]any) error
 	UpdatePassword(ctx context.Context, id, passwordHash string) error
 	ListUsers(ctx context.Context, params ListUsersParams) ([]User, int, error)

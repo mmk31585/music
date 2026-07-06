@@ -355,6 +355,16 @@ func (m *mockRepo) GetCandidatesWithTrackAndUser(ctx context.Context, roomID, us
 	return args.Get(0).([]CandidateResponse), args.Error(1)
 }
 
+func (m *mockRepo) GetPartyHost(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	args := m.Called(ctx, id)
+	return args.Get(0).(uuid.UUID), args.Error(1)
+}
+
+func (m *mockRepo) GetRoomHost(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	args := m.Called(ctx, id)
+	return args.Get(0).(uuid.UUID), args.Error(1)
+}
+
 func newSvc(m *mockRepo) *Service {
 	return NewService(m, nil, nil)
 }
@@ -553,10 +563,12 @@ func TestUpdatePartyStatus_NotEnded(t *testing.T) {
 	m := new(mockRepo)
 	svc := newSvc(m)
 	pid := uuid.New()
+	uid := uuid.New()
 
+	m.On("GetPartyHost", mock.Anything, pid).Return(uid, nil)
 	m.On("UpdatePartyStatus", mock.Anything, pid, "paused", (*uuid.UUID)(nil)).Return(nil)
 
-	err := svc.UpdatePartyStatus(context.Background(), pid.String(), "paused", nil)
+	err := svc.UpdatePartyStatus(context.Background(), pid.String(), "paused", uid.String(), nil)
 	assert.NoError(t, err)
 	m.AssertExpectations(t)
 }
@@ -565,10 +577,12 @@ func TestUpdatePartyStatus_Ended(t *testing.T) {
 	m := new(mockRepo)
 	svc := newSvc(m)
 	pid := uuid.New()
+	uid := uuid.New()
 
+	m.On("GetPartyHost", mock.Anything, pid).Return(uid, nil)
 	m.On("UpdatePartyStatus", mock.Anything, pid, "ended", (*uuid.UUID)(nil)).Return(nil)
 
-	err := svc.UpdatePartyStatus(context.Background(), pid.String(), "ended", nil)
+	err := svc.UpdatePartyStatus(context.Background(), pid.String(), "ended", uid.String(), nil)
 	assert.NoError(t, err)
 	m.AssertExpectations(t)
 }

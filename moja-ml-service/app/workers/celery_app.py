@@ -42,6 +42,14 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
+    # ── Task execution limits ───────────────────────────────────────
+    # Soft limit: task gets a SoftTimeLimitExceeded exception it can
+    #   catch to clean up.
+    # Hard limit: worker kills the task process unceremoniously.
+    # Both prevent "zombie" tasks from consuming workers forever.
+    task_soft_time_limit=600,   # 10 min — ample for transcription/embedding
+    task_time_limit=900,        # 15 min — hard cap to prevent worker hang
+
     # ── Concurrency ─────────────────────────────────────────────────
     # DO NOT increase worker_concurrency above 1 for this queue.
     #

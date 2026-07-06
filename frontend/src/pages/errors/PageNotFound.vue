@@ -8,9 +8,9 @@ const router = useRouter()
   <section class="relative z-10 min-h-screen bg-[#050505] py-30">
     <!-- Aurora background -->
     <div class="aurora-bg pointer-events-none fixed inset-0" aria-hidden="true">
-      <div class="aurora-spot-1 -top-40 -left-40 bg-spotify/10" />
-      <div class="aurora-spot-2 -top-60 -right-40 bg-aurora-blue/8" />
-      <div class="aurora-spot-1 top-20 left-1/3 bg-electric-purple/8" style="animation-delay: -8s; width: 350px; height: 350px;" />
+      <div class="aurora-spot-1 -top-40 -start-40 bg-spotify/10" />
+      <div class="aurora-spot-2 -top-60 -end-40 bg-aurora-blue/8" />
+      <div class="aurora-spot-1 top-20 start-1/3 bg-electric-purple/8" style="animation-delay: -8s; width: 350px; height: 350px;" />
     </div>
 
     <div class="relative z-10 mx-auto w-full max-w-100 px-4 text-center">

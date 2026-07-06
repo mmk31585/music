@@ -159,10 +159,22 @@ func (s *Service) ListActiveParties(ctx context.Context, limit, offset int) ([]L
 	return s.repo.ListActiveParties(ctx, limit, offset)
 }
 
-func (s *Service) UpdatePartyStatus(ctx context.Context, id, status string, trackID *string) error {
+func (s *Service) UpdatePartyStatus(ctx context.Context, id, status, userID string, trackID *string) error {
 	uid, err := uuid.Parse(id)
 	if err != nil {
 		return fmt.Errorf("invalid party id: %w", err)
+	}
+	// Ownership check: only the host can update the party status
+	hostID, err := s.repo.GetPartyHost(ctx, uid)
+	if err != nil {
+		return fmt.Errorf("party not found: %w", err)
+	}
+	callerID, err := uuid.Parse(userID)
+	if err != nil {
+		return fmt.Errorf("invalid user id: %w", err)
+	}
+	if hostID != callerID {
+		return fmt.Errorf("only the host can update the party status")
 	}
 	var tid *uuid.UUID
 	if trackID != nil && *trackID != "" {
@@ -170,8 +182,6 @@ func (s *Service) UpdatePartyStatus(ctx context.Context, id, status string, trac
 		if err == nil {
 			tid = &t
 		}
-		// Non-UUID track IDs (numeric IDs, etc.) are silently ignored —
-		// the status update still proceeds without changing current_track_id.
 	}
 	if err := s.repo.UpdatePartyStatus(ctx, uid, status, tid); err != nil {
 		return err

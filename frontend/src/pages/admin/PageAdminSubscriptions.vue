@@ -111,9 +111,12 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useToast } from 'primevue/usetoast'
 import { useSubscriptionApi } from '@/services/api/subscription'
 import type { Plan, Subscription, Payment } from '@/services/api/subscription'
 import { AdminSectionHeader } from '@/components/admin'
+
+const toast = useToast()
 
 const subApi = useSubscriptionApi()
 
@@ -138,9 +141,8 @@ async function fetchData() {
     plans.value = plansResult?.plans ?? []
     currentSub.value = subResult ?? null
     payments.value = paymentsResult?.payments ?? []
-  // TODO LOW: Silent catch — should show a toast on failure instead of swallowing errors.
   } catch {
-    /* silent */
+    toast.add({ severity: 'error', summary: 'Failed to load subscriptions', life: 5000 })
   } finally {
     loading.value = false
   }

@@ -58,7 +58,7 @@ export const joinClub = async (id: string, config?: UseRequestConfig<void>) => {
 export const leaveClub = async (id: string, config?: UseRequestConfig<void>) => {
   return useRequest<void>(
     SocialApiRoutes.CLUB_LEAVE.replace(':id', id),
-    { method: 'DELETE' },
+    { method: 'POST' },
     config,
   )
 }

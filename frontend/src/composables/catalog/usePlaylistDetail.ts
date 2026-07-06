@@ -30,16 +30,19 @@ export function usePlaylistDetail(id: string) {
     }
   }
 
+  const pendingRemoveTrackId = ref<string | null>(null)
+
   async function removeTrack(trackId: string) {
+    pendingRemoveTrackId.value = trackId
     try {
       await playlistsApi.removeTrack(id, trackId)
       tracks.value = tracks.value.filter((t) => t.track_id !== trackId)
 
       toast.add({
         severity: 'success',
-        summary: 'Track removed',
-        detail: 'Track removed from playlist',
-        life: 2000,
+        summary: 'Track removed from playlist',
+        group: 'playlist-undo',
+        life: 6000,
       })
     } catch {
       toast.add({
@@ -47,6 +50,19 @@ export function usePlaylistDetail(id: string) {
         summary: 'Failed to remove track',
         life: 3000,
       })
+    }
+  }
+
+  async function undoRemoveTrack() {
+    const trackId = pendingRemoveTrackId.value
+    if (!trackId) return
+    pendingRemoveTrackId.value = null
+    try {
+      await playlistsApi.addTrack(id, { track_id: trackId })
+      await fetchPlaylist()
+      toast.add({ severity: 'success', summary: 'Track re-added', life: 3000 })
+    } catch {
+      toast.add({ severity: 'error', summary: 'Failed to undo', life: 3000 })
     }
   }
 
@@ -71,6 +87,8 @@ export function usePlaylistDetail(id: string) {
     error,
     fetchPlaylist,
     removeTrack,
+    undoRemoveTrack,
+    pendingRemoveTrackId,
     deletePlaylist,
   }
 }

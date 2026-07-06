@@ -37,6 +37,8 @@ class AudioEngine {
   private audioContext: AudioContext | null = null
   private analyser: AnalyserNode | null = null
   private sourceNode: MediaElementAudioSourceNode | null = null
+  private gainNode: GainNode | null = null
+  private crossfadeDuration = 0
   private nativeHandlers = new Map<NativeEventName, EventListener>()
   private disposed = false
 
@@ -55,8 +57,11 @@ class AudioEngine {
     this.analyser = this.audioContext.createAnalyser()
     this.analyser.fftSize = 256
     this.analyser.smoothingTimeConstant = 0.8
+    this.gainNode = this.audioContext.createGain()
+    this.gainNode.gain.value = 1
     this.sourceNode.connect(this.analyser)
-    this.analyser.connect(this.audioContext.destination)
+    this.analyser.connect(this.gainNode)
+    this.gainNode.connect(this.audioContext.destination)
   }
 
   get element() {
@@ -234,6 +239,53 @@ class AudioEngine {
       // prevent "Uncaught (in promise) DOMException" from hitting Vue's
       // global error handler.
     }
+  }
+
+  /** Set the crossfade duration in seconds (0 = disabled). */
+  setCrossfadeDuration(seconds: number) {
+    this.crossfadeDuration = Math.max(0, seconds)
+  }
+
+  /**
+   * Fade the current audio from its current gain to target gain over `duration` seconds.
+   * Resolves when the fade completes or immediately if no AudioContext is available.
+   */
+  fadeTo(targetGain: number, duration: number): Promise<void> {
+    return new Promise((resolve) => {
+      try {
+        this.ensureAudioContext()
+      } catch {
+        resolve()
+        return
+      }
+      if (!this.gainNode || !this.audioContext || duration <= 0) {
+        if (this.gainNode) this.gainNode.gain.value = targetGain
+        resolve()
+        return
+      }
+
+      const currentTime = this.audioContext.currentTime
+      this.gainNode.gain.cancelScheduledValues(currentTime)
+      this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, currentTime)
+      this.gainNode.gain.linearRampToValueAtTime(targetGain, currentTime + duration)
+
+      // Resolve after the ramp completes
+      setTimeout(resolve, duration * 1000)
+    })
+  }
+
+  /** Quick fade out (uses crossfadeDuration or 300ms default). */
+  async fadeOut(duration?: number) {
+    const dur = duration ?? this.crossfadeDuration || 0.3
+    await this.fadeTo(0, dur)
+  }
+
+  /** Fade in from 0 to 1 over given duration. */
+  async fadeIn(duration?: number) {
+    const dur = duration ?? this.crossfadeDuration || 0.3
+    // Reset gain to 0 before fading in
+    if (this.gainNode) this.gainNode.gain.value = 0
+    await this.fadeTo(1, dur)
   }
 
   pause() {

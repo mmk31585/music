@@ -26,15 +26,15 @@ func TestRepository_CreatePlaylist(t *testing.T) {
 	now := time.Now()
 
 	rows := sqlmock.NewRows([]string{
-		"id", "user_id", "name", "description", "cover_url", "is_public", "created_at", "updated_at",
+		"id", "user_id", "owner_id", "name", "description", "cover_url", "is_public", "created_at", "updated_at",
 	}).AddRow(
-		playlistID, userID, "Test Playlist", nil, nil, true, now, now,
+		playlistID, userID, userID, "Test Playlist", nil, nil, true, now, now,
 	)
 
 	mock.ExpectQuery(regexp.QuoteMeta(`
-		INSERT INTO playlists (user_id, name, description, cover_url, is_public)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, user_id, name, description, cover_url, is_public, created_at, updated_at
+		INSERT INTO playlists (user_id, owner_id, name, description, cover_url, is_public)
+		VALUES ($1, $1, $2, $3, $4, $5)
+		RETURNING id, user_id, owner_id, name, description, cover_url, is_public, created_at, updated_at
 	`)).WithArgs(userID, "Test Playlist", sqlmock.AnyArg(), sqlmock.AnyArg(), true).
 		WillReturnRows(rows)
 
@@ -64,14 +64,18 @@ func TestRepository_GetPlaylistByID(t *testing.T) {
 	now := time.Now()
 
 	rows := sqlmock.NewRows([]string{
-		"id", "user_id", "name", "description", "cover_url", "is_public",
-		"track_count", "duration_seconds", "created_at", "updated_at",
+		"id", "user_id", "owner_id", "name", "description", "cover_url", "is_public",
+		"is_collaborative", "created_at", "updated_at",
 	}).AddRow(
-		playlistID, userID, "My Playlist", nil, nil, true,
-		5, 1200, now, now,
+		playlistID, userID, userID, "My Playlist", nil, nil, true,
+		false, now, now,
 	)
 
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT`)).WithArgs(playlistID).
+	mock.ExpectQuery(regexp.QuoteMeta(`
+		SELECT id, user_id, owner_id, name, description, cover_url, is_public, is_collaborative, created_at, updated_at
+		FROM playlists
+		WHERE id = $1
+	`)).WithArgs(playlistID).
 		WillReturnRows(rows)
 
 	_, err = repo.GetPlaylistByID(context.Background(), playlistID)
@@ -91,10 +95,13 @@ func TestRepository_AddTrack(t *testing.T) {
 	trackID := uuid.New()
 
 	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT EXISTS(SELECT 1 FROM tracks WHERE id = $1)`)).
+		WithArgs(trackID).
+		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT COALESCE(MAX(position), 0) + 1 FROM playlist_tracks WHERE playlist_id = $1`)).
 		WithArgs(playlistID).
 		WillReturnRows(sqlmock.NewRows([]string{"coalesce"}).AddRow(1))
-	mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO playlist_tracks`)).
+	mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO playlist_tracks (playlist_id, track_id, position) VALUES ($1, $2, $3)`)).
 		WithArgs(playlistID, trackID, 1).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
@@ -113,17 +120,13 @@ func TestRepository_DeletePlaylist(t *testing.T) {
 	repo := NewRepository(sqlxDB)
 
 	playlistID := uuid.New()
+	userID := uuid.New()
 
-	mock.ExpectBegin()
-	mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM playlist_tracks WHERE playlist_id = $1`)).
-		WithArgs(playlistID).
-		WillReturnResult(sqlmock.NewResult(0, 2))
-	mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM playlists WHERE id = $1`)).
-		WithArgs(playlistID).
+	mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM playlists WHERE id = $1 AND user_id = $2`)).
+		WithArgs(playlistID, userID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectCommit()
 
-	err = repo.DeletePlaylist(context.Background(), playlistID, uuid.New())
+	err = repo.DeletePlaylist(context.Background(), playlistID, userID)
 	require.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }

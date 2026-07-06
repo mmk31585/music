@@ -148,6 +148,23 @@ export class QueueManager {
     }
   }
 
+  /**
+   * Add a track to the end of the queue.
+   * Does not change the currently playing track.
+   */
+  addToQueue(track: PlaybackTrack) {
+    this.queue.push(track)
+  }
+
+  /**
+   * Insert a track as the next to play (after the current track).
+   * Does not change the currently playing track.
+   */
+  playNext(track: PlaybackTrack) {
+    const insertAt = this.index + 1
+    this.queue.splice(insertAt, 0, track)
+  }
+
   clear() {
     this.queue = []
     this.index = -1

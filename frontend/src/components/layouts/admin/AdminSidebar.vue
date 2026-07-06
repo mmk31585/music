@@ -1,6 +1,6 @@
 <template>
   <aside
-    class="fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-white/10 bg-surface-base transition-all duration-300 lg:static lg:h-screen"
+    class="fixed start-0 top-0 z-40 flex h-screen flex-col border-e border-white/10 bg-surface-base transition-all duration-300 lg:static lg:h-screen"
     :class="collapsed ? 'w-17' : 'w-72'"
   >
     <!-- Brand -->

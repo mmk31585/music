@@ -4,6 +4,7 @@ services:
     container_name: musicapp_postgres
     restart: unless-stopped
     mem_limit: 512m
+    cpus: 1.0
     environment:
       POSTGRES_DB: musicapp
       POSTGRES_USER: postgres
@@ -26,6 +27,7 @@ services:
     container_name: musicapp_redis
     restart: unless-stopped
     mem_limit: 128m
+    cpus: 0.5
     ports:
       - "6379:6379"
     healthcheck:
@@ -41,6 +43,7 @@ services:
     container_name: musicapp_opensearch
     restart: unless-stopped
     mem_limit: 1g
+    cpus: 1.0
     environment:
       discovery.type: single-node
       DISABLE_SECURITY_PLUGIN: "true"
@@ -63,6 +66,7 @@ services:
     container_name: musicapp_minio
     restart: unless-stopped
     mem_limit: 512m
+    cpus: 0.5
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: "${MINIO_ROOT_USER:-minioadmin}"
@@ -88,6 +92,7 @@ services:
     container_name: musicapp_api
     restart: unless-stopped
     mem_limit: 512m
+    cpus: 1.0
     ports:
       - "8080:8080"
     volumes:
@@ -134,6 +139,7 @@ services:
     container_name: musicapp_worker
     restart: unless-stopped
     mem_limit: 512m
+    cpus: 1.0
     environment:
       APP_ENV: development
       POSTGRES_URL: "postgres://postgres:postgres@postgres:5432/musicapp?sslmode=disable"
@@ -168,6 +174,7 @@ services:
     container_name: musicapp_frontend
     restart: unless-stopped
     mem_limit: 256m
+    cpus: 0.5
     ports:
       - "80:80"
     depends_on:

@@ -46,7 +46,7 @@ export const useArtistsApi = () => {
 
   const searchArtists = async (q: string, config?: UseRequestConfig<Artist[]>) => {
     return useRequest<Artist, true>(
-      `${ArtistApiRoutes.ADMIN_LIST}?q=${encodeURIComponent(q)}`,
+      `${ArtistApiRoutes.LIST}?q=${encodeURIComponent(q)}`,
       { method: 'GET' },
       {
         schema: ArtistSchema,
@@ -68,6 +68,11 @@ export const useArtistsApi = () => {
           name: payload.name,
           bio: payload.bio ?? null,
           image_url: payload.image_url ?? null,
+          avatar_media_id: payload.avatar_media_id ?? null,
+          banner_media_id: payload.banner_media_id ?? null,
+          country: payload.country ?? null,
+          is_verified: payload.is_verified ?? null,
+          monthly_listeners: payload.monthly_listeners ?? null,
         },
       },
       {
@@ -88,9 +93,14 @@ export const useArtistsApi = () => {
       {
         method: 'PATCH',
         data: {
-          name: payload.name,
+          name: payload.name ?? null,
           bio: payload.bio ?? null,
           image_url: payload.image_url ?? null,
+          avatar_media_id: payload.avatar_media_id ?? null,
+          banner_media_id: payload.banner_media_id ?? null,
+          country: payload.country ?? null,
+          is_verified: payload.is_verified ?? null,
+          monthly_listeners: payload.monthly_listeners ?? null,
         },
       },
       {

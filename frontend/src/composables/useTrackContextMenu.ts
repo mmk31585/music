@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router'
 import { usePlayer } from '@/composables/player'
 import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
 import { useToast } from 'primevue/usetoast'
+import { buildPlaybackTrack } from '@/factories/playbackTrack'
 
 /**
  * Generic track shape accepted by the context menu composable.
@@ -87,16 +88,15 @@ export function useTrackContextMenu(
   }
 
   function toPlaybackTrack(t: TrackContextItem): PlaybackTrack {
-    const id = String(t.id)
-    return {
-      id,
+    return buildPlaybackTrack({
+      id: String(t.id),
       title: resolveTitle(t),
-      artistName: resolveArtistName(t),
-      albumTitle: t.albumTitle || t.album_title || t.album?.title || null,
-      coverUrl: t.coverUrl || t.cover_url || t.cover || t.album?.coverUrl || t.album?.cover_url || null,
-      durationSeconds: t.durationSeconds ?? t.duration_seconds ?? t.duration ?? null,
-      streamUrl: playerApi.getTrackStreamUrl(id),
-    }
+      artist_name: resolveArtistName(t),
+      album_title: t.albumTitle || t.album_title || t.album?.title || null,
+      cover_url: t.coverUrl || t.cover_url || t.cover || t.album?.coverUrl || t.album?.cover_url || null,
+      duration_seconds: t.durationSeconds ?? t.duration_seconds ?? t.duration ?? null,
+      streamUrl: playerApi.getTrackStreamUrl(String(t.id)),
+    })
   }
 
   // ── actions ──────────────────────────────────────────────────────

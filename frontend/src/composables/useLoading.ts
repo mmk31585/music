@@ -68,7 +68,8 @@ export function useLoading<
     if (val && typeof val === 'object' && 'meta' in val) {
       return (val as Record<string, unknown>).meta as MetaProps
     }
-    return defaultMeta
+    // Return a fresh copy to prevent shared-reference mutation
+    return { ...defaultMeta }
   })
 
   const load = async (...args: unknown[]) => {

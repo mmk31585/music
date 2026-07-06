@@ -9,6 +9,7 @@ import (
 type Playlist struct {
 	ID              uuid.UUID `json:"id"`
 	UserID          uuid.UUID `json:"user_id"`
+	OwnerID         uuid.UUID `json:"owner_id"`
 	Name            string    `json:"name"`
 	Description     *string   `json:"description,omitempty"`
 	CoverURL        *string   `json:"cover_url,omitempty"`

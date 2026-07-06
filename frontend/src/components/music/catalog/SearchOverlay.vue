@@ -19,7 +19,7 @@
               type="text"
               placeholder="Search tracks, artists, albums, playlists..."
               aria-label="Search tracks, artists, albums, playlists"
-              class="flex-1 bg-transparent px-3 py-4 text-sm text-white outline-hidden placeholder:text-slate-500"
+              class="flex-1 bg-transparent px-3 py-4 text-sm text-white outline-hidden placeholder:text-slate-500 focus-visible:ring-2 focus-visible:ring-[var(--color-primary-400)]/50"
               @keydown="onKeydown"
               @input="onInput"
             />
@@ -362,7 +362,7 @@ import { useSearchApi, type SearchResult } from '@/services/api/catalog/search'
 import type { UseRequestConfig } from '@/plugins/client/types'
 import { usePlayer } from '@/composables/player'
 import { onImgError } from '@/utils/helpers'
-import { usePlayerApi } from '@/services/api/player'
+import { buildPlaybackTrack } from '@/factories/playbackTrack'
 
 interface SearchItem {
   id: string | number
@@ -386,7 +386,6 @@ interface SearchResults {
 
 const router = useRouter()
 const player = usePlayer()
-const playerApi = usePlayerApi()
 const searchApi = useSearchApi()
 
 const props = defineProps<{ visible: boolean }>()
@@ -600,16 +599,14 @@ function activateHighlight() {
 }
 
 function selectTrack(track: SearchItem) {
-  const playable = {
+  player.playTrack(buildPlaybackTrack({
     id: String(track.id),
     title: track.title ?? '',
-    artistName: track.artist_name || 'Unknown',
-    albumTitle: track.album_title || null,
-    coverUrl: track.cover_url || null,
-    durationSeconds: track.duration_seconds ?? null,
-    streamUrl: playerApi.getTrackStreamUrl(String(track.id)),
-  }
-  player.playTrack(playable)
+    artist_name: track.artist_name || 'Unknown',
+    album_title: track.album_title || null,
+    cover_url: track.cover_url || null,
+    duration_seconds: track.duration_seconds ?? null,
+  }))
   if (track.artist_name) saveRecent(`${track.artist_name} - ${track.title}`)
   else saveRecent(track.title ?? '')
   close()

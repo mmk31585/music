@@ -685,7 +685,7 @@ import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAIRecommendations } from '@/composables/useAIRecommendations'
 import { usePlayer } from '@/composables/player'
-import { usePlayerApi } from '@/services/api/player'
+import { mapToPlaybackTracks } from '@/factories/playbackTrack'
 import { MOOD_OPTIONS } from '@/services/api/ai/types'
 import type { RecommendationTrack } from '@/services/api/recommendation/types'
 import type { AITrackItem } from '@/services/api/ai/types'
@@ -693,7 +693,6 @@ import { onImgError } from '@/utils/helpers'
 
 const router = useRouter()
 const player = usePlayer()
-const playerApi = usePlayerApi()
 
 const {
   popularTracks,
@@ -858,15 +857,7 @@ function playTrack(track: RecommendationTrack | Record<string, unknown>, index: 
       : personalizedTracks.value
     : allTracks
 
-  const queue = source.map((t: any) => ({
-    id: String(t.id),
-    title: String(t.title || ''),
-    artistName: String(t.artist_name || t.artist || 'Unknown'),
-    albumTitle: String(t.album_title || t.album || ''),
-    coverUrl: String(t.cover_url || ''),
-    durationSeconds: t.duration_seconds ?? t.duration ?? null,
-    streamUrl: playerApi.getTrackStreamUrl(String(t.id)),
-  }))
+  const queue = mapToPlaybackTracks(source)
   const startIdx = queue.findIndex((t) => t.id === String(track.id || track.id))
   if (startIdx >= 0) {
     player.setQueueAndPlay(queue, startIdx)

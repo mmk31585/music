@@ -245,7 +245,7 @@ func (cs *ClubService) LaunchListeningParty(ctx context.Context, clubID, initiat
 				if i == 0 {
 					// Set first track as current
 					tid := t.TrackID
-					_ = cs.partySvc.UpdatePartyStatus(ctx, party.ID.String(), "active", &[]string{tid.String()}[0])
+					_ = cs.partySvc.UpdatePartyStatus(ctx, party.ID.String(), "active", uid.String(), &[]string{tid.String()}[0])
 				}
 				_ = cs.repo.AddToRoomQueue(ctx, &LiveRoomQueueItem{
 					RoomID:    party.ID,

@@ -309,7 +309,7 @@ import { useArtistsApi, type Artist } from '@/services/api/catalog/artists'
 import { useAlbumsApi, type Album } from '@/services/api/catalog/albums'
 import { useGenresApi, type Genre } from '@/services/api/catalog/genres'
 import { usePlayer } from '@/composables/player'
-import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
+import { buildPlaybackTrack } from '@/factories/playbackTrack'
 import { formatDuration } from '@/utils/format'
 
 const { getTracks } = useTracksApi()
@@ -324,20 +324,6 @@ const artists = ref<Artist[]>([])
 const albums = ref<Album[]>([])
 const genres = ref<Genre[]>([])
 const player = usePlayer()
-const playerApi = usePlayerApi()
-
-function buildPlaybackTrack(track: Track): PlaybackTrack {
-  const id = String(track.id)
-  return {
-    id,
-    title: track.title || 'Untitled',
-    artistName: track.artist_name || 'Unknown artist',
-    albumTitle: track.album_title || null,
-    coverUrl: track.cover_url || null,
-    durationSeconds: track.duration_seconds ?? null,
-    streamUrl: playerApi.getTrackStreamUrl(id),
-  }
-}
 
 async function handlePlayTrack(track: Track) {
   loadingTrackId.value = String(track.id)

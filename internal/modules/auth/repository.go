@@ -160,7 +160,7 @@ func (r *Repository) RevokeSessionByRefreshToken(ctx context.Context, refreshTok
 	return err
 }
 
-func (r *Repository) RevokeSessionByID(ctx context.Context, sessionID string) error {
+func (r *Repository) RevokeSessionByID(ctx context.Context, sessionID string) (bool, error) {
 	query := `
 		UPDATE auth_sessions
 		SET revoked_at = NOW()
@@ -168,8 +168,11 @@ func (r *Repository) RevokeSessionByID(ctx context.Context, sessionID string) er
 		  AND revoked_at IS NULL
 	`
 
-	_, err := r.db.Exec(ctx, query, sessionID)
-	return err
+	tag, err := r.db.Exec(ctx, query, sessionID)
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() > 0, nil
 }
 
 func (r *Repository) scanUser(row pgx.Row) (User, error) {

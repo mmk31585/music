@@ -4,7 +4,7 @@
       <div
         v-if="visible"
         ref="rootEl"
-        class="fixed inset-0 z-50 flex flex-col overflow-hidden text-white select-none outline-hidden"
+        class="fixed inset-0 z-50 flex flex-col overflow-hidden text-white select-none outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-primary-400)]/50"
         :style="resolvedBgStyle"
         @keydown="onKeydown"
         tabindex="0"
@@ -115,6 +115,10 @@
                   @click="seekFromEvent"
                   @keydown.enter="seekFromEvent"
                   @keydown.space.prevent="seekFromEvent"
+                  @keydown.arrow-left.prevent="player.seek(Math.max(0, currentTime - 5))"
+                  @keydown.arrow-right.prevent="player.seek(Math.min(duration, currentTime + 5))"
+                  @keydown.home.prevent="player.seek(0)"
+                  @keydown.end.prevent="player.seek(duration)"
                   @mousemove="onProgressHover"
                   @mouseleave="hoverPos = null"
                 >
@@ -635,7 +639,7 @@ function setTimer(minutes: number) {
 
 function cycleCrossfade() {
   const store = usePlayerStore()
-  store.crossfadeDuration = store.crossfadeDuration > 0 ? 0 : 5
+  store.setCrossfadeDuration(store.crossfadeDuration > 0 ? 0 : 5)
 }
 
 const queueTracks = computed(() => player.queue.value as PlaybackTrack[])

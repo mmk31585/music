@@ -258,6 +258,24 @@
       </div>
 
       <div class="rounded-2xl border border-white/6 bg-white/2 p-6">
+        <h3 class="mb-4 text-lg font-bold text-white">Music Preferences</h3>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-white">Music Genres</p>
+            <p class="text-xs text-slate-500">Select your favorite genres for better recommendations</p>
+          </div>
+          <button
+            type="button"
+            class="rounded-full border border-white/10 bg-white/4 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/8"
+            @click="router.push({ name: 'onboarding.genres' })"
+          >
+            <i aria-hidden="true" class="pi pi-pencil mr-1.5 text-[10px]" />
+            Change
+          </button>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-white/6 bg-white/2 p-6">
         <h3 class="mb-4 text-lg font-bold text-white">Notifications</h3>
         <div class="space-y-4">
           <div class="flex items-center justify-between">
@@ -305,11 +323,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { SkeletonLoader } from '@/components/common'
 import { useUserAuthStore } from '@/stores'
 import { useRequest, useRTL } from '@/composables'
 
+const router = useRouter()
 const auth = useUserAuthStore()
 const toast = useToast()
 const { isRTL, setRTL } = useRTL()

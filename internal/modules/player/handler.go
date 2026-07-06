@@ -1,10 +1,13 @@
 package player
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"log"
 	"net/http"
+	"path/filepath"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -113,10 +116,11 @@ func (h *Handler) StreamTrack(c *gin.Context) {
 		return
 	}
 
+	c.Header("Content-Type", contentType)
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Cache-Control", "public, max-age=3600, immutable")
 	c.Header("Cross-Origin-Resource-Policy", "cross-origin")
-	c.Data(http.StatusOK, contentType, data)
+	http.ServeContent(c.Writer, c.Request, filepath.Base(track.AudioURL), time.Time{}, bytes.NewReader(data))
 }
 
 // StreamAdminTrack godoc
@@ -146,10 +150,11 @@ func (h *Handler) StreamAdminTrack(c *gin.Context) {
 		return
 	}
 
+	c.Header("Content-Type", contentType)
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Cache-Control", "public, max-age=3600, immutable")
 	c.Header("Cross-Origin-Resource-Policy", "cross-origin")
-	c.Data(http.StatusOK, contentType, data)
+	http.ServeContent(c.Writer, c.Request, filepath.Base(track.AudioURL), time.Time{}, bytes.NewReader(data))
 }
 
 func (h *Handler) handleError(c *gin.Context, err error) {

@@ -243,7 +243,7 @@ Select up to 20 track IDs that best match the request.`, sanitizeUserPrompt(prom
 		return nil, fmt.Errorf("parse response: %w", err)
 	}
 	if result.Error != nil {
-		return nil, fmt.Errorf("api error: %s", result.Error.Message)
+		return nil, fmt.Errorf("ai service unavailable")
 	}
 	if len(result.Choices) == 0 {
 		return nil, fmt.Errorf("no playlist generated")

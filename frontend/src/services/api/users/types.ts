@@ -1,13 +1,12 @@
 import z from 'zod'
 
 export const UserPropsSchema = z.object({
-  id: z.number().int(),
-  first_name: z.string().optional(),
-  last_name: z.string().optional(),
-  full_name: z.string().optional(),
+  id: z.string(),
+  full_name: z.string(),
   username: z.string(),
-  created_at: z.date().optional(),
-  updated_at: z.date().optional(),
+  avatar_url: z.string().nullable().optional(),
+  created_at: z.string(),
+  updated_at: z.string().nullable(),
 })
 
 export type UserProps = z.infer<typeof UserPropsSchema>

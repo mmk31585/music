@@ -6,8 +6,8 @@ export interface BreadcrumbItem {
 
 export interface AppRouteMeta {
   requiresAuth?: boolean
-  guestOnly?: boolean // ← add
-  requiresRole?: string // ← add (e.g. 'admin')
+  guestOnly?: boolean
+  requiresRole?: string
   titleAppearance?: boolean
   title?: string
   noNeedRouteWaiting?: boolean

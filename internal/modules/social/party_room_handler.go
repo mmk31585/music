@@ -50,6 +50,7 @@ func (h *Handler) ListActiveParties(c *gin.Context) {
 
 func (h *Handler) UpdatePartyStatus(c *gin.Context) {
 	id := c.Param("id")
+	userID := c.GetString("auth_user_id")
 	var req struct {
 		Status  string  `json:"status" binding:"required"`
 		TrackID *string `json:"track_id"`
@@ -58,7 +59,7 @@ func (h *Handler) UpdatePartyStatus(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := h.service.UpdatePartyStatus(c.Request.Context(), id, req.Status, req.TrackID); err != nil {
+	if err := h.service.UpdatePartyStatus(c.Request.Context(), id, req.Status, userID, req.TrackID); err != nil {
 		h.logger.Error("update party status failed", zap.String("party_id", id), zap.String("status", req.Status), zap.Error(err))
 		response.Error(c, appErr.Internal("failed to update party", err))
 		return

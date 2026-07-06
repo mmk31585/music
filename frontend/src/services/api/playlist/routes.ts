@@ -4,6 +4,7 @@ import { PlaylistApiRoutes } from './enums'
 import {
   PlaylistListItemSchema,
   PlaylistDetailSchema,
+  CollaboratorResponseSchema,
   type PlaylistListItem,
   type PlaylistDetail,
   type CollaboratorResponse,
@@ -12,6 +13,14 @@ import {
 } from './types'
 
 export const usePlaylistsApi = () => {
+  const listPublicPlaylists = async (config?: UseRequestConfig<PlaylistListItem[]>) => {
+    return useRequest<PlaylistListItem, true>(
+      PlaylistApiRoutes.LIST_PUBLIC,
+      { method: 'GET' },
+      { schema: PlaylistListItemSchema, silent: true, ...config },
+    )
+  }
+
   const getMyPlaylists = async (config?: UseRequestConfig<PlaylistListItem[]>) => {
     return useRequest<PlaylistListItem, true>(
       PlaylistApiRoutes.LIST_MY,
@@ -39,9 +48,14 @@ export const usePlaylistsApi = () => {
     )
   }
 
+  /**
+   * Update playlist metadata.
+   * Backend accepts: name, description, cover_url, is_public.
+   * Collaborative toggle uses the dedicated setCollaborative endpoint.
+   */
   const updatePlaylist = async (
     id: string,
-    payload: Partial<CreatePlaylistPayload & { collaborative: boolean }>,
+    payload: Partial<CreatePlaylistPayload>,
     config?: UseRequestConfig<PlaylistDetail>,
   ) => {
     return useRequest<PlaylistDetail>(
@@ -86,18 +100,27 @@ export const usePlaylistsApi = () => {
     )
   }
 
+  /**
+   * Reorder a single track to a new position.
+   * Backend expects { track_id, new_position } (1-indexed).
+   */
   const reorderTracks = async (
     playlistId: string,
-    trackIds: string[],
+    trackId: string,
+    newPosition: number,
     config?: UseRequestConfig<void>,
   ) => {
     return useRequest<void>(
       PlaylistApiRoutes.REORDER_TRACKS.replace(':playlistId', playlistId),
-      { method: 'PUT', data: { track_ids: trackIds } },
+      { method: 'PUT', data: { track_id: trackId, new_position: newPosition } },
       { silent: false, ...config },
     )
   }
 
+  /**
+   * Toggle collaborative mode.
+   * Backend expects { collaborative: boolean }.
+   */
   const setCollaborative = async (
     playlistId: string,
     collaborative: boolean,
@@ -110,42 +133,23 @@ export const usePlaylistsApi = () => {
     )
   }
 
-  const addCollaborator = async (
+  /**
+   * List collaborators for a collaborative playlist.
+   * Backend returns: { success: true, data: [{ user_id, added_at, is_creator }] }
+   */
+  const listCollaborators = async (
     playlistId: string,
-    userId: string,
-    config?: UseRequestConfig<void>,
+    config?: UseRequestConfig<CollaboratorResponse[]>,
   ) => {
-    return useRequest<void>(
-      PlaylistApiRoutes.ADD_COLLABORATOR.replace(':playlistId', playlistId),
-      { method: 'POST', data: { user_id: userId } },
-      { silent: false, ...config },
-    )
-  }
-
-  const removeCollaborator = async (
-    playlistId: string,
-    userId: string,
-    config?: UseRequestConfig<void>,
-  ) => {
-    return useRequest<void>(
-      PlaylistApiRoutes.REMOVE_COLLABORATOR.replace(':playlistId', playlistId).replace(
-        ':userId',
-        userId,
-      ),
-      { method: 'DELETE' },
-      { silent: false, ...config },
-    )
-  }
-
-  const listCollaborators = async (playlistId: string, config?: UseRequestConfig<CollaboratorResponse[]>) => {
-    return useRequest<CollaboratorResponse[]>(
+    return useRequest<CollaboratorResponse, true>(
       PlaylistApiRoutes.LIST_COLLABORATORS.replace(':playlistId', playlistId),
       { method: 'GET' },
-      { silent: true, ...config },
+      { schema: CollaboratorResponseSchema, silent: true, ...config },
     )
   }
 
   return {
+    listPublicPlaylists,
     getMyPlaylists,
     getPlaylist,
     createPlaylist,
@@ -155,8 +159,6 @@ export const usePlaylistsApi = () => {
     removeTrack,
     reorderTracks,
     setCollaborative,
-    addCollaborator,
-    removeCollaborator,
     listCollaborators,
   }
 }

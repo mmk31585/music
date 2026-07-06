@@ -55,11 +55,15 @@ export const useCatalogApi = () => {
     // Tracks
     getTracks: tracks.getTracks,
     getTrack: tracks.getTrack,
+    getRandomTracks: tracks.getRandomTracks,
     adminGetTracks: tracks.adminGetTracks,
     adminCreateTrack: tracks.adminCreateTrack,
     adminUploadTrackAudio: tracks.adminUploadTrackAudio,
+    adminUploadTrackCover: tracks.adminUploadTrackCover,
     adminUpdateTrack: tracks.adminUpdateTrack,
     adminDeleteTrack: tracks.adminDeleteTrack,
+    adminEnrichTrack: tracks.adminEnrichTrack,
+    adminEnrichAllTracks: tracks.adminEnrichAllTracks,
 
     // Search
     searchCatalog: search.searchCatalog,

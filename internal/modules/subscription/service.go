@@ -116,6 +116,19 @@ func (s *Service) Checkout(ctx context.Context, userID string, req CheckoutReque
 		return nil, ErrPremiumNotAvailable
 	}
 
+	// Idempotency: check if the user already has an active subscription to this plan
+	existing, _ := s.repo.GetCurrentSubscription(ctx, userID)
+	if existing != nil && existing.PlanID == plan.ID && existing.Status == "active" {
+		mappedSub := mapSubscription(*existing)
+		mappedPlan := mapPlan(*plan)
+		mappedSub.Plan = &mappedPlan
+		return &CheckoutResponse{
+			Message:      "Already subscribed to this plan.",
+			Available:    true,
+			Subscription: &mappedSub,
+		}, nil
+	}
+
 	sub, err := s.repo.CreateSubscription(ctx, userID, plan.ID, "active")
 	if err != nil {
 		return nil, err
@@ -143,7 +156,7 @@ func (s *Service) Checkout(ctx context.Context, userID string, req CheckoutReque
 	mappedPayment := mapPayment(*payment)
 
 	return &CheckoutResponse{
-		Message:      "Subscription created. Premium is not enabled yet.",
+		Message:      "Subscription created.",
 		Available:    true,
 		Subscription: &mappedSub,
 		Payment:      &mappedPayment,

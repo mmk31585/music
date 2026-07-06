@@ -1,4 +1,5 @@
 import { ref, watch } from 'vue'
+import { useToast } from 'primevue/usetoast'
 import { useLibraryApi } from '@/services/api/library'
 import { useUserAuthStore } from '@/stores/user-auth'
 
@@ -9,6 +10,9 @@ import { useUserAuthStore } from '@/stores/user-auth'
  */
 let _fetched = false
 const _likedTrackIds = ref<Set<string>>(new Set())
+
+/** Track ID pending undo from an unlike action (consumed by App.vue undo toast). */
+export const pendingUnlikeTrackId = ref<string | null>(null)
 
 /**
  * Manages the liked state for a track, syncing with the backend library API.
@@ -52,6 +56,8 @@ export function useTrackLike(trackIdRef: import('vue').Ref<string | undefined>) 
   // Watch track changes
   watch(trackIdRef, (id) => checkLiked(id), { immediate: true })
 
+  const toast = useToast()
+
   async function toggleLike() {
     const trackId = trackIdRef.value
     if (!trackId || !auth.isAuthenticated) return
@@ -62,6 +68,13 @@ export function useTrackLike(trackIdRef: import('vue').Ref<string | undefined>) 
         await libraryApi.unlikeTrack(trackId)
         _likedTrackIds.value.delete(trackId)
         liked.value = false
+        pendingUnlikeTrackId.value = trackId
+        toast.add({
+          severity: 'success',
+          summary: 'Track removed from library',
+          group: 'undo',
+          life: 6000,
+        })
       } else {
         await libraryApi.likeTrack({ track_id: trackId })
         _likedTrackIds.value.add(trackId)

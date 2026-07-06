@@ -30,15 +30,15 @@ func TestRepository_Create(t *testing.T) {
 	payloadBytes, _ := json.Marshal(payload)
 
 	rows := sqlmock.NewRows([]string{
-		"id", "user_id", "type", "title", "body", "payload",
-		"is_read", "created_at",
+		"id", "user_id", "type", "title", "body", "entity_type", "entity_id", "payload",
+		"is_read", "read_at", "created_at",
 	}).AddRow(
 		notifID, userID, "like", "New like", "Someone liked your track",
-		string(payloadBytes), false, now,
+		nil, nil, payloadBytes, false, nil, now,
 	)
 
 	mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO notifications`)).
-		WithArgs(userID.String(), "like", "New like", "Someone liked your track", string(payloadBytes)).
+		WithArgs(userID.String(), "like", "New like", "Someone liked your track", nil, nil, payloadBytes).
 		WillReturnRows(rows)
 
 	input := CreateNotificationInput{
@@ -51,7 +51,7 @@ func TestRepository_Create(t *testing.T) {
 
 	n, err := repo.Create(context.Background(), input)
 	require.NoError(t, err)
-	assert.Equal(t, notifID, n.ID)
+	assert.Equal(t, notifID.String(), n.ID)
 	assert.Equal(t, "like", n.Type)
 	assert.False(t, n.IsRead)
 	assert.NoError(t, mock.ExpectationsWereMet())
@@ -69,11 +69,11 @@ func TestRepository_ListByUser(t *testing.T) {
 	now := time.Now()
 
 	rows := sqlmock.NewRows([]string{
-		"id", "user_id", "type", "title", "body", "payload", "is_read", "created_at",
+		"id", "user_id", "type", "title", "body", "entity_type", "entity_id", "payload", "is_read", "read_at", "created_at",
 	}).AddRow(
-		uuid.New(), userID, "follow", "New follower", nil, "{}", false, now,
+		uuid.New(), userID, "follow", "New follower", "", nil, nil, []byte("{}"), false, nil, now,
 	).AddRow(
-		uuid.New(), userID, "milestone", "Level up!", nil, "{}", true, now,
+		uuid.New(), userID, "milestone", "Level up!", "", nil, nil, []byte("{}"), true, nil, now,
 	)
 
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT`)).WithArgs(userID.String(), 20, 0).
@@ -118,7 +118,7 @@ func TestRepository_CountUnreadByUser(t *testing.T) {
 
 	rows := sqlmock.NewRows([]string{"count"}).AddRow(5)
 
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = false`)).
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = FALSE`)).
 		WithArgs(userID.String()).
 		WillReturnRows(rows)
 

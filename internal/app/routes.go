@@ -52,7 +52,8 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	c := NewContainer(a)
 
 	health.RegisterRoutes(api, c.HealthHandler)
-	auth.RegisterRoutes(api, c.AuthHandler, c.AuthMW)
+	dashboard.RegisterRoutes(api, c.DashboardHandler)
+	auth.RegisterRoutes(api, c.AuthHandler, c.AuthMW, c.RDB)
 
 	media.RegisterAdminRoutes(api, c.MediaHandler, c.AuthMW)
 

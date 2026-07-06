@@ -426,7 +426,8 @@ import { useAdminArtists } from '@/composables/admin/useAdminArtists'
 import { useAdminAlbums } from '@/composables/admin/useAdminAlbums'
 import { useAdminGenres } from '@/composables/admin/useAdminGenres'
 import { usePlayer } from '@/composables/player'
-import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
+import { usePlayerApi } from '@/services/api/player'
+import { buildPlaybackTrack as factoryBuildPlaybackTrack } from '@/factories/playbackTrack'
 
 import type { Track } from '@/services/api/catalog/tracks'
 import type { ArtistFormPayload } from '@/composables/admin/useAdminArtists'
@@ -497,16 +498,14 @@ const showAlbumForm = ref(false)
 const artistPrefill = ref('')
 const albumPrefill = ref('')
 
-function buildPlaybackTrack(track: Track): PlaybackTrack {
-  const id = String(track.id)
-  return {
-    id,
+function buildPlaybackTrack(track: Track) {
+  return factoryBuildPlaybackTrack({
+    id: String(track.id),
     title: track.title || 'Untitled',
-    artistName: getTrackPrimaryArtistDisplay(track),
-    coverUrl: getTrackCoverUrl(track),
-    durationSeconds: track.duration_seconds ?? null,
-    streamUrl: playerApi.getTrackStreamUrl(id),
-  }
+    artist_name: getTrackPrimaryArtistDisplay(track) || 'Unknown artist',
+    cover_url: getTrackCoverUrl(track),
+    duration_seconds: track.duration_seconds ?? null,
+  })
 }
 
 async function handlePlayTrack(track: Track) {

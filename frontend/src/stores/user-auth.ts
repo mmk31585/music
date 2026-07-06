@@ -34,6 +34,7 @@ export const useUserAuthStore = defineStore('auth', () => {
   const state = ref<TokenState | null>(tokenStorage.get())
   const deviceId = ref<string | null>(deviceStorage.get())
   const loading = ref(false)
+  const restoreError = ref(false)
 
   const isAuthenticated = computed(() => Boolean(state.value?.access_token))
   const isGuest = computed(() => user.value === null && state.value?.access_token == null)
@@ -113,11 +114,15 @@ export const useUserAuthStore = defineStore('auth', () => {
     persistUser(payload.user)
   }
 
-  async function login(payload: LoginPayload, testing = false): Promise<User> {
+  async function login(payload: LoginPayload, testingOrOptions?: boolean | { rememberMe?: boolean; testing?: boolean }): Promise<User> {
     loading.value = true
 
     try {
-      const config = testing
+      const options = typeof testingOrOptions === 'boolean'
+        ? { testing: testingOrOptions }
+        : (testingOrOptions ?? {})
+
+      const config = options.testing
         ? { headers: { 'X-Testing': 'true' } } as UseRequestConfig<AuthResponse>
         : {} as UseRequestConfig<AuthResponse>
 
@@ -129,6 +134,11 @@ export const useUserAuthStore = defineStore('auth', () => {
 
       if (!response.user) {
         throw new Error('Login failed: no user data received')
+      }
+
+      // Persist rememberMe preference
+      if (options.rememberMe !== undefined) {
+        safeLocalStorage.setItem('remember_me', options.rememberMe)
       }
 
       setSession({
@@ -144,12 +154,18 @@ export const useUserAuthStore = defineStore('auth', () => {
   }
 
   async function me(config: UseRequestConfig<any> = {}) {
-    const userData = await useAuthApi().me(config)
+    loading.value = true
 
-    user.value = userData
-    persistUser(userData)
+    try {
+      const userData = await useAuthApi().me(config)
 
-    return userData
+      user.value = userData
+      persistUser(userData)
+
+      return userData
+    } finally {
+      loading.value = false
+    }
   }
 
   async function logout(): Promise<void> {
@@ -181,12 +197,17 @@ export const useUserAuthStore = defineStore('auth', () => {
   let _readyResolve: (() => void) | null = null
 
   async function restore(): Promise<void> {
+    const remembered = safeLocalStorage.getItem<boolean>('remember_me')
     const storedToken = tokenStorage.get()
     const storedUser = storage.get()
     const storedDevice = deviceStorage.get()
 
-    if (storedToken) {
+    // Only restore token if rememberMe was checked, or if we have a token from current session
+    if (remembered !== false && storedToken) {
       state.value = storedToken
+    } else if (storedToken) {
+      // Remember me is off — clear persisted token for next time
+      tokenStorage.remove()
     }
 
     if (storedUser) {
@@ -206,6 +227,7 @@ export const useUserAuthStore = defineStore('auth', () => {
         await me()
       } catch (error) {
         console.warn('Failed to restore auth session:', error)
+        restoreError.value = true
         $reset()
       } finally {
         loading.value = false
@@ -239,6 +261,7 @@ export const useUserAuthStore = defineStore('auth', () => {
     deviceId,
 
     loading: isLoading,
+    restoreError,
     isAuthenticated,
     isGuest,
     isAdmin,

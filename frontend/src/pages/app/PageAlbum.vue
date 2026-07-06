@@ -358,6 +358,7 @@ import { SkeletonLoader, AppEmptyState } from '@/components/common'
 import { useAlbum } from '@/composables/catalog/useAlbum'
 import { usePlayer } from '@/composables/player'
 import { usePlayerApi } from '@/services/api/player'
+import { mapToPlaybackTracks } from '@/factories/playbackTrack'
 import { useAlbumColors } from '@/composables/useAlbumColors'
 import { onImgError } from '@/utils/helpers'
 import { useSocialShare } from '@/composables/social'
@@ -444,15 +445,15 @@ function shuffleAll() {
 
 function buildQueue() {
   if (!tracks.value.length) return []
-  return tracks.value.map((t: Record<string, unknown>) => ({
+  return mapToPlaybackTracks(tracks.value.map((t: Record<string, unknown>) => ({
     id: String(t.id),
-    title: t.title as string,
-    artistName: (t.artist_name as string) || artist?.value?.name || 'Unknown',
-    albumTitle: (t.album_title as string) || album.value?.title || null,
-    coverUrl: (t.cover_url as string) || album.value?.cover_url || null,
-    durationSeconds: (t.duration_seconds as number) ?? null,
+    title: (t.title as string) || undefined,
+    artist_name: (t.artist_name as string) || artist?.value?.name || 'Unknown',
+    album_title: (t.album_title as string) || album.value?.title || null,
+    cover_url: (t.cover_url as string) || album.value?.cover_url || null,
+    duration_seconds: (t.duration_seconds as number) ?? null,
     streamUrl: playerApi.getTrackStreamUrl(String(t.id)),
-  }))
+  })))
 }
 
 const { copyLink } = useSocialShare()

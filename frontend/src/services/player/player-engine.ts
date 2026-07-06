@@ -41,6 +41,7 @@ export class PlayerEngine {
   private shufflePosition = -1
   private shuffleMode: ShuffleMode = 'off'
   private repeatMode: RepeatMode = 'off'
+  private crossfadeDuration = 0
 
   private _currentTrack: PlaybackTrack | null = null
 
@@ -190,6 +191,12 @@ export class PlayerEngine {
   private async doPlay(track: PlaybackTrack) {
     this.emit('buffering', true)
 
+    // Crossfade: fade out current track before switching
+    const fadeDuration = this.crossfadeDuration
+    if (fadeDuration > 0 && !this.audio.paused) {
+      await this.audio.fadeOut(fadeDuration)
+    }
+
     this.setCurrentTrack({
       ...track,
       coverUrl: track.coverUrl ?? undefined,
@@ -207,6 +214,11 @@ export class PlayerEngine {
     })
 
     await this.audio.play(track.streamUrl)
+
+    // Fade in new track if crossfade is active
+    if (fadeDuration > 0) {
+      await this.audio.fadeIn(fadeDuration)
+    }
 
     this.providers.onPlayHistory?.(track.id, track.durationSeconds ?? 0)
 
@@ -254,6 +266,34 @@ export class PlayerEngine {
     const track = tracks[startIndex]
     if (track) {
       await this.doPlay(track)
+    }
+  }
+
+  /**
+   * Append tracks to the end of the existing queue and optionally play a specific track.
+   * If no track is currently playing, starts playing the first appended track.
+   * Does NOT replace the existing queue.
+   */
+  async appendQueueAndPlay(tracks: PlaybackTrack[], playIndex?: number) {
+    if (!tracks.length) return
+
+    // Add all tracks to the end of the queue
+    for (const track of tracks) {
+      this.queue.addToQueue(track)
+    }
+    this.emit('queuechange', this.queue.all())
+
+    if (this.shuffleMode === 'queue') {
+      this.buildShuffleOrder()
+    }
+
+    // If nothing is playing, start from the first appended track
+    if (!this._currentTrack) {
+      const startIdx = playIndex ?? 0
+      const track = tracks[startIdx] ?? tracks[0]
+      if (track) {
+        await this.doPlay(track)
+      }
     }
   }
 
@@ -574,6 +614,11 @@ export class PlayerEngine {
 
   getAnalyserNode() {
     return this.audio.getAnalyserNode()
+  }
+
+  setCrossfadeDuration(seconds: number) {
+    this.crossfadeDuration = Math.max(0, seconds)
+    this.audio.setCrossfadeDuration(seconds)
   }
 
   destroy() {

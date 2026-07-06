@@ -472,7 +472,7 @@ import { useSocialApi } from '@/services/api/social'
 import { useRecommendationsApi } from '@/services/api/recommendation'
 import { useHistoryApi } from '@/services/api/history'
 import { usePlayer } from '@/composables/player'
-import { usePlayerApi } from '@/services/api/player'
+import { buildPlaybackTrack } from '@/factories/playbackTrack'
 import { onImgError } from '@/utils/helpers'
 import { AppEmptyState } from '@/components/common'
 import { HomeCarousel, HomeTrackCard, ActivityItem } from '@/components/music'
@@ -498,7 +498,6 @@ const socialApi = useSocialApi()
 const recsApi = useRecommendationsApi()
 const historyApi = useHistoryApi()
 const player = usePlayer()
-const playerApi = usePlayerApi()
 const { recentSearches, addRecentSearch, removeRecentSearch, clearRecentSearches }
   = useRecentSearches()
 
@@ -649,30 +648,27 @@ async function fetchDiscover() {
 
 function playTrack(track: TrackCardItem) {
   void player.setQueueAndPlay(
-    [{
+    [buildPlaybackTrack({
       id: String(track.id),
-      title: track.title as string,
-      artistName: (track.artist_name as string) || 'Unknown',
-      albumTitle: (track.album_title as string) || null,
-      coverUrl: (track.cover_url as string) || null,
-      durationSeconds: (track.duration_seconds as number) ?? null,
-      streamUrl: playerApi.getTrackStreamUrl(String(track.id)),
-    }],
+      title: (track.title as string) || undefined,
+      artist_name: (track.artist_name as string) || 'Unknown',
+      album_title: (track.album_title as string) || null,
+      cover_url: (track.cover_url as string) || null,
+      duration_seconds: (track.duration_seconds as number) ?? null,
+    })],
     0,
   )
 }
 
 function playHistoryItem(item: TrackCardItem) {
   player.setQueueAndPlay(
-    [{
+    [buildPlaybackTrack({
       id: String(item.track_id),
       title: (item.track_title as string) || 'Unknown',
-      artistName: (item.artist_name as string) || 'Unknown',
-      albumTitle: null,
-      coverUrl: (item.track_cover_url as string) || null,
-      durationSeconds: (item.track_duration as number) ?? null,
-      streamUrl: playerApi.getTrackStreamUrl(String(item.track_id)),
-    }],
+      artist_name: (item.artist_name as string) || 'Unknown',
+      cover_url: (item.track_cover_url as string) || null,
+      duration_seconds: (item.track_duration as number) ?? null,
+    })],
     0,
   )
 }

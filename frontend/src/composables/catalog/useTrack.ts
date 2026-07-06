@@ -50,6 +50,10 @@ export function useTrack(id: string | number) {
         libraryApi.getLikedTracks().catch(() => []),
       ])
 
+      if (!trackData) {
+        throw new Error('Track not found')
+      }
+
       track.value = trackData
 
       isLiked.value = Array.isArray(likedTracks)

@@ -28,9 +28,9 @@ func NewRepository(db *sqlx.DB) *Repository {
 
 func (r *Repository) CreatePlaylist(ctx context.Context, req CreatePlaylistRequest, userID uuid.UUID) (Playlist, error) {
 	query := `
-		INSERT INTO playlists (user_id, name, description, cover_url, is_public)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, user_id, name, description, cover_url, is_public, created_at, updated_at
+		INSERT INTO playlists (user_id, owner_id, name, description, cover_url, is_public)
+		VALUES ($1, $1, $2, $3, $4, $5)
+		RETURNING id, user_id, owner_id, name, description, cover_url, is_public, created_at, updated_at
 	`
 
 	var p Playlist
@@ -43,6 +43,7 @@ func (r *Repository) CreatePlaylist(ctx context.Context, req CreatePlaylistReque
 	).Scan(
 		&p.ID,
 		&p.UserID,
+		&p.OwnerID,
 		&p.Name,
 		&p.Description,
 		&p.CoverURL,
@@ -64,7 +65,7 @@ func (r *Repository) UpdatePlaylist(ctx context.Context, playlistID, userID uuid
 			is_public = $4,
 			updated_at = NOW()
 		WHERE id = $5 AND user_id = $6
-		RETURNING id, user_id, name, description, cover_url, is_public, created_at, updated_at
+		RETURNING id, user_id, owner_id, name, description, cover_url, is_public, created_at, updated_at
 	`
 
 	var p Playlist
@@ -78,6 +79,7 @@ func (r *Repository) UpdatePlaylist(ctx context.Context, playlistID, userID uuid
 	).Scan(
 		&p.ID,
 		&p.UserID,
+		&p.OwnerID,
 		&p.Name,
 		&p.Description,
 		&p.CoverURL,
@@ -116,7 +118,7 @@ func (r *Repository) DeletePlaylist(ctx context.Context, playlistID, userID uuid
 
 func (r *Repository) GetPlaylistByID(ctx context.Context, playlistID uuid.UUID) (Playlist, error) {
 	query := `
-		SELECT id, user_id, name, description, cover_url, is_public, is_collaborative, created_at, updated_at
+		SELECT id, user_id, owner_id, name, description, cover_url, is_public, is_collaborative, created_at, updated_at
 		FROM playlists
 		WHERE id = $1
 	`
@@ -125,6 +127,7 @@ func (r *Repository) GetPlaylistByID(ctx context.Context, playlistID uuid.UUID) 
 	err := r.db.QueryRowContext(ctx, query, playlistID).Scan(
 		&p.ID,
 		&p.UserID,
+		&p.OwnerID,
 		&p.Name,
 		&p.Description,
 		&p.CoverURL,

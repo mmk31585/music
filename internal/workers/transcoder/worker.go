@@ -47,6 +47,12 @@ func NewWorker(db *sqlx.DB, logger *zap.Logger, ffmpegPath, outputDir string) *W
 func (w *Worker) Name() string { return "transcoder" }
 
 func (w *Worker) Run(ctx context.Context) error {
+	defer func() {
+		if r := recover(); r != nil {
+			w.logger.Error("transcoder worker panicked", zap.Any("recover", r))
+		}
+	}()
+
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 

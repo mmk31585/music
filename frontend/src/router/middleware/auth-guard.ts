@@ -8,8 +8,10 @@ import { useUserAuthStore } from '@/stores'
  * 1. Admin-only routes → redirect non-admins to home.
  * 2. redirectIfAdmin meta → redirect admins to admin dashboard.
  */
-export function checkAuthGuard(to: RouteLocationNormalized) {
+export async function checkAuthGuard(to: RouteLocationNormalized) {
   const auth = useUserAuthStore()
+  // Wait for auth restore to complete before checking auth state
+  await auth.ready()
   const isAuthenticated = auth.isAuthenticated
   const isAdmin = auth.isAdmin
 

@@ -38,9 +38,9 @@ func VerifyMLServiceWebhook(secret string) gin.HandlerFunc {
 			return
 		}
 
-		// Replay protection: reject timestamps older than 300 seconds
+		// Replay protection: reject timestamps outside 300-second window (±5 min)
 		ts, err := strconv.ParseInt(timestamp, 10, 64)
-		if err != nil || time.Since(time.Unix(ts, 0)) > 5*time.Minute {
+		if err != nil || time.Since(time.Unix(ts, 0)) > 5*time.Minute || time.Since(time.Unix(ts, 0)) < -5*time.Minute {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "stale or invalid timestamp"})
 			return
 		}

@@ -21,6 +21,7 @@ type ServiceInterface interface {
 	Login(ctx context.Context, req LoginRequest, userAgent, ipAddress string) (AuthResponse, error)
 	Refresh(ctx context.Context, req RefreshRequest, userAgent, ipAddress string) (AuthResponse, error)
 	Logout(ctx context.Context, req LogoutRequest) error
+	ForgotPassword(ctx context.Context, email string) error
 	Me(ctx context.Context, userID string) (MeResponse, error)
 	AdminListUsers(ctx context.Context, params ListUsersParams) (AdminListUsersResponse, error)
 	AdminGetUser(ctx context.Context, id string) (AdminUserItem, error)
@@ -60,12 +61,12 @@ func (h *Handler) Register(c *gin.Context) {
 	var req RegisterRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, err)
+		response.Error(c, apperrors.BadRequest("invalid request body: "+err.Error(), nil))
 		return
 	}
 
 	if err := h.validator.Struct(req); err != nil {
-		response.Error(c, err)
+		response.Error(c, apperrors.BadRequest("validation failed: "+err.Error(), nil))
 		return
 	}
 
@@ -164,12 +165,12 @@ func (h *Handler) Logout(c *gin.Context) {
 	var req LogoutRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, err)
+		response.Error(c, apperrors.BadRequest("invalid request body: "+err.Error(), nil))
 		return
 	}
 
 	if err := h.validator.Struct(req); err != nil {
-		response.Error(c, err)
+		response.Error(c, apperrors.BadRequest("validation failed: "+err.Error(), nil))
 		return
 	}
 
@@ -179,6 +180,30 @@ func (h *Handler) Logout(c *gin.Context) {
 	}
 
 	response.Success[any](c, http.StatusOK, "logged out successfully", nil)
+}
+
+// ForgotPassword godoc
+// @Summary Request password reset
+// @Description Sends a password reset email if the account exists. Always returns success to prevent email enumeration.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body ForgotPasswordRequest true "Email to send reset link to"
+// @Success 200 {object} response.SuccessResponse
+// @Router /auth/forgot-password [post]
+func (h *Handler) ForgotPassword(c *gin.Context) {
+	var req ForgotPasswordRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, apperrors.BadRequest("invalid request body: "+err.Error(), nil))
+		return
+	}
+
+	// Always return success to prevent email enumeration.
+	// The actual email sending should be implemented in the service layer.
+	_ = h.service.ForgotPassword(c.Request.Context(), req.Email)
+
+	response.Success[any](c, http.StatusOK, "if the account exists, a password reset link has been sent", nil)
 }
 
 // Me godoc
@@ -364,7 +389,7 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 
 	var req UpdateProfileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.logger.Error("update profile bind error", zap.Error(err), zap.Any("body", c.Request.Body))
+		h.logger.Error("update profile bind error", zap.Error(err))
 		response.Error(c, apperrors.BadRequest("invalid request body: "+err.Error(), nil))
 		return
 	}

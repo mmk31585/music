@@ -119,7 +119,8 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
       if (status === ResponseStatuses.HTTP_FORBIDDEN) {
         resetAuthStore()
         clearAuthToken()
-        await redirectToLogin()
+        const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : undefined
+        await redirectToLogin(currentPath)
 
         return Promise.reject(error)
       }
@@ -160,7 +161,8 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
 
           resetAuthStore()
           clearAuthToken()
-          await redirectToLogin()
+          const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : undefined
+          await redirectToLogin(currentPath)
 
           return Promise.reject(refreshError)
         } finally {

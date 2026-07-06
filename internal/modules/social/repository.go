@@ -72,6 +72,10 @@ type Repository interface {
 	GetNowPlayingWithTrack(ctx context.Context, roomID uuid.UUID) (*NowPlayingResponse, error)
 	GetCandidatesWithTrackAndUser(ctx context.Context, roomID, userID uuid.UUID) ([]CandidateResponse, error)
 
+	// Ownership checks
+	GetPartyHost(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
+	GetRoomHost(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
+
 	// Stage & Raise-Hand
 	GetHandRaise(ctx context.Context, roomID, userID uuid.UUID) (*HandRaise, error)
 	RaiseHand(ctx context.Context, roomID, userID uuid.UUID) error

@@ -219,7 +219,7 @@ import { useArtistsApi } from '@/services/api/catalog/artists'
 import { useAlbumsApi } from '@/services/api/catalog/albums'
 import { useTracksApi } from '@/services/api/catalog/tracks'
 import { usePlayer } from '@/composables/player'
-import { usePlayerApi, type PlaybackTrack } from '@/services/api/player'
+import { buildPlaybackTrack as factoryBuildPlaybackTrack } from '@/factories/playbackTrack'
 import type { Artist } from '@/services/api/catalog/artists'
 import type { Album } from '@/services/api/catalog/albums'
 import type { Track } from '@/services/api/catalog/tracks'
@@ -248,18 +248,15 @@ const deleting = ref(false)
 const enriching = ref(false)
 const loadingTrackId = ref<string | null>(null)
 const player = usePlayer()
-const playerApi = usePlayerApi()
 
-function buildPlaybackTrack(track: Track): PlaybackTrack {
-  const id = String(track.id)
-  return {
-    id,
+function buildPlaybackTrack(track: Track) {
+  return factoryBuildPlaybackTrack({
+    id: String(track.id),
     title: track.title || 'Untitled',
-    artistName: artist.value?.name || 'Unknown artist',
-    coverUrl: track.cover_url || null,
-    durationSeconds: track.duration_seconds ?? null,
-    streamUrl: playerApi.getTrackStreamUrl(id),
-  }
+    artist_name: artist.value?.name || 'Unknown artist',
+    cover_url: track.cover_url || null,
+    duration_seconds: track.duration_seconds ?? null,
+  })
 }
 
 async function handlePlayTrack(track: Track) {

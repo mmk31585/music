@@ -1,6 +1,6 @@
 <template>
   <aside
-    class="hidden h-screen shrink-0 border-r border-white/10 bg-black/20 backdrop-blur-2xl xl:flex xl:flex-col transition-all duration-300 ease-out z-30"
+    class="hidden h-screen shrink-0 border-e border-white/10 bg-black/20 backdrop-blur-2xl xl:flex xl:flex-col transition-all duration-300 ease-out z-30"
     :class="collapsed ? 'w-14 items-center' : 'w-88'"
     style="backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);"
   >
@@ -316,13 +316,13 @@
               >
                 <i aria-hidden="true" :class="volumeIcon" class="text-xs" />
               </button>
-              <div class="w-16" dir="ltr">
+              <div class="w-16">
                 <input
                   type="range"
                   min="0"
                   max="1"
                   step="0.01"
-                  class="player-range h-1 w-full cursor-pointer appearance-none rounded-full bg-white/10 outline-hidden"
+                  class="player-range h-1 w-full cursor-pointer appearance-none rounded-full bg-white/10 outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-primary-400)]/50"
                   :value="muted ? 0 : volume"
                   @input="onVolume"
                 />
@@ -478,8 +478,7 @@ function formatTime(seconds?: number | null) {
   content: '';
   position: sticky;
   bottom: 0;
-  left: 0;
-  right: 0;
+  inset-inline: 0;
   display: block;
   height: 2rem;
   background: linear-gradient(to top, rgba(0,0,0,0.4), transparent);

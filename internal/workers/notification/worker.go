@@ -27,6 +27,12 @@ func (w *Worker) Name() string {
 }
 
 func (w *Worker) Run(ctx context.Context) error {
+	defer func() {
+		if r := recover(); r != nil {
+			w.logger.Error("notification worker panicked", zap.Any("recover", r))
+		}
+	}()
+
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 

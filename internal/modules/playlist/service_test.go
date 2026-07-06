@@ -227,6 +227,7 @@ func TestGetPlaylist_PrivateUnauthorized(t *testing.T) {
 	p := Playlist{ID: uid1, UserID: uid2, Name: "Private", IsPublic: false}
 
 	m.On("GetPlaylistByID", mock.Anything, uid1).Return(p, nil)
+	m.On("IsCollaborator", mock.Anything, uid1.String(), uid3.String()).Return(false, nil)
 
 	_, _, err := svc.GetPlaylist(context.Background(), uid1, &uid3)
 

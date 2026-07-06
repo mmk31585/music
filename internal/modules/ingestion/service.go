@@ -73,6 +73,12 @@ func (s *Service) EnrichDraft(ctx context.Context, draftID string, scope ...enri
 }
 
 func (s *Service) enrichAsync(draftID, title, artist, album string, durationSeconds int, scope ...enrichment.EnrichScope) {
+	defer func() {
+		if r := recover(); r != nil {
+			zap.L().Error("enrichment panicked", zap.String("draft_id", draftID), zap.Any("recover", r))
+		}
+	}()
+
 	ctx := context.Background()
 
 	result, err := s.enricher.Enrich(ctx, title, artist, album, durationSeconds, scope...)
