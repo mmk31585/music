@@ -3,16 +3,19 @@ package auth
 import (
 	"context"
 	"strings"
+	"time"
 
+	"net/http"
 	apperrors "music/internal/common/errors"
+	"go.uber.org/zap"
 )
 
 type Service struct {
-	repo   *Repository
+	repo   RepositoryInterface
 	tokens *TokenManager
 }
 
-func NewService(repo *Repository, tokens *TokenManager) *Service {
+func NewService(repo RepositoryInterface, tokens *TokenManager) *Service {
 	return &Service{
 		repo:   repo,
 		tokens: tokens,
@@ -47,15 +50,15 @@ func (s *Service) Login(ctx context.Context, req LoginRequest, userAgent, ipAddr
 
 	user, err := s.repo.FindUserByEmailOrUsername(ctx, value)
 	if err != nil {
-		return AuthResponse{}, apperrors.Unauthorized("invalid credentials", nil)
+		return AuthResponse{}, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid credentials", nil)
 	}
 
 	if !user.IsActive {
-		return AuthResponse{}, apperrors.Forbidden("user account is disabled", nil)
+		return AuthResponse{}, apperrors.New(http.StatusForbidden, apperrors.CodeForbidden, "user account is disabled", nil)
 	}
 
 	if !CheckPassword(req.Password, user.PasswordHash) {
-		return AuthResponse{}, apperrors.Unauthorized("invalid credentials", nil)
+		return AuthResponse{}, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid credentials", nil)
 	}
 
 	return s.createAuthResponse(ctx, user, userAgent, ipAddress)
@@ -73,7 +76,7 @@ func (s *Service) Refresh(ctx context.Context, req RefreshRequest, userAgent, ip
 	}
 
 	if session.UserID != claims.UserID {
-		return AuthResponse{}, apperrors.Unauthorized("invalid refresh token", nil)
+		return AuthResponse{}, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid refresh token", nil)
 	}
 
 	user, err := s.repo.FindUserByID(ctx, session.UserID)
@@ -82,13 +85,21 @@ func (s *Service) Refresh(ctx context.Context, req RefreshRequest, userAgent, ip
 	}
 
 	if !user.IsActive {
-		return AuthResponse{}, apperrors.Forbidden("user account is disabled", nil)
+		return AuthResponse{}, apperrors.New(http.StatusForbidden, apperrors.CodeForbidden, "user account is disabled", nil)
 	}
 
 	// Refresh token rotation:
 	// old refresh token becomes invalid after successful refresh.
-	if err := s.repo.RevokeSessionByID(ctx, session.ID); err != nil {
+	// RowsAffected check prevents race — if already revoked, refuse.
+	revoked, err := s.repo.RevokeSessionByID(ctx, session.ID)
+	if err != nil {
 		return AuthResponse{}, err
+	}
+	if !revoked {
+		zap.L().Warn("refresh token reuse detected",
+			zap.String("user_id", session.UserID),
+			zap.String("session_id", session.ID))
+		return AuthResponse{}, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "refresh token has already been used", nil)
 	}
 
 	return s.createAuthResponse(ctx, user, userAgent, ipAddress)
@@ -96,6 +107,21 @@ func (s *Service) Refresh(ctx context.Context, req RefreshRequest, userAgent, ip
 
 func (s *Service) Logout(ctx context.Context, req LogoutRequest) error {
 	return s.repo.RevokeSessionByRefreshToken(ctx, req.RefreshToken)
+}
+
+func (s *Service) ForgotPassword(ctx context.Context, email string) error {
+	// Stub: actual email sending requires email service integration.
+	// Look up user by email — silently ignore if not found (security: no email enumeration).
+	user, err := s.repo.FindUserByEmailOrUsername(ctx, email)
+	if err != nil {
+		return nil // silent return regardless of error
+	}
+	// TODO: Generate reset token, store in Redis with TTL, send email
+	// ResetToken, err := s.tokens.GenerateResetToken(user)
+	// if err != nil { return err }
+	// return s.email.SendPasswordReset(user.Email, resetToken)
+	_ = user
+	return nil
 }
 
 func (s *Service) Me(ctx context.Context, userID string) (MeResponse, error) {
@@ -141,6 +167,132 @@ func (s *Service) createAuthResponse(ctx context.Context, user User, userAgent, 
 		TokenType:    "Bearer",
 		ExpiresIn:    int64(accessExpiresAt.Sub(accessExpiresAt.Add(-s.tokens.accessTTL)).Seconds()),
 	}, nil
+}
+
+func (s *Service) AdminListUsers(ctx context.Context, params ListUsersParams) (AdminListUsersResponse, error) {
+	users, total, err := s.repo.ListUsers(ctx, params)
+	if err != nil {
+		return AdminListUsersResponse{}, err
+	}
+
+	items := make([]AdminUserItem, len(users))
+	for i, u := range users {
+		items[i] = toAdminUserItem(u)
+	}
+
+	return AdminListUsersResponse{
+		Items:    items,
+		Total:    total,
+		Page:     params.Page,
+		PageSize: params.PageSize,
+	}, nil
+}
+
+func (s *Service) AdminGetUser(ctx context.Context, id string) (AdminUserItem, error) {
+	user, err := s.repo.FindUserByID(ctx, id)
+	if err != nil {
+		return AdminUserItem{}, err
+	}
+	return toAdminUserItem(user), nil
+}
+
+func (s *Service) AdminUpdateUser(ctx context.Context, id string, req AdminUpdateUserRequest) (AdminUserItem, error) {
+	updates := make(map[string]any)
+	if req.Role != nil {
+		updates["role"] = *req.Role
+	}
+	if req.IsActive != nil {
+		updates["is_active"] = *req.IsActive
+	}
+	if req.EmailVerified != nil {
+		updates["email_verified"] = *req.EmailVerified
+	}
+
+	if len(updates) > 0 {
+		if err := s.repo.UpdateUser(ctx, id, updates); err != nil {
+			return AdminUserItem{}, err
+		}
+	}
+
+	return s.AdminGetUser(ctx, id)
+}
+
+func (s *Service) UpdateProfile(ctx context.Context, userID string, req UpdateProfileRequest) error {
+	updates := make(map[string]any)
+	if req.DisplayName != nil {
+		updates["display_name"] = *req.DisplayName
+	}
+	if req.Username != nil {
+		updates["username"] = strings.ToLower(strings.TrimSpace(*req.Username))
+	}
+	if req.Bio != nil {
+		updates["bio"] = *req.Bio
+	}
+	if req.Location != nil {
+		updates["location"] = *req.Location
+	}
+	if req.Website != nil {
+		updates["website"] = *req.Website
+	}
+	if req.Preferences != nil {
+		updates["preferences"] = *req.Preferences
+	}
+
+	if len(updates) == 0 {
+		return nil
+	}
+
+	return s.repo.UpdateUser(ctx, userID, updates)
+}
+
+func (s *Service) ChangePassword(ctx context.Context, userID string, req ChangePasswordRequest) error {
+	user, err := s.repo.FindUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if !CheckPassword(req.CurrentPassword, user.PasswordHash) {
+		return apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid credentials", nil)
+	}
+
+	hash, err := HashPassword(req.NewPassword)
+	if err != nil {
+		return err
+	}
+
+	return s.repo.UpdatePassword(ctx, userID, hash)
+}
+
+func (s *Service) GetPublicProfile(ctx context.Context, id string) (*User, error) {
+	user, err := s.repo.FindPublicUser(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (s *Service) AdminDeleteUser(ctx context.Context, id string) error {
+	return s.repo.DeleteUser(ctx, id)
+}
+
+func toAdminUserItem(user User) AdminUserItem {
+	verified := user.EmailVerifiedAt != nil
+	var updatedAt *time.Time
+	if !user.UpdatedAt.IsZero() {
+		updatedAt = &user.UpdatedAt
+	}
+	return AdminUserItem{
+		ID:            user.ID,
+		Email:         user.Email,
+		Username:      user.Username,
+		DisplayName:   user.DisplayName,
+		Role:          user.Role,
+		IsActive:      user.IsActive,
+		EmailVerified: verified,
+		AvatarURL:     user.AvatarURL,
+		CreatedAt:     user.CreatedAt,
+		UpdatedAt:     updatedAt,
+	}
 }
 
 func toAuthUser(user User) AuthUser {

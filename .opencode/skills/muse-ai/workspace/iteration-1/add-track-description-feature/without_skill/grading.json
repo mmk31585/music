@@ -1,0 +1,13 @@
+{
+  "eval_id": 1,
+  "run_id": "add-track-description-feature-without_skill",
+  "config": "without_skill",
+  "expectations": [
+    {"text": "mentions AIClient interface", "passed": true, "evidence": "Mentions adding GenerateTrackDescription to the AIClient interface"},
+    {"text": "covers all 7 module files", "passed": false, "evidence": "Covers client.go, model.go, service.go, handler.go, routes.go, dto.go but omits repository.go — suggests 'no DB persistence required' instead"},
+    {"text": "includes migration file", "passed": false, "evidence": "No migration file mentioned; says 'no DB struct needed unless caching'"},
+    {"text": "references module pattern", "passed": false, "evidence": "Mentions handler → service → repository stack in overview but doesn't explicitly reference it as a pattern"},
+    {"text": "mentions fallback client", "passed": false, "evidence": "Suggests 'add a stub on *fallbackClient' but doesn't emphasize it as important or explain the fallback pattern"},
+    {"text": "includes frontend integration", "passed": false, "evidence": "No mention of frontend changes (enums, types, routes)"}
+  ]
+}

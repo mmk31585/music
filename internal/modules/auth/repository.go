@@ -5,14 +5,32 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
+	"net/http"
 	apperrors "music/internal/common/errors"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+type RepositoryInterface interface {
+	CreateUser(ctx context.Context, user User) (User, error)
+	FindUserByEmailOrUsername(ctx context.Context, value string) (User, error)
+	FindUserByID(ctx context.Context, id string) (User, error)
+	FindPublicUser(ctx context.Context, id string) (User, error)
+	CreateSession(ctx context.Context, userID string, refreshToken string, userAgent *string, ipAddress *string, expiresAt time.Time) error
+	FindValidSessionByRefreshToken(ctx context.Context, refreshToken string) (AuthSession, error)
+	RevokeSessionByRefreshToken(ctx context.Context, refreshToken string) error
+	RevokeSessionByID(ctx context.Context, sessionID string) (bool, error)
+	ListUsers(ctx context.Context, params ListUsersParams) ([]User, int, error)
+	UpdateUser(ctx context.Context, id string, updates map[string]any) error
+	UpdatePassword(ctx context.Context, id string, passwordHash string) error
+	DeleteUser(ctx context.Context, id string) error
+}
 
 type Repository struct {
 	db *pgxpool.Pool
@@ -57,7 +75,7 @@ func (r *Repository) CreateUser(ctx context.Context, user User) (User, error) {
 
 	if err != nil {
 		if isUniqueViolation(err) {
-			return User{}, apperrors.Conflict("email or username already exists", nil)
+			return User{}, apperrors.New(http.StatusConflict, apperrors.CodeConflict, "email or username already exists", nil)
 		}
 
 		return User{}, err
@@ -136,7 +154,7 @@ func (r *Repository) FindValidSessionByRefreshToken(ctx context.Context, refresh
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return AuthSession{}, apperrors.Unauthorized("invalid refresh token", nil)
+		return AuthSession{}, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid refresh token", nil)
 	}
 
 	if err != nil {
@@ -158,7 +176,7 @@ func (r *Repository) RevokeSessionByRefreshToken(ctx context.Context, refreshTok
 	return err
 }
 
-func (r *Repository) RevokeSessionByID(ctx context.Context, sessionID string) error {
+func (r *Repository) RevokeSessionByID(ctx context.Context, sessionID string) (bool, error) {
 	query := `
 		UPDATE auth_sessions
 		SET revoked_at = NOW()
@@ -166,8 +184,11 @@ func (r *Repository) RevokeSessionByID(ctx context.Context, sessionID string) er
 		  AND revoked_at IS NULL
 	`
 
-	_, err := r.db.Exec(ctx, query, sessionID)
-	return err
+	tag, err := r.db.Exec(ctx, query, sessionID)
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() > 0, nil
 }
 
 func (r *Repository) scanUser(row pgx.Row) (User, error) {
@@ -188,7 +209,7 @@ func (r *Repository) scanUser(row pgx.Row) (User, error) {
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return User{}, apperrors.NotFound("user not found", nil)
+		return User{}, apperrors.New(http.StatusNotFound, apperrors.CodeNotFound, "user not found", nil)
 	}
 
 	if err != nil {
@@ -197,6 +218,163 @@ func (r *Repository) scanUser(row pgx.Row) (User, error) {
 
 	return user, nil
 }
+func (r *Repository) FindPublicUser(ctx context.Context, id string) (User, error) {
+	query := `
+		SELECT id, email, username, display_name, password_hash, avatar_url, role, is_active, email_verified_at, created_at, updated_at
+		FROM users
+		WHERE id = $1 AND is_active = true
+		LIMIT 1
+	`
+
+	return r.scanUser(r.db.QueryRow(ctx, query, id))
+}
+
+func (r *Repository) ListUsers(ctx context.Context, params ListUsersParams) ([]User, int, error) {
+	where := "WHERE 1=1"
+	args := make([]any, 0)
+	argIdx := 1
+
+	if params.Search != "" {
+		where += fmt.Sprintf(" AND (email ILIKE $%d OR username ILIKE $%d OR display_name ILIKE $%d)", argIdx, argIdx, argIdx)
+		args = append(args, "%"+params.Search+"%")
+		argIdx++
+	}
+
+	var countQuery = "SELECT COUNT(*) FROM users " + where
+	var total int
+	err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	orderBy := "created_at DESC"
+	sortByMap := map[string]string{
+		"display_name": "display_name",
+		"email":        "email",
+		"username":     "username",
+		"role":         "role",
+		"is_active":    "is_active",
+		"created_at":   "created_at",
+	}
+	if col, ok := sortByMap[params.SortBy]; ok {
+		order := "DESC"
+		if params.SortOrder == "asc" || params.SortOrder == "ASC" {
+			order = "ASC"
+		}
+		orderBy = col + " " + order
+	}
+
+	offset := (params.Page - 1) * params.PageSize
+	limit := params.PageSize
+
+	query := fmt.Sprintf(`
+		SELECT id, email, username, display_name, password_hash, avatar_url, role, is_active, email_verified_at, created_at, updated_at
+		FROM users %s
+		ORDER BY %s
+		LIMIT $%d OFFSET $%d
+	`, where, orderBy, argIdx, argIdx+1)
+	args = append(args, limit, offset)
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	users := make([]User, 0)
+	for rows.Next() {
+		var user User
+		err := rows.Scan(
+			&user.ID, &user.Email, &user.Username, &user.DisplayName,
+			&user.PasswordHash, &user.AvatarURL, &user.Role, &user.IsActive,
+			&user.EmailVerifiedAt, &user.CreatedAt, &user.UpdatedAt,
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+		users = append(users, user)
+	}
+
+	return users, total, nil
+}
+
+// allowedUserUpdateColumns is the strict whitelist of column names that can be
+// dynamically referenced in UPDATE SET clauses. Any key not in this map is
+// rejected to prevent SQL injection via uncontrolled column names.
+var allowedUserUpdateColumns = map[string]string{
+	"role":           "role",
+	"is_active":      "is_active",
+	"email_verified": "email_verified_at",
+	"display_name":   "display_name",
+	"username":       "username",
+	"email":          "email",
+	"avatar_url":     "avatar_url",
+	"bio":            "bio",
+	"location":       "location",
+	"website":        "website",
+	"preferences":    "preferences",
+}
+
+func (r *Repository) UpdateUser(ctx context.Context, id string, updates map[string]any) error {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	setClauses := make([]string, 0, len(updates))
+	args := make([]any, 0, len(updates)+1)
+	argIdx := 1
+
+	for key, value := range updates {
+		col, ok := allowedUserUpdateColumns[key]
+		if !ok {
+			// Reject unknown keys instead of interpolating them raw (SQL injection prevention)
+		return apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "unknown user field: "+key, map[string]string{
+			"field":   key,
+			"allowed": "role, is_active, email_verified, display_name, username, email, avatar_url",
+		})
+		}
+
+		// Handle email_verified as a special boolean→SET NULL logic
+		if key == "email_verified" {
+			if b, ok := value.(bool); ok && b {
+				setClauses = append(setClauses, fmt.Sprintf("email_verified_at = NOW()"))
+				continue
+			}
+			// Set to NULL when false
+			setClauses = append(setClauses, fmt.Sprintf("email_verified_at = $%d", argIdx))
+			args = append(args, nil)
+			argIdx++
+			continue
+		}
+
+		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", col, argIdx))
+		args = append(args, value)
+		argIdx++
+	}
+
+	if len(setClauses) == 0 {
+		return nil
+	}
+
+	query := fmt.Sprintf("UPDATE users SET %s WHERE id = $%d", strings.Join(setClauses, ", "), argIdx)
+	args = append(args, id)
+
+	_, err := r.db.Exec(ctx, query, args...)
+	return err
+}
+
+func (r *Repository) UpdatePassword(ctx context.Context, id, passwordHash string) error {
+	query := `UPDATE users SET password_hash = $1 WHERE id = $2`
+	_, err := r.db.Exec(ctx, query, passwordHash, id)
+	return err
+}
+
+func (r *Repository) DeleteUser(ctx context.Context, id string) error {
+	query := `DELETE FROM users WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, id)
+	return err
+}
+
 func isUniqueViolation(err error) bool {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {

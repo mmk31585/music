@@ -1,0 +1,15 @@
+{
+  "eval_id": 3,
+  "run_id": "add-frontend-ai-playground-with_skill",
+  "config": "with_skill",
+  "expectations": [
+    {"text": "creates Vue component", "passed": true, "evidence": "Full PageAIExperiment.vue with template, script setup, and style sections — 436 lines of code"},
+    {"text": "registers route in app.ts", "passed": true, "evidence": "Route config with path 'ai/experiment', name 'ai.experiment', lazy component import"},
+    {"text": "uses useAIApi composable", "passed": true, "evidence": "Imports useAIApi from @/services/api/ai and calls experiment() method"},
+    {"text": "covers all UI states", "passed": true, "evidence": "Loading spinner state, empty dashed-card state with icon, results state with track list"},
+    {"text": "displays raw JSON response", "passed": true, "evidence": "Collapsible accordion with <pre> block showing formatted JSON via JSON.stringify/JSON.parse"},
+    {"text": "includes play functionality", "passed": true, "evidence": "Play All button + per-track play button, setQueueAndPlay via usePlayer()"},
+    {"text": "adds navigation link", "passed": true, "evidence": "Shows exact locations in LayoutMusicApp.vue for moreItems array and pageTitleMap"},
+    {"text": "covers backend changes", "passed": true, "evidence": "Full backend guide: DTOs, AIClient interface + implementations, service method, handler, route — 5 files"}
+  ]
+}

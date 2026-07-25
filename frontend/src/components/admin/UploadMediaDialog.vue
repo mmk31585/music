@@ -34,12 +34,10 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import Dialog from 'primevue/dialog'
-import Button from 'primevue/button'
 import FileUpload, { type FileUploadUploaderEvent } from 'primevue/fileupload'
-import ProgressBar from 'primevue/progressbar'
 import { useToast } from 'primevue/usetoast'
 import { useMediaApi, type UploadResponse } from '@/services/api/media'
+import type { UploadFieldName } from '@/services/api/media/routes'
 
 type UploadKind = 'track-audio' | 'track-cover' | 'album-cover' | 'artist-image'
 
@@ -74,6 +72,8 @@ const fieldName = computed(() => {
       return 'albumCover'
     case 'artist-image':
       return 'artistImage'
+    default:
+      return ''
   }
 })
 
@@ -107,6 +107,8 @@ const dialogTitle = computed(() => {
       return 'Upload album cover'
     case 'artist-image':
       return 'Upload artist image'
+    default:
+      return 'Upload media'
   }
 })
 
@@ -120,6 +122,8 @@ const description = computed(() => {
       return 'Upload a cover image for the album.'
     case 'artist-image':
       return 'Upload an image for the artist.'
+    default:
+      return ''
   }
 })
 
@@ -142,7 +146,7 @@ async function onCustomUpload(event: FileUploadUploaderEvent) {
 
   try {
     const response: UploadResponse = await mediaApi.uploadAdminMedia(
-      fieldName.value,
+      fieldName.value as UploadFieldName,
       file,
       {
         silent: false,

@@ -1,0 +1,5 @@
+export { default as UserHero } from './UserHero.vue'
+export { default as ProfileTabs } from './ProfileTabs.vue'
+export { default as StatCard } from './StatCard.vue'
+export { default as NowPlayingBadge } from './NowPlayingBadge.vue'
+export { default as MusicIdentitySection } from './MusicIdentitySection.vue'

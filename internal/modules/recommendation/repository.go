@@ -14,10 +14,10 @@ import (
 var ErrTrackNotFound = errors.New("track not found")
 
 type TrackMeta struct {
-	ID       string
-	ArtistID *string
-	AlbumID  *string
-	Genre    *string
+	ID       string  `db:"id"`
+	ArtistID *string `db:"artist_id"`
+	AlbumID  *string `db:"album_id"`
+	Genre    *string `db:"genre"`
 }
 
 type Repository interface {
@@ -40,6 +40,10 @@ type Repository interface {
 	GetTracksFromGenres(ctx context.Context, genres []string, limit int) ([]TrackItem, error)
 	GetTracksByIDs(ctx context.Context, trackIDs []string) ([]TrackItem, error)
 	GetPopularTrackIDs(ctx context.Context, limit int) ([]string, error)
+	GetUserAffinities(ctx context.Context, userID string, targetType string, limit int) ([]UserAffinity, error)
+	GetGenreNames(ctx context.Context, genreIDs []string) ([]string, error)
+	GetAllUserPlayedTrackIDs(ctx context.Context, userID string) ([]string, error)
+	GetPopularGenreIDs(ctx context.Context, limit int) ([]string, error)
 }
 
 type repository struct {
@@ -59,7 +63,7 @@ SELECT
 	a.name AS artist_name,
 	t.album_id,
 	al.title AS album_title,
-	t.genre,
+	(SELECT g.name FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id LIMIT 1) AS genre,
 	t.cover_url,
 	t.audio_url,
 	t.duration_seconds
@@ -70,6 +74,7 @@ LEFT JOIN albums al ON al.id = t.album_id
 }
 
 func (r *repository) GetPopularTracks(ctx context.Context, limit int) ([]TrackItem, error) {
+	// First try: tracks with play history in the last 30 days
 	query := `
 SELECT
 	t.id,
@@ -78,7 +83,7 @@ SELECT
 	a.name AS artist_name,
 	t.album_id,
 	al.title AS album_title,
-	t.genre,
+	(SELECT g.name FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id LIMIT 1) AS genre,
 	t.cover_url,
 	t.audio_url,
 	t.duration_seconds
@@ -87,12 +92,24 @@ JOIN play_history ph ON ph.track_id = t.id
 LEFT JOIN artists a ON a.id = t.artist_id
 LEFT JOIN albums al ON al.id = t.album_id
 WHERE ph.played_at >= NOW() - INTERVAL '30 days'
-GROUP BY t.id, t.title, t.artist_id, a.name, t.album_id, al.title, t.genre, t.cover_url, t.audio_url, t.duration_seconds
+GROUP BY t.id, t.title, t.artist_id, a.name, t.album_id, al.title, t.cover_url, t.audio_url, t.duration_seconds
 ORDER BY COUNT(ph.id) DESC, t.title ASC
 LIMIT $1
 `
-	var items []TrackItem
+	items := make([]TrackItem, 0)
 	if err := r.db.SelectContext(ctx, &items, query, limit); err != nil {
+		return nil, err
+	}
+	if len(items) > 0 {
+		return items, nil
+	}
+
+	// Fallback: return recently added tracks
+	fallback := baseTrackSelect() + `
+ORDER BY t.created_at DESC
+LIMIT $1
+`
+	if err := r.db.SelectContext(ctx, &items, fallback, limit); err != nil {
 		return nil, err
 	}
 	return items, nil
@@ -107,7 +124,7 @@ SELECT
 	a.name AS artist_name,
 	t.album_id,
 	al.title AS album_title,
-	t.genre,
+	(SELECT g.name FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id LIMIT 1) AS genre,
 	t.cover_url,
 	t.audio_url,
 	t.duration_seconds,
@@ -192,7 +209,7 @@ FROM (
 		a.name AS artist_name,
 		t.album_id,
 		al.title AS album_title,
-		t.genre,
+		(SELECT g.name FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id LIMIT 1) AS genre,
 		t.cover_url,
 		t.audio_url,
 		t.duration_seconds,
@@ -204,10 +221,10 @@ FROM (
 	WHERE ph.user_id = $1
 	ORDER BY t.id, ph.played_at DESC
 ) x
-ORDER BY x.id
+ORDER BY x.played_at DESC
 LIMIT $2
 `
-	var items []TrackItem
+	items := make([]TrackItem, 0)
 	if err := r.db.SelectContext(ctx, &items, query, userID, limit); err != nil {
 		return nil, err
 	}
@@ -216,9 +233,9 @@ LIMIT $2
 
 func (r *repository) GetTrackMeta(ctx context.Context, trackID string) (*TrackMeta, error) {
 	query := `
-SELECT id, artist_id, album_id, genre
-FROM tracks
-WHERE id = $1
+SELECT t.id, t.artist_id, t.album_id, (SELECT g.name FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id LIMIT 1) AS genre
+FROM tracks t
+WHERE t.id = $1
 LIMIT 1
 `
 	var meta TrackMeta
@@ -248,7 +265,8 @@ func (r *repository) GetSimilarTracksByMeta(ctx context.Context, trackID string,
 		argPos++
 	}
 	if genre != nil && *genre != "" {
-		scoreParts = append(scoreParts, fmt.Sprintf("CASE WHEN t.genre = $%d THEN 4 ELSE 0 END", argPos))
+		subq := fmt.Sprintf("SELECT 1 FROM track_genres tg_%[1]d JOIN genres g_%[1]d ON g_%[1]d.id = tg_%[1]d.genre_id WHERE tg_%[1]d.track_id = t.id AND g_%[1]d.name = $%[1]d", argPos)
+		scoreParts = append(scoreParts, fmt.Sprintf("CASE WHEN EXISTS (%s) THEN 4 ELSE 0 END", subq))
 		args = append(args, *genre)
 		argPos++
 	}
@@ -266,7 +284,7 @@ SELECT
 	a.name AS artist_name,
 	t.album_id,
 	al.title AS album_title,
-	t.genre,
+	(SELECT g.name FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id LIMIT 1) AS genre,
 	t.cover_url,
 	t.audio_url,
 	t.duration_seconds,
@@ -329,7 +347,7 @@ WHERE t.artist_id = $1
 ORDER BY t.title ASC
 LIMIT $2
 `
-	var items []TrackItem
+	items := make([]TrackItem, 0)
 	if err := r.db.SelectContext(ctx, &items, query, artistID, limit); err != nil {
 		return nil, err
 	}
@@ -338,11 +356,11 @@ LIMIT $2
 
 func (r *repository) GetTracksByGenre(ctx context.Context, genre string, limit int) ([]TrackItem, error) {
 	query := baseTrackSelect() + `
-WHERE t.genre = $1
+WHERE EXISTS (SELECT 1 FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id AND g.name = $1)
 ORDER BY t.title ASC
 LIMIT $2
 `
-	var items []TrackItem
+	items := make([]TrackItem, 0)
 	if err := r.db.SelectContext(ctx, &items, query, genre, limit); err != nil {
 		return nil, err
 	}
@@ -384,13 +402,15 @@ LIMIT $2
 
 func (r *repository) GetTopGenres(ctx context.Context, userID string, limit int) ([]string, error) {
 	query := `
-SELECT t.genre
+SELECT g.name
 FROM play_history ph
 JOIN tracks t ON t.id = ph.track_id
+JOIN track_genres tg ON tg.track_id = t.id
+JOIN genres g ON g.id = tg.genre_id
 WHERE ph.user_id = $1
-  AND t.genre IS NOT NULL
-  AND t.genre <> ''
-GROUP BY t.genre
+  AND g.name IS NOT NULL
+  AND g.name <> ''
+GROUP BY g.name
 ORDER BY COUNT(*) DESC
 LIMIT $2
 `
@@ -440,7 +460,7 @@ LIMIT $%d
 
 	args = append(args, limit)
 
-	var items []TrackItem
+	items := make([]TrackItem, 0)
 	if err := r.db.SelectContext(ctx, &items, query, args...); err != nil {
 		return nil, err
 	}
@@ -453,15 +473,29 @@ func (r *repository) GetTracksFromGenres(ctx context.Context, genres []string, l
 	}
 
 	inClause, args := buildInClause(1, genres)
-	query := baseTrackSelect() + fmt.Sprintf(`
-WHERE t.genre IN (%s)
+	query := fmt.Sprintf(`
+SELECT
+	t.id,
+	t.title,
+	t.artist_id,
+	a.name AS artist_name,
+	t.album_id,
+	al.title AS album_title,
+	(SELECT g.name FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id LIMIT 1) AS genre,
+	t.cover_url,
+	t.audio_url,
+	t.duration_seconds
+FROM tracks t
+LEFT JOIN artists a ON a.id = t.artist_id
+LEFT JOIN albums al ON al.id = t.album_id
+WHERE EXISTS (SELECT 1 FROM track_genres tg_2 JOIN genres g_2 ON g_2.id = tg_2.genre_id WHERE tg_2.track_id = t.id AND g_2.name IN (%s))
 ORDER BY t.title ASC
 LIMIT $%d
 `, inClause, len(args)+1)
 
 	args = append(args, limit)
 
-	var items []TrackItem
+	items := make([]TrackItem, 0)
 	if err := r.db.SelectContext(ctx, &items, query, args...); err != nil {
 		return nil, err
 	}
@@ -478,7 +512,7 @@ func (r *repository) GetTracksByIDs(ctx context.Context, trackIDs []string) ([]T
 WHERE t.id IN (%s)
 `, inClause)
 
-	var items []TrackItem
+	items := make([]TrackItem, 0)
 	if err := r.db.SelectContext(ctx, &items, query, args...); err != nil {
 		return nil, err
 	}
@@ -498,6 +532,59 @@ LIMIT $1
 	var ids []string
 	if err := r.db.SelectContext(ctx, &ids, query, limit); err != nil {
 		return nil, err
+	}
+	return ids, nil
+}
+
+func (r *repository) GetGenreNames(ctx context.Context, genreIDs []string) ([]string, error) {
+	if len(genreIDs) == 0 {
+		return nil, nil
+	}
+
+	inClause, args := buildInClause(1, genreIDs)
+	query := fmt.Sprintf(`SELECT name FROM genres WHERE id IN (%s)`, inClause)
+
+	var names []string
+	if err := r.db.SelectContext(ctx, &names, query, args...); err != nil {
+		return nil, err
+	}
+	return names, nil
+}
+
+func (r *repository) GetAllUserPlayedTrackIDs(ctx context.Context, userID string) ([]string, error) {
+	query := `
+		SELECT DISTINCT track_id::text
+		FROM listening_history
+		WHERE user_id = $1
+	`
+	var ids []string
+	if err := r.db.SelectContext(ctx, &ids, query, userID); err != nil {
+		return nil, err
+	}
+	if ids == nil {
+		ids = []string{}
+	}
+	return ids, nil
+}
+
+func (r *repository) GetPopularGenreIDs(ctx context.Context, limit int) ([]string, error) {
+	query := `
+		SELECT g.id::text
+		FROM genres g
+		JOIN track_genres tg ON tg.genre_id = g.id
+		JOIN tracks t ON t.id = tg.track_id
+		JOIN play_history ph ON ph.track_id = t.id
+		WHERE ph.played_at >= NOW() - INTERVAL '30 days'
+		GROUP BY g.id
+		ORDER BY COUNT(ph.id) DESC
+		LIMIT $1
+	`
+	var ids []string
+	if err := r.db.SelectContext(ctx, &ids, query, limit); err != nil {
+		return nil, err
+	}
+	if ids == nil {
+		ids = []string{}
 	}
 	return ids, nil
 }

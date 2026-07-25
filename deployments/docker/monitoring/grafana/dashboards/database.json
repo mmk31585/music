@@ -1,0 +1,58 @@
+{
+  "title": "MusicApp Database",
+  "uid": "musicapp-database",
+  "description": "Database query monitoring dashboard",
+  "timezone": "browser",
+  "panels": [
+    {
+      "title": "Database Queries (rate)",
+      "type": "graph",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(music_database_queries_total[5m])) by (operation)",
+          "legendFormat": "{{operation}}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+    },
+    {
+      "title": "Database Error Rate",
+      "type": "graph",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(music_database_queries_total{status=\"error\"}[5m])) by (operation)",
+          "legendFormat": "{{operation}}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+    },
+    {
+      "title": "Database Query Duration (p95)",
+      "type": "graph",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(music_database_query_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
+    },
+    {
+      "title": "Queries by Status",
+      "type": "graph",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(music_database_queries_total[5m])) by (status)",
+          "legendFormat": "{{status}}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 }
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 1
+}

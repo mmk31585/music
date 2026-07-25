@@ -1,8 +1,10 @@
 package auth
 
 import (
+	"fmt"
 	"time"
 
+	"net/http"
 	apperrors "music/internal/common/errors"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -94,15 +96,18 @@ func (m *TokenManager) parse(tokenString string, secret []byte) (*Claims, error)
 	claims := &Claims{}
 
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
 		return secret, nil
-	})
+	}, jwt.WithValidMethods([]string{"HS256"}))
 
 	if err != nil {
-		return nil, apperrors.Unauthorized("invalid or expired token", nil)
+		return nil, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid or expired token", nil)
 	}
 
 	if !token.Valid {
-		return nil, apperrors.Unauthorized("invalid token", nil)
+		return nil, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid token", nil)
 	}
 
 	return claims, nil

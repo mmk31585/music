@@ -1,7 +1,6 @@
 import CryptoJS from 'crypto-js'
 import Cookie from 'js-cookie'
 import { v4 as uuidv4 } from 'uuid'
-import isObject from 'lodash.isobject'
 
 const COOKIE_NAME = 'ensureSafeDataLocal'
 
@@ -12,7 +11,13 @@ const encryptionToken = Cookie.get(COOKIE_NAME) ?? uuidv4()
 Cookie.set(COOKIE_NAME, encryptionToken, { secure: false, expires: 180, sameSite: 'lax' })
 
 export const safeLocalStorage = {
-  getItem<T = unknown>(key: string): T | string | null {
+  /**
+   * Retrieve a typed value from encrypted localStorage.
+   * NOTE: The caller is responsible for ensuring the stored data matches type `T`.
+   * The `as T` cast is intentionally explicit — JSON.parse returns `unknown`,
+   * and we assert the shape through the generic parameter.
+   */
+  getItem<T = unknown>(key: string): T | null {
     if (!window) return null
 
     const store = window.localStorage.getItem(key)
@@ -30,23 +35,22 @@ export const safeLocalStorage = {
     if (!decrypted) return null
 
     try {
-      return JSON.parse(decrypted) as T
+      // Cast through `unknown` first to satisfy strict TypeScript —
+      // the caller asserts `T` via the generic parameter.
+      const parsed: unknown = JSON.parse(decrypted)
+      return parsed as T
     } catch {
-      return decrypted
+      // Stored value is not valid JSON — clean up and return null
+      window.localStorage.removeItem(key)
+      return null
     }
   },
 
   setItem<T = unknown>(key: string, value: T): void {
     if (!window) return
 
-    let payload: string
-
-    if (isObject(value) || Array.isArray(value)) {
-      payload = JSON.stringify(value)
-    } else {
-      payload = String(value)
-    }
-
+    // Always serialize to JSON for consistent deserialization in getItem
+    const payload = JSON.stringify(value)
     const encrypted = CryptoJS.AES.encrypt(payload, encryptionToken).toString()
     window.localStorage.setItem(key, encrypted)
   },

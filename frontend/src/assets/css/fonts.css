@@ -1,24 +1,64 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Muse — Typography
+   
+   Font loading and role definitions.
+   
+   Roles (defined in main.css :root):
+     --font-body     → Vazirmatn → Persian body/UI text
+     --font-display  → Lexend → Headings, hero text, large display
+     --font-ui       → Inter → Interface labels, buttons, small UI
+     --font-mono     → JetBrains Mono → Code, technical data
+   
+   Legacy aliases (kept for backward compat):
+     --font-persian  → alias for --font-body
+     --font-hero     → alias for --font-display
+     --font-numbers  → alias for --font-ui
+     --font-music    → alias for --font-ui
+   
+   Google Fonts loaded via <link rel="stylesheet"> in index.html for preconnect.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Local Font Faces ──────────────────────────────────────────────────────── */
+
 @font-face {
   font-family: 'IRANYekanWeb';
   font-style: normal;
   font-weight: 300;
-  src: url('../fonts/iranyekanweblight.woff2') format('woff');
+  font-display: swap;
+  src: url('../fonts/iranyekanweblight.woff2') format('woff2');
 }
 
 @font-face {
   font-family: 'IRANYekanWeb';
   font-style: normal;
   font-weight: normal;
-  src: url('../fonts/iranyekanwebregular.woff2') format('woff');
+  font-display: swap;
+  src: url('../fonts/iranyekanwebregular.woff2') format('woff2');
 }
 
 @font-face {
   font-family: 'IRANYekanWeb';
   font-style: normal;
   font-weight: bold;
-  src: url('../fonts/iranyekanwebbold.woff2') format('woff');
+  font-display: swap;
+  src: url('../fonts/iranyekanwebbold.woff2') format('woff2');
 }
 
+/* ── Global Font Assignment ────────────────────────────────────────────────── */
+
 * {
-  font-family: 'IRANYekanWeb', Arial, sans-serif;
+  font-family: var(--font-body);
+}
+
+/* ── Input / Number Typography ─────────────────────────────────────────────── */
+
+input, textarea, .tabular-nums, [class*="tabular"] {
+  font-family: var(--font-ui);
+}
+
+/* ── Display / Hero Typography ─────────────────────────────────────────────── */
+
+.font-hero {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
 }

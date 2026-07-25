@@ -1,18 +1,14 @@
-import { useRequest } from '@/composables'
+import { useRequest } from '@/composables/useRequest'
 import { apiReplaceParams } from '@/utils/api-replace-params'
 import { PlayerApiRoutes } from './enums'
 import { PlaybackTrackSchema, type PlaybackTrack } from './types'
 
 function getApiOrigin() {
-  return (import.meta.env.VITE_API_ORIGIN || import.meta.env.VITE_API_BASE_URL || '').replace(
-    /\/$/,
-    '',
-  )
+  return String(import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1').replace(/\/$/, '')
 }
 
 function buildStreamUrl(path: string) {
   const origin = getApiOrigin()
-
 
   return `${origin}${path}`
 }

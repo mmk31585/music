@@ -1,0 +1,99 @@
+import { ref, watch } from 'vue'
+import { usePlayer } from '@/composables/player'
+import { useRadioApi, type RadioSession } from '@/services/api/recommendation/radio'
+import { useAppToast } from '@/composables/useAppToast'
+import type { PlaybackTrack } from '@/services/api/player'
+import { buildPlaybackTrack } from '@/factories/playbackTrack'
+
+const REFILL_THRESHOLD = 3
+const BATCH_SIZE = 10
+
+const currentSession = ref<RadioSession | null>(null)
+const isRadioActive = ref(false)
+const isLoadingBatch = ref(false)
+const radioSeedLabel = ref('')
+const radioSeedType = ref<'track' | 'artist' | 'album' | 'genre'>('track')
+
+let refillWatcherInitialized = false
+
+export function useRadio() {
+  const player = usePlayer()
+  const radioApi = useRadioApi()
+  const toast = useAppToast()
+
+  if (!refillWatcherInitialized) {
+    refillWatcherInitialized = true
+    watch(
+      () => player.queue.value.length,
+      (length) => {
+        if (isRadioActive.value && length <= REFILL_THRESHOLD && !isLoadingBatch.value) {
+          fetchNextBatch()
+        }
+      },
+    )
+  }
+
+  function mapToPlaybackTrack(t: any): PlaybackTrack {
+    return buildPlaybackTrack(t)
+  }
+
+  async function startFromTrack(trackId: string, trackName?: string) {
+    try {
+      isLoadingBatch.value = true
+      const result = await radioApi.startRadio(trackId)
+      currentSession.value = { session_id: result.session_id, seed_track_id: trackId }
+      isRadioActive.value = true
+      radioSeedLabel.value = trackName || ''
+      radioSeedType.value = 'track'
+      const tracks: PlaybackTrack[] = (result.tracks || []).map(mapToPlaybackTrack)
+      if (tracks.length > 0) {
+        player.updateQueue(tracks)
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'خطا در شروع رادیو')
+    } finally {
+      isLoadingBatch.value = false
+    }
+  }
+
+  async function fetchNextBatch() {
+    if (!currentSession.value || isLoadingBatch.value) return
+    isLoadingBatch.value = true
+    try {
+      const result = await radioApi.getNextRadioBatch(currentSession.value.session_id, BATCH_SIZE)
+      if (result.tracks && result.tracks.length > 0) {
+        const newTracks: PlaybackTrack[] = result.tracks.map(mapToPlaybackTrack)
+        player.updateQueue([...player.queue.value, ...newTracks])
+      }
+    } catch {
+      // silent
+    } finally {
+      isLoadingBatch.value = false
+    }
+  }
+
+  async function endRadio() {
+    if (currentSession.value) {
+      try {
+        await radioApi.endRadio(currentSession.value.session_id)
+      } catch {
+        // silent
+      }
+    }
+    currentSession.value = null
+    isRadioActive.value = false
+    radioSeedLabel.value = ''
+    radioSeedType.value = 'track'
+  }
+
+  return {
+    currentSession,
+    isRadioActive,
+    isLoadingBatch,
+    radioSeedLabel,
+    radioSeedType,
+    startFromTrack,
+    fetchNextBatch,
+    endRadio,
+  }
+}

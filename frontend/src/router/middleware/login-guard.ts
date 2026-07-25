@@ -1,29 +1,30 @@
 import type { RouteLocationNormalized } from 'vue-router'
 import { useUserAuthStore } from '@/stores'
 
-export function checkLoginGuard(to: RouteLocationNormalized) {
-  const store = useUserAuthStore()
+/**
+ * Returns null to continue, or a route-location object to redirect.
+ *
+ * Rules:
+ * 1. Guest-only pages (login/register) → redirect authenticated users to home.
+ * 2. Auth-required pages → redirect unauthenticated users to login.
+ */
+export async function checkLoginGuard(to: RouteLocationNormalized) {
+  const auth = useUserAuthStore()
+  // Wait for auth restore to complete before checking auth state
+  await auth.ready()
 
-  if (
-    to.matched.some((record) => record.meta.requiresAuth) &&
-    to.name !== 'auth.login' &&
-    to.name !== 'logout'
-  ) {
-    if (!store.token) {
-      store.$reset()
-
-      return {
-        name: 'auth.login',
-        query: { redirect: to.fullPath },
-      }
-    }
+  // Logged-in users should not visit guest pages like login/register
+  if (to.meta.guestOnly && auth.isAuthenticated) {
+    const isAdmin = auth.isAdmin
+    return isAdmin ? { name: 'admin.dashboard' } : { name: 'app.home' }
   }
 
-  if (to.name === 'auth.login') {
-    if (store.user && store.token) {
-      return {
-        name: 'app.home',
-      }
+  // Require authentication
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    sessionStorage.setItem('auth_redirect_reason', 'Please sign in to access this feature')
+    return {
+      name: 'auth.login',
+      query: { redirect: to.fullPath },
     }
   }
 

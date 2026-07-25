@@ -24,7 +24,7 @@ export interface RequestHooks {
   /** Store reset helper */
   resetAuthStore?: () => void
   /** Refresh token */
-  refreshToken?: () => Promise<RefreshToken> | null
+  refreshToken?: () => Promise<RefreshToken>
   refreshTokenUrlRejecter?: (config: AxiosRequestConfig) => boolean
   /** Extras */
   extraHeaders?: () => Record<string, string>
@@ -42,7 +42,15 @@ export interface MetaProps {
 
 export interface PaginatedProps<T = unknown> {
   items: T[]
-  meta: MetaProps
+  meta?: MetaProps
+  total?: number
+  page?: number
+  limit?: number
+  page_size?: number
+  total_count?: number
+  count?: number
+  offset?: number
+  has_more?: boolean
 }
 
 /**
@@ -64,13 +72,15 @@ export interface UseRequestConfig<T = unknown> {
   silent?: boolean
   allowEmptyArray?: true
   schema?: z.ZodTypeAny
+  /** Extra headers merged into the outgoing request. */
+  headers?: Record<string, string>
   beforeRequest?: () => void
   /** Called on success – receives the parsed payload (`T`). */
-  success?: (data: T, total: number, response: unknown) => boolean | void
+  success?: (data: T, total: number, response: any) => boolean | void
   criticalError?: (msg: string) => void
   /** Called on a non‑critical error – receives the raw error payload (may be `unknown`). */
-  error?: (data: unknown, msg: string) => boolean | void
-  anyError?: (data: unknown | null, msg: string) => void
+  error?: (data: any, msg: string) => boolean | void
+  anyError?: (data: any | null, msg: string) => void
   finally?: () => void
 }
 

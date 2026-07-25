@@ -1,4 +1,4 @@
-class PreloadManager {
+export class PreloadManager {
   private preloadAudio: HTMLAudioElement | null = null
   private currentUrl: string | null = null
 

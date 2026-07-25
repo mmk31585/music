@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"net/http"
 	"time"
 
@@ -126,9 +128,9 @@ func generateRequestID() string {
 }
 
 func randomString(n int) string {
-	// Implement a simple random string or use crypto/rand.
-	// This is a stub.
-	return "rand"
+	b := make([]byte, n)
+	rand.Read(b)
+	return hex.EncodeToString(b)[:n]
 }
 
 func getRequestID(c *gin.Context) string {

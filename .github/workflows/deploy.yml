@@ -1,0 +1,194 @@
+name: Deploy
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_OWNER: ${{ github.repository_owner }}
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: actions/setup-go@v5.6.0
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install npm dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v7.0.1
+        with:
+          args: --timeout=5m
+
+      - name: Go test with coverage
+        run: go test ./... -race -coverprofile=coverage.out -covermode=atomic -count=1
+
+      - name: Frontend type check
+        working-directory: frontend
+        run: npm run type-check
+
+      - name: Frontend test
+        working-directory: frontend
+        run: npm run test:unit:run
+
+      - name: Frontend build
+        working-directory: frontend
+        run: npm run build-only
+
+  docker:
+    name: Build & Push Images
+    needs: [verify]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service:
+          - name: api
+            dockerfile: Dockerfile
+            context: .
+          - name: worker
+            dockerfile: Dockerfile.worker
+            context: .
+          - name: frontend
+            dockerfile: frontend/Dockerfile
+            context: frontend
+          - name: ml-service
+            dockerfile: moja-ml-service/Dockerfile
+            context: moja-ml-service
+    outputs:
+      semver_tag: ${{ steps.semver.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.12.0
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3.7.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract semver tag
+        id: semver
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push with semver tags
+        uses: docker/build-push-action@v6.19.2
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.dockerfile }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/music-${{ matrix.service.name }}:${{ steps.semver.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/music-${{ matrix.service.name }}:latest
+          labels: |
+            org.opencontainers.image.version=${{ steps.semver.outputs.tag }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Production
+    needs: [docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    environment: production
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - name: Set up Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose curl jq
+
+      - name: Configure SSH
+        if: ${{ secrets.DEPLOY_HOST != '' }}
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          cat >> ~/.ssh/config <<EOF
+          Host deploy-target
+            HostName $DEPLOY_HOST
+            User $DEPLOY_USER
+            Port $DEPLOY_PORT
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking accept-new
+          EOF
+
+      - name: Deploy with canary support
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          SEMVER_TAG: ${{ needs.docker.outputs.semver_tag }}
+        run: |
+          echo "Deploying version: $SEMVER_TAG"
+          echo "Commit: ${{ github.sha }}"
+
+          if [ -n "$DEPLOY_HOST" ]; then
+            ssh deploy-target "
+              cd /opt/musicapp && \
+              docker compose pull && \
+              docker compose up -d --no-deps --remove-orphans api worker frontend ml-service && \
+              echo '=== Health Check ===' && \
+              sleep 10 && \
+              curl -sf http://localhost:8080/api/v1/health && \
+              echo 'API healthy' || echo 'API health check failed'
+            "
+          else
+            echo "No deploy target configured. Set DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY secrets."
+            echo "Skipping remote deployment. Images are available at:"
+            echo "  ghcr.io/${{ github.repository_owner }}/music-api:$SEMVER_TAG"
+            echo "  ghcr.io/${{ github.repository_owner }}/music-worker:$SEMVER_TAG"
+            echo "  ghcr.io/${{ github.repository_owner }}/music-frontend:$SEMVER_TAG"
+            echo "  ghcr.io/${{ github.repository_owner }}/music-ml-service:$SEMVER_TAG"
+          fi
+
+      - name: Health check
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          if [ -n "$DEPLOY_HOST" ]; then
+            for i in $(seq 1 6); do
+              sleep 10
+              STATUS=$(ssh deploy-target "curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/v1/health" 2>/dev/null || echo "000")
+              echo "Health check attempt $i: HTTP $STATUS"
+              if [ "$STATUS" != "200" ]; then
+                echo "Warning: Health check returned $STATUS on attempt $i"
+              fi
+            done
+            echo "Deployment monitoring complete."
+          else
+            echo "No deploy target - skipping health monitoring"
+          fi
+
+      - name: Notify
+        run: |
+          echo "Deployment complete: ${{ github.ref_name }}"
+          echo "See: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"

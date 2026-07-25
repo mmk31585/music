@@ -24,30 +24,30 @@ func DecodeJSON(w http.ResponseWriter, r *http.Request, dst interface{}) error {
 
 		switch {
 		case errors.As(err, &syntaxError):
-			return apperrors.BadRequest("invalid JSON syntax", map[string]interface{}{
-				"offset": syntaxError.Offset,
-			})
+		return apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid JSON syntax", map[string]interface{}{
+			"offset": syntaxError.Offset,
+		})
 
 		case errors.Is(err, io.ErrUnexpectedEOF):
-			return apperrors.BadRequest("invalid JSON", "unexpected end of JSON")
+			return apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid JSON", "unexpected end of JSON")
 
 		case errors.As(err, &unmarshalTypeError):
-			return apperrors.BadRequest("invalid JSON field type", map[string]interface{}{
-				"field":  unmarshalTypeError.Field,
-				"type":   unmarshalTypeError.Type.String(),
-				"offset": unmarshalTypeError.Offset,
-			})
+		return apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid JSON field type", map[string]interface{}{
+			"field":  unmarshalTypeError.Field,
+			"type":   unmarshalTypeError.Type.String(),
+			"offset": unmarshalTypeError.Offset,
+		})
 
 		case errors.Is(err, io.EOF):
-			return apperrors.BadRequest("request body is required", nil)
+			return apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "request body is required", nil)
 
 		default:
-			return apperrors.BadRequest("invalid request body", err.Error())
+			return apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid request body", err.Error())
 		}
 	}
 
 	if decoder.Decode(&struct{}{}) != io.EOF {
-		return apperrors.BadRequest("request body must contain only one JSON object", nil)
+		return apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "request body must contain only one JSON object", nil)
 	}
 
 	return nil
@@ -55,7 +55,7 @@ func DecodeJSON(w http.ResponseWriter, r *http.Request, dst interface{}) error {
 
 func DecodePathID(value string, name string) error {
 	if value == "" {
-		return apperrors.BadRequest(fmt.Sprintf("%s is required", name), nil)
+		return apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, fmt.Sprintf("%s is required", name), nil)
 	}
 
 	return nil

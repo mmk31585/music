@@ -27,6 +27,14 @@ type AuthSession struct {
 	CreatedAt        time.Time
 }
 
+type ListUsersParams struct {
+	Page      int
+	PageSize  int
+	SortBy    string
+	SortOrder string
+	Search    string
+}
+
 type AuthUser struct {
 	ID          string  `json:"id"`
 	Email       string  `json:"email"`

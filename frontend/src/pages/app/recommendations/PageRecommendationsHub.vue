@@ -1,0 +1,900 @@
+<template>
+  <div class="relative mx-auto min-h-screen w-full pb-36">
+    <!-- ── Ambient Aurora Background ── -->
+    <div class="aurora-bg pointer-events-none fixed inset-0" aria-hidden="true">
+      <div class="aurora-spot-1" />
+      <div class="aurora-spot-2" />
+    </div>
+
+    <div class="relative z-10">
+      <!-- ════════════════════════════════════════ -->
+      <!-- HERO — Your Music Mind                   -->
+      <!-- ════════════════════════════════════════ -->
+      <section class="relative overflow-hidden px-4 pt-8 md:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl">
+          <div
+            class="relative rounded-3xl border border-white/6 bg-linear-to-br from-spotify/10 via-aurora-purple/5 to-black/40 p-8 backdrop-blur-2xl md:p-14"
+          >
+            <!-- Aurora overlay -->
+            <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
+              <div
+                class="absolute -top-1/2 -right-1/4 h-96 w-96 rounded-full bg-spotify/10 blur-[120px] animate-aurora-drift"
+              />
+              <div
+                class="absolute -bottom-1/2 -left-1/4 h-80 w-80 rounded-full bg-aurora-purple/10 blur-[100px] animate-aurora-drift-2"
+              />
+            </div>
+
+            <div class="relative">
+              <!-- AI Eyebrow -->
+              <div class="mb-4 flex items-center gap-2">
+                <span
+                  class="inline-flex items-center gap-1.5 rounded-full border border-spotify/20 bg-spotify/10 px-3 py-1 text-[10px] font-bold tracking-[0.2em] text-spotify uppercase"
+                >
+                  <Sparkles class="text-[10px]"<i aria-hidden="true"  /> />
+                  AI-Powered
+                </span>
+                <span class="text-[10px] font-medium text-white/40">
+                  Updated just now
+                </span>
+              </div>
+
+              <!-- Headline -->
+              <h1
+                class="text-gradient from-white via-spotify to-aurora-purple bg-clip-text text-5xl font-black leading-tight text-transparent md:text-7xl"
+              >
+                Your Music Mind
+              </h1>
+
+              <!-- AI Insight -->
+              <p class="mt-4 max-w-2xl text-base leading-relaxed text-white/70 md:text-lg">
+                <template v-if="!loadingStats && listeningStats">
+                  You've listened to
+                  <strong class="text-white">{{ listeningStats.total_minutes_listened }} minutes</strong>
+                  this month across
+                  <strong class="text-white">{{ listeningStats.unique_artists_count }} artists</strong>.
+                  Your discovery score is
+                  <strong class="text-spotify">{{ discoveryScore }}</strong>.
+                  <template v-if="dominantMoodLabel">
+                    We're sensing a <strong class="text-white">{{ dominantMoodLabel }}</strong> vibe today.
+                  </template>
+                </template>
+                <template v-else>
+                  Discover tracks curated by AI based on your unique taste and listening journey.
+                </template>
+              </p>
+
+              <!-- Quick Stats -->
+              <div class="mt-6 flex flex-wrap items-center gap-3">
+                <div
+                  v-if="!loadingStats && listeningStats"
+                  class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/60"
+                >
+                  <Clock aria-hidden="true" class="text-[10px]"  />
+                  {{ listeningStats.total_minutes_listened }} min
+                </div>
+                <div
+                  v-if="!loadingStats && listeningStats"
+                  class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/60"
+                >
+                  <Users aria-hidden="true" class="text-[10px]"  />
+                  {{ listeningStats.unique_artists_count }} artists
+                </div>
+                <div
+                  v-if="!loadingStats && listeningStats"
+                  class="flex items-center gap-1.5 rounded-full border border-spotify/20 bg-spotify/10 px-3 py-1.5 text-xs text-spotify"
+                >
+                  <TrendingUp aria-hidden="true" class="text-[10px]"  />
+                  {{ discoveryScore }} discovery
+                </div>
+                <div
+                  class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/60"
+                >
+                  <Star aria-hidden="true" class="text-[10px]"  />
+                  {{ forYouTracks.length + popularTracks.length }} recommendations
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════ -->
+      <!-- AI MOOD QUICK-PICK                       -->
+      <!-- ════════════════════════════════════════ -->
+      <section class="mt-10 px-4 md:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl">
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <p class="text-[10px] font-bold tracking-[0.25em] text-spotify uppercase">
+                Instant Mood Match
+              </p>
+              <h2 class="mt-1 text-lg font-black text-white">How are you feeling?</h2>
+            </div>
+            <RouterLink
+              to="/ai/mood-explorer"
+              class="text-xs text-white/40 transition hover:text-white"
+            >
+              Explore all moods
+              <ArrowRight aria-hidden="true" class="ml-1 text-[10px]"  />
+            </RouterLink>
+          </div>
+
+          <div
+            class="no-scrollbar flex gap-2 overflow-x-auto pb-2"
+            role="group"
+            aria-label="Mood quick-pick"
+          >
+            <button
+              v-for="mood in moodOptions"
+              :key="mood.value"
+              type="button"
+              class="reveal-up group relative flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-bold transition-all duration-300"
+              :class="[
+                selectedMood === mood.value
+                  ? 'border-spotify/40 bg-spotify/15 text-white shadow-lg shadow-spotify/10'
+                  : 'border-white/6 bg-white/3 text-white/60 hover:border-white/12 hover:bg-white/6 hover:text-white',
+              ]"
+              :style="{ transitionDelay: `${moodOptions.indexOf(mood) * 50}ms` }"
+              @click="handleMoodPick(mood.value)"
+            >
+              <!-- Mood gradient pill background -->
+              <div
+                class="pointer-events-none absolute inset-0 rounded-full opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                :class="getMoodGradient(mood.value)"
+              />
+              <span class="relative z-10 flex items-center gap-2">
+                <i aria-hidden="true" :class="mood.icon" class="text-sm" />
+                {{ mood.label }}
+              </span>
+              <span
+                v-if="selectedMood === mood.value"
+                class="flex h-4 w-4 items-center justify-center rounded-full bg-spotify text-[8px] text-black"
+              >
+                <Check aria-hidden="true"  />
+              </span>
+            </button>
+          </div>
+
+          <!-- Inline AI Mood Results -->
+          <div v-if="loadingMoodPlaylist" class="mt-4">
+            <div class="flex items-center gap-3 rounded-2xl bg-white/2 px-6 py-4">
+              <Sparkles aria-hidden="true" class="text-spotify animate-spin"  />
+              <div>
+                <span class="text-sm font-medium text-white">AI is curating tracks</span>
+                <p class="text-xs text-white/40">Finding tracks that match this feeling...</p>
+              </div>
+            </div>
+            <div class="mt-2 space-y-2">
+              <div v-for="i in 3" :key="i" class="flex animate-pulse items-center gap-3 rounded-2xl bg-white/2 px-4 py-3">
+                <div class="h-10 w-10 shrink-0 rounded-lg bg-white/6" />
+                <div class="flex-1 space-y-2">
+                  <div class="h-3 w-3/4 rounded bg-white/6" />
+                  <div class="h-2 w-1/2 rounded bg-white/4" />
+                </div>
+                <div class="h-3 w-16 rounded bg-white/4" />
+              </div>
+            </div>
+          </div>
+          <div
+            v-else-if="moodPlaylist && moodPlaylist.tracks?.length"
+            class="mt-4 overflow-hidden rounded-2xl border border-white/6 bg-white/2"
+          >
+            <!-- Header with mood info -->
+            <div class="flex items-center justify-between px-4 py-3">
+              <div class="flex items-center gap-2.5">
+                <div
+                  class="flex h-8 w-8 items-center justify-center rounded-lg text-xs"
+                  :class="getMoodIconBg(String(selectedMood))"
+                >
+                  <i
+                    aria-hidden="true"
+                    :class="getMoodIcon(String(selectedMood))"
+                  />
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold text-white">{{ moodPlaylist.name }}</span>
+                    <span class="rounded-full bg-white/6 px-2 py-0.5 text-[9px] font-medium text-white/40">
+                      {{ (moodPlaylist.tracks ?? []).length }} tracks
+                    </span>
+                    <span class="flex items-center gap-1 rounded-full bg-spotify/10 px-2 py-0.5 text-[9px] font-medium text-spotify">
+                      <Sparkles aria-hidden="true" class="text-[8px]"  />
+                      AI
+                    </span>
+                  </div>
+                  <p class="mt-0.5 text-[10px] text-white/30">
+                    {{ getMoodDescription(String(selectedMood)) }}
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  class="flex items-center gap-1.5 rounded-full border border-white/8 px-3 py-1.5 text-[10px] text-white/40 transition hover:border-white/20 hover:text-white"
+                  title="Regenerate with AI"
+                  @click="handleMoodPick(String(selectedMood))"
+                >
+                  <RefreshCw aria-hidden="true" class="text-[9px]"  />
+                  Regenerate
+                </button>
+                <button
+                  type="button"
+                  class="text-[10px] text-white/30 transition hover:text-white"
+                  @click="selectedMood = ''; moodPlaylist = null"
+                >
+                  <X aria-hidden="true" class=""  />
+                </button>
+              </div>
+            </div>
+            <!-- Track list -->
+            <div class="border-t border-white/6">
+              <button
+                v-for="(track, index) in (moodPlaylist.tracks ?? []).slice(0, 5)"
+                :key="track.id"
+                type="button"
+                class="group flex w-full items-center gap-3 px-4 py-2.5 transition hover:bg-white/4"
+                @click="playTrack(track, index)"
+                @contextmenu.prevent="openContextMenu($event, track)"
+              >
+                <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
+                  <img
+                    v-if="track.cover_url"
+                    :src="track.cover_url"
+                    :alt="track.title"
+                    loading="lazy"
+                    class="h-full w-full object-cover"
+                    @error="onImgError"
+                  />
+                  <div v-else class="flex h-full items-center justify-center">
+                    <Music aria-hidden="true" class="text-xs text-white/30"  />
+                  </div>
+                  <div
+                    class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
+                  >
+                    <Play aria-hidden="true" class="text-xs text-white"  />
+                  </div>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-medium text-white">{{ track.title }}</p>
+                  <p class="truncate text-xs text-white/40">{{ track.artist || 'Unknown' }}</p>
+                </div>
+                <!-- Energy bar -->
+                <div class="hidden items-center gap-1.5 md:flex">
+                  <div class="flex h-1.5 w-12 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      class="h-full rounded-full transition-all duration-500"
+                      :class="getEnergyBarColor(track.energy ?? 0)"
+                      :style="{ width: `${Math.min((track.energy ?? 0) * 100, 100)}%` }"
+                    />
+                  </div>
+                  <span class="w-7 text-right text-[9px] text-white/30 tabular-nums">
+                    {{ Math.round((track.energy ?? 0) * 100) }}%
+                  </span>
+                </div>
+                <span class="shrink-0 text-xs text-white/30 tabular-nums">
+                  {{ formatDuration(track.duration) }}
+                </span>
+              </button>
+              <div
+                v-if="(moodPlaylist.tracks?.length ?? 0) > 5"
+                class="border-t border-white/4 px-4 py-2.5 text-center"
+              >
+                <RouterLink
+                  to="/ai/mood-explorer"
+                  class="text-xs text-white/30 transition hover:text-white"
+                >
+                  View all {{ (moodPlaylist.tracks ?? []).length }} tracks
+                  <ArrowRight aria-hidden="true" class="ml-0.5 text-[9px]"  />
+                </RouterLink>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════ -->
+      <!-- CATEGORY CARDS — Mood Gradients          -->
+      <!-- ════════════════════════════════════════ -->
+      <section class="mt-10 px-4 md:px-6 lg:px-8">
+        <div class="mx-auto grid max-w-7xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <RouterLink
+            v-for="card in categoryCards"
+            :key="card.to"
+            :to="card.to"
+            class="group relative overflow-hidden rounded-2xl border border-white/6 p-6 transition-all duration-500 hover:-translate-y-1 hover:border-white/12"
+          >
+            <!-- Hover gradient overlay -->
+            <div
+              class="pointer-events-none absolute inset-0 bg-linear-to-br opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+              :class="card.gradient"
+            />
+            <!-- Card content -->
+            <div class="relative">
+              <div
+                class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl text-lg backdrop-blur-xs"
+                :class="card.iconBg"
+              >
+                <i aria-hidden="true" :class="card.icon" class="relative z-10" />
+              </div>
+              <h3 class="text-lg font-black text-white">{{ card.title }}</h3>
+              <p class="mt-1.5 text-sm leading-relaxed text-white/50">
+                {{ card.description }}
+              </p>
+            </div>
+            <!-- Arrow indicator -->
+            <div
+              class="absolute right-5 bottom-5 flex h-8 w-8 items-center justify-center rounded-full border border-white/6 text-xs text-white/30 transition-all duration-300 group-hover:border-white/15 group-hover:text-white/70"
+            >
+              <ArrowRight aria-hidden="true" class=""  />
+            </div>
+          </RouterLink>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════ -->
+      <!-- PERSONALIZED — AI For You Picks          -->
+      <!-- ════════════════════════════════════════ -->
+      <section v-if="forYouTracks.length" class="mt-14 px-4 md:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl">
+          <div class="mb-5 flex items-end justify-between">
+            <div>
+              <p class="text-[10px] font-bold tracking-[0.25em] text-spotify uppercase">
+                AI Curated
+              </p>
+              <h2 class="mt-1 text-2xl font-black text-white">Made for You</h2>
+            </div>
+            <RouterLink
+              to="/recommendations/for-you"
+              class="text-xs text-white/40 transition hover:text-white"
+            >
+              View all
+            </RouterLink>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="loadingForYou" class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <div v-for="i in 5" :key="i" class="space-y-3">
+              <div class="shimmer aspect-square rounded-2xl" />
+              <div class="shimmer h-4 w-3/4 rounded-lg" />
+              <div class="shimmer h-3 w-1/2 rounded-lg" />
+            </div>
+          </div>
+
+          <!-- Track Grid -->
+          <div v-else class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <button
+              v-for="(track, idx) in forYouTracks"
+              :key="track.id"
+              type="button"
+              class="group w-full text-left"
+              :style="{ animationDelay: `${idx * 80}ms` }"
+              @click="playTrack(track, idx)"
+              @contextmenu.prevent="openContextMenu($event, track)"
+            >
+              <div
+                class="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-white/5 shadow-lg ring-1 ring-white/6 transition-all duration-500 group-hover:scale-[1.02] group-hover:ring-spotify/30"
+              >
+                <img
+                  v-if="track.cover_url"
+                  :src="track.cover_url"
+                  :alt="track.title"
+                  loading="lazy"
+                  class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  @error="onImgError"
+                />
+                <div v-else class="flex h-full items-center justify-center">
+                  <Music aria-hidden="true" class="text-2xl text-white/20"  />
+                </div>
+                <!-- Play overlay -->
+                <div
+                  class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-xs transition-all duration-300 group-hover:opacity-100"
+                >
+                  <div
+                    class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify/90 text-black shadow-xl shadow-spotify/20 transition-transform duration-300 group-hover:scale-105"
+                  >
+                    <Play aria-hidden="true" class="text-lg"  />
+                  </div>
+                </div>
+                <!-- AI Reason Chip -->
+                <div
+                  v-if="track.genre"
+                  class="absolute top-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[9px] font-medium text-white/70 backdrop-blur-xs"
+                >
+                  {{ track.genre }}
+                </div>
+              </div>
+              <p class="truncate text-sm font-semibold text-white">{{ track.title }}</p>
+              <p class="truncate text-xs text-white/40">{{ track.artist_name || 'Unknown' }}</p>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════ -->
+      <!-- SIMILAR — Because You Listened To        -->
+      <!-- ════════════════════════════════════════ -->
+      <section
+        v-if="personalizedTracks.length"
+        class="mt-14 px-4 md:px-6 lg:px-8"
+      >
+        <div class="mx-auto max-w-7xl">
+          <div class="mb-5 flex items-end justify-between">
+            <div>
+              <p class="text-[10px] font-bold tracking-[0.25em] text-aurora-purple uppercase">
+                AI Similarity
+              </p>
+              <h2 class="mt-1 text-2xl font-black text-white">Because you listened to...</h2>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <button
+              v-for="(track, idx) in personalizedTracks.slice(0, 5)"
+              :key="track.id"
+              type="button"
+              class="group w-full text-left"
+              :style="{ animationDelay: `${idx * 80}ms` }"
+              @click="playTrack(track, idx)"
+              @contextmenu.prevent="openContextMenu($event, track)"
+            >
+              <div
+                class="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-white/5 shadow-lg ring-1 ring-white/6 transition-all duration-500 group-hover:scale-[1.02] group-hover:ring-aurora-purple/30"
+              >
+                <img
+                  v-if="track.cover_url"
+                  :src="track.cover_url"
+                  :alt="track.title"
+                  loading="lazy"
+                  class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  @error="onImgError"
+                />
+                <div v-else class="flex h-full items-center justify-center">
+                  <Music aria-hidden="true" class="text-2xl text-white/20"  />
+                </div>
+                <div
+                  class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-xs transition-all duration-300 group-hover:opacity-100"
+                >
+                  <div
+                    class="flex h-12 w-12 items-center justify-center rounded-full bg-aurora-purple/90 text-white shadow-xl shadow-aurora-purple/20 transition-transform duration-300 group-hover:scale-105"
+                  >
+                    <Play aria-hidden="true" class="text-lg"  />
+                  </div>
+                </div>
+                <div
+                  class="absolute top-2 left-2 rounded-full bg-aurora-purple/30 px-2 py-0.5 text-[9px] font-medium text-white/80 backdrop-blur-xs"
+                >
+                  <Zap aria-hidden="true" class="mr-0.5 text-[8px]"  />
+                  Similar
+                </div>
+              </div>
+              <p class="truncate text-sm font-semibold text-white">{{ track.title }}</p>
+              <p class="truncate text-xs text-white/40">{{ track.artist_name || 'Unknown' }}</p>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════ -->
+      <!-- DISCOVER WEEKLY — AI Weekly Playlist     -->
+      <!-- ════════════════════════════════════════ -->
+      <section
+        v-if="!loadingDiscoverWeekly && discoverWeekly"
+        class="mt-14 px-4 md:px-6 lg:px-8"
+      >
+        <div class="mx-auto max-w-7xl">
+          <div
+            class="relative overflow-hidden rounded-2xl border border-white/6 bg-linear-to-br from-aurora-purple/10 via-spotify/5 to-black/40 p-8 backdrop-blur-2xl md:p-10"
+          >
+            <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+              <div
+                class="absolute -top-1/3 -left-1/4 h-64 w-64 rounded-full bg-aurora-purple/10 blur-[100px]"
+              />
+              <div
+                class="absolute -bottom-1/3 -right-1/4 h-64 w-64 rounded-full bg-spotify/10 blur-[100px]"
+              />
+            </div>
+
+            <div class="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+              <div class="flex-1">
+                <div class="mb-3 flex items-center gap-2">
+                  <span
+                    class="inline-flex items-center gap-1.5 rounded-full border border-aurora-purple/20 bg-aurora-purple/10 px-3 py-1 text-[10px] font-bold tracking-[0.2em] text-aurora-purple uppercase"
+                  >
+                    <Calendar class="text-[10px]"<i aria-hidden="true"  /> />
+                    Weekly
+                  </span>
+                </div>
+                <h2 class="text-2xl font-black text-white md:text-3xl">
+                  Discover Weekly
+                </h2>
+                <p class="mt-2 max-w-lg text-sm text-white/60">
+                  AI-curated playlist updated every Monday.
+                  {{ discoverWeekly.playlist?.track_count ?? 0 }} fresh tracks based on your taste.
+                </p>
+              </div>
+              <RouterLink
+                to="/recommendations/for-you"
+                class="inline-flex items-center gap-2 rounded-full bg-white/10 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/20"
+              >
+                <Play aria-hidden="true" class=""  />
+                Listen now
+              </RouterLink>
+            </div>
+
+            <!-- Preview of discover weekly tracks -->
+            <div class="relative mt-6">
+              <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                <button
+                  v-for="(track, idx) in discoverWeekly.tracks.slice(0, 5)"
+                  :key="track.id"
+                  type="button"
+                  class="group w-full text-left"
+                  @click="playTrack(track, idx)"
+                >
+                  <div
+                    class="relative mb-2 aspect-square overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/6 transition-all duration-300 group-hover:ring-aurora-purple/30"
+                  >
+                    <img
+                      v-if="track.cover_url"
+                      :src="track.cover_url"
+                      :alt="track.title"
+                      loading="lazy"
+                      class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                      @error="onImgError"
+                    />
+                    <div v-else class="flex h-full items-center justify-center">
+                      <Music aria-hidden="true" class="text-xl text-white/20"  />
+                    </div>
+                    <div
+                      class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100"
+                    >
+                      <div
+                        class="flex h-10 w-10 items-center justify-center rounded-full bg-aurora-purple/80 text-white"
+                      >
+                        <Play aria-hidden="true" class="text-sm"  />
+                      </div>
+                    </div>
+                  </div>
+                  <p class="truncate text-xs font-medium text-white/80">{{ track.title }}</p>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════ -->
+      <!-- POPULAR — Trending Now                   -->
+      <!-- ════════════════════════════════════════ -->
+      <section class="mt-14 px-4 md:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl">
+          <div class="mb-5 flex items-end justify-between">
+            <div>
+              <p class="text-[10px] font-bold tracking-[0.25em] text-white/30 uppercase">
+                Trending
+              </p>
+              <h2 class="mt-1 text-2xl font-black text-white">Popular Now</h2>
+            </div>
+            <RouterLink
+              to="/recommendations/popular"
+              class="text-xs text-white/40 transition hover:text-white"
+            >
+              View all
+            </RouterLink>
+          </div>
+
+          <div v-if="loadingPopular" class="space-y-2">
+            <div v-for="i in 5" :key="i" class="shimmer h-16 rounded-2xl" />
+          </div>
+          <div
+            v-else-if="popularTracks.length === 0"
+            class="rounded-2xl border border-dashed border-white/6 px-6 py-12 text-center"
+          >
+            <p class="text-sm text-white/40">No popular tracks yet.</p>
+          </div>
+          <div
+            v-else
+            class="overflow-hidden rounded-2xl border border-white/6 bg-white/2 backdrop-blur-xs"
+          >
+            <button
+              v-for="(track, index) in popularTracks"
+              :key="track.id"
+              type="button"
+              :style="{ animationDelay: `${index * 60}ms` }"
+              class="group flex w-full items-center gap-4 px-4 py-3 transition hover:bg-white/4"
+              @click="playTrack(track, index)"
+              @contextmenu.prevent="openContextMenu($event, track)"
+            >
+              <!-- Number / Play icon -->
+              <span class="flex w-7 items-center justify-center">
+                <span class="text-sm font-bold text-white/20 group-hover:hidden">{{ index + 1 }}</span>
+                <Play
+                  aria-hidden="true"
+                  class="hidden text-sm text-white group-hover:block"
+                 />
+              </span>
+
+              <!-- Cover -->
+              <div
+                class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/6"
+              >
+                <img
+                  v-if="track.cover_url"
+                  :src="track.cover_url"
+                  :alt="track.title"
+                  loading="lazy"
+                  class="h-full w-full object-cover"
+                  @error="onImgError"
+                />
+                <div v-else class="flex h-full items-center justify-center">
+                  <Music aria-hidden="true" class="text-xs text-white/20"  />
+                </div>
+              </div>
+
+              <!-- Info -->
+              <div class="min-w-0 flex-1">
+                <p class="truncate font-semibold text-white">{{ track.title }}</p>
+                <p class="truncate text-sm text-white/40">
+                  {{ track.artist_name || 'Unknown artist' }}
+                </p>
+              </div>
+
+              <!-- Genre badge -->
+              <span
+                v-if="track.genre"
+                class="hidden rounded-full bg-white/6 px-2.5 py-1 text-[10px] font-medium text-white/40 md:block"
+              >
+                {{ track.genre }}
+              </span>
+
+              <!-- Score indicator -->
+              <span
+                v-if="track.score"
+                class="hidden items-center gap-1 text-xs text-white/30 sm:flex"
+              >
+                <ChartLine class="text-[10px]"<i aria-hidden="true"  /> />
+                {{ Math.round(track.score) }}
+              </span>
+
+              <!-- Duration -->
+              <span class="shrink-0 text-xs text-white/30 tabular-nums">
+                {{ formatDuration(track.duration_seconds) }}
+              </span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════ -->
+      <!-- BOTTOM SPACER for player                 -->
+      <!-- ════════════════════════════════════════ -->
+      <div class="h-8" />
+    </div>
+  </div>
+  <ContextMenu
+    v-model:visible="menuVisible"
+    :sections="sections"
+    :header="header"
+    :accent-color="accentColor"
+    :position="{ x: menuX, y: menuY }"
+  />
+</template>
+
+<script setup lang="ts">
+import { ArrowRight, Calendar, ChartLine, Check, Clock, Music, Play, RefreshCw, Sparkles, Star, TrendingUp, Users, X, Zap } from 'lucide-vue-next'
+import { onMounted, ref, computed } from 'vue'
+import { useAIRecommendations } from '@/composables/useAIRecommendations'
+import { usePlayer } from '@/composables/player'
+import { mapToPlaybackTracks } from '@/factories/playbackTrack'
+import { MOOD_OPTIONS } from '@/services/api/ai/types'
+import type { RecommendationTrack } from '@/services/api/recommendation/types'
+import type { TrackContextItem } from '@/composables/useTrackContextMenu'
+import { useTrackContextMenu } from '@/composables/useTrackContextMenu'
+import ContextMenu from '@/components/common/ContextMenu.vue'
+import { onImgError } from '@/utils/helpers'
+const player = usePlayer()
+
+const {
+  popularTracks,
+  forYouTracks,
+  personalizedTracks,
+  discoverWeekly,
+  listeningStats,
+  moodPlaylist,
+  loadingPopular,
+  loadingForYou,
+  loadingDiscoverWeekly,
+  loadingStats,
+  loadingMoodPlaylist,
+  fetchPopular,
+  fetchForYou,
+  fetchDiscoverWeekly,
+  fetchListeningStats,
+  fetchPersonalized,
+  fetchMoodPlaylist,
+  formatDuration,
+  getMoodGradient,
+  dominantMood,
+  discoveryScore,
+} = useAIRecommendations()
+
+const selectedMood = ref('')
+
+const moodOptions = [...MOOD_OPTIONS]
+const moodIcons: Record<string, string> = {
+  energetic: 'pi pi-bolt',
+  happy: 'pi pi-sun',
+  chill: 'pi pi-cloud',
+  calm: 'pi pi-moon',
+  sad: 'pi pi-flag',
+  focus: 'pi pi-eye',
+  romantic: 'pi pi-heart',
+  intense: 'pi pi-trophy',
+  confident: 'pi pi-star',
+  sleep: 'pi pi-moon',
+}
+const moodIconBgColors: Record<string, string> = {
+  energetic: 'bg-orange-500/20 text-orange-400',
+  happy: 'bg-amber-400/20 text-amber-300',
+  chill: 'bg-teal-400/20 text-teal-300',
+  calm: 'bg-blue-400/20 text-blue-300',
+  sad: 'bg-indigo-400/20 text-indigo-300',
+  focus: 'bg-emerald-400/20 text-emerald-300',
+  romantic: 'bg-pink-400/20 text-pink-300',
+  intense: 'bg-red-500/20 text-red-400',
+  confident: 'bg-purple-400/20 text-purple-300',
+  sleep: 'bg-slate-400/20 text-slate-300',
+}
+const moodDescriptions: Record<string, string> = {
+  energetic: 'High energy, fast tempo — perfect for getting pumped up',
+  happy: 'Upbeat, positive vibes — feels like sunshine',
+  chill: 'Laid back, easy going — relax and unwind',
+  calm: 'Peaceful, slow tempo — find your center',
+  sad: 'Melancholic, emotional — let it out',
+  focus: 'Concentration flow — deep work music',
+  romantic: 'Warm, intimate mood — set the mood',
+  intense: 'Powerful, dramatic — adrenaline rush',
+  confident: 'Bold, self-assured — unstoppable energy',
+  sleep: 'Gentle, restful sounds — drift off',
+}
+
+function getMoodIcon(mood: string): string {
+  return moodIcons[mood] || 'pi pi-sparkles'
+}
+
+function getMoodIconBg(mood: string): string {
+  return moodIconBgColors[mood] || 'bg-spotify/20 text-spotify'
+}
+
+function getMoodDescription(mood: string): string {
+  return moodDescriptions[mood] || ''
+}
+
+function getEnergyBarColor(energy: number): string {
+  if (energy > 0.7) return 'bg-green-400'
+  if (energy > 0.4) return 'bg-yellow-400'
+  return 'bg-blue-400'
+}
+
+const dominantMoodLabel = computed(() => {
+  const mood = moodOptions.find((m) => m.value === dominantMood.value)
+  return mood?.label || null
+})
+
+const categoryCards = [
+  {
+    title: 'For You',
+    description: 'AI-curated picks based on your unique taste and listening history.',
+    to: '/recommendations/for-you',
+    icon: 'pi pi-heart',
+    iconBg: 'bg-pink-500/20 text-pink-400',
+    gradient: 'from-pink-500/10 via-rose-500/5 to-transparent',
+  },
+  {
+    title: 'Mood Explorer',
+    description: 'Browse tracks by mood — energy, valence, tempo, and more.',
+    to: '/ai/mood-explorer',
+    icon: 'pi pi-magic',
+    iconBg: 'bg-blue-500/20 text-blue-400',
+    gradient: 'from-blue-500/10 via-cyan-500/5 to-transparent',
+  },
+  {
+    title: 'AI Playlist',
+    description: 'Generate a custom playlist from a prompt, mood, or activity.',
+    to: '/ai/playlist-generator',
+    icon: 'pi pi-sparkles',
+    iconBg: 'bg-amber-500/20 text-amber-400',
+    gradient: 'from-amber-500/10 via-orange-500/5 to-transparent',
+  },
+  {
+    title: 'Popular',
+    description: 'The most played tracks trending across the catalog right now.',
+    to: '/recommendations/popular',
+    icon: 'pi pi-chart-line',
+    iconBg: 'bg-spotify/20 text-spotify',
+    gradient: 'from-spotify/10 via-emerald-500/5 to-transparent',
+  },
+  {
+    title: 'Best Tracks',
+    description: 'Curated high-quality tracks for the best listening session.',
+    to: '/recommendations/best',
+    icon: 'pi pi-star',
+    iconBg: 'bg-yellow-400/20 text-yellow-300',
+    gradient: 'from-yellow-400/10 via-amber-500/5 to-transparent',
+  },
+  {
+    title: 'Recent',
+    description: 'Freshly added tracks to expand your musical horizons.',
+    to: '/recommendations/recent',
+    icon: 'pi pi-clock',
+    iconBg: 'bg-sky-400/20 text-sky-300',
+    gradient: 'from-sky-400/10 via-blue-500/5 to-transparent',
+  },
+]
+
+async function handleMoodPick(mood: string) {
+  if (selectedMood.value === mood && moodPlaylist.value) {
+    // Regenerate: re-fetch with the same mood
+    await fetchMoodPlaylist(mood)
+    return
+  }
+  if (selectedMood.value === mood) {
+    // Deselect
+    selectedMood.value = ''
+    moodPlaylist.value = null
+    return
+  }
+  selectedMood.value = mood
+  await fetchMoodPlaylist(mood)
+}
+
+function playTrack(track: RecommendationTrack | Record<string, unknown>, _index: number) {
+  const allTracks = [...forYouTracks.value, ...popularTracks.value, ...personalizedTracks.value]
+  const source = track.id ? forYouTracks.value.find(t => t.id === track.id)
+    ? forYouTracks.value
+    : popularTracks.value.find(t => t.id === track.id)
+      ? popularTracks.value
+      : personalizedTracks.value
+    : allTracks
+
+  const queue = mapToPlaybackTracks(source)
+  const startIdx = queue.findIndex((t) => t.id === String(track.id || track.id))
+  if (startIdx >= 0) {
+    player.setQueueAndPlay(queue, startIdx)
+  }
+}
+
+onMounted(async () => {
+  await Promise.all([
+    fetchPopular(8),
+    fetchForYou(5),
+    fetchPersonalized(5),
+  ])
+  fetchDiscoverWeekly()
+  fetchListeningStats('month')
+})
+
+// ── Context menu ──────────────────────────────────────────────────
+const menuVisible = ref(false)
+const menuX = ref(0)
+const menuY = ref(0)
+const contextTrack = ref<TrackContextItem | null>(null)
+
+function openContextMenu(e: MouseEvent, track: Record<string, unknown>) {
+  menuX.value = e.clientX
+  menuY.value = e.clientY
+  contextTrack.value = {
+    id: (track.id ?? '') as string | number,
+    title: (track.title ?? '') as string | null,
+    artist_name: (track.artist_name ?? track.artist ?? null) as string | null,
+    cover_url: (track.cover_url ?? null) as string | null,
+    duration_seconds: (track.duration_seconds ?? track.duration ?? null) as number | null,
+  }
+  menuVisible.value = true
+}
+
+const { sections, header, accentColor } = useTrackContextMenu(
+  computed(() => contextTrack.value),
+)
+</script>

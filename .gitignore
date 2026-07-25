@@ -1,4 +1,19 @@
 .idea
 tmp
 uploads
-    
+/docs/docs.go
+/docs/swagger.json
+/docs/swagger.yaml
+.env
+# Copilot session audit logs
+logs/
+
+# Vercel
+.vercel
+
+# Build artifacts
+bin/
+.pids/
+proto/gen/
+gateway/envoy/.cache/
+platform/.cache/

@@ -1,0 +1,37 @@
+{
+  "eval_id": 2,
+  "eval_name": "fix-whisper-multilanguage",
+  "prompt": "The Whisper lyrics transcription in moja-ml-service is producing garbled output for Turkish songs. I need to fix the transcriber to handle multiple languages better. It's currently auto-detecting but the Persian normalizer is mangling non-Persian text.",
+  "assertions": [
+    {
+      "name": "identifies root cause",
+      "description": "Identifies that persian_normalizer is applied unconditionally regardless of detected language",
+      "type": "text-match"
+    },
+    {
+      "name": "suggests language gating",
+      "description": "Suggests gating Persian normalization on detected_language or language parameter",
+      "type": "text-match"
+    },
+    {
+      "name": "references service.py",
+      "description": "References service.py as a file that needs changes",
+      "type": "text-match"
+    },
+    {
+      "name": "references lrc_formatter.py",
+      "description": "References lrc_formatter.py or the LRC formatting step",
+      "type": "text-match"
+    },
+    {
+      "name": "includes test cases",
+      "description": "Includes test cases for non-Persian languages",
+      "type": "text-match"
+    },
+    {
+      "name": "detects dead config",
+      "description": "Identifies that whisper_language_hint config is unused or should be cleaned up",
+      "type": "text-match"
+    }
+  ]
+}

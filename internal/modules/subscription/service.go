@@ -4,6 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
+
+	"github.com/google/uuid"
+
+	"music/internal/platform/events"
 )
 
 var (
@@ -12,11 +17,15 @@ var (
 )
 
 type Service struct {
-	repo *Repository
+	repo      *Repository
+	publisher events.Publisher
 }
 
-func NewService(repo *Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo *Repository, publisher events.Publisher) *Service {
+	return &Service{
+		repo:      repo,
+		publisher: publisher,
+	}
 }
 
 func (s *Service) ListPlans(ctx context.Context) ([]PlanResponse, error) {
@@ -107,6 +116,19 @@ func (s *Service) Checkout(ctx context.Context, userID string, req CheckoutReque
 		return nil, ErrPremiumNotAvailable
 	}
 
+	// Idempotency: check if the user already has an active subscription to this plan
+	existing, _ := s.repo.GetCurrentSubscription(ctx, userID)
+	if existing != nil && existing.PlanID == plan.ID && existing.Status == "active" {
+		mappedSub := mapSubscription(*existing)
+		mappedPlan := mapPlan(*plan)
+		mappedSub.Plan = &mappedPlan
+		return &CheckoutResponse{
+			Message:      "Already subscribed to this plan.",
+			Available:    true,
+			Subscription: &mappedSub,
+		}, nil
+	}
+
 	sub, err := s.repo.CreateSubscription(ctx, userID, plan.ID, "active")
 	if err != nil {
 		return nil, err
@@ -125,6 +147,8 @@ func (s *Service) Checkout(ctx context.Context, userID string, req CheckoutReque
 		return nil, err
 	}
 
+	s.publishSubscriptionPurchased(ctx, userID, sub.ID, plan.Name, int(plan.PriceCents), plan.Currency)
+
 	mappedSub := mapSubscription(*sub)
 	mappedPlan := mapPlan(*plan)
 	mappedSub.Plan = &mappedPlan
@@ -132,7 +156,7 @@ func (s *Service) Checkout(ctx context.Context, userID string, req CheckoutReque
 	mappedPayment := mapPayment(*payment)
 
 	return &CheckoutResponse{
-		Message:      "Subscription created. Premium is not enabled yet.",
+		Message:      "Subscription created.",
 		Available:    true,
 		Subscription: &mappedSub,
 		Payment:      &mappedPayment,
@@ -165,6 +189,38 @@ func (s *Service) ListPayments(ctx context.Context, userID string) ([]PaymentRes
 	}
 
 	return result, nil
+}
+
+func (s *Service) publishSubscriptionPurchased(
+	ctx context.Context,
+	userID string,
+	subscriptionID string,
+	planName string,
+	amountCents int,
+	currency string,
+) {
+	if s.publisher == nil {
+		return
+	}
+
+	uid, err := uuid.Parse(strings.TrimSpace(userID))
+	if err != nil {
+		return
+	}
+
+	sid, err := uuid.Parse(strings.TrimSpace(subscriptionID))
+	if err != nil {
+		return
+	}
+
+	_ = s.publisher.Publish(ctx, events.SubscriptionPurchasedEvent{
+		BaseEvent:      events.NewBaseEvent(),
+		UserID:         uid,
+		SubscriptionID: sid,
+		Plan:           planName,
+		Amount:         int64(amountCents),
+		Currency:       currency,
+	})
 }
 
 func mapPlan(plan Plan) PlanResponse {

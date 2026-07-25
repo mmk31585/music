@@ -16,6 +16,21 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// LikeTrack godoc
+// @Summary Like a track
+// @Description Adds a track to the authenticated user's liked tracks.
+// @Tags library
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body LikeTrackRequest true "Like track request"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 409 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/tracks/like [post]
 func (h *Handler) LikeTrack(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -37,6 +52,20 @@ func (h *Handler) LikeTrack(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "track liked"})
 }
 
+// UnlikeTrack godoc
+// @Summary Unlike a track
+// @Description Removes a track from the authenticated user's liked tracks.
+// @Tags library
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param trackId path int true "Track ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/tracks/{trackId}/like [delete]
 func (h *Handler) UnlikeTrack(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -44,8 +73,8 @@ func (h *Handler) UnlikeTrack(c *gin.Context) {
 		return
 	}
 
-	trackID, err := parseInt64Param(c, "trackId")
-	if err != nil {
+	trackID := parseUUIDParam(c, "trackId")
+	if trackID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid track id"})
 		return
 	}
@@ -58,6 +87,18 @@ func (h *Handler) UnlikeTrack(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "track unliked"})
 }
 
+// ListLikedTracks godoc
+// @Summary List liked tracks
+// @Description Returns paginated liked tracks for the authenticated user.
+// @Tags library
+// @Produce json
+// @Security Bearer
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(20)
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/tracks/liked [get]
 func (h *Handler) ListLikedTracks(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -65,15 +106,31 @@ func (h *Handler) ListLikedTracks(c *gin.Context) {
 		return
 	}
 
-	items, err := h.service.ListLikedTracks(c.Request.Context(), userID)
+	page, limit := parsePagination(c)
+	items, err := h.service.ListLikedTracks(c.Request.Context(), userID, page, limit)
 	if err != nil {
 		h.handleError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": items})
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": items, "page": page, "limit": limit})
 }
 
+// LikeAlbum godoc
+// @Summary Like an album
+// @Description Adds an album to the authenticated user's liked albums.
+// @Tags library
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body LikeAlbumRequest true "Like album request"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 409 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/albums/like [post]
 func (h *Handler) LikeAlbum(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -95,6 +152,20 @@ func (h *Handler) LikeAlbum(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "album liked"})
 }
 
+// UnlikeAlbum godoc
+// @Summary Unlike an album
+// @Description Removes an album from the authenticated user's liked albums.
+// @Tags library
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param albumId path int true "Album ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/albums/{albumId}/like [delete]
 func (h *Handler) UnlikeAlbum(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -102,8 +173,8 @@ func (h *Handler) UnlikeAlbum(c *gin.Context) {
 		return
 	}
 
-	albumID, err := parseInt64Param(c, "albumId")
-	if err != nil {
+	albumID := parseUUIDParam(c, "albumId")
+	if albumID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid album id"})
 		return
 	}
@@ -116,6 +187,18 @@ func (h *Handler) UnlikeAlbum(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "album unliked"})
 }
 
+// ListLikedAlbums godoc
+// @Summary List liked albums
+// @Description Returns paginated liked albums for the authenticated user.
+// @Tags library
+// @Produce json
+// @Security Bearer
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(20)
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/albums/liked [get]
 func (h *Handler) ListLikedAlbums(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -123,15 +206,31 @@ func (h *Handler) ListLikedAlbums(c *gin.Context) {
 		return
 	}
 
-	items, err := h.service.ListLikedAlbums(c.Request.Context(), userID)
+	page, limit := parsePagination(c)
+	items, err := h.service.ListLikedAlbums(c.Request.Context(), userID, page, limit)
 	if err != nil {
 		h.handleError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": items})
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": items, "page": page, "limit": limit})
 }
 
+// FollowArtist godoc
+// @Summary Follow an artist from library
+// @Description Adds an artist to the authenticated user's followed artists.
+// @Tags library
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body FollowArtistRequest true "Follow artist request"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 409 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/artists/follow [post]
 func (h *Handler) FollowArtist(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -153,6 +252,20 @@ func (h *Handler) FollowArtist(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "artist followed"})
 }
 
+// UnfollowArtist godoc
+// @Summary Unfollow an artist from library
+// @Description Removes an artist from the authenticated user's followed artists.
+// @Tags library
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param artistId path int true "Artist ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/artists/{artistId}/follow [delete]
 func (h *Handler) UnfollowArtist(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -160,8 +273,8 @@ func (h *Handler) UnfollowArtist(c *gin.Context) {
 		return
 	}
 
-	artistID, err := parseInt64Param(c, "artistId")
-	if err != nil {
+	artistID := parseUUIDParam(c, "artistId")
+	if artistID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid artist id"})
 		return
 	}
@@ -174,6 +287,18 @@ func (h *Handler) UnfollowArtist(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "artist unfollowed"})
 }
 
+// ListFollowedArtists godoc
+// @Summary List followed artists
+// @Description Returns paginated followed artists for the authenticated user.
+// @Tags library
+// @Produce json
+// @Security Bearer
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(20)
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/artists/followed [get]
 func (h *Handler) ListFollowedArtists(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -181,15 +306,30 @@ func (h *Handler) ListFollowedArtists(c *gin.Context) {
 		return
 	}
 
-	items, err := h.service.ListFollowedArtists(c.Request.Context(), userID)
+	page, limit := parsePagination(c)
+	items, err := h.service.ListFollowedArtists(c.Request.Context(), userID, page, limit)
 	if err != nil {
 		h.handleError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": items})
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": items, "page": page, "limit": limit})
 }
 
+// AddPlayHistory godoc
+// @Summary Add play history entry
+// @Description Adds a track to the authenticated user's play history.
+// @Tags library
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body AddPlayHistoryRequest true "Add play history request"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/history [post]
 func (h *Handler) AddPlayHistory(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -203,7 +343,12 @@ func (h *Handler) AddPlayHistory(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.AddPlayHistory(c.Request.Context(), userID, req.TrackID); err != nil {
+	if err := h.service.AddPlayHistory(c.Request.Context(), AddPlayHistoryInput{
+		UserID:    userID,
+		TrackID:   req.TrackID,
+		Duration:  req.Duration,
+		Completed: req.Completed,
+	}); err != nil {
 		h.handleError(c, err)
 		return
 	}
@@ -211,6 +356,18 @@ func (h *Handler) AddPlayHistory(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "play history added"})
 }
 
+// ListPlayHistory godoc
+// @Summary List play history
+// @Description Returns the authenticated user's play history.
+// @Tags library
+// @Produce json
+// @Security Bearer
+// @Param limit query int false "Maximum number of items to return" default(50)
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/history [get]
 func (h *Handler) ListPlayHistory(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -229,6 +386,18 @@ func (h *Handler) ListPlayHistory(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": items})
 }
 
+// ListRecentlyPlayed godoc
+// @Summary List recently played tracks
+// @Description Returns recently played tracks for the authenticated user.
+// @Tags library
+// @Produce json
+// @Security Bearer
+// @Param limit query int false "Maximum number of items to return" default(20)
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /library/history/recent [get]
 func (h *Handler) ListRecentlyPlayed(c *gin.Context) {
 	userID, ok := getUserIDFromGin(c)
 	if !ok {
@@ -267,18 +436,18 @@ func (h *Handler) handleError(c *gin.Context, err error) {
 	}
 }
 
-func getUserIDFromGin(c *gin.Context) (int64, bool) {
-	v, exists := c.Get("user_id")
+func getUserIDFromGin(c *gin.Context) (string, bool) {
+	v, exists := c.Get("auth_user_id")
 	if !exists {
-		return 0, false
+		return "", false
 	}
 
-	id, ok := v.(int64)
+	id, ok := v.(string)
 	return id, ok
 }
 
-func parseInt64Param(c *gin.Context, key string) (int64, error) {
-	return strconv.ParseInt(c.Param(key), 10, 64)
+func parseUUIDParam(c *gin.Context, key string) string {
+	return c.Param(key)
 }
 
 func parseLimit(c *gin.Context, defaultValue int) int {
@@ -292,4 +461,23 @@ func parseLimit(c *gin.Context, defaultValue int) int {
 		return defaultValue
 	}
 	return n
+}
+
+func parsePagination(c *gin.Context) (page, limit int) {
+	page = 1
+	if v := c.Query("page"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			page = n
+		}
+	}
+	limit = 20
+	if v := c.Query("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			limit = n
+		}
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	return
 }

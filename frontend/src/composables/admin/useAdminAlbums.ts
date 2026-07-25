@@ -1,24 +1,33 @@
 import { ref } from 'vue'
-import { useCatalogApi } from '@/services/api/catalog'
-import type { Album } from '@/services/api/catalog'
+import {
+  useAlbumsApi,
+  type Album,
+  type AlbumCreatePayload,
+  type AlbumUpdatePayload,
+} from '@/services/api/catalog/albums'
 
-export type AlbumFormPayload = Partial<Album>
+export type AlbumFormPayload = AlbumCreatePayload & AlbumUpdatePayload
 
 export function useAdminAlbums() {
-  const api = useCatalogApi()
+  const {
+    adminGetAlbums,
+    adminCreateAlbum,
+    adminUpdateAlbum,
+    adminDeleteAlbum,
+  } = useAlbumsApi()
 
   const albums = ref<Album[]>([])
   const loading = ref(false)
   const saving = ref(false)
   const deleting = ref(false)
-  const error = ref<unknown>(null)
+  const error = ref<any>(null)
 
   async function fetchAlbums() {
     loading.value = true
     error.value = null
 
     try {
-      const response = await api.adminGetAlbums()
+      const response = await adminGetAlbums()
       albums.value = response
       return response
     } catch (err) {
@@ -34,10 +43,8 @@ export function useAdminAlbums() {
     error.value = null
 
     try {
-      const created = await api.adminCreateAlbum(payload)
-
+      const created = await adminCreateAlbum(payload)
       albums.value = [created, ...albums.value]
-
       return created
     } catch (err) {
       error.value = err
@@ -52,12 +59,10 @@ export function useAdminAlbums() {
     error.value = null
 
     try {
-      const updated = await api.adminUpdateAlbum(id, payload)
-
+      const updated = await adminUpdateAlbum(id, payload)
       albums.value = albums.value.map((album) =>
         String(album.id) === String(id) ? updated : album,
       )
-
       return updated
     } catch (err) {
       error.value = err
@@ -72,8 +77,7 @@ export function useAdminAlbums() {
     error.value = null
 
     try {
-      await api.adminDeleteAlbum(id)
-
+      await adminDeleteAlbum(id)
       albums.value = albums.value.filter((album) => String(album.id) !== String(id))
     } catch (err) {
       error.value = err

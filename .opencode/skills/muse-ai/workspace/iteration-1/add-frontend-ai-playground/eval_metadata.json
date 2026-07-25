@@ -1,0 +1,47 @@
+{
+  "eval_id": 3,
+  "eval_name": "add-frontend-ai-playground",
+  "prompt": "I want to add a new AI playground page to the frontend at '/ai/experiment' that lets users enter a custom prompt and see what tracks the AI picks, plus the raw JSON response from the backend. Walk me through creating the Vue page, adding the route, and wiring it up.",
+  "assertions": [
+    {
+      "name": "creates Vue component",
+      "description": "Includes creating a PageAIExperiment.vue component",
+      "type": "text-match"
+    },
+    {
+      "name": "registers route in app.ts",
+      "description": "Includes registering the route in router/routes/app.ts",
+      "type": "text-match"
+    },
+    {
+      "name": "uses useAIApi composable",
+      "description": "Uses useAIApi() from services/api/ai for the API call",
+      "type": "text-match"
+    },
+    {
+      "name": "covers all UI states",
+      "description": "Covers loading, empty, and results states in the template",
+      "type": "text-match"
+    },
+    {
+      "name": "displays raw JSON response",
+      "description": "Displays the raw JSON response from the backend in a readable format",
+      "type": "text-match"
+    },
+    {
+      "name": "includes play functionality",
+      "description": "Includes play-all or per-track play functionality via usePlayer()",
+      "type": "text-match"
+    },
+    {
+      "name": "adds navigation link",
+      "description": "Adds navigation link in LayoutMusicApp.vue or similar",
+      "type": "text-match"
+    },
+    {
+      "name": "covers backend changes",
+      "description": "Covers backend API changes needed (service, handler, routes)",
+      "type": "text-match"
+    }
+  ]
+}

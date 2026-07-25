@@ -1,0 +1,651 @@
+<template>
+  <div class="relative mx-auto min-h-screen w-full pb-36">
+    <!-- ── Ambient Aurora ── -->
+    <div class="aurora-bg pointer-events-none fixed inset-0" aria-hidden="true">
+      <div class="aurora-spot-1" />
+      <div class="aurora-spot-2" />
+    </div>
+
+    <div class="relative z-10 px-4 pt-8 md:px-6 lg:px-8">
+      <div class="mx-auto max-w-7xl">
+        <!-- ════════════════════════════════════════ -->
+        <!-- HERO — Your Library                      -->
+        <!-- ════════════════════════════════════════ -->
+        <section
+          class="relative overflow-hidden rounded-3xl border border-white/6 bg-linear-to-br from-spotify/10 via-surface-overlay to-black/60 p-8 backdrop-blur-2xl md:p-12"
+        >
+          <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
+            <div class="absolute -top-1/2 -right-1/4 h-80 w-80 rounded-full bg-spotify/8 blur-[120px]" />
+            <div class="absolute -bottom-1/2 -left-1/4 h-64 w-64 rounded-full bg-aurora-purple/8 blur-[100px]" />
+          </div>
+          <div class="relative">
+            <p class="text-[10px] font-bold tracking-[0.35em] text-white/30 uppercase">Your collection</p>
+            <h1 class="mt-2 text-4xl font-black text-white md:text-6xl">Library</h1>
+            <p class="mt-3 max-w-2xl text-sm text-white/50">
+              Liked songs, saved albums, followed artists, playlists, and listening history — all in one place.
+            </p>
+            <!-- Quick stats -->
+            <div v-if="!loading" class="mt-5 flex flex-wrap items-center gap-3">
+              <div class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/50">
+                <Heart aria-hidden="true" class="text-[10px]"  /> {{ likedTracks.length }} tracks
+              </div>
+              <div class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/50">
+                <Images aria-hidden="true" class="text-[10px]"  /> {{ likedAlbums.length }} albums
+              </div>
+              <div class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/50">
+                <Users aria-hidden="true" class="text-[10px]"  /> {{ followedArtists.length }} artists
+              </div>
+              <div class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/50">
+                <List aria-hidden="true" class="text-[10px]"  /> {{ playlists.length }} playlists
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- TAB NAVIGATION — Pill Tabs               -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="mt-8">
+          <div class="no-scrollbar flex gap-2 overflow-x-auto" role="tablist" aria-label="Library sections">
+            <button
+              v-for="tab in tabs"
+              :key="tab.id"
+              role="tab"
+              :aria-selected="activeTab === tab.id"
+              type="button"
+              class="group relative flex shrink-0 items-center gap-2 rounded-full border px-5 py-2.5 text-xs font-bold transition-all duration-300"
+              :class="
+                activeTab === tab.id
+                  ? 'border-spotify/40 bg-spotify/15 text-white shadow-lg shadow-spotify/5'
+                  : 'border-white/6 bg-white/3 text-white/50 hover:border-white/12 hover:bg-white/6 hover:text-white'
+              "
+              @click="activeTab = tab.id"
+            >
+              <i aria-hidden="true" :class="tab.icon" class="text-sm" />
+              {{ tab.label }}
+              <span
+                class="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold"
+                :class="activeTab === tab.id ? 'bg-spotify/20 text-spotify' : 'bg-white/6 text-white/30'"
+              >
+                {{ tab.count }}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- TAB CONTENT                              -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="mt-8">
+          <div v-if="loading" class="space-y-6">
+            <div v-for="i in 3" :key="i">
+              <div class="mb-4 shimmer h-5 w-32 rounded-lg" />
+              <div class="flex gap-4">
+                <div v-for="j in 4" :key="j" class="shimmer h-44 w-40 shrink-0 rounded-2xl" />
+              </div>
+            </div>
+          </div>
+
+          <!-- ──── TRACKS TAB ──── -->
+          <div v-if="activeTab === 'tracks'" role="tabpanel" aria-live="polite">
+            <!-- Filter/search -->
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-lg font-bold text-white">Liked Tracks</h2>
+              <div class="relative">
+                <Search aria-hidden="true" class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/20"  />
+                <input
+                  v-model="trackFilter"
+                  type="text"
+                  placeholder="Filter tracks..."
+                  class="w-48 rounded-full border border-white/6 bg-white/3 py-2 pl-9 pr-4 text-xs text-white outline-hidden transition placeholder:text-white/20 focus:border-spotify/30 focus:bg-white/6"
+                />
+              </div>
+            </div>
+
+            <div
+              v-if="sectionErrors.tracks"
+              class="rounded-xl bg-red-500/10 p-4 text-center text-sm text-red-400"
+            >
+              Could not load tracks.
+              <button @click="fetchAll" class="underline">Retry</button>
+            </div>
+            <div
+              v-else-if="filteredTracks.length"
+              class="overflow-hidden rounded-2xl border border-white/6 bg-white/2 backdrop-blur-xs"
+            >
+              <div
+                v-for="(item, index) in filteredTracks"
+                :key="item.track_id"
+                class="group/track relative"
+              >
+                <TrackRow
+                  :track="item"
+                  :index="index"
+                  :queue="filteredTracks"
+                />
+                <button
+                  type="button"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500/20 text-red-400 opacity-0 transition hover:bg-red-500/30 group-hover/track:opacity-100"
+                  :aria-label="`Remove ${item.title}`"
+                  @click.stop="removeTrack(item.track_id)"
+                >
+                  <X aria-hidden="true" class="text-[10px]" />
+                </button>
+              </div>
+            </div>
+            <div
+              v-else
+              class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-16 text-center"
+            >
+              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/4">
+                <Heart aria-hidden="true" class="text-xl text-white/20"  />
+              </div>
+              <h3 class="text-base font-bold text-white">No liked tracks yet</h3>
+              <p class="text-sm text-white/40">
+                {{ trackFilter ? 'No tracks match your filter.' : 'Tap the heart icon on any track to save it here.' }}
+              </p>
+            </div>
+          </div>
+
+          <!-- ──── ALBUMS TAB ──── -->
+          <div v-if="activeTab === 'albums'" role="tabpanel" aria-live="polite">
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-lg font-bold text-white">Saved Albums</h2>
+              <span class="text-xs text-white/30 tabular-nums">{{ likedAlbums.length }} albums</span>
+            </div>
+
+            <div
+              v-if="sectionErrors.albums"
+              class="rounded-xl bg-red-500/10 p-4 text-center text-sm text-red-400"
+            >
+              Could not load albums.
+              <button @click="fetchAll" class="underline">Retry</button>
+            </div>
+            <div
+              v-else-if="likedAlbums.length"
+              class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+            >
+              <RouterLink
+                v-for="album in likedAlbums"
+                :key="album.album_id"
+                :to="`/album/${album.album_id}`"
+                class="group"
+              >
+                <div class="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-white/5 shadow-lg ring-1 ring-white/6 transition-all duration-300 group-hover:scale-[1.02] group-hover:ring-spotify/30">
+                  <img
+                    v-if="album.cover_url"
+                    :src="album.cover_url"
+                    :alt="album.title"
+                    loading="lazy"
+                    class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                    @error="onImgError"
+                  />
+                  <div v-else class="flex h-full items-center justify-center">
+                    <Images aria-hidden="true" class="text-3xl text-white/20"  />
+                  </div>
+                  <button
+                    type="button"
+                    class="absolute top-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-red-500/20 text-red-400 opacity-0 transition hover:bg-red-500/30 group-hover:opacity-100"
+                    :aria-label="`Remove ${album.title}`"
+                    @click.prevent.stop="removeAlbum(album.album_id)"
+                  >
+                    <X aria-hidden="true" class="text-xs" />
+                  </button>
+                  <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-xs transition group-hover:opacity-100">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify/90 text-black shadow-xl">
+                      <Play aria-hidden="true" class="text-lg"  />
+                    </div>
+                  </div>
+                </div>
+                <p class="truncate text-sm font-semibold text-white">{{ album.title }}</p>
+                <p class="truncate text-xs text-white/40">{{ album.artist_name || 'Unknown artist' }}</p>
+              </RouterLink>
+            </div>
+            <div
+              v-else
+              class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-16 text-center"
+            >
+              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/4">
+                <Images aria-hidden="true" class="text-xl text-white/20"  />
+              </div>
+              <h3 class="text-base font-bold text-white">No saved albums</h3>
+              <p class="text-sm text-white/40">Save albums to your library to find them quickly.</p>
+            </div>
+          </div>
+
+          <!-- ──── ARTISTS TAB ──── -->
+          <div v-if="activeTab === 'artists'" role="tabpanel" aria-live="polite">
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-lg font-bold text-white">Followed Artists</h2>
+              <span class="text-xs text-white/30 tabular-nums">{{ followedArtists.length }} artists</span>
+            </div>
+
+            <div
+              v-if="sectionErrors.artists"
+              class="rounded-xl bg-red-500/10 p-4 text-center text-sm text-red-400"
+            >
+              Could not load artists.
+              <button @click="fetchAll" class="underline">Retry</button>
+            </div>
+            <div
+              v-else-if="followedArtists.length"
+              class="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+            >
+              <RouterLink
+                v-for="artist in followedArtists"
+                :key="artist.artist_id"
+                :to="`/artist/${artist.artist_id}`"
+                class="group relative block text-center"
+              >
+                <div class="relative mx-auto mb-3 h-36 w-36 overflow-hidden rounded-full bg-white/4 ring-1 ring-white/6 transition-all duration-300 group-hover:ring-spotify/30">
+                  <img
+                    v-if="artist.cover_url"
+                    :src="artist.cover_url"
+                    :alt="artist.name"
+                    loading="lazy"
+                    class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                    @error="onImgError"
+                  />
+                  <div v-else class="flex h-full items-center justify-center">
+                    <User aria-hidden="true" class="text-3xl text-white/20"  />
+                  </div>
+                  <button
+                    type="button"
+                    class="absolute top-0 right-0 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-red-500/20 text-red-400 opacity-0 transition hover:bg-red-500/30 group-hover:opacity-100"
+                    :aria-label="`Unfollow ${artist.name}`"
+                    @click.prevent.stop="unfollowArtist(artist.artist_id)"
+                  >
+                    <X aria-hidden="true" class="text-xs" />
+                  </button>
+                </div>
+                <p class="truncate text-sm font-bold text-white">{{ artist.name }}</p>
+                <p class="text-xs text-white/40">Artist</p>
+              </RouterLink>
+            </div>
+            <div
+              v-else
+              class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-16 text-center"
+            >
+              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/4">
+                <Users aria-hidden="true" class="text-xl text-white/20"  />
+              </div>
+              <h3 class="text-base font-bold text-white">No followed artists</h3>
+              <p class="text-sm text-white/40">Follow artists to keep up with their latest releases.</p>
+            </div>
+          </div>
+
+          <!-- ──── PLAYLISTS TAB ──── -->
+          <div v-if="activeTab === 'playlists'" role="tabpanel" aria-live="polite">
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-lg font-bold text-white">My Playlists</h2>
+              <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-full bg-spotify px-5 py-2.5 text-xs font-bold text-black transition hover:bg-spotify-hover hover:scale-105"
+                @click="showCreate = true"
+              >
+                <Plus aria-hidden="true" class="text-[10px]"  />
+                Create
+              </button>
+            </div>
+
+            <div
+              v-if="sectionErrors.playlists"
+              class="rounded-xl bg-red-500/10 p-4 text-center text-sm text-red-400"
+            >
+              Could not load playlists.
+              <button @click="fetchAll" class="underline">Retry</button>
+            </div>
+            <div
+              v-else-if="playlists.length"
+              class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4"
+            >
+              <RouterLink
+                v-for="playlist in playlists"
+                :key="playlist.id"
+                :to="`/playlist/${playlist.id}`"
+                class="group rounded-2xl border border-white/6 bg-white/2 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/6 hover:border-white/12"
+              >
+                <div class="relative mb-3 aspect-square overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/6">
+                  <img
+                    v-if="playlist.cover_url"
+                    :src="playlist.cover_url"
+                    :alt="playlist.name"
+                    loading="lazy"
+                    class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                    @error="onImgError"
+                  />
+                  <PlaylistCoverGrid
+                    v-else
+                    :covers="[]"
+                    :track-count="playlist.track_count"
+                    class="h-full w-full"
+                  />
+                  <button
+                    type="button"
+                    class="absolute top-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-red-500/20 text-red-400 opacity-0 transition hover:bg-red-500/30 group-hover:opacity-100"
+                    :aria-label="`Delete ${playlist.name}`"
+                    @click.prevent.stop="deletePlaylist(playlist.id)"
+                  >
+                    <X aria-hidden="true" class="text-xs" />
+                  </button>
+                  <div class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 backdrop-blur-xs transition group-hover:opacity-100">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify/90 text-black shadow-xl">
+                      <Play aria-hidden="true" class="text-lg"  />
+                    </div>
+                  </div>
+                </div>
+                <p class="truncate text-sm font-semibold text-white">{{ playlist.name }}</p>
+                <p class="text-xs text-white/40">{{ playlist.track_count }} tracks</p>
+              </RouterLink>
+            </div>
+            <div
+              v-else
+              class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-16 text-center"
+            >
+              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/4">
+                <List aria-hidden="true" class="text-xl text-white/20"  />
+              </div>
+              <h3 class="text-base font-bold text-white">No playlists yet</h3>
+              <p class="text-sm text-white/40">Create your first playlist to start organizing your music.</p>
+              <button
+                type="button"
+                class="mt-2 rounded-full bg-spotify px-6 py-2.5 text-sm font-bold text-black transition hover:bg-spotify-hover"
+                @click="showCreate = true"
+              >
+                <Plus aria-hidden="true" class="mr-1 text-xs"  />
+                Create Playlist
+              </button>
+            </div>
+          </div>
+
+          <!-- ──── HISTORY TAB ──── -->
+          <div v-if="activeTab === 'history'" role="tabpanel" aria-live="polite">
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-lg font-bold text-white">Recently Played</h2>
+              <span class="text-xs text-white/30 tabular-nums">{{ recentTracks.length }} tracks</span>
+            </div>
+
+            <div
+              v-if="sectionErrors.history"
+              class="rounded-xl bg-red-500/10 p-4 text-center text-sm text-red-400"
+            >
+              Could not load history.
+              <button @click="fetchAll" class="underline">Retry</button>
+            </div>
+            <div
+              v-else-if="recentTracks.length"
+              class="overflow-hidden rounded-2xl border border-white/6 bg-white/2 backdrop-blur-xs"
+            >
+              <TrackRow
+                v-for="(item, index) in recentTrackItems"
+                :key="item.track_id"
+                :track="item"
+                :index="index"
+                :queue="recentTrackItems"
+              />
+            </div>
+            <div
+              v-else
+              class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-16 text-center"
+            >
+              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/4">
+                <History aria-hidden="true" class="text-xl text-white/20"  />
+              </div>
+              <h3 class="text-base font-bold text-white">No history yet</h3>
+              <p class="text-sm text-white/40">Start playing tracks and your history will appear here.</p>
+              <RouterLink
+                to="/discover"
+                class="mt-2 inline-flex rounded-full bg-spotify px-6 py-2.5 text-sm font-bold text-black transition hover:bg-spotify-hover"
+              >
+                Discover music
+              </RouterLink>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════ -->
+    <!-- CREATE PLAYLIST DIALOG                   -->
+    <!-- ════════════════════════════════════════ -->
+    <Dialog
+      v-model:visible="showCreate"
+      :modal="true"
+      :draggable="false"
+      :style="{ maxWidth: '440px', width: '90vw' }"
+      :pt="{
+        root: 'border-none',
+        mask: 'backdrop-blur-xs bg-black/60',
+        header: 'border-b border-white/5',
+        title: 'text-white text-sm font-bold',
+        content: 'p-0',
+      }"
+    >
+      <template #header>
+        <div class="flex items-center gap-2 px-1">
+          <Plus aria-hidden="true" class="text-sm text-spotify"  />
+          <span>Create Playlist</span>
+        </div>
+      </template>
+
+      <div class="space-y-5 p-6">
+        <div>
+          <label class="mb-2 block text-xs font-medium text-white/40">Name</label>
+          <InputText
+            v-model="newName"
+            placeholder="My awesome playlist"
+            class="w-full"
+          />
+        </div>
+        <div>
+          <label class="mb-2 block text-xs font-medium text-white/40">Description</label>
+          <Textarea
+            v-model="newDescription"
+            placeholder="Optional description"
+            rows="3"
+            class="w-full"
+          />
+        </div>
+        <div class="flex items-center gap-2">
+          <Checkbox v-model="newIsPublic" :binary="true" input-id="playlist-public" />
+          <label for="playlist-public" class="text-sm text-white/60">Public playlist</label>
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <Button
+            label="Cancel"
+            severity="secondary"
+            text
+            class="text-sm"
+            @click="showCreate = false"
+          />
+          <Button
+            label="Create"
+            severity="success"
+            class="text-sm"
+            :disabled="!newName.trim() || creating"
+            :loading="creating"
+            @click="handleCreate"
+          />
+        </div>
+      </div>
+    </Dialog>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { Heart, History, Images, List, Play, Plus, Search, User, Users, X } from 'lucide-vue-next'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAppToast } from '@/composables/useAppToast'
+import { TrackRow, PlaylistCoverGrid } from '@/components/music'
+import { useLibraryApi } from '@/services/api/library'
+import { usePlaylistsApi } from '@/services/api/playlist'
+import type { LibraryTrack, LibraryAlbum, LibraryArtist } from '@/services/api/library'
+import type { PlaylistListItem } from '@/services/api/playlist'
+import { onImgError } from '@/utils/helpers'
+
+const router = useRouter()
+const libraryApi = useLibraryApi()
+const playlistsApi = usePlaylistsApi()
+const toast = useAppToast()
+
+const loading = ref(false)
+const activeTab = ref('tracks')
+
+// Library data
+const likedTracks = ref<LibraryTrack[]>([])
+const likedAlbums = ref<LibraryAlbum[]>([])
+const followedArtists = ref<LibraryArtist[]>([])
+const playlists = ref<PlaylistListItem[]>([])
+const recentTracks = ref<LibraryTrack[]>([])
+const recentTrackItems = computed(() =>
+  recentTracks.value.map(t => ({ ...t, id: t.track_id })),
+)
+const trackFilter = ref('')
+
+const sectionErrors = ref<Record<string, boolean>>({})
+
+// Create playlist
+const showCreate = ref(false)
+const creating = ref(false)
+const newName = ref('')
+const newDescription = ref('')
+const newIsPublic = ref(true)
+
+// ── Filtered tracks ──
+const filteredTracks = computed(() => {
+  const items = likedTracks.value
+  const filtered = trackFilter.value.trim()
+    ? items.filter(
+        (t) =>
+          t.title.toLowerCase().includes(trackFilter.value.toLowerCase()) ||
+          (t.artist_name || '').toLowerCase().includes(trackFilter.value.toLowerCase()) ||
+          (t.album_title || '').toLowerCase().includes(trackFilter.value.toLowerCase()),
+      )
+    : items
+  return filtered.map((t) => ({ ...t, id: t.track_id }))
+})
+
+// ── Tab definitions ──
+const tabs = computed(() => [
+  { id: 'tracks', label: 'Tracks', icon: 'pi pi-heart', count: likedTracks.value.length },
+  { id: 'albums', label: 'Albums', icon: 'pi pi-images', count: likedAlbums.value.length },
+  { id: 'artists', label: 'Artists', icon: 'pi pi-users', count: followedArtists.value.length },
+  { id: 'playlists', label: 'Playlists', icon: 'pi pi-list', count: playlists.value.length },
+  { id: 'history', label: 'History', icon: 'pi pi-history', count: recentTracks.value.length },
+])
+
+// ── Fetch all data ──
+async function fetchAll() {
+  loading.value = true
+  try {
+    const results = await Promise.allSettled([
+      libraryApi.getLikedTracks(),
+      libraryApi.getLikedAlbums(),
+      libraryApi.getFollowedArtists(),
+      playlistsApi.getMyPlaylists(),
+      libraryApi.getRecentlyPlayed(),
+    ])
+    const sections: readonly string[] = ['tracks', 'albums', 'artists', 'playlists', 'history']
+    sectionErrors.value = {}
+    results.forEach((result, i) => {
+      if (result.status === 'rejected') {
+        sectionErrors.value[sections[i]!] = true
+      } else {
+        const data = result.value
+        switch (sections[i]) {
+          case 'tracks':
+            likedTracks.value = Array.isArray(data) ? (data as LibraryTrack[]) : []
+            break
+          case 'albums':
+            likedAlbums.value = Array.isArray(data) ? (data as LibraryAlbum[]) : []
+            break
+          case 'artists':
+            followedArtists.value = Array.isArray(data) ? (data as LibraryArtist[]) : []
+            break
+          case 'playlists':
+            playlists.value = Array.isArray(data) ? (data as PlaylistListItem[]) : []
+            break
+          case 'history':
+            recentTracks.value = Array.isArray(data) ? (data as LibraryTrack[]) : []
+            break
+        }
+      }
+    })
+  } catch (err: unknown) {
+    toast.apiError(err, 'Failed to fetch library data')
+  } finally {
+    loading.value = false
+  }
+}
+
+// ── Remove from library actions ──
+async function removeTrack(trackId: string | number) {
+  try {
+    await libraryApi.unlikeTrack(trackId)
+    likedTracks.value = likedTracks.value.filter(t => t.track_id !== trackId)
+    toast.success('Removed')
+  } catch {
+    toast.error('Failed to remove track')
+  }
+}
+
+async function removeAlbum(albumId: string | number) {
+  try {
+    await libraryApi.unlikeAlbum(albumId)
+    likedAlbums.value = likedAlbums.value.filter(a => a.album_id !== albumId)
+    toast.success('Removed')
+  } catch {
+    toast.error('Failed to remove album')
+  }
+}
+
+async function unfollowArtist(artistId: string | number) {
+  try {
+    await libraryApi.unfollowArtist(artistId)
+    followedArtists.value = followedArtists.value.filter(a => a.artist_id !== artistId)
+    toast.success('Removed')
+  } catch {
+    toast.error('Failed to unfollow artist')
+  }
+}
+
+async function deletePlaylist(playlistId: string) {
+  try {
+    await playlistsApi.deletePlaylist(playlistId)
+    playlists.value = playlists.value.filter(p => p.id !== playlistId)
+    toast.success('Removed')
+  } catch {
+    toast.error('Failed to delete playlist')
+  }
+}
+
+// ── Create playlist ──
+async function handleCreate() {
+  if (!newName.value.trim() || creating.value) return
+  creating.value = true
+  try {
+    const result = await playlistsApi.createPlaylist({
+      name: newName.value.trim(),
+      description: newDescription.value.trim() || undefined,
+      is_public: newIsPublic.value,
+    })
+    showCreate.value = false
+    newName.value = ''
+    newDescription.value = ''
+    if (result?.id) {
+      await router.push(`/playlist/${result.id}`)
+    } else {
+      await fetchAll()
+    }
+  } catch {
+    toast.error('Failed to create playlist')
+  } finally {
+    creating.value = false
+  }
+}
+
+onMounted(() => {
+  void fetchAll()
+})
+</script>

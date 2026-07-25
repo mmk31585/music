@@ -1,0 +1,24 @@
+[Unit]
+Description=MusicApp API Server
+After=network.target postgresql.service redis.service
+Wants=network.target
+
+[Service]
+Type=simple
+User=musicapp
+Group=musicapp
+WorkingDirectory=/opt/musicapp
+EnvironmentFile=/opt/musicapp/.env
+ExecStart=/opt/musicapp/bin/api
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+
+# Security
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

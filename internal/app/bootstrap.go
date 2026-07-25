@@ -4,16 +4,22 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gin-gonic/gin"
-
-	"music/internal/common/middleware"
 	"music/internal/common/validator"
 	"music/internal/config"
 	"music/internal/platform/cache"
 	"music/internal/platform/database"
+	"music/internal/platform/events"
 	platformLogger "music/internal/platform/logger"
+
+	"go.uber.org/zap"
 )
 
+// Bootstrap creates the App with all core dependencies (config, logger, DB, Redis,
+// validator, event bus) but does NOT create the Gin engine or register routes.
+//
+// Route registration and HTTP server creation are handled by main.go, ensuring
+// routes are registered exactly once and middleware choices are explicit at the
+// call site.
 func Bootstrap(ctx context.Context) (*App, error) {
 	cfg, err := config.Load()
 	if err != nil {
@@ -24,10 +30,9 @@ func Bootstrap(ctx context.Context) (*App, error) {
 	if err != nil {
 		return nil, fmt.Errorf("init logger: %w", err)
 	}
-
-	if cfg.App.Env == "production" {
-		gin.SetMode(gin.ReleaseMode)
-	}
+	// Set the global logger so zap.L() and all packages that use it
+	// (enrichment, import, etc.) get the configured logger instead of the nop default.
+	_ = zap.ReplaceGlobals(log)
 
 	log.Info("running database migrations")
 	if err := database.RunMigrations(cfg.Postgres.URL, "migrations"); err != nil {
@@ -46,25 +51,18 @@ func Bootstrap(ctx context.Context) (*App, error) {
 
 	v := validator.New()
 
-	app := &App{
+	eventBus := events.NewBus(log)
+
+	appCtx, appCancel := context.WithCancel(context.Background())
+
+	return &App{
 		Config:    cfg,
 		Logger:    log,
 		DB:        db,
 		Redis:     redisClient,
 		Validator: v,
-	}
-
-	router := gin.New()
-	router.Use(middleware.CORS(cfg.CORS.AllowedOrigins))
-	router.Use(middleware.GinZapLogger(log))
-	router.Use(middleware.GinZapRecovery(log))
-
-	app.RegisterRoutes(router)
-	registerMediaRoutes(router, cfg.Media.BasePath)
-
-	app.Router = router
-	app.HTTPServer = app.NewHTTPServer()
-	app.HTTPServer.Handler = app.Router
-
-	return app, nil
+		Events:    eventBus,
+		ctx:       appCtx,
+		cancel:    appCancel,
+	}, nil
 }

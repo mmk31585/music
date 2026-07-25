@@ -1,0 +1,82 @@
+{
+  "title": "MusicApp Overview",
+  "uid": "musicapp-overview",
+  "description": "Music application monitoring dashboard",
+  "timezone": "browser",
+  "panels": [
+    {
+      "title": "API Requests (rate)",
+      "type": "graph",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(music_http_requests_total[5m])) by (method)",
+          "legendFormat": "{{method}}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+    },
+    {
+      "title": "Request Duration (p95)",
+      "type": "graph",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(music_http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+    },
+    {
+      "title": "Requests In Flight",
+      "type": "graph",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "music_http_requests_in_flight",
+          "legendFormat": "active"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
+    },
+    {
+      "title": "Events Published (rate)",
+      "type": "graph",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(music_events_published_total[5m])) by (event_type)",
+          "legendFormat": "{{event_type}}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 }
+    },
+    {
+      "title": "Error Rate (5xx)",
+      "type": "graph",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(music_http_requests_total{status=~\"5..\"}[5m])) by (path)",
+          "legendFormat": "{{path}}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 }
+    },
+    {
+      "title": "Requests by Status Code",
+      "type": "graph",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(music_http_requests_total[5m])) by (status)",
+          "legendFormat": "{{status}}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 }
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 2
+}

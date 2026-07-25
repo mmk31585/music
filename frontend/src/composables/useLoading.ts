@@ -2,52 +2,46 @@ import { computed, ref, type Ref, unref } from 'vue'
 import isObject from 'lodash.isobject'
 import type { ZodType } from 'zod'
 import { useRequest } from '@/composables'
-import type { ApiResponseProps, MetaProps, PaginatedProps } from '@/plugins/client/types.ts'
+import type { AxiosRequestConfig } from 'axios'
+import type { ApiResponseProps, MetaProps, PaginatedProps } from '@/plugins/client/types'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type LoadingOptionsType<T, TBody = unknown, TQuery = Record<string, any>> = {
+export type LoadingOptionsType<T, TBody = unknown, TQuery = Record<string, unknown>> = {
   immediate?: boolean
   key?: string
   schema?: ZodType<T>
   allowEmptyArray?: boolean
-
-  /** HTTP method: GET, POST, PUT, PATCH, DELETE, ... */
   method?: string
-
-  /** Request body; can be plain value or a Ref */
   body?: TBody | Ref<TBody>
-
-  /** Query params; can be plain value or a Ref */
   query?: TQuery | Ref<TQuery>
-
   parameters?: unknown[]
 }
 
-type LoadingResult<T> =
-  T extends PaginatedProps<infer U>
-    ? { data: Ref<T | null>; items: Ref<U[]>; meta: Ref<MetaProps> }
-    : T extends Array<infer U>
-      ? { data: Ref<T | null>; items: Ref<U[]>; meta: Ref<MetaProps> }
-      : { data: Ref<T | null>; items: Ref<T[]>; meta: Ref<MetaProps> }
+type PaginatedItems<T> = T extends PaginatedProps<infer U> ? U[] : never
+type ArrayItems<T> = T extends Array<infer U> ? U[] : never
 
-export function useLoading<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  T extends object | unknown[] | PaginatedProps<any>,
-  TBody = unknown,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TQuery = Record<string, any>,
->(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  fetcher: ((...parameters: any) => Promise<T>) | string,
-  options?: LoadingOptionsType<T, TBody, TQuery>,
-): LoadingResult<T> & {
+type LoadingResult<T> = {
+  data: Ref<T | null>
+  items: Ref<T extends PaginatedProps<infer U> ? U[] : T extends Array<infer U> ? U[] : T[]>
+  meta: Ref<MetaProps>
   pending: Ref<boolean>
   error: Ref<Error | ApiResponseProps | null>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  load: (...parameters: any) => Promise<void>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  reload: (...parameters: any) => Promise<void>
-} {
+  load: (...args: unknown[]) => Promise<void>
+  reload: (...args: unknown[]) => Promise<void>
+}
+
+/**
+ * A composable that wraps data fetching with loading/error/data state management.
+ *
+ * Accepts either a URL string (uses `useRequest`) or a fetcher function.
+ */
+export function useLoading<
+  TData,
+  TBody = unknown,
+  TQuery = Record<string, unknown>,
+>(
+  fetcher: ((...args: unknown[]) => Promise<TData>) | string,
+  options?: LoadingOptionsType<TData, TBody, TQuery>,
+): LoadingResult<TData> {
   const defaultMeta: MetaProps = {
     current_page: 1,
     last_page: 1,
@@ -56,73 +50,72 @@ export function useLoading<
     total: 0,
   }
 
-  const data: Ref<T | null> = ref(null)
-  const pending: Ref<boolean> = ref(false)
-  const error: Ref<Error | ApiResponseProps | null> = ref(null)
+  const data = ref<TData | null>(null) as Ref<TData | null>
+  const pending = ref(false)
+  const error = ref<Error | ApiResponseProps | null>(null)
 
-  type ItemsType =
-    T extends PaginatedProps<infer U>
-      ? U[]
-      : T extends Array<infer U>
-        ? U[]
-        : T extends object
-          ? T[]
-          : unknown[]
-
-  const items = computed(() => {
+  const items: Ref<TData extends PaginatedProps<infer U> ? U[] : TData extends Array<infer U> ? U[] : TData[]> = computed(() => {
     const val = data.value
-    if (val && isObject(val) && 'items' in val) return (val as PaginatedProps<ItemsType[0]>).items
-    if (Array.isArray(val)) return val as unknown as ItemsType
-    return (val ? [val] : []) as ItemsType
-  })
+    if (val && typeof val === 'object' && 'items' in val) {
+      return (val as PaginatedProps<unknown>).items as TData extends PaginatedProps<infer U> ? U[] : TData[]
+    }
+    if (Array.isArray(val)) return val as unknown as TData[]
+    return val ? [val] : []
+  }) as any
 
   const meta = computed<MetaProps>(() => {
     const val = data.value
-    if (val && isObject(val) && 'meta' in val) return (val as PaginatedProps<ItemsType[0]>).meta
-    return defaultMeta
+    if (val && typeof val === 'object' && 'meta' in val) {
+      return (val as Record<string, unknown>).meta as MetaProps
+    }
+    // Return a fresh copy to prevent shared-reference mutation
+    return { ...defaultMeta }
   })
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const load = async (...parameters: any) => {
+  const load = async (...args: unknown[]) => {
     if (pending.value) return
     pending.value = true
     error.value = null
 
     try {
-      const res: T | ApiResponseProps =
-        typeof fetcher === 'string'
-          ? await useRequest<T>(
-              fetcher,
-              {
-                method: options?.method,
-                data: options?.body ? unref(options.body as TBody) : undefined,
-                params: options?.query ? unref(options.query as TQuery) : undefined,
-              },
-              {
-                schema: options?.schema,
-                allowEmptyArray: (options?.allowEmptyArray ?? true) as true,
-              },
-            )
-          : await fetcher(...parameters)
+      let res: TData | ApiResponseProps
 
-      if (typeof res === 'object' && 'type' in res && res.type === 'error') {
+      if (typeof fetcher === 'string') {
+        res = await useRequest<TData>(
+          fetcher,
+          {
+            method: options?.method,
+            data: options?.body ? unref(options.body as TBody) : undefined,
+            params: options?.query ? unref(options.query as TQuery) : undefined,
+          } as AxiosRequestConfig,
+          {
+            schema: options?.schema,
+            allowEmptyArray: true,
+          },
+        )
+      } else {
+        res = await fetcher(...args)
+      }
+
+      if (res && typeof res === 'object' && 'type' in res && (res as ApiResponseProps).type === 'error') {
         error.value = res as ApiResponseProps
       } else {
-        data.value = res as T
+        data.value = res as TData
       }
-    } catch (err) {
-      error.value =
-        err instanceof Error
-          ? err
-          : isObject(err)
-            ? (err as ApiResponseProps)
-            : new Error(String(err))
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        error.value = err
+      } else if (isObject(err)) {
+        error.value = err as ApiResponseProps
+      } else {
+        error.value = new Error(String(err))
+      }
     } finally {
       pending.value = false
     }
   }
 
-  if (options?.immediate) void load(...(options?.parameters || []))
+  if (options?.immediate) void load(...(options?.parameters ?? []))
 
   return {
     data,
@@ -132,12 +125,5 @@ export function useLoading<
     error,
     load,
     reload: load,
-  } as unknown as LoadingResult<T> & {
-    pending: Ref<boolean>
-    error: Ref<Error | ApiResponseProps | null>
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    load: (...parameters: any) => Promise<void>
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    reload: (...parameters: any) => Promise<void>
   }
 }

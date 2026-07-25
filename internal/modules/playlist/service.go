@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -12,15 +14,34 @@ var (
 	ErrInvalidPlaylistName     = errors.New("invalid playlist name")
 )
 
-type Service struct {
-	repo *Repository
+type RepositoryInterface interface {
+	CreatePlaylist(ctx context.Context, req CreatePlaylistRequest, userID uuid.UUID) (Playlist, error)
+	UpdatePlaylist(ctx context.Context, playlistID, userID uuid.UUID, req UpdatePlaylistRequest) (Playlist, error)
+	DeletePlaylist(ctx context.Context, playlistID, userID uuid.UUID) error
+	GetPlaylistByID(ctx context.Context, playlistID uuid.UUID) (Playlist, error)
+	ListPlaylistTracks(ctx context.Context, playlistID uuid.UUID) ([]PlaylistTrackItem, error)
+	ListPublicPlaylists(ctx context.Context) ([]PlaylistListItemResponse, error)
+	ListUserPlaylists(ctx context.Context, userID uuid.UUID) ([]PlaylistListItemResponse, error)
+	AddTrack(ctx context.Context, playlistID, trackID uuid.UUID) error
+	RemoveTrack(ctx context.Context, playlistID, trackID uuid.UUID) error
+	ReorderTrack(ctx context.Context, playlistID, trackID uuid.UUID, newPosition int) error
+	IsCollaborator(ctx context.Context, playlistID, userID string) (bool, error)
+	IsCollaborativePlaylist(ctx context.Context, playlistID string) (bool, error)
+	SetCollaborative(ctx context.Context, playlistID string, collab bool) error
+	AddCollaborator(ctx context.Context, playlistID, userID string) error
+	RemoveCollaborator(ctx context.Context, playlistID, userID string) error
+	ListCollaborators(ctx context.Context, playlistID string) ([]CollaboratorResponse, error)
 }
 
-func NewService(repo *Repository) *Service {
+type Service struct {
+	repo RepositoryInterface
+}
+
+func NewService(repo RepositoryInterface) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) CreatePlaylist(ctx context.Context, req CreatePlaylistRequest, userID int64) (Playlist, error) {
+func (s *Service) CreatePlaylist(ctx context.Context, req CreatePlaylistRequest, userID uuid.UUID) (Playlist, error) {
 	req.Name = strings.TrimSpace(req.Name)
 	if req.Name == "" {
 		return Playlist{}, ErrInvalidPlaylistName
@@ -29,7 +50,7 @@ func (s *Service) CreatePlaylist(ctx context.Context, req CreatePlaylistRequest,
 	return s.repo.CreatePlaylist(ctx, req, userID)
 }
 
-func (s *Service) UpdatePlaylist(ctx context.Context, playlistID, userID int64, req UpdatePlaylistRequest) (Playlist, error) {
+func (s *Service) UpdatePlaylist(ctx context.Context, playlistID, userID uuid.UUID, req UpdatePlaylistRequest) (Playlist, error) {
 	req.Name = strings.TrimSpace(req.Name)
 	if req.Name == "" {
 		return Playlist{}, ErrInvalidPlaylistName
@@ -38,7 +59,7 @@ func (s *Service) UpdatePlaylist(ctx context.Context, playlistID, userID int64, 
 	return s.repo.UpdatePlaylist(ctx, playlistID, userID, req)
 }
 
-func (s *Service) DeletePlaylist(ctx context.Context, playlistID, userID int64) error {
+func (s *Service) DeletePlaylist(ctx context.Context, playlistID, userID uuid.UUID) error {
 	p, err := s.repo.GetPlaylistByID(ctx, playlistID)
 	if err != nil {
 		return err
@@ -49,7 +70,7 @@ func (s *Service) DeletePlaylist(ctx context.Context, playlistID, userID int64) 
 	return s.repo.DeletePlaylist(ctx, playlistID, userID)
 }
 
-func (s *Service) GetPlaylist(ctx context.Context, playlistID int64, requesterID *int64) (Playlist, []PlaylistTrackItem, error) {
+func (s *Service) GetPlaylist(ctx context.Context, playlistID uuid.UUID, requesterID *uuid.UUID) (Playlist, []PlaylistTrackItem, error) {
 	p, err := s.repo.GetPlaylistByID(ctx, playlistID)
 	if err != nil {
 		return Playlist{}, nil, err
@@ -57,7 +78,17 @@ func (s *Service) GetPlaylist(ctx context.Context, playlistID int64, requesterID
 
 	if !p.IsPublic {
 		if requesterID == nil || *requesterID != p.UserID {
-			return Playlist{}, nil, ErrForbiddenPlaylistAccess
+			// Check if the requester is a collaborator on a collaborative playlist
+			if requesterID != nil {
+				isCollab, checkErr := s.repo.IsCollaborator(ctx, playlistID.String(), requesterID.String())
+				if checkErr == nil && isCollab {
+					// Collaborator gets access
+				} else {
+					return Playlist{}, nil, ErrForbiddenPlaylistAccess
+				}
+			} else {
+				return Playlist{}, nil, ErrForbiddenPlaylistAccess
+			}
 		}
 	}
 
@@ -73,11 +104,11 @@ func (s *Service) ListPublicPlaylists(ctx context.Context) ([]PlaylistListItemRe
 	return s.repo.ListPublicPlaylists(ctx)
 }
 
-func (s *Service) ListMyPlaylists(ctx context.Context, userID int64) ([]PlaylistListItemResponse, error) {
+func (s *Service) ListMyPlaylists(ctx context.Context, userID uuid.UUID) ([]PlaylistListItemResponse, error) {
 	return s.repo.ListUserPlaylists(ctx, userID)
 }
 
-func (s *Service) AddTrack(ctx context.Context, playlistID, userID, trackID int64) error {
+func (s *Service) AddTrack(ctx context.Context, playlistID, userID, trackID uuid.UUID) error {
 	p, err := s.repo.GetPlaylistByID(ctx, playlistID)
 	if err != nil {
 		return err
@@ -89,7 +120,7 @@ func (s *Service) AddTrack(ctx context.Context, playlistID, userID, trackID int6
 	return s.repo.AddTrack(ctx, playlistID, trackID)
 }
 
-func (s *Service) RemoveTrack(ctx context.Context, playlistID, userID, trackID int64) error {
+func (s *Service) RemoveTrack(ctx context.Context, playlistID, userID, trackID uuid.UUID) error {
 	p, err := s.repo.GetPlaylistByID(ctx, playlistID)
 	if err != nil {
 		return err
@@ -101,7 +132,7 @@ func (s *Service) RemoveTrack(ctx context.Context, playlistID, userID, trackID i
 	return s.repo.RemoveTrack(ctx, playlistID, trackID)
 }
 
-func (s *Service) ReorderTrack(ctx context.Context, playlistID, userID, trackID int64, newPosition int) error {
+func (s *Service) ReorderTrack(ctx context.Context, playlistID, userID, trackID uuid.UUID, newPosition int) error {
 	p, err := s.repo.GetPlaylistByID(ctx, playlistID)
 	if err != nil {
 		return err
@@ -111,4 +142,37 @@ func (s *Service) ReorderTrack(ctx context.Context, playlistID, userID, trackID 
 	}
 
 	return s.repo.ReorderTrack(ctx, playlistID, trackID, newPosition)
+}
+
+// Collaborator delegation methods
+func (s *Service) IsCollaborator(ctx context.Context, playlistID, userID string) (bool, error) {
+	return s.repo.IsCollaborator(ctx, playlistID, userID)
+}
+
+func (s *Service) IsCollaborativePlaylist(ctx context.Context, playlistID string) (bool, error) {
+	return s.repo.IsCollaborativePlaylist(ctx, playlistID)
+}
+
+func (s *Service) SetCollaborative(ctx context.Context, playlistID string, collab bool) error {
+	return s.repo.SetCollaborative(ctx, playlistID, collab)
+}
+
+func (s *Service) AddCollaborator(ctx context.Context, playlistID, userID string) error {
+	return s.repo.AddCollaborator(ctx, playlistID, userID)
+}
+
+func (s *Service) RemoveCollaborator(ctx context.Context, playlistID, userID string) error {
+	return s.repo.RemoveCollaborator(ctx, playlistID, userID)
+}
+
+func (s *Service) ListCollaborators(ctx context.Context, playlistID string) ([]CollaboratorResponse, error) {
+	return s.repo.ListCollaborators(ctx, playlistID)
+}
+
+func (s *Service) ListPlaylistTracks(ctx context.Context, playlistID string) ([]PlaylistTrackItem, error) {
+	pid, err := uuid.Parse(playlistID)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.ListPlaylistTracks(ctx, pid)
 }

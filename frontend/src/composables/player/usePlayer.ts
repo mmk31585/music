@@ -27,5 +27,18 @@ export function usePlayer() {
 
     playNext: player.playNext,
     playPrevious: player.playPrevious,
+
+    remainingShuffledQueue: player.remainingShuffledQueue,
+    setShuffleMode: player.setShuffleMode,
+    toggleShuffle: player.toggleShuffle,
+    toggleRepeat: player.toggleRepeat,
+    setPlaybackRate: player.setPlaybackRate,
+    updateQueue: player.updateQueue,
+    addToQueue: player.addToQueue,
+    playNextInQueue: player.playNextInQueue,
+    appendQueueAndPlay: player.appendQueueAndPlay,
+    setCrossfadeDuration: player.setCrossfadeDuration,
+    setSleepTimer: player.setSleepTimer,
+    clearSleepTimer: player.clearSleepTimer,
   }
 }

@@ -1,0 +1,96 @@
+import {
+  Home,
+  Search,
+  Sparkles,
+  TrendingUp,
+  Video,
+  Radio,
+  Library,
+  Heart,
+  ListMusic,
+  Album,
+  Disc3,
+  Clock,
+  Compass,
+  UserPlus,
+  Bell,
+  PartyPopper,
+  Bot,
+  Smile,
+  Shuffle,
+  Podcast,
+  Upload,
+  BarChart3,
+  TrendingUp as TrendingUpIcon,
+  Settings,
+  User,
+  CreditCard,
+} from 'lucide-vue-next'
+import type { NavSection } from './types'
+
+export const navSections: NavSection[] = [
+  {
+    id: 'discover',
+    label: 'Discover',
+    items: [
+      { id: 'home', label: 'Home', icon: Home, to: '/', section: 'discover' },
+      { id: 'search', label: 'Search', icon: Search, to: '/search', section: 'discover' },
+      { id: 'for-you', label: 'For You', icon: Sparkles, to: '/recommendations/for-you', section: 'discover' },
+      { id: 'trending', label: 'Trending', icon: TrendingUp, to: '/recommendations/popular', section: 'discover' },
+      { id: 'music-videos', label: 'Music Videos', icon: Video, to: '/videos', section: 'discover' },
+      { id: 'radio', label: 'Radio', icon: Radio, to: '/', section: 'discover', future: true },
+    ],
+  },
+  {
+    id: 'your-music',
+    label: 'Your Music',
+    items: [
+      { id: 'library', label: 'Library', icon: Library, to: '/library', section: 'your-music' },
+      { id: 'liked-songs', label: 'Liked Songs', icon: Heart, to: '/library', section: 'your-music', future: true },
+      { id: 'playlists', label: 'Playlists', icon: ListMusic, to: '/library', section: 'your-music' },
+      { id: 'albums', label: 'Albums', icon: Album, to: '/library', section: 'your-music', future: true },
+      { id: 'artists', label: 'Artists', icon: Disc3, to: '/library', section: 'your-music', future: true },
+      { id: 'recently-played', label: 'Recently Played', icon: Clock, to: '/library', section: 'your-music' },
+    ],
+  },
+  {
+    id: 'community',
+    label: 'Community',
+    items: [
+      { id: 'explore', label: 'Explore', icon: Compass, to: '/explore', section: 'community' },
+      { id: 'social', label: 'Friends', icon: UserPlus, to: '/social', section: 'community', permissions: 'auth' },
+      { id: 'notifications', label: 'Notifications', icon: Bell, to: '/notifications', section: 'community', permissions: 'auth' },
+      { id: 'parties', label: 'Listening Parties', icon: PartyPopper, to: '/social', section: 'community', future: true },
+    ],
+  },
+  {
+    id: 'ai',
+    label: 'AI',
+    items: [
+      { id: 'ai-playlist', label: 'AI Playlist', icon: Bot, to: '/ai/playlist-generator', section: 'ai' },
+      { id: 'mood-finder', label: 'Mood Finder', icon: Smile, to: '/ai/mood-explorer', section: 'ai' },
+      { id: 'smart-mix', label: 'Smart Mix', icon: Shuffle, to: '/', section: 'ai', future: true },
+      { id: 'ai-radio', label: 'AI Radio', icon: Podcast, to: '/', section: 'ai', future: true },
+    ],
+  },
+  {
+    id: 'creator',
+    label: 'Creator',
+    items: [
+      { id: 'upload', label: 'Upload Music', icon: Upload, to: '/contributions', section: 'creator', permissions: 'auth' },
+      { id: 'creator-dashboard', label: 'Creator Dashboard', icon: BarChart3, to: '/creator-dashboard', section: 'creator', permissions: 'auth' },
+      { id: 'analytics', label: 'Analytics', icon: TrendingUpIcon, to: '/stats', section: 'creator', permissions: 'auth' },
+      { id: 'contributions', label: 'Contributions', icon: Upload, to: '/contributions', section: 'creator', permissions: 'auth' },
+      { id: 'gamification', label: 'Gamification', icon: BarChart3, to: '/gamification', section: 'creator', permissions: 'auth' },
+    ],
+  },
+  {
+    id: 'settings',
+    label: 'Settings',
+    items: [
+      { id: 'profile', label: 'Profile', icon: User, to: '/profile', section: 'settings' },
+      { id: 'subscription', label: 'Subscription', icon: CreditCard, to: '/subscription', section: 'settings', permissions: 'auth' },
+      { id: 'settings-page', label: 'Settings', icon: Settings, to: '/settings', section: 'settings', permissions: 'auth' },
+    ],
+  },
+]

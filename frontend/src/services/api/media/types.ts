@@ -18,12 +18,14 @@ const optionalBoolean = z.preprocess((value) => {
 }, z.boolean().optional())
 
 export const UploadResponseSchema = z.object({
+  mediaId: z.union([z.string(), z.number()]).optional(),
   url: z.string().optional(),
   file_url: z.string().optional(),
   fileUrl: z.string().optional(),
   path: z.string().optional(),
 
   filename: z.string().optional(),
+  fileName: z.string().optional(),
   original_name: z.string().optional(),
   originalName: z.string().optional(),
 
@@ -39,3 +41,14 @@ export const UploadResponseSchema = z.object({
 })
 
 export type UploadResponse = z.infer<typeof UploadResponseSchema>
+
+export interface Media {
+  id: string | number
+  objectKey: string
+  originalFilename?: string | null
+  fileSize?: number | null
+  mimeType?: string | null
+  mediaType?: string | null
+  publicUrl?: string | null
+  createdAt?: string | null
+}

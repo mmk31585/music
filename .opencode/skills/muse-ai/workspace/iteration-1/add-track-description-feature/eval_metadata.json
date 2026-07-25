@@ -1,0 +1,37 @@
+{
+  "eval_id": 1,
+  "eval_name": "add-track-description-feature",
+  "prompt": "I need to add a new AI feature to Muse — a 'track description' generator that takes a track ID and generates a paragraph describing the track (genre, mood, instrumentation, vibe) using OpenAI. What files do I need to touch in the Go backend and how should I structure it?",
+  "assertions": [
+    {
+      "name": "mentions AIClient interface",
+      "description": "Response mentions adding GenerateTrackDescription to the AIClient interface in client.go",
+      "type": "text-match"
+    },
+    {
+      "name": "covers all 7 module files",
+      "description": "Response covers client.go, model.go, service.go, handler.go, repository.go, dto.go, routes.go",
+      "type": "text-match"
+    },
+    {
+      "name": "includes migration file",
+      "description": "Response includes creating a SQL migration for track_descriptions table",
+      "type": "text-match"
+    },
+    {
+      "name": "references module pattern",
+      "description": "Response references the handler → service → repository module pattern",
+      "type": "text-match"
+    },
+    {
+      "name": "mentions fallback client",
+      "description": "Response mentions implementing on fallbackClient for when no API key is set",
+      "type": "text-match"
+    },
+    {
+      "name": "includes frontend integration",
+      "description": "Response mentions updating frontend API routes/enums/types",
+      "type": "text-match"
+    }
+  ]
+}

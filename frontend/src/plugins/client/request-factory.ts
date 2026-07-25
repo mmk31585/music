@@ -10,6 +10,7 @@ import {
 import { type AxiosError, type AxiosInstance, type AxiosRequestConfig } from 'axios'
 import type { ZodError, ZodSafeParseResult } from 'zod'
 import z from 'zod'
+import { translateMessage } from '@/utils/message-translations'
 
 /**
  * Build a request wrapper that uses the supplied Axios instance
@@ -47,7 +48,7 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
 
     if (isFormData && config.headers) {
       // Let browser set multipart boundary automatically.
-      delete (config.headers as Record<string, unknown>)['Content-Type']
+      delete (config.headers as Record<string, any>)['Content-Type']
     }
 
     // Attach maintenance secret if present
@@ -85,13 +86,13 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
   /* -------------------------------------------------------------------------- */
   let isRefreshing = false
   type QueueItem = {
-    resolve: (val?: unknown) => void
-    reject: (err: unknown) => void
+    resolve: (val?: any) => void
+    reject: (err: any) => void
     config: AxiosRequestConfig
   }
   let failedQueue: QueueItem[] = []
 
-  function processQueue(error: unknown, token: string | null = null) {
+  function processQueue(error: any, token: string | null = null) {
     failedQueue.forEach((p) => {
       if (error) {
         p.reject(error)
@@ -118,7 +119,8 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
       if (status === ResponseStatuses.HTTP_FORBIDDEN) {
         resetAuthStore()
         clearAuthToken()
-        await redirectToLogin()
+        const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : undefined
+        await redirectToLogin(currentPath)
 
         return Promise.reject(error)
       }
@@ -159,7 +161,8 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
 
           resetAuthStore()
           clearAuthToken()
-          await redirectToLogin()
+          const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : undefined
+          await redirectToLogin(currentPath)
 
           return Promise.reject(refreshError)
         } finally {
@@ -181,18 +184,31 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
   ): Promise<IsArray extends true ? T[] : T> {
     type DataType = IsArray extends true ? T[] : T
 
-    function isPaginatedResponse(value: unknown): value is PaginatedProps<T> {
-      return (value &&
-        typeof value === 'object' &&
-        Array.isArray((value as PaginatedProps<T>).items) &&
-        !!(value as PaginatedProps<T>).meta) as boolean
+    function isPaginatedResponse(value: any): value is PaginatedProps<T> {
+      if (value === null || typeof value !== 'object') return false
+      if (!Array.isArray((value as Record<string, unknown>).items)) return false
+
+      const v = value as Record<string, unknown>
+
+      // Detect page-based pagination (total + page + limit | page_size) —
+      // the standard ingestion/catalog/auth-admin pattern.
+      if (typeof v.total === 'number') return true
+
+      // Detect total_count (snake_case variant used by social/follow).
+      if (typeof v.total_count === 'number') return true
+
+      // Detect offset-based pagination (count + limit + offset) —
+      // used by video, reactions, moderation (flat; not nested in pagination meta).
+      if (typeof v.count === 'number' && typeof v.limit === 'number') return true
+
+      return false
     }
 
     function invalidZodSchema(
-      onAnyError: ((data: unknown | null, msg: string) => void) | undefined,
-      onError: ((data: unknown, msg: string) => boolean | void) | undefined,
+      onAnyError: ((data: any | null, msg: string) => void) | undefined,
+      onError: ((data: any, msg: string) => boolean | void) | undefined,
       silent: boolean,
-      validation: ZodSafeParseResult<unknown>,
+      validation: ZodSafeParseResult<any>,
     ): string {
       // Turn a validation failure into a “non‑critical” error
       const zErr = validation.error as ZodError
@@ -210,7 +226,7 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
       return msg
     }
 
-    return new Promise<DataType>((resolve, reject: (reason: unknown) => void) => {
+    return new Promise<DataType>((resolve, reject: (reason: any) => void) => {
       // ----- callbacks -------------------------------------------------
       const silent = resultConfig?.silent === true
       const allowEmptyArray =
@@ -228,20 +244,45 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
       const requestConfig = (config ?? {}) as AxiosRequestConfig
       requestConfig.method = requestConfig.method ?? 'GET'
 
+      if (resultConfig?.headers) {
+        requestConfig.headers = { ...(requestConfig.headers ?? {}), ...resultConfig.headers }
+      }
+
       // ----- actual request --------------------------------------------
       client(url, requestConfig)
         .then((response) => {
           // The server may wrap the payload in a `data` field or return it directly.
           const raw = response.data ?? {}
+          // Only use fallback to `raw` when the response doesn't have its own `data` key.
+          // If `data` exists but is null/undefined, use empty object/array instead of the
+          // whole response wrapper (which would fail Zod schema validation downstream).
+          let dataValue = Object.prototype.hasOwnProperty.call(raw, 'data') ? (raw.data ?? {}) : raw
+
+          // Merge pagination metadata when the backend sends data as a plain
+          // array with pagination info in a top-level `meta` field.
+          if (Array.isArray(dataValue) && raw?.meta && typeof raw.meta === 'object') {
+            dataValue = { items: dataValue, ...raw.meta }
+          }
+
           const payload: ApiResponseProps<T | T[] | PaginatedProps<T>> = {
             type: raw?.type as ResponseTypes,
-            data: raw?.data ?? raw,
+            data: dataValue as T | T[] | PaginatedProps<T>,
             message: raw?.message as string,
             run_time: raw?.run_time as string,
           }
 
           // ----- zod validation -----------------------------------------
           if (resultConfig?.schema) {
+            // Skip schema validation for error responses. When the
+            // backend explicitly signals failure (success=false), there
+            // is no data payload to validate — the error object would
+            // fail every field check and produce a misleading schema
+            // error like "expected string, received undefined" for
+            // every field.
+            if (raw.success === false) {
+              // Fall through: resolve with the error payload as-is,
+              // without Zod validation.
+            } else {
             const schema = resultConfig.schema as z.ZodTypeAny
             const data = payload.data
 
@@ -258,9 +299,28 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
                 return
               }
 
+              // Extract meta from either explicit meta field or flattened pagination fields,
+              // then spread it alongside items for caller convenience.
+              // Supports:
+              //   - page-based pagination: { total, page, limit|page_size }
+              //   - total_count variant: { total_count, limit, offset } (social/follow)
+              //   - offset-based pagination: { count, limit, offset, has_more }
+              let meta: Record<string, unknown>
+              if (data.meta) {
+                meta = data.meta as unknown as Record<string, unknown>
+              } else if (typeof data.total === 'number') {
+                meta = { total: data.total, page: data.page, limit: data.limit ?? data.page_size }
+              } else if (typeof data.total_count === 'number') {
+                meta = { total_count: data.total_count, limit: data.limit, offset: data.offset }
+              } else if (typeof data.count === 'number') {
+                meta = { count: data.count, limit: data.limit, offset: data.offset, has_more: data.has_more }
+              } else {
+                meta = {}
+              }
+
               payload.data = {
+                ...meta,
                 items: validation.data,
-                meta: data.meta,
               } as DataType
             } else {
               const isArray = Array.isArray(data)
@@ -278,12 +338,17 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
               // If it succeeded, replace `payload.data` with the parsed value
               payload.data = validation.data as DataType
             }
+            } // end else (raw.success !== false)
           }
 
           // ----- total count logic --------------------------------------
           let total = 0
           if (raw?.meta?.total) {
             total = raw.meta.total
+          } else if (typeof raw?.meta?.count === 'number') {
+            total = raw.meta.count
+          } else if (typeof (payload.data as Record<string, unknown>)?.count === 'number') {
+            total = (payload.data as Record<string, unknown>).count as number
           } else if (Array.isArray(payload.data)) {
             total = payload.data.length
           } else if (payload.data && typeof payload.data === 'object') {
@@ -304,10 +369,11 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
             payload.message &&
             response.status !== ResponseStatuses.HTTP_NO_CONTENT
           ) {
+            const translated = translateMessage(payload.message) || payload.message
             if (payload.type) {
-              if (toast?.[payload.type]) toast?.[payload.type]!(payload.message)
-              else if (window) alert(payload.message)
-              else console.info(payload.message)
+              if (toast?.[payload.type]) toast?.[payload.type]!(translated)
+              else if (window) alert(translated)
+              else console.info(translated)
             }
           }
 
@@ -318,7 +384,9 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
           const errRaw = errResp?.data ?? {}
           const errPayload: ApiResponseProps = {
             type: errRaw?.type,
-            data: errRaw?.data ?? errRaw,
+            // Same safety as the success path: only use fallback when the
+            // error response genuinely has no `data` key of its own.
+            data: Object.prototype.hasOwnProperty.call(errRaw, 'data') ? (errRaw.data ?? {}) : errRaw,
             message: errRaw?.message ?? errResp?.statusText ?? error?.message ?? 'خطای ناشناخته',
             run_time: errRaw?.run_time,
           }
@@ -340,18 +408,14 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
               if (typeof onCriticalError === 'function')
                 onCriticalError(errPayload.message as string)
 
-              const defaultMsg = 'خطا در ارتباط با سرور و دریافت اطلاعات!'
               if (!silent) {
-                if (errPayload.type && errPayload.message) {
-                  if (toast?.[errPayload.type])
-                    toast?.[errPayload.type]!(errPayload.message || defaultMsg)
-                  else if (window) alert(errPayload.message || defaultMsg)
-                  else console.error(errPayload.message || defaultMsg)
-                } else {
-                  if (toast?.['error']) toast?.['error'](defaultMsg)
-                  else if (window) alert(defaultMsg)
-                  else console.error(defaultMsg)
-                }
+                const translated = errPayload.message
+                  ? (translateMessage(errPayload.message) || errPayload.message)
+                  : 'خطا در ارتباط با سرور و دریافت اطلاعات!'
+                const severity = errPayload.type ?? 'error'
+                if (toast?.[severity]) toast[severity]!(translated)
+                else if (window) alert(translated)
+                else console.error(translated)
               }
             }
             reject(errPayload)
@@ -369,14 +433,15 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
           }
 
           if (!silent && continueDefault && errPayload.message) {
+            const translated = translateMessage(errPayload.message) || errPayload.message
             if (errPayload.type) {
-              if (toast[errPayload.type]) toast[errPayload.type]!(errPayload.message)
-              else if (window) alert(errPayload.message)
-              else console.error(errPayload.message)
+              if (toast[errPayload.type]) toast[errPayload.type]!(translated)
+              else if (window) alert(translated)
+              else console.error(translated)
             } else {
-              if (toast?.['error']) toast?.['error'](errPayload.message)
-              else if (window) alert(errPayload.message)
-              else console.error(errPayload.message)
+              if (toast?.['error']) toast?.['error'](translated)
+              else if (window) alert(translated)
+              else console.error(translated)
             }
           }
 

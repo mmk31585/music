@@ -1,21 +1,45 @@
 import { axiosClient, createRequestWrapper } from '@/plugins'
 import type { RefreshToken, RequestHooks } from '@/plugins/client/types'
-import { useUserAuthStore } from '@/stores'
-import { useMaintenance } from '@/composables'
+import { useUserAuthStore } from '@/stores/user-auth'
+import { useMaintenance } from '@/composables/useMaintenance'
 import { type Router } from 'vue-router'
-import { useAuthApi } from '@/services/api'
+import { useAuthApi } from '@/services/api/auth/routes'
 import type { ToastServiceMethods } from 'primevue/toastservice'
 import type { AxiosRequestConfig } from 'axios'
 
 let router: Router | null = null
 let toast: ToastServiceMethods | null = null
+let _initialized = false
+const _pendingInit: Array<() => void> = []
 
 export function registerRouter(r: Router) {
   router = r
+  checkInit()
+}
+
+export function useGlobalToast(): ToastServiceMethods | null {
+  return toast
 }
 
 export function registerToast(t: ToastServiceMethods) {
   toast = t
+  checkInit()
+}
+
+function checkInit() {
+  if (_initialized) return
+  if (router && toast) {
+    _initialized = true
+    _pendingInit.splice(0).forEach((fn) => fn())
+  }
+}
+
+/** Returns a promise that resolves when both router and toast are registered. */
+export function useRequestReady(): Promise<void> {
+  if (_initialized) return Promise.resolve()
+  return new Promise((resolve) => {
+    _pendingInit.push(resolve)
+  })
 }
 
 /**
@@ -54,18 +78,38 @@ const UIHooks: RequestHooks = {
     useUserAuthStore().clearToken()
   },
   resetAuthStore() {
-    useUserAuthStore().clearUser()
+    const store = useUserAuthStore()
+    store.clearUser()
+    store.clearToken()
   },
-  async redirectToLogin() {
-    await router?.push({ name: 'login' })
+  async redirectToLogin(currentPath?: string) {
+    await router?.push(
+      currentPath
+        ? { name: 'auth.login', query: { redirect: currentPath } }
+        : { name: 'auth.login' },
+    )
   },
 
   // ---------------- Refresh token ----------------
   refreshToken(): Promise<RefreshToken> {
-    return useAuthApi().refresh()
+    const store = useUserAuthStore()
+    const token = store.entity?.refresh_token
+    if (!token) {
+      return Promise.reject(new Error('No refresh token available'))
+    }
+    return useAuthApi().refresh(token).then((res) => {
+      if (res?.refresh_token) {
+        store.setRefreshToken(res.refresh_token)
+      }
+      return res
+    })
   },
   refreshTokenUrlRejecter(config: AxiosRequestConfig): boolean {
-    return !!config.url?.includes('/auth/refresh')
+    const store = useUserAuthStore()
+    // Don't try to refresh when:
+    // 1. The failing request is itself the refresh endpoint (avoid loops), OR
+    // 2. The user has no stored token (first-time 401, e.g. bad login credentials)
+    return !!config.url?.includes('/auth/refresh') || !store.token
   },
 
   // ---------------- Extras ----------------

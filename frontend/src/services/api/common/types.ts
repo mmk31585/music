@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { UserSchema } from '@/services/api'
+import { UserSchema } from '@/services/api/auth/types'
 import type { ApiResponseProps } from '@/plugins/client/types.ts'
 
 export type ApiClientError = Omit<ApiResponseProps, 'data'> & {

@@ -1,0 +1,43 @@
+groups:
+  - name: musicapp-api
+    interval: 30s
+    rules:
+      - alert: HighErrorRate
+        expr: rate(music_http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API error rate above 5%"
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, sum(rate(music_http_request_duration_seconds_bucket[5m])) by (le)) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "P95 request latency above 2s"
+
+      - alert: HighDatabaseErrorRate
+        expr: rate(music_database_queries_total{status="error"}[5m]) / rate(music_database_queries_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database error rate above 5%"
+
+      - alert: WorkerFailures
+        expr: rate(music_worker_runs_total{status="error"}[10m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Workers failing more than once per 10m"
+
+      - alert: NoEvents
+        expr: rate(music_events_published_total[10m]) == 0
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "No events published in the last 10 minutes"

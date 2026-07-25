@@ -6,6 +6,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+
+	"music/internal/platform/web"
 )
 
 type Handler struct {
@@ -16,8 +18,20 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// ListNotifications godoc
+// @Summary List notifications
+// @Description Returns paginated notifications for the authenticated user.
+// @Tags notifications
+// @Produce json
+// @Security Bearer
+// @Param limit query int false "Maximum number of items to return" default(20)
+// @Param offset query int false "Number of items to skip" default(0)
+// @Success 200 {object} ListNotificationsResponse
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /notifications [get]
 func (h *Handler) ListNotifications(c *gin.Context) {
-	userID, ok := getUserID(c)
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
@@ -35,8 +49,21 @@ func (h *Handler) ListNotifications(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+// MarkAsRead godoc
+// @Summary Mark notification as read
+// @Description Marks a specific notification as read for the authenticated user.
+// @Tags notifications
+// @Produce json
+// @Security Bearer
+// @Param id path string true "Notification ID"
+// @Success 200 {object} MarkReadResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /notifications/{id}/read [patch]
 func (h *Handler) MarkAsRead(c *gin.Context) {
-	userID, ok := getUserID(c)
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
@@ -63,8 +90,18 @@ func (h *Handler) MarkAsRead(c *gin.Context) {
 	})
 }
 
+// MarkAllAsRead godoc
+// @Summary Mark all notifications as read
+// @Description Marks all notifications as read for the authenticated user.
+// @Tags notifications
+// @Produce json
+// @Security Bearer
+// @Success 200 {object} MarkReadResponse
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /notifications/read-all [patch]
 func (h *Handler) MarkAllAsRead(c *gin.Context) {
-	userID, ok := getUserID(c)
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
@@ -79,21 +116,4 @@ func (h *Handler) MarkAllAsRead(c *gin.Context) {
 	c.JSON(http.StatusOK, MarkReadResponse{
 		Message: "All notifications marked as read",
 	})
-}
-
-func getUserID(c *gin.Context) (string, bool) {
-	keys := []string{"userID", "userId", "user_id", "sub"}
-
-	for _, key := range keys {
-		value, exists := c.Get(key)
-		if !exists {
-			continue
-		}
-
-		if s, ok := value.(string); ok && s != "" {
-			return s, true
-		}
-	}
-
-	return "", false
 }

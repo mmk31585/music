@@ -1,0 +1,31 @@
+<template>
+  <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
+    <TrackRow
+      v-for="(track, index) in tracks"
+      :key="String(track.id)"
+      :track="track"
+      :index="index"
+      :queue="queue"
+    />
+    <div v-if="!tracks.length" class="flex flex-col items-center gap-2 px-6 py-12 text-center">
+      <Music aria-hidden="true" class="text-2xl text-slate-500"  />
+      <p class="text-sm text-slate-400">
+        {{ emptyMessage || 'No tracks' }}
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { Music } from 'lucide-vue-next'
+import { computed } from 'vue'
+import TrackRow from './TrackRow.vue'
+import type { Track } from '@/services/api/catalog/tracks'
+
+const props = defineProps<{
+  tracks: Track[]
+  emptyMessage?: string
+}>()
+
+const queue = computed(() => props.tracks)
+</script>

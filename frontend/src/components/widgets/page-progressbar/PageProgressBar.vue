@@ -105,7 +105,7 @@ function stop(): void {
 
 /* ---------- Reactivity ---------- */
 watchImmediate(
-  () => loadingStore.isLoading,
+  () => loadingStore.loading,
   (newVal) => (newVal ? !isLoading.value && start() : stop()),
 )
 
@@ -128,7 +128,7 @@ onBeforeUnmount(() => {
   font-size: 0;
   position: fixed;
   top: 0;
-  left: 0;
+  inset-inline-start: 0;
   height: 5px;
   width: 100%;
   opacity: 0;
@@ -153,12 +153,12 @@ onBeforeUnmount(() => {
   height: 100%;
   width: 50%;
   overflow: hidden;
-  border-radius: 0 0 5px 0;
+  border-end-end-radius: 5px;
   transition: var(--delay) width ease-out;
 }
 
 .loader > .light {
-  float: right;
+  float: inline-end;
   height: 100%;
   width: 180px;
   background-image: linear-gradient(to right, transparent, #a5c8ec, transparent);
@@ -169,18 +169,18 @@ onBeforeUnmount(() => {
   display: inline-block;
   height: 100%;
   width: 30px;
-  margin-left: -30px;
-  border-radius: 0 0 5px 0;
+  margin-inline-start: -30px;
+  border-end-end-radius: 5px;
   box-shadow: 0 0 10px #6c7a89;
 }
 
 @keyframes loading-animation {
   0%,
   50% {
-    margin-right: 100%;
+    margin-inline-start: 100%;
   }
   100% {
-    margin-right: -10%;
+    margin-inline-start: -10%;
   }
 }
 </style>

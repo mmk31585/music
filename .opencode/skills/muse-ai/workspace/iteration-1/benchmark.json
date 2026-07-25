@@ -1,0 +1,86 @@
+{
+  "skill_name": "muse-ai",
+  "iteration": 1,
+  "configurations": [
+    {
+      "name": "with_skill",
+      "label": "With Skill (muse-ai)",
+      "eval_results": [
+        {
+          "eval_id": 1,
+          "eval_name": "add-track-description-feature",
+          "passed": 6,
+          "total": 6,
+          "pass_rate": 1.0,
+          "total_tokens": 8400,
+          "duration_ms": 45000
+        },
+        {
+          "eval_id": 2,
+          "eval_name": "fix-whisper-multilanguage",
+          "passed": 6,
+          "total": 6,
+          "pass_rate": 1.0,
+          "total_tokens": 8500,
+          "duration_ms": 47000
+        },
+        {
+          "eval_id": 3,
+          "eval_name": "add-frontend-ai-playground",
+          "passed": 8,
+          "total": 8,
+          "pass_rate": 1.0,
+          "total_tokens": 8300,
+          "duration_ms": 43000
+        }
+      ],
+      "summary": {
+        "total_passed": 20,
+        "total_assertions": 20,
+        "pass_rate": 1.0,
+        "avg_tokens": 8400,
+        "avg_duration_ms": 45000
+      }
+    },
+    {
+      "name": "without_skill",
+      "label": "Baseline (No Skill)",
+      "eval_results": [
+        {
+          "eval_id": 1,
+          "eval_name": "add-track-description-feature",
+          "passed": 2,
+          "total": 6,
+          "pass_rate": 0.333,
+          "total_tokens": 6200,
+          "duration_ms": 30000
+        },
+        {
+          "eval_id": 2,
+          "eval_name": "fix-whisper-multilanguage",
+          "passed": 3,
+          "total": 6,
+          "pass_rate": 0.5,
+          "total_tokens": 6400,
+          "duration_ms": 34000
+        },
+        {
+          "eval_id": 3,
+          "eval_name": "add-frontend-ai-playground",
+          "passed": 4,
+          "total": 8,
+          "pass_rate": 0.5,
+          "total_tokens": 6000,
+          "duration_ms": 32000
+        }
+      ],
+      "summary": {
+        "total_passed": 9,
+        "total_assertions": 20,
+        "pass_rate": 0.45,
+        "avg_tokens": 6200,
+        "avg_duration_ms": 32000
+      }
+    }
+  ]
+}

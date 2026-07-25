@@ -111,7 +111,7 @@ func (s *service) ForYou(ctx context.Context, userID string, limit int) ([]Track
 		}
 	}
 
-	// 1. Followed artists
+	// 1. Followed artist
 	followedArtistIDs, err := s.repo.GetFollowedArtistIDs(ctx, userID, 10)
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func (s *service) ForYou(ctx context.Context, userID string, limit int) ([]Track
 		addItems(items, 5)
 	}
 
-	// 2. Top artists from listening history
+	// 2. Top artist from listening history
 	topArtistIDs, err := s.repo.GetTopArtistIDs(ctx, userID, 10)
 	if err != nil {
 		return nil, err
@@ -184,6 +184,10 @@ func (s *service) ForYou(ctx context.Context, userID string, limit int) ([]Track
 		addItems(items, 1)
 	}
 
+	if len(candidates) == 0 {
+		return s.PopularTracks(ctx, limit)
+	}
+
 	// Optionally exclude already liked tracks from results
 	likedSet := map[string]struct{}{}
 	for _, id := range likedTrackIDs {
@@ -201,6 +205,10 @@ func (s *service) ForYou(ctx context.Context, userID string, limit int) ([]Track
 		if len(result) >= limit {
 			break
 		}
+	}
+
+	if len(result) == 0 {
+		return s.PopularTracks(ctx, limit)
 	}
 
 	return result, nil

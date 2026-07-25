@@ -1,202 +1,227 @@
 <template>
-  <div class="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg">
-    <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-      <div>
-        <h2 class="text-xl font-bold text-white">Genres</h2>
-        <p class="mt-2 text-sm text-slate-400">Manage genre names used by tracks.</p>
+  <div>
+    <!-- Toolbar -->
+    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-sm tabular-nums text-slate-500">
+          {{ genres.length }} genre{{ genres.length !== 1 ? 's' : '' }}
+        </span>
       </div>
 
       <Button
         label="Add genre"
         icon="pi pi-plus"
-        class="border-0 bg-[#1db954] text-black"
+        size="small"
+        class="rounded-xl! bg-emerald-500! px-4! text-black! hover:bg-emerald-400!"
         @click="openCreate"
       />
     </div>
 
-    <DataTable
-      :value="genres"
-      :loading="loading"
-      data-key="id"
-      responsive-layout="scroll"
-      class="overflow-hidden rounded-2xl"
-    >
-      <Column field="id" header="ID" sortable />
-
-      <Column field="name" header="Name" sortable />
-
-      <Column header="Actions">
-        <template #body="{ data }">
-          <div class="flex gap-2">
-            <Button icon="pi pi-pencil" severity="secondary" text rounded @click="openEdit(data)" />
-
-            <Button
-              icon="pi pi-trash"
-              severity="danger"
-              text
-              rounded
-              :loading="deleting"
-              @click="handleDelete(data.id)"
-            />
-          </div>
-        </template>
-      </Column>
-
-      <template #empty>
-        <div class="py-8 text-center text-sm text-slate-400">No genres found.</div>
-      </template>
-    </DataTable>
-
-    <Dialog
-      v-model:visible="dialogVisible"
-      modal
-      :header="editingGenre ? 'Edit genre' : 'Add genre'"
-      class="w-full max-w-lg"
-    >
-      <div class="flex flex-col gap-4">
-        <div>
-          <label class="mb-2 block text-sm font-medium text-slate-300"> Name </label>
-
-          <InputText v-model="form.name" class="w-full" placeholder="Genre name" autofocus />
-        </div>
-
-        <div
-          v-if="errorMessage"
-          class="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
-        >
-          {{ errorMessage }}
+    <!-- Content -->
+    <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
+      <!-- Loading State -->
+      <div v-if="loading" class="p-6">
+        <div class="flex flex-wrap gap-3">
+          <div
+            v-for="i in 8"
+            :key="i"
+            class="h-9 animate-pulse rounded-full bg-white/6"
+            :style="{ width: `${60 + Math.random() * 60}px` }"
+          />
         </div>
       </div>
 
-      <template #footer>
-        <Button
-          label="Cancel"
-          severity="secondary"
-          outlined
-          :disabled="saving"
-          @click="dialogVisible = false"
-        />
+      <!-- Empty State -->
+      <AdminEmptyState
+        v-else-if="genres.length === 0"
+        icon="pi pi-tags"
+        title="No genres yet"
+        description="Create your first music genre to categorize tracks."
+      >
+        <template #action>
+          <Button
+            label="Add genre"
+            icon="pi pi-plus"
+            size="small"
+            class="rounded-xl! bg-emerald-500! px-4! text-black! hover:bg-emerald-400!"
+            @click="openCreate"
+          />
+        </template>
+      </AdminEmptyState>
 
-        <Button
-          :label="editingGenre ? 'Save changes' : 'Create genre'"
-          icon="pi pi-check"
-          :loading="saving"
-          :disabled="!canSubmit"
-          class="border-0 bg-[#1db954] text-black"
-          @click="submit"
+      <!-- Genre Grid -->
+      <div v-else class="p-5">
+        <div class="flex flex-wrap gap-2">
+          <div
+            v-for="genre in genres"
+            :key="genre.id"
+            class="group flex items-center gap-2 rounded-full border border-white/8 bg-white/3 py-1.5 pl-4 pr-2 transition-all hover:border-emerald-500/20 hover:bg-emerald-500/5"
+          >
+            <span class="text-sm text-slate-300 group-hover:text-white">{{ genre.name }}</span>
+
+            <div class="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+              <Button
+                icon="pi pi-pencil"
+                text
+                rounded
+                size="small"
+                class="h-6! w-6! text-xs! text-slate-500! hover:text-emerald-400!"
+                @click="openEdit(genre)"
+              />
+              <Button
+                icon="pi pi-times"
+                text
+                rounded
+                size="small"
+                class="h-6! w-6! text-xs! text-slate-500! hover:text-red-400!"
+                @click="openDeleteConfirm(genre)"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inline Create/Edit -->
+    <Dialog
+      v-model:visible="showForm"
+      modal
+      :draggable="false"
+      :style="{ width: '400px' }"
+      :pt="{
+        root: { class: 'border-white/6! bg-surface-raised! rounded-2xl! shadow-2xl!' },
+        header: { class: 'bg-transparent! border-0! pb-2!' },
+        content: { class: 'bg-transparent! px-6! pt-0! pb-2!' },
+        footer: { class: 'bg-transparent! border-0!' },
+        mask: { class: 'backdrop-blur-xs!' },
+      }"
+    >
+      <template #header>
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10">
+            <Tag aria-hidden="true" class="text-purple-400"  />
+          </div>
+          <h3 class="text-base font-semibold text-white">
+            {{ selectedGenre ? 'Edit genre' : 'New genre' }}
+          </h3>
+        </div>
+      </template>
+
+      <div class="mt-4">
+        <label class="mb-1.5 block text-xs font-medium text-slate-400">
+          Name <span class="text-red-400">*</span>
+        </label>
+        <InputText
+          v-model="genreName"
+          placeholder="e.g. Hip-Hop, Jazz, Electronic"
+          class="w-full rounded-xl! border-white/8! bg-white/3! text-white! placeholder:text-slate-600! focus:border-emerald-500/40!"
+          autofocus
+          @keydown.enter="handleSubmitGenre"
         />
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <Button
+            label="Cancel"
+            text
+            :disabled="saving"
+            class="text-slate-400! hover:text-white!"
+            @click="showForm = false"
+          />
+          <Button
+            :label="selectedGenre ? 'Save' : 'Create'"
+            :loading="saving"
+            class="rounded-xl! bg-emerald-500! text-black! hover:bg-emerald-400!"
+            @click="handleSubmitGenre"
+          />
+        </div>
       </template>
     </Dialog>
+
+    <!-- Delete Confirm -->
+    <AdminDeleteConfirm
+      v-model="showDelete"
+      title="Delete genre"
+      :item-name="deleteTarget?.name"
+      :deleting="deleting"
+      @confirm="handleDelete"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
-import Button from 'primevue/button'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
+import { Tag } from 'lucide-vue-next'
+import { ref, onMounted } from 'vue'
 import { useToast } from 'primevue/usetoast'
-
-import { useAdminGenres } from '@/composables/admin'
-import type { Genre } from '@/services/api/catalog'
+import AdminEmptyState from './AdminEmptyState.vue'
+import AdminDeleteConfirm from './AdminDeleteConfirm.vue'
+import { useAdminGenres } from '@/composables/admin/useAdminGenres'
+import type { Genre } from '@/services/api/catalog/genres'
 
 const toast = useToast()
+const {
+  genres,
+  loading,
+  saving,
+  deleting,
+  fetchGenres,
+  createGenre,
+  updateGenre,
+  deleteGenre,
+} = useAdminGenres()
 
-const { genres, loading, saving, deleting, fetchGenres, createGenre, updateGenre, deleteGenre } =
-  useAdminGenres()
+const showForm = ref(false)
+const showDelete = ref(false)
+const selectedGenre = ref<Genre | null>(null)
+const deleteTarget = ref<Genre | null>(null)
+const genreName = ref('')
 
-const dialogVisible = ref(false)
-const editingGenre = ref<Genre | null>(null)
-const errorMessage = ref('')
-
-const form = reactive({
-  name: '',
-})
-
-const canSubmit = computed(() => {
-  return form.name.trim().length > 0 && !saving.value
-})
-
-onMounted(() => {
-  fetchGenres()
-})
-
-function resetForm() {
-  form.name = ''
-  errorMessage.value = ''
-  editingGenre.value = null
-}
+onMounted(fetchGenres)
 
 function openCreate() {
-  resetForm()
-  dialogVisible.value = true
+  selectedGenre.value = null
+  genreName.value = ''
+  showForm.value = true
 }
 
 function openEdit(genre: Genre) {
-  editingGenre.value = genre
-  form.name = genre.name
-  errorMessage.value = ''
-  dialogVisible.value = true
+  selectedGenre.value = genre
+  genreName.value = genre.name
+  showForm.value = true
 }
 
-async function submit() {
-  if (!canSubmit.value) return
+function openDeleteConfirm(genre: Genre) {
+  deleteTarget.value = genre
+  showDelete.value = true
+}
 
-  errorMessage.value = ''
+async function handleSubmitGenre() {
+  if (genreName.value.trim!()) return
 
   try {
-    if (editingGenre.value) {
-      const updated = await updateGenre(editingGenre.value.id, {
-        name: form.name.trim(),
-      })
-
-      toast.add({
-        severity: 'success',
-        summary: 'Genre updated',
-        detail: updated.name,
-        life: 2500,
-      })
+    if (selectedGenre.value) {
+      await updateGenre(selectedGenre.value.id, { name: genreName.value.trim() })
+      toast.add({ severity: 'success', summary: 'Genre updated', life: 2500 })
     } else {
-      const created = await createGenre({
-        name: form.name.trim(),
-      })
-
-      toast.add({
-        severity: 'success',
-        summary: 'Genre created',
-        detail: created.name,
-        life: 2500,
-      })
+      await createGenre({ name: genreName.value.trim() })
+      toast.add({ severity: 'success', summary: 'Genre created', life: 2500 })
     }
-
-    dialogVisible.value = false
-    resetForm()
+    showForm.value = false
   } catch {
-    errorMessage.value = 'Could not save genre. Please try again.'
+    toast.add({ severity: 'error', summary: 'Operation failed', life: 3000 })
   }
 }
 
-async function handleDelete(id: string | number) {
-  const confirmed = window.confirm('Delete this genre?')
-  if (!confirmed) return
-
+async function handleDelete() {
+  if (!deleteTarget.value) return
   try {
-    await deleteGenre(id)
-
-    toast.add({
-      severity: 'success',
-      summary: 'Genre deleted',
-      life: 2500,
-    })
+    await deleteGenre(deleteTarget.value.id)
+    toast.add({ severity: 'success', summary: 'Genre deleted', life: 2500 })
+    showDelete.value = false
+    deleteTarget.value = null
   } catch {
-    toast.add({
-      severity: 'error',
-      summary: 'Delete failed',
-      detail: 'Could not delete genre.',
-      life: 3000,
-    })
+    toast.add({ severity: 'error', summary: 'Delete failed', life: 3000 })
   }
 }
 </script>

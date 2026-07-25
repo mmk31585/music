@@ -24,10 +24,17 @@ export function usePlayerControls() {
     await player.resume()
   }
 
+  const speedLabel = computed(() => {
+    const rate = player.playbackRate.value
+    if (rate === 1) return 'Normal'
+    return `${rate}x`
+  })
+
   return {
     ...player,
     playIcon,
     volumeIcon,
     togglePlayPause,
+    speedLabel,
   }
 }

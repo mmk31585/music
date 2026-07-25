@@ -4,38 +4,40 @@ import "time"
 
 type LikedTrack struct {
 	ID        int64     `json:"id"`
-	UserID    int64     `json:"user_id"`
-	TrackID   int64     `json:"track_id"`
+	UserID    string    `json:"user_id"`
+	TrackID   string    `json:"track_id"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
 type LikedAlbum struct {
 	ID        int64     `json:"id"`
-	UserID    int64     `json:"user_id"`
-	AlbumID   int64     `json:"album_id"`
+	UserID    string    `json:"user_id"`
+	AlbumID   string    `json:"album_id"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
 type FollowedArtist struct {
 	ID        int64     `json:"id"`
-	UserID    int64     `json:"user_id"`
-	ArtistID  int64     `json:"artist_id"`
+	UserID    string    `json:"user_id"`
+	ArtistID  string    `json:"artist_id"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
 type PlayHistory struct {
-	ID       int64     `json:"id"`
-	UserID   int64     `json:"user_id"`
-	TrackID  int64     `json:"track_id"`
-	PlayedAt time.Time `json:"played_at"`
+	ID        int64     `json:"id"`
+	UserID    string    `json:"user_id"`
+	TrackID   string    `json:"track_id"`
+	Duration  *int      `json:"duration,omitempty"`
+	Completed *bool     `json:"completed,omitempty"`
+	PlayedAt  time.Time `json:"played_at"`
 }
 
 type LibraryTrackItem struct {
-	TrackID         int64      `json:"track_id"`
+	TrackID         string     `json:"track_id"`
 	Title           string     `json:"title"`
-	ArtistID        *int64     `json:"artist_id,omitempty"`
+	ArtistID        *string    `json:"artist_id,omitempty"`
 	ArtistName      *string    `json:"artist_name,omitempty"`
-	AlbumID         *int64     `json:"album_id,omitempty"`
+	AlbumID         *string    `json:"album_id,omitempty"`
 	AlbumTitle      *string    `json:"album_title,omitempty"`
 	CoverURL        *string    `json:"cover_url,omitempty"`
 	AudioURL        *string    `json:"audio_url,omitempty"`
@@ -45,9 +47,9 @@ type LibraryTrackItem struct {
 }
 
 type LibraryAlbumItem struct {
-	AlbumID     int64      `json:"album_id"`
+	AlbumID     string     `json:"album_id"`
 	Title       string     `json:"title"`
-	ArtistID    *int64     `json:"artist_id,omitempty"`
+	ArtistID    *string    `json:"artist_id,omitempty"`
 	ArtistName  *string    `json:"artist_name,omitempty"`
 	CoverURL    *string    `json:"cover_url,omitempty"`
 	ReleaseDate *time.Time `json:"release_date,omitempty"`
@@ -55,7 +57,7 @@ type LibraryAlbumItem struct {
 }
 
 type LibraryArtistItem struct {
-	ArtistID   int64     `json:"artist_id"`
+	ArtistID   string    `json:"artist_id"`
 	Name       string    `json:"name"`
 	CoverURL   *string   `json:"cover_url,omitempty"`
 	FollowedAt time.Time `json:"followed_at"`

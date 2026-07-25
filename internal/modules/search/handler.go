@@ -16,8 +16,26 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// Search godoc
+// @Summary Search catalog
+// @Description Searches across tracks, albums, artists, and playlists using a query string.
+// @Tags search
+// @Accept json
+// @Produce json
+// @Param q query string true "Search query"
+// @Param limit query int false "Maximum number of results" default(10)
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /search [get]
 func (h *Handler) Search(c *gin.Context) {
+
 	query := strings.TrimSpace(c.Query("q"))
+
+	if len(query) < 2 {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "search query must be at least 2 characters"})
+		return
+	}
+
 	limit := 10
 
 	if rawLimit := c.Query("limit"); rawLimit != "" {
@@ -40,3 +58,15 @@ func (h *Handler) Search(c *gin.Context) {
 		"data":    result,
 	})
 }
+
+// Search godoc
+// @Summary Search across tracks, albums, artists and playlists
+// @Description Performs a search using query string and optional limit
+// @Tags search
+// @Accept json
+// @Produce json
+// @Param q query string true "Search query"
+// @Param limit query int false "Maximum number of results"
+// @Success 200 {object} response.SuccessResponse{data=search.SearchResponse}
+// @Failure 500 {object} response.ErrorResponse
+// @Router /search [get]

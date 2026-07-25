@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"music/internal/platform/web"
 )
 
 type Handler struct {
@@ -15,7 +17,17 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// ListPlans godoc
+// @Summary List subscription plans
+// @Description Returns available subscription plans.
+// @Tags subscription
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} ErrorResponse
+// @Router /subscription/plans [get]
 func (h *Handler) ListPlans(c *gin.Context) {
+
 	plans, err := h.service.ListPlans(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to list plans"})
@@ -27,8 +39,20 @@ func (h *Handler) ListPlans(c *gin.Context) {
 	})
 }
 
+// CurrentSubscription godoc
+// @Summary Get current subscription
+// @Description Returns the current subscription for the authenticated user.
+// @Tags subscription
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Success 200 {object} SubscriptionResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /subscription/me [get]
 func (h *Handler) CurrentSubscription(c *gin.Context) {
-	userID, ok := getUserID(c)
+
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -43,8 +67,20 @@ func (h *Handler) CurrentSubscription(c *gin.Context) {
 	c.JSON(http.StatusOK, sub)
 }
 
+// ListSubscriptions godoc
+// @Summary List subscription history
+// @Description Returns subscription history for the authenticated user.
+// @Tags subscription
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /subscription/history [get]
 func (h *Handler) ListSubscriptions(c *gin.Context) {
-	userID, ok := getUserID(c)
+
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -61,8 +97,23 @@ func (h *Handler) ListSubscriptions(c *gin.Context) {
 	})
 }
 
+// Checkout godoc
+// @Summary Create subscription checkout
+// @Description Creates a checkout session or subscription payment for the authenticated user.
+// @Tags subscription
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body CheckoutRequest true "Checkout request"
+// @Success 200 {object} CheckoutResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /subscription/checkout [post]
 func (h *Handler) Checkout(c *gin.Context) {
-	userID, ok := getUserID(c)
+
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -98,8 +149,21 @@ func (h *Handler) Checkout(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+// CancelCurrentSubscription godoc
+// @Summary Cancel current subscription
+// @Description Cancels the authenticated user's active subscription.
+// @Tags subscription
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Success 200 {object} CancelSubscriptionResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /subscription/cancel [post]
 func (h *Handler) CancelCurrentSubscription(c *gin.Context) {
-	userID, ok := getUserID(c)
+
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -119,8 +183,20 @@ func (h *Handler) CancelCurrentSubscription(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+// ListPayments godoc
+// @Summary List payments
+// @Description Returns payments for the authenticated user.
+// @Tags subscription
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /subscription/payments [get]
 func (h *Handler) ListPayments(c *gin.Context) {
-	userID, ok := getUserID(c)
+
+	userID, ok := web.GetUserIDString(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
@@ -137,27 +213,4 @@ func (h *Handler) ListPayments(c *gin.Context) {
 	})
 }
 
-func getUserID(c *gin.Context) (string, bool) {
-	keys := []string{
-		"userID",
-		"userId",
-		"user_id",
-		"sub",
-	}
 
-	for _, key := range keys {
-		value, exists := c.Get(key)
-		if !exists {
-			continue
-		}
-
-		switch v := value.(type) {
-		case string:
-			if v != "" {
-				return v, true
-			}
-		}
-	}
-
-	return "", false
-}

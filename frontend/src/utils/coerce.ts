@@ -1,6 +1,6 @@
 const DIGITS_ONLY = /^\d+$/
 
-export function toText(v: unknown): string {
+export function toText(v: any): string {
   if (v == null) return ''
   if (typeof v === 'string') return v
   if (typeof v === 'number' || typeof v === 'boolean' || typeof v === 'bigint') return String(v)
@@ -11,7 +11,7 @@ export function toText(v: unknown): string {
   }
 }
 
-export function parsePositiveInt(raw: unknown): number | null {
+export function parsePositiveInt(raw: any): number | null {
   const s = toText(raw).trim()
   if (!s) return null
   if (!DIGITS_ONLY.test(s)) return null
@@ -20,7 +20,7 @@ export function parsePositiveInt(raw: unknown): number | null {
   return n
 }
 
-export function toId(raw: unknown): number | null {
+export function toId(raw: any): number | null {
   const s = toText(raw).trim()
   if (!s) return null
   const n = Number(s)

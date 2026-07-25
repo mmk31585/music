@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"net/http"
 	apperrors "music/internal/common/errors"
 	"music/internal/common/response"
 )
@@ -28,7 +29,7 @@ func AuthMiddleware(tokens *TokenManager) gin.HandlerFunc {
 
 		parts := strings.SplitN(header, " ", 2)
 		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-			response.Error(c, apperrors.Unauthorized("invalid authorization header", nil))
+			response.Error(c, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid authorization header", nil))
 			c.Abort()
 			return
 		}
@@ -49,16 +50,18 @@ func AuthMiddleware(tokens *TokenManager) gin.HandlerFunc {
 }
 
 // RequireRole returns a Gin middleware that ensures the authenticated user
-// has the required role.
-func RequireRole(role string) gin.HandlerFunc {
+// has one of the required roles.
+func RequireRole(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		currentRole := UserRoleFromContext(c)
-		if currentRole != role {
-			response.Error(c, apperrors.Forbidden("insufficient permissions", nil))
-			c.Abort()
-			return
+		for _, role := range roles {
+			if currentRole == role {
+				c.Next()
+				return
+			}
 		}
-		c.Next()
+		response.Error(c, apperrors.New(http.StatusForbidden, apperrors.CodeForbidden, "insufficient permissions", nil))
+		c.Abort()
 	}
 }
 
@@ -88,7 +91,37 @@ func UserRoleFromContext(c *gin.Context) string {
 	return role
 }
 
+// OptionalAuthMiddleware returns a Gin middleware that validates JWT tokens
+// but does NOT return 401 on missing/invalid token. Instead it sets a nil user
+// in context and calls next(), allowing unauthenticated access.
+func OptionalAuthMiddleware(tokens *TokenManager) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		header := c.GetHeader("Authorization")
+		if header == "" {
+			c.Next()
+			return
+		}
+
+		parts := strings.SplitN(header, " ", 2)
+		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+			c.Next()
+			return
+		}
+
+		claims, err := tokens.ParseAccessToken(parts[1])
+		if err != nil {
+			c.Next()
+			return
+		}
+
+		c.Set(UserIDContextKey, claims.UserID)
+		c.Set(UserRoleKey, claims.Role)
+
+		c.Next()
+	}
+}
+
 // ErrUnauthorized returns a standard unauthorized error.
 func ErrUnauthorized() error {
-	return apperrors.Unauthorized("authentication required", nil)
+	return apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil)
 }

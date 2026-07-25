@@ -1,27 +1,29 @@
-import { useRequest } from '@/composables'
+import { useRequest } from '@/composables/useRequest'
 import type { UseRequestConfig } from '@/plugins/client/types'
 
 import { AuthApiRoutes } from './enums'
 import {
   AuthResponseSchema,
-  UserSchema,
+  CurrentUserResponseSchema,
+  AdminUserSchema,
+  AdminUserListResponseSchema,
   type AuthResponse,
+  type CurrentUserResponse,
   type RegisterPayload,
-  type User,
   type LoginPayload,
+  type LogoutPayload,
+  type AdminUser,
+  type AdminUserListResponse,
+  type AdminUserUpdatePayload,
 } from './types'
 
 export const useAuthApi = () => {
-  const login = async (
-    payload: LoginPayload,
-    config?: UseRequestConfig<AuthResponse>,
-  ) => {
+  const login = async (payload: LoginPayload, config?: UseRequestConfig<AuthResponse>) => {
     return useRequest<AuthResponse>(
       AuthApiRoutes.LOGIN,
       {
         method: 'POST',
-        data: payload
-        ,
+        data: payload,
       },
       {
         schema: AuthResponseSchema,
@@ -44,11 +46,12 @@ export const useAuthApi = () => {
     )
   }
 
-  const refresh = async (config?: UseRequestConfig<AuthResponse>) => {
+  const refresh = async (refreshToken: string, config?: UseRequestConfig<AuthResponse>) => {
     return useRequest<AuthResponse>(
       AuthApiRoutes.REFRESH,
       {
         method: 'POST',
+        data: { refreshToken },
       },
       {
         schema: AuthResponseSchema,
@@ -57,11 +60,12 @@ export const useAuthApi = () => {
     )
   }
 
-  const logout = async (config?: UseRequestConfig<unknown>) => {
+  const logout = async (payload: LogoutPayload, config?: UseRequestConfig<any>) => {
     return useRequest(
       AuthApiRoutes.LOGOUT,
       {
         method: 'POST',
+        data: payload,
       },
       {
         ...config,
@@ -69,15 +73,81 @@ export const useAuthApi = () => {
     )
   }
 
-  const me = async (config?: UseRequestConfig<User>) => {
-    return useRequest<User>(
+  const me = async (config?: UseRequestConfig<CurrentUserResponse>) => {
+    return useRequest<CurrentUserResponse>(
       AuthApiRoutes.ME,
       {
         method: 'GET',
       },
       {
-        schema: UserSchema,
+        schema: CurrentUserResponseSchema,
         silent: true,
+        ...config,
+      },
+    )
+  }
+
+  // ==================== ADMIN USERS ====================
+
+  const adminListUsers = async (
+    params?: Record<string, any>,
+    config?: UseRequestConfig<AdminUserListResponse>,
+  ) => {
+    return useRequest<AdminUserListResponse>(
+      AuthApiRoutes.ADMIN_USERS,
+      {
+        method: 'GET',
+        params,
+      },
+      {
+        schema: AdminUserSchema,
+        silent: true,
+        ...config,
+      },
+    )
+  }
+
+  const adminGetUser = async (
+    id: string,
+    config?: UseRequestConfig<AdminUser>,
+  ) => {
+    return useRequest<AdminUser>(
+      AuthApiRoutes.ADMIN_USER.replace(':id', String(id)),
+      { method: 'GET' },
+      {
+        schema: AdminUserSchema,
+        silent: true,
+        ...config,
+      },
+    )
+  }
+
+  const adminUpdateUser = async (
+    id: string,
+    payload: AdminUserUpdatePayload,
+    config?: UseRequestConfig<AdminUser>,
+  ) => {
+    return useRequest<AdminUser>(
+      AuthApiRoutes.ADMIN_USER.replace(':id', String(id)),
+      {
+        method: 'PATCH',
+        data: payload,
+      },
+      {
+        schema: AdminUserSchema,
+        ...config,
+      },
+    )
+  }
+
+  const adminDeleteUser = async (
+    id: string,
+    config?: UseRequestConfig<void>,
+  ) => {
+    return useRequest<void>(
+      AuthApiRoutes.ADMIN_USER.replace(':id', String(id)),
+      { method: 'DELETE' },
+      {
         ...config,
       },
     )
@@ -89,5 +159,9 @@ export const useAuthApi = () => {
     refresh,
     logout,
     me,
+    adminListUsers,
+    adminGetUser,
+    adminUpdateUser,
+    adminDeleteUser,
   }
 }

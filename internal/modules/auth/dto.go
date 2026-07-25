@@ -1,5 +1,7 @@
 package auth
 
+import "time"
+
 type RegisterRequest struct {
 	Email       string `json:"email" validate:"required,email,max=255"`
 	Username    string `json:"username" validate:"required,min=3,max=50"`
@@ -8,8 +10,8 @@ type RegisterRequest struct {
 }
 
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
 }
 type RefreshRequest struct {
 	RefreshToken string `json:"refreshToken" validate:"required"`
@@ -17,6 +19,10 @@ type RefreshRequest struct {
 
 type LogoutRequest struct {
 	RefreshToken string `json:"refreshToken" validate:"required"`
+}
+
+type ForgotPasswordRequest struct {
+	Email string `json:"email" validate:"required,email"`
 }
 
 type AuthResponse struct {
@@ -29,4 +35,44 @@ type AuthResponse struct {
 
 type MeResponse struct {
 	User AuthUser `json:"user"`
+}
+
+type AdminUserItem struct {
+	ID            string     `json:"id"`
+	Email         string     `json:"email"`
+	Username      string     `json:"username"`
+	DisplayName   string     `json:"display_name"`
+	Role          string     `json:"role"`
+	IsActive      bool       `json:"is_active"`
+	EmailVerified bool       `json:"email_verified"`
+	AvatarURL     *string    `json:"avatar_url,omitempty"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     *time.Time `json:"updated_at,omitempty"`
+}
+
+type AdminListUsersResponse struct {
+	Items    []AdminUserItem `json:"items"`
+	Total    int             `json:"total"`
+	Page     int             `json:"page"`
+	PageSize int             `json:"page_size"`
+}
+
+type AdminUpdateUserRequest struct {
+	Role          *string `json:"role"`
+	IsActive      *bool   `json:"is_active"`
+	EmailVerified *bool   `json:"email_verified"`
+}
+
+type UpdateProfileRequest struct {
+	DisplayName *string `json:"displayName"`
+	Username    *string `json:"username"`
+	Bio         *string `json:"bio"`
+	Location    *string `json:"location"`
+	Website     *string `json:"website"`
+	Preferences *string `json:"preferences"`
+}
+
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"currentPassword" validate:"required"`
+	NewPassword     string `json:"newPassword" validate:"required,min=8,max=72"`
 }

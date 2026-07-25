@@ -1,3 +1,11 @@
+export function formatCount(count?: number | null, locale?: string): string {
+  const loc = locale || (typeof navigator !== 'undefined' ? navigator.language : 'en')
+  if (!count && count !== 0) return new Intl.NumberFormat(loc).format(0)
+  if (count >= 1_000_000) return `${new Intl.NumberFormat(loc).format(count / 1_000_000)}M`
+  if (count >= 1_000) return `${new Intl.NumberFormat(loc).format(count / 1_000)}K`
+  return new Intl.NumberFormat(loc).format(count)
+}
+
 export const numberUtil = {
   clamp: (n: number, min: number, max: number): number => {
     if (!Number.isFinite(n) || !Number.isFinite(min) || !Number.isFinite(max)) {

@@ -1,0 +1,23 @@
+{
+  "skill_name": "muse-ai",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need to add a new AI feature to Muse — a 'track description' generator that takes a track ID and generates a paragraph describing the track (genre, mood, instrumentation, vibe) using OpenAI. What files do I need to touch in the Go backend and how should I structure it?",
+      "expected_output": "Clear step-by-step guide following the module pattern: add GenerateTrackDescription to AIClient, implement on openAIClient with a prompt for track description in JSON mode, add GenerateTrackDescription service method, repository methods if needed, handler + route. Should reference the existing AIClient pattern in client.go and service.go.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "The Whisper lyrics transcription in moja-ml-service is producing garbled output for Turkish songs. I need to fix the transcriber to handle multiple languages better. It's currently auto-detecting but the Persian normalizer is mangling non-Persian text.",
+      "expected_output": "Diagnosis and fix: the persian_normalizer.py is being applied to ALL transcriptions regardless of detected language. Should gate normalization on detected_language == 'fa'. Point to transcriber.py for the detection logic and persian_normalizer.py for the fix. Show the code change to only normalize Persian text.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I want to add a new AI playground page to the frontend at '/ai/experiment' that lets users enter a custom prompt and see what tracks the AI picks, plus the raw JSON response from the backend. Walk me through creating the Vue page, adding the route, and wiring it up.",
+      "expected_output": "Step-by-step: create PageAIExperiment.vue in pages/app/, use useAIApi().generatePlaylist(), display tracks + raw JSON. Add route in router/routes/app.ts, nav link in LayoutMusicApp.vue. Show the component template + script pattern matching existing AI pages.",
+      "files": []
+    }
+  ]
+}
