@@ -128,7 +128,9 @@ func (h *Handler) GetLeaderboard(c *gin.Context) {
 		limit = l
 	}
 
-	result, err := h.service.GetLeaderboard(c.Request.Context(), lbType, limit)
+	userID, _ := web.GetUserIDString(c)
+
+	result, err := h.service.GetLeaderboard(c.Request.Context(), lbType, limit, userID)
 	if err != nil {
 		h.handleError(c, err)
 		return

@@ -6,7 +6,7 @@
       class="mb-6 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-white/50 transition hover:bg-white/6 hover:text-white focus-visible:outline-2 focus-visible:outline-spotify"
       @click="goBack"
     >
-      <i aria-hidden="true" class="pi pi-arrow-right text-xs" />
+      <ArrowRight aria-hidden="true" class="text-xs"  />
       {{ t('back') }}
     </button>
 
@@ -23,7 +23,7 @@
           class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-all duration-300"
           :class="stepClass(i)"
         >
-          <i v-if="isStepComplete(i)" aria-hidden="true" class="pi pi-check text-xs" />
+          <Check v-if="isStepComplete(i)" aria-hidden="true" class="text-xs"  />
           <span v-else>{{ i + 1 }}</span>
         </div>
         <span
@@ -32,11 +32,11 @@
         >
           {{ s.label }}
         </span>
-        <i
+        <ChevronLeft
           v-if="i < steps.length - 1"
           aria-hidden="true"
-          class="pi pi-chevron-left text-[10px] text-white/8"
-        />
+          class="text-[10px] text-white/8"
+         />
       </div>
     </div>
 
@@ -46,10 +46,10 @@
 
       <!-- Search input -->
       <div class="relative">
-        <i
+        <Search
           aria-hidden="true"
-          class="pi pi-search absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400"
-        />
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400"
+         />
         <input
           ref="searchInputRef"
           v-model="searchQuery"
@@ -60,11 +60,11 @@
           @input="onSearchInput"
           @keydown="onSearchKeydown"
         />
-        <i
+        <Loader2
           v-if="searching"
           aria-hidden="true"
-          class="pi pi-spin pi-spinner absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"
-        />
+          class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 animate-spin"
+         />
       </div>
 
       <!-- Search results -->
@@ -73,7 +73,7 @@
           v-if="!searchQuery"
           class="flex items-center justify-center py-16 text-sm text-white/30"
         >
-          <i aria-hidden="true" class="pi pi-headphones ml-2" />
+          <Headphones aria-hidden="true" class="ml-2"  />
           {{ t('typeToSearch') }}
         </div>
 
@@ -81,7 +81,7 @@
           v-else-if="searching"
           class="flex items-center justify-center py-16 text-sm text-white/40"
         >
-          <i aria-hidden="true" class="pi pi-spin pi-spinner ml-2" />
+          <Loader2 aria-hidden="true" class="ml-2 animate-spin"  />
           {{ t('searching') }}
         </div>
 
@@ -89,7 +89,7 @@
           v-else-if="!searchResults.length"
           class="flex items-center justify-center py-16 text-sm text-white/30"
         >
-          <i aria-hidden="true" class="pi pi-info-circle ml-2" />
+          <Info aria-hidden="true" class="ml-2"  />
           {{ t('noResults') }}
         </div>
 
@@ -119,7 +119,7 @@
                 loading="lazy"
               />
               <div v-else class="flex h-full items-center justify-center">
-                <i aria-hidden="true" class="pi pi-music text-sm text-slate-500" />
+                <Music aria-hidden="true" class="text-sm text-slate-500"  />
               </div>
             </div>
             <div class="min-w-0 flex-1">
@@ -147,7 +147,7 @@
             loading="lazy"
           />
           <div v-else class="flex h-full items-center justify-center">
-            <i aria-hidden="true" class="pi pi-music text-sm text-slate-500" />
+            <Music aria-hidden="true" class="text-sm text-slate-500"  />
           </div>
         </div>
         <div class="min-w-0 flex-1">
@@ -167,23 +167,20 @@
       </div>
 
       <!-- File upload dropzone -->
-      <div
-        class="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-12 transition"
+      <button
+        type="button"
+        class="flex w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-12 transition cursor-pointer"
         :class="videoFile
           ? 'border-spotify/40 bg-spotify/5'
           : 'border-white/10 bg-white/2 hover:border-spotify/30 hover:bg-white/4'"
-        role="button"
-        :tabindex="0"
         :aria-label="t('uploadFile')"
         @click="triggerFileInput"
-        @keydown.enter="triggerFileInput"
-        @keydown.space.prevent="triggerFileInput"
         @drop.prevent="onDrop"
       >
         <!-- No file state -->
         <template v-if="!videoFile">
           <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
-            <i aria-hidden="true" class="pi pi-video text-2xl text-slate-400" />
+            <Video aria-hidden="true" class="text-2xl text-slate-400"  />
           </div>
           <p class="text-sm font-medium text-white/60">{{ t('selectVideo') }}</p>
           <p class="text-xs text-white/30">MP4, WebM, MOV — {{ t('maxSize') }} 200MB</p>
@@ -207,7 +204,7 @@
           <!-- File info bar -->
           <div class="flex w-full items-center gap-3 rounded-xl border border-white/6 bg-white/3 px-4 py-3 backdrop-blur-xs">
             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-spotify/15">
-              <i aria-hidden="true" class="pi pi-video text-sm text-spotify" />
+              <Video aria-hidden="true" class="text-sm text-spotify"  />
             </div>
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-medium text-white">{{ videoFile.name }}</p>
@@ -219,7 +216,7 @@
               :aria-label="t('remove')"
               @click.stop="removeVideo"
             >
-              <i aria-hidden="true" class="pi pi-trash text-xs" />
+              <Trash2 aria-hidden="true" class="text-xs"  />
             </button>
           </div>
 
@@ -240,7 +237,7 @@
           aria-hidden="true"
           @change="onFileChange"
         />
-      </div>
+      </button>
 
       <!-- Track info card — just shows the selected track, no sync -->
       <div v-if="selectedTrack" class="space-y-3 rounded-2xl border border-white/6 bg-white/2 px-4 py-4 backdrop-blur-xs">
@@ -254,7 +251,7 @@
               class="h-full w-full object-cover"
             />
             <div v-else class="flex h-full items-center justify-center">
-              <i aria-hidden="true" class="pi pi-music text-sm text-slate-500" />
+              <Music aria-hidden="true" class="text-sm text-slate-500"  />
             </div>
           </div>
           <div class="min-w-0 flex-1">
@@ -293,7 +290,7 @@
             loading="lazy"
           />
           <div v-else class="flex h-full items-center justify-center">
-            <i aria-hidden="true" class="pi pi-music text-sm text-slate-500" />
+            <Music aria-hidden="true" class="text-sm text-slate-500"  />
           </div>
         </div>
         <div class="min-w-0 flex-1">
@@ -347,7 +344,7 @@
         :disabled="publishing || !isPublishValid"
         @click="publish"
       >
-        <i v-if="publishing" aria-hidden="true" class="pi pi-spin pi-spinner" />
+        <Loader2 v-if="publishing" aria-hidden="true" class="animate-spin"  />
         {{ publishing ? t('publishing') : t('publish') }}
       </button>
 
@@ -365,7 +362,7 @@
     <Transition name="fade">
       <div
         v-if="processingState"
-        class="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-4 bg-black/80 backdrop-blur-xs"
+        class="fixed inset-0 z-9999 flex flex-col items-center justify-center gap-4 bg-black/80 backdrop-blur-xs"
         role="alertdialog"
         :aria-label="t('processing')"
       >
@@ -373,7 +370,7 @@
         <template v-if="processingState === 'processing'">
           <div class="flex flex-col items-center gap-4">
             <div class="flex h-16 w-16 items-center justify-center rounded-full bg-spotify/15">
-              <i aria-hidden="true" class="pi pi-spin pi-spinner text-3xl text-spotify" />
+              <Loader2 aria-hidden="true" class="text-3xl text-spotify animate-spin"  />
             </div>
             <p class="text-sm font-medium text-white/70">{{ t('processingMessage') }}</p>
             <div class="h-1 w-48 overflow-hidden rounded-full bg-white/10">
@@ -386,7 +383,7 @@
         <template v-else-if="processingState === 'success'">
           <div class="flex flex-col items-center gap-4">
             <div class="flex h-16 w-16 items-center justify-center rounded-full bg-spotify/20">
-              <i aria-hidden="true" class="pi pi-check-circle text-3xl text-spotify" />
+              <CheckCircle aria-hidden="true" class="text-3xl text-spotify"  />
             </div>
             <p class="text-sm font-bold text-white">{{ t('successMessage') }}</p>
             <p class="text-xs text-white/50">{{ t('redirecting') }}</p>
@@ -397,7 +394,7 @@
         <template v-else-if="processingState === 'timeout'">
           <div class="flex flex-col items-center gap-4">
             <div class="flex h-16 w-16 items-center justify-center rounded-full bg-amber-400/20">
-              <i aria-hidden="true" class="pi pi-clock text-3xl text-amber-400" />
+              <Clock aria-hidden="true" class="text-3xl text-amber-400"  />
             </div>
             <p class="text-sm font-medium text-white/70">{{ t('timeoutMessage') }}</p>
             <button
@@ -414,7 +411,7 @@
         <template v-else-if="processingState === 'error'">
           <div class="flex flex-col items-center gap-4">
             <div class="flex h-16 w-16 items-center justify-center rounded-full bg-red-500/20">
-              <i aria-hidden="true" class="pi pi-exclamation-circle text-3xl text-red-400" />
+              <AlertCircle aria-hidden="true" class="text-3xl text-red-400"  />
             </div>
             <p class="text-sm font-medium text-white/70">{{ t('errorMessage') }}</p>
             <button
@@ -432,6 +429,7 @@
 </template>
 
 <script setup lang="ts">
+import { AlertCircle, ArrowRight, Check, CheckCircle, ChevronLeft, Clock, Headphones, Info, Loader2, Music, Search, Trash2, Video } from 'lucide-vue-next'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSearchApi } from '@/services/api/catalog/search'
@@ -500,12 +498,12 @@ const steps = [
 ]
 
 function isStepComplete(i: number): boolean {
-  return currentStep.value > steps[i].step
+  return currentStep.value > (steps[i]?.step ?? 0)
 }
 
 function stepClass(i: number): string {
   if (isStepComplete(i)) return 'bg-spotify text-black shadow-sm shadow-spotify/30'
-  if (currentStep.value === steps[i].step) return 'bg-spotify/20 text-spotify ring-1 ring-spotify/30'
+  if (currentStep.value === (steps[i]?.step ?? 0)) return 'bg-spotify/20 text-spotify ring-1 ring-spotify/30'
   return 'bg-white/10 text-white/40'
 }
 
@@ -616,7 +614,7 @@ async function doSearch() {
       { query: term, type: 'tracks', limit: 10 },
       { signal: abortController.signal } as Record<string, unknown>,
     )
-    searchResults.value = res.tracks ?? []
+    searchResults.value = (res.tracks ?? []) as unknown as Track[]
   } catch (err) {
     if ((err as Record<string, unknown>)?.name === 'AbortError') return
     searchResults.value = []
@@ -668,7 +666,6 @@ function onFileChange(e: Event) {
 }
 
 function onDrop(e: DragEvent) {
-  dragOver.value = false
   const file = e.dataTransfer?.files?.[0]
   if (file) setVideoFile(file)
 }

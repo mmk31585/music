@@ -1,5 +1,7 @@
 package config
 
+import "os"
+
 type EnrichmentConfig struct {
 	LastFmAPIKey        string
 	SpotifyClientID     string
@@ -8,8 +10,8 @@ type EnrichmentConfig struct {
 
 func loadEnrichmentConfig() EnrichmentConfig {
 	return EnrichmentConfig{
-		LastFmAPIKey:        getEnv("LASTFM_API_KEY", ""),
-		SpotifyClientID:     getEnv("SPOTIFY_CLIENT_ID", ""),
-		SpotifyClientSecret: getEnv("SPOTIFY_CLIENT_SECRET", ""),
+		LastFmAPIKey:        os.Getenv("LASTFM_API_KEY"),
+		SpotifyClientID:     os.Getenv("SPOTIFY_CLIENT_ID"),
+		SpotifyClientSecret: os.Getenv("SPOTIFY_CLIENT_SECRET"),
 	}
 }

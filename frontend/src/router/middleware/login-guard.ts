@@ -21,6 +21,7 @@ export async function checkLoginGuard(to: RouteLocationNormalized) {
 
   // Require authentication
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    sessionStorage.setItem('auth_redirect_reason', 'Please sign in to access this feature')
     return {
       name: 'auth.login',
       query: { redirect: to.fullPath },

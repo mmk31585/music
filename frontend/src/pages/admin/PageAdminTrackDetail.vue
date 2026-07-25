@@ -45,17 +45,17 @@
               @error="($event.target as HTMLImageElement).style.display='none'"
             />
             <div v-else class="flex h-full w-full items-center justify-center">
-              <i aria-hidden="true" class="pi pi-headphones text-4xl text-slate-600" />
+              <Headphones aria-hidden="true" class="text-4xl text-slate-600"  />
             </div>
           </div>
 
           <div class="mt-3 space-y-1 text-center text-xs text-slate-500 lg:text-left">
             <div v-if="track.play_count" class="flex items-center gap-1">
-              <i aria-hidden="true" class="pi pi-play" />
+              <Play aria-hidden="true" class=""  />
               {{ formatPlayCount(track.play_count) }} plays
             </div>
             <div v-if="track.duration_seconds" class="flex items-center gap-1">
-              <i aria-hidden="true" class="pi pi-clock" />
+              <Clock aria-hidden="true" class=""  />
               {{ formatDuration(track.duration_seconds) }}
             </div>
           </div>
@@ -66,7 +66,7 @@
 
           <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
             <span v-if="artist" class="flex items-center gap-1">
-              <i aria-hidden="true" class="pi pi-user" />
+              <User aria-hidden="true" class=""  />
               <button
                 class="cursor-pointer text-teal-400 transition-colors hover:text-teal-300"
                 @click="router.push({ name: 'admin.artist.detail', params: { id: artist.id } })"
@@ -79,11 +79,11 @@
               class="flex items-center gap-1 text-teal-400 transition-colors hover:text-teal-300"
               @click="router.push({ name: 'admin.album.detail', params: { id: parentAlbum.id } })"
             >
-              <i aria-hidden="true" class="pi pi-book" />
+              <Book aria-hidden="true" class=""  />
               {{ parentAlbum.title }}
             </button>
             <span v-if="track.genres.length > 0">
-              <i aria-hidden="true" class="pi pi-tag mr-1" />
+              <Tag class="mr-1"<i aria-hidden="true"  /> />
               {{ track.genres.map(g => g.name).join(', ') }}
             </span>
           </div>
@@ -144,7 +144,7 @@
                 @error="($event.target as HTMLImageElement).style.display='none'"
               />
               <div v-else class="flex h-full w-full items-center justify-center">
-                <i aria-hidden="true" class="pi pi-image text-3xl text-slate-700" />
+                <Image aria-hidden="true" class="text-3xl text-slate-700"  />
               </div>
             </div>
             <p class="mt-2 truncate text-sm font-medium text-white">{{ alb.title }}</p>
@@ -176,6 +176,7 @@
 </template>
 
 <script setup lang="ts">
+import { Book, Clock, Headphones, Image, Play, Tag, User } from 'lucide-vue-next'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
@@ -194,6 +195,17 @@ import type { Track } from '@/services/api/catalog/tracks'
 import type { Artist } from '@/services/api/catalog/artists'
 import type { Album } from '@/services/api/catalog/albums'
 import { formatDuration } from '@/utils/format'
+
+/**
+ * Extended track type used when hydrating the edit form.
+ * Adds optional lyrics fields that TrackFormDialog's ExistingTrack expects
+ * but the base Track type doesn't carry.
+ */
+interface EditingTrack extends Track {
+  lyrics?: string
+  lyrics_language?: string
+  lyrics_type?: 'plain' | 'synced'
+}
 
 type CatalogId = string | number
 
@@ -225,7 +237,7 @@ const loading = ref(true)
 const error = ref('')
 
 const showForm = ref(false)
-const editingTrack = ref<Track | null>(null)
+const editingTrack = ref<EditingTrack | null>(null)
 const saving = ref(false)
 const showDelete = ref(false)
 const deleting = ref(false)
@@ -279,12 +291,14 @@ async function loadTrack() {
 }
 
 async function openEdit() {
+  if (!track.value) return
+
   // Start with the track data from the detail page
-  const augmented: Record<string, unknown> = { ...track.value }
+  const augmented: EditingTrack = { ...track.value }
 
   // Fetch lyrics — they aren't included in getTrack response
   try {
-    const lyrics = await lyricsApi.getTrackLyrics(augmented.id as string, undefined, { silent: true })
+    const lyrics = await lyricsApi.getTrackLyrics(track.value.id, undefined, { silent: true })
     if (lyrics?.content) {
       augmented.lyrics = lyrics.content
       augmented.lyrics_language = lyrics.language || 'en'
@@ -294,7 +308,7 @@ async function openEdit() {
     // No lyrics stored yet — that's fine
   }
 
-  editingTrack.value = augmented as Track
+  editingTrack.value = augmented
   showForm.value = true
 }
 
@@ -319,12 +333,6 @@ async function handleEditSubmit(payload: TrackFormPayload) {
         role: credit.role,
         position: index,
       }))
-    } else if ((payload as any).artists?.length) {
-      artists = (payload as any).artists.map((artist: any, index: any) => ({
-        artist_id: artist.artist_id,
-        role: artist.role || (index === 0 ? 'primary' : 'featured'),
-        position: artist.position ?? index,
-      }))
     } else {
       const primaryId = payload.artist_ids?.[0]
       if (primaryId) {
@@ -343,11 +351,11 @@ async function handleEditSubmit(payload: TrackFormPayload) {
     }
 
     // Build the update payload — only send fields that exist in TrackUpdatePayload
+    // Backend clear_fields uses camelCase keys to distinguish "set to null" from "not provided"
     const clearFields: string[] = []
-    if (payload.album_id === null && track.value.album_id) clearFields.push('album_id')
-    if (payload.duration_seconds === null && track.value.duration_seconds != null) clearFields.push('duration_seconds')
-    if (payload.track_number === null && track.value.track_number != null) clearFields.push('track_number')
-    if (payload.cover_url === null && track.value.cover_url) clearFields.push('cover_url')
+    if (payload.album_id === null && track.value.album_id) clearFields.push('albumId')
+    if (payload.track_number === null && track.value.track_number != null) clearFields.push('trackNumber')
+    if (payload.cover_url === null && track.value.cover_url) clearFields.push('coverUrl')
 
     const updatePayload: Record<string, unknown> = {
       title: payload.title,
@@ -358,10 +366,11 @@ async function handleEditSubmit(payload: TrackFormPayload) {
       is_public: true,
     }
     // Only include nullable fields if they have a value or are explicitly being cleared
-    if (payload.album_id !== null || clearFields.includes('album_id')) updatePayload.album_id = payload.album_id ?? null
-    if (payload.duration_seconds !== null || clearFields.includes('duration_seconds')) updatePayload.duration_seconds = payload.duration_seconds ?? null
-    if (payload.track_number !== null || clearFields.includes('track_number')) updatePayload.track_number = payload.track_number ?? null
-    if (payload.cover_url !== null || clearFields.includes('cover_url')) updatePayload.cover_url = payload.cover_url ?? null
+    if (payload.album_id !== null || clearFields.includes('albumId')) updatePayload.album_id = payload.album_id ?? null
+    if (payload.track_number !== null || clearFields.includes('trackNumber')) updatePayload.track_number = payload.track_number ?? null
+    if (payload.cover_url !== null || clearFields.includes('coverUrl')) updatePayload.cover_url = payload.cover_url ?? null
+    // Duration is NOT NULL in DB — always send if provided, keep current otherwise
+    if (payload.duration_seconds != null) updatePayload.duration_seconds = payload.duration_seconds
     if (clearFields.length > 0) updatePayload.clear_fields = clearFields
 
     const updated = await tracksApi.adminUpdateTrack(track.value.id, updatePayload)

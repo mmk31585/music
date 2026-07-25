@@ -1,7 +1,7 @@
 <template>
-  <div v-if="pendingRaises.length" class="rounded-2xl bg-white/4 p-6 ring-1 ring-white/7">
+  <div v-if="pendingRaises.length" class="rounded-2xl bg-surface-overlay/60 p-6 ring-1 ring-border-subtle">
     <div class="mb-4 flex items-center justify-between">
-      <h2 class="text-xs font-bold uppercase tracking-wider text-white/30">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-muted">
         درخواست‌های صحبت ({{ pendingRaises.length }})
       </h2>
     </div>
@@ -14,40 +14,40 @@
       <div
         v-for="raise in pendingRaises"
         :key="raise.user_id"
-        class="flex items-center gap-3 rounded-xl bg-white/3 px-3 py-2.5"
+        class="flex items-center gap-3 rounded-xl bg-surface-overlay/50 px-3 py-2.5"
       >
-        <div class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/10">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-active">
           <img
             v-if="raise.avatar_url"
             :src="raise.avatar_url"
             :alt="raise.username || 'User'"
             class="h-full w-full object-cover"
           />
-          <span v-else class="text-xs font-bold text-white/60">
+          <span v-else class="text-xs font-bold text-secondary">
             {{ (raise.username || '?').charAt(0).toUpperCase() }}
           </span>
         </div>
 
         <div class="min-w-0 flex-1">
-          <p class="truncate text-sm font-medium text-white">{{ raise.username || raise.user_id.slice(0, 8) }}</p>
+          <p class="truncate text-sm font-medium text-primary">{{ raise.username || raise.user_id.slice(0, 8) }}</p>
         </div>
 
         <div class="flex shrink-0 gap-1">
           <button
-            class="flex h-8 w-8 items-center justify-center rounded-lg bg-spotify/10 text-spotify transition hover:bg-spotify/20"
+            class="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-subtle text-accent transition hover:bg-accent-subtle"
             title="تأیید"
             aria-label="تأیید"
             @click="$emit('approve', raise.user_id)"
           >
-            <i aria-hidden="true" class="pi pi-check text-sm" />
+            <Check aria-hidden="true" class="text-sm"  />
           </button>
           <button
-            class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-white/30 transition hover:bg-white/10 hover:text-white/60"
+            class="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-overlay text-muted transition hover:bg-surface-active hover:text-secondary"
             title="رد"
             aria-label="رد"
             @click="$emit('deny', raise.user_id)"
           >
-            <i aria-hidden="true" class="pi pi-times text-sm" />
+            <X aria-hidden="true" class="text-sm"  />
           </button>
         </div>
       </div>
@@ -58,13 +58,14 @@
   <!-- Empty state (host sees this when no pending requests) -->
   <div
     v-else
-    class="rounded-2xl bg-white/4 p-6 text-center text-sm text-white/30 ring-1 ring-white/7"
+    class="rounded-2xl bg-surface-overlay/60 p-6 text-center text-sm text-muted ring-1 ring-border-subtle"
   >
     درخواستی برای صحبت نیست
   </div>
 </template>
 
 <script setup lang="ts">
+import { Check, X } from 'lucide-vue-next'
 defineProps<{
   pendingRaises: { user_id: string; username?: string; avatar_url?: string }[]
 }>()

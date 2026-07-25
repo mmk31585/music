@@ -19,7 +19,7 @@
       class="relative z-10 flex h-full flex-col items-center justify-center gap-4 px-6 text-center"
     >
       <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5">
-        <i aria-hidden="true" class="pi pi-align-left text-3xl text-white/15" />
+        <AlignLeft aria-hidden="true" class="text-3xl text-white/15"  />
       </div>
       <p class="text-sm text-white/25">No lyrics available</p>
       <p class="text-xs text-white/15">Lyrics will appear here when available</p>
@@ -27,13 +27,12 @@
 
     <div v-else ref="containerRef" class="relative z-10 h-full scrollbar-none overflow-y-auto px-6" :dir="isRtl ? 'rtl' : 'ltr'">
       <div class="flex min-h-full flex-col items-center justify-center py-12">
-        <div
+        <button
           v-for="(line, idx) in parsedCache"
           :key="idx"
           ref="lineRefs"
-          role="button"
-          tabindex="0"
-          class="cursor-pointer px-4 py-3 text-center text-lg leading-relaxed transition-all duration-500 ease-out md:text-xl"
+          type="button"
+          class="w-full px-4 py-3 text-center text-lg leading-relaxed transition-all duration-500 ease-out md:text-xl"
           :class="{
             'scale-105 font-bold text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]':
               idx === activeLineIdx,
@@ -41,8 +40,6 @@
             'text-white/25 hover:text-white/50': idx !== activeLineIdx && isPast!(idx),
           }"
           @click="onLineClick(line.timeSeconds)"
-          @keydown.enter="onLineClick(line.timeSeconds)"
-          @keydown.space.prevent="onLineClick(line.timeSeconds)"
         >
           <template v-if="line.isActive && karaoke">
             <span
@@ -68,7 +65,7 @@
               {{ line.text }}
             </span>
           </template>
-        </div>
+        </button>
       </div>
     </div>
 
@@ -85,6 +82,7 @@
 </template>
 
 <script setup lang="ts">
+import { AlignLeft } from 'lucide-vue-next'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { parseLRCLines, parsePlainLines, useLyricsParticles } from '@/composables/lyrics'
 import type { ParsedLine } from '@/composables/lyrics'

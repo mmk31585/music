@@ -1,12 +1,12 @@
 <template>
   <div
-    class="group grid grid-cols-[48px_1fr_auto] items-center gap-4 rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-white/8"
-    :class="isCurrent ? 'bg-white/10 shadow-[inset_3px_0_0_#1db954]' : ''"
+    class="group grid grid-cols-[48px_1fr_auto] items-center gap-4 rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-surface-active"
+    :class="isCurrent ? 'bg-surface-active shadow-[inset_3px_0_0_var(--accent)]' : ''"
     @contextmenu.prevent="openContextMenu"
   >
     <button
       type="button"
-      class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white/10 text-white transition-all duration-200 hover:scale-105 hover:bg-spotify hover:text-black disabled:cursor-wait disabled:opacity-70"
+      class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-surface-active text-primary transition-all duration-200 hover:scale-105 hover:bg-accent hover:text-black disabled:cursor-wait disabled:opacity-70"
       :disabled="loadingThisTrack"
       @click="handlePlay"
     >
@@ -20,7 +20,7 @@
       />
 
       <span class="relative z-10 flex items-center justify-center">
-        <i aria-hidden="true" v-if="loadingThisTrack" class="pi pi-spin pi-spinner text-sm" />
+        <Loader2 aria-hidden="true" v-if="loadingThisTrack" class="text-sm animate-spin"  />
 
         <span
           v-else-if="isCurrent && player.isPlaying.value"
@@ -40,18 +40,18 @@
       <RouterLink
         :to="`/track/${trackId}`"
         class="truncate text-sm font-semibold transition hover:underline"
-        :class="isCurrent ? 'text-spotify' : 'text-white'"
+        :class="isCurrent ? 'text-accent' : 'text-primary'"
         @click.stop
       >
         {{ title }}
       </RouterLink>
 
-      <div class="mt-0.5 truncate text-xs text-slate-400">
+      <div class="mt-0.5 truncate text-xs text-secondary">
         {{ artistName }}
       </div>
     </div>
 
-    <div class="flex items-center gap-4 text-xs text-slate-400">
+    <div class="flex items-center gap-4 text-xs text-secondary">
       <span v-if="durationLabel" class="tabular-nums">
         {{ durationLabel }}
       </span>
@@ -59,29 +59,30 @@
       <button
         type="button"
         aria-label="More options"
-        class="hidden rounded-full p-2 text-slate-400 transition group-hover:block hover:bg-white/10 hover:text-white"
+        class="hidden rounded-full p-2 text-secondary transition group-hover:block hover:bg-surface-active hover:text-primary"
         @click.stop="openContextMenu"
       >
-        <i aria-hidden="true" class="pi pi-ellipsis-h" />
+        <MoreHorizontal aria-hidden="true" class=""  />
       </button>
     </div>
   </div>
 
-  <AppContextMenu
-    :visible="menuVisible"
-    :items="menuItems"
+  <ContextMenu
+    v-model:visible="menuVisible"
+    :sections="menuSections"
     :position="{ x: menuX, y: menuY }"
-    @close="menuVisible = false"
   />
 </template>
 
 <script setup lang="ts">
+import { Loader2, MoreHorizontal } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayer } from '@/composables/player'
 import { onImgError } from '@/utils/helpers'
 import { buildPlaybackTrack } from '@/factories/playbackTrack'
-import AppContextMenu from '@/components/common/AppContextMenu.vue'
+import ContextMenu from '@/components/common/ContextMenu.vue'
+import type { ContextMenuSection } from '@/types/context-menu'
 
 interface TrackRowTrack {
   id: string | number
@@ -174,25 +175,73 @@ const queueTrackInput = () => ({
   duration_seconds: durationSeconds.value,
 })
 
-const menuItems = [
-  { label: 'Play Now', icon: 'pi pi-play', action: () => handlePlay() },
-  { label: 'Play next', icon: 'pi pi-step-forward', action: () => player.playNextInQueue(buildPlaybackTrack(queueTrackInput())) },
-  { label: 'Add to queue', icon: 'pi pi-list', action: () => player.addToQueue(buildPlaybackTrack(queueTrackInput())) },
-  { label: 'Start Radio', icon: 'pi pi-wave-pulse', separator: true, action: () => {
-    openRadioFromTrack(trackId.value, `${title.value} • ${artistName.value}`)
-  }},
-  { label: 'Go to track', icon: 'pi pi-music', separator: true, action: () => {
-    router.push(`/track/${trackId.value}`)
-  }},
-  { label: 'Go to artist', icon: 'pi pi-user', action: () => {
-    const artistId = props.track.artist_id
-    if (artistId) router.push(`/artist/${artistId}`)
-  }},
-  { label: 'Go to album', icon: 'pi pi-book', action: () => {
-    const albumId = props.track.album?.id || props.track.album_id
-    if (albumId) router.push(`/album/${albumId}`)
-  }},
-]
+const menuSections = computed<ContextMenuSection[]>(() => [
+  {
+    id: 'playback',
+    label: 'PLAYBACK',
+    items: [
+      {
+        id: 'play-now',
+        label: 'Play Now',
+        icon: 'Play',
+        action: () => handlePlay(),
+      },
+      {
+        id: 'play-next',
+        label: 'Play Next',
+        icon: 'SkipForward',
+        action: () => player.playNextInQueue(buildPlaybackTrack(queueTrackInput())),
+      },
+      {
+        id: 'add-to-queue',
+        label: 'Add to Queue',
+        icon: 'ListMusic',
+        action: () => player.addToQueue(buildPlaybackTrack(queueTrackInput())),
+      },
+      {
+        id: 'start-radio',
+        label: 'Start Radio',
+        icon: 'Radio',
+        separator: true,
+        action: () => {
+          openRadioFromTrack(trackId.value, `${title.value} • ${artistName.value}`)
+        },
+      },
+    ],
+  },
+  {
+    id: 'navigate',
+    label: 'GO TO',
+    items: [
+      {
+        id: 'go-to-track',
+        label: 'Go to Track',
+        icon: 'Music2',
+        separator: true,
+        action: () => router.push(`/track/${trackId.value}`),
+      },
+      {
+        id: 'go-to-artist',
+        label: 'Go to Artist',
+        icon: 'UserRound',
+        hidden: !props.track.artist_id,
+        action: () => {
+          const artistId = props.track.artist_id
+          if (artistId) router.push(`/artist/${artistId}`)
+        },
+      },
+      {
+        id: 'go-to-album',
+        label: 'Go to Album',
+        icon: 'Disc3',
+        action: () => {
+          const albumId = props.track.album?.id || props.track.album_id
+          if (albumId) router.push(`/album/${albumId}`)
+        },
+      },
+    ],
+  },
+])
 
 function openContextMenu(e: MouseEvent) {
   menuX.value = e.clientX

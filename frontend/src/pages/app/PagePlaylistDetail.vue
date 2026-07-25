@@ -26,7 +26,7 @@
         <!-- Error -->
         <div v-else-if="error" class="flex flex-col items-center gap-4 py-24 text-center">
           <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/4">
-            <i aria-hidden="true" class="pi pi-exclamation-circle text-3xl text-white/20" />
+            <AlertCircle aria-hidden="true" class="text-3xl text-white/20"  />
           </div>
           <h2 class="text-xl font-bold text-white">Playlist not found</h2>
           <RouterLink to="/library" class="text-sm font-medium text-spotify hover:underline">
@@ -64,7 +64,7 @@
             >
               <div class="flex flex-col items-center gap-1.5 text-white">
                 <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-xs">
-                  <i aria-hidden="true" class="pi pi-camera text-lg" />
+                  <Camera aria-hidden="true" class="text-lg"  />
                 </div>
                 <span class="text-xs font-bold">{{ playlist.cover_url ? 'Change cover' : 'Add cover' }}</span>
               </div>
@@ -88,7 +88,7 @@
                   v-if="playlist.is_collaborative"
                   class="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400"
                 >
-                  <i aria-hidden="true" class="pi pi-users mr-1 text-[8px]" />Collaborative
+                  <Users class="mr-1 text-[8px]"<i aria-hidden="true"  /> />Collaborative
                 </span>
               </div>
               <h1 class="mt-2 text-3xl font-black text-white md:text-5xl">{{ playlist.name }}</h1>
@@ -113,7 +113,7 @@
                   class="inline-flex items-center gap-2 rounded-full bg-spotify px-8 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-spotify-hover disabled:opacity-40 disabled:hover:scale-100"
                   @click="playAll"
                 >
-                  <i aria-hidden="true" class="pi pi-play-fill" /> Play
+                  <Play aria-hidden="true" class=""  /> Play
                 </button>
 
                 <button
@@ -127,7 +127,7 @@
                   "
                   @click="toggleCollaborative"
                 >
-                  <i aria-hidden="true" class="pi pi-users text-xs" />
+                  <Users aria-hidden="true" class="text-xs"  />
                   {{ playlist.is_collaborative ? 'Collaborative' : 'Make Collaborative' }}
                 </button>
 
@@ -137,7 +137,7 @@
                   class="inline-flex items-center gap-2 rounded-full border border-red-500/20 px-6 py-3 text-sm font-bold text-red-400 transition hover:bg-red-500/10"
                   @click="deletePlaylist"
                 >
-                  <i aria-hidden="true" class="pi pi-trash text-xs" />
+                  <Trash2 aria-hidden="true" class="text-xs"  />
                   Delete
                 </button>
               </div>
@@ -149,7 +149,7 @@
                   :key="String(c.user_id)"
                   class="flex items-center gap-2 rounded-full bg-white/4 px-3 py-1.5 text-xs text-white/50"
                 >
-                  <i aria-hidden="true" class="pi pi-user text-[10px]" />
+                  <User aria-hidden="true" class="text-[10px]"  />
                   <span>{{ c.is_creator ? 'You' : `User #${String(c.user_id)}` }}</span>
                 </div>
               </div>
@@ -167,7 +167,7 @@
                   class="inline-flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-4 py-1.5 text-xs font-medium text-white/60 transition hover:bg-white/8 hover:text-white"
                   @click="showAddTrack = true"
                 >
-                  <i aria-hidden="true" class="pi pi-plus text-[10px]" />
+                  <Plus aria-hidden="true" class="text-[10px]"  />
                   Add Track
                 </button>
               </div>
@@ -193,19 +193,20 @@
                 @dragleave="onDragLeave(index)"
                 @drop="onDrop(index)"
                 @dragend="onDragEnd"
+                @contextmenu.prevent="openContextMenu($event, item)"
               >
                 <!-- Drag handle -->
                 <span
                   v-if="isOwner || isCollaborator"
                   class="flex w-6 cursor-grab items-center justify-center text-white/20 active:cursor-grabbing"
                 >
-                  <i aria-hidden="true" class="pi pi-bars text-xs opacity-0 transition group-hover:opacity-100" />
+                  <GripVertical class="text-xs opacity-0 transition group-hover:opacity-100" />
                 </span>
 
                 <!-- Number / Play -->
                 <span class="flex w-6 items-center justify-center">
                   <span class="text-xs font-bold text-white/20 group-hover:hidden">{{ index + 1 }}</span>
-                  <i aria-hidden="true" class="pi pi-play-fill hidden text-xs text-white group-hover:block" />
+                  <Play aria-hidden="true" class="hidden text-xs text-white group-hover:block"  />
                 </span>
 
                 <!-- Cover -->
@@ -219,7 +220,7 @@
                     @error="onImgError"
                   />
                   <div v-else class="flex h-full items-center justify-center">
-                    <i aria-hidden="true" class="pi pi-music text-xs text-white/20" />
+                    <Music aria-hidden="true" class="text-xs text-white/20"  />
                   </div>
                   <button
                     type="button"
@@ -227,7 +228,7 @@
                     class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100"
                     @click="playTrack(index)"
                   >
-                    <i aria-hidden="true" class="pi pi-play-fill text-xs text-white" />
+                    <Play aria-hidden="true" class="text-xs text-white"  />
                   </button>
                 </div>
 
@@ -250,7 +251,7 @@
                   class="shrink-0 rounded-full p-1.5 text-white/20 opacity-0 transition group-hover:opacity-100 hover:bg-white/6 hover:text-red-400"
                   @click="removeTrack(item.track_id)"
                 >
-                  <i aria-hidden="true" class="pi pi-times text-xs" />
+                  <X aria-hidden="true" class="text-xs"  />
                 </button>
               </div>
             </div>
@@ -260,7 +261,7 @@
               class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-16 text-center"
             >
               <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/4">
-                <i aria-hidden="true" class="pi pi-list text-xl text-white/20" />
+                <List aria-hidden="true" class="text-xl text-white/20"  />
               </div>
               <h3 class="text-base font-bold text-white">Empty playlist</h3>
               <p class="text-sm text-white/40">Add tracks from search or your library</p>
@@ -270,7 +271,7 @@
                 class="rounded-full bg-spotify px-6 py-2.5 text-sm font-bold text-black transition hover:bg-spotify-hover"
                 @click="showAddTrack = true"
               >
-                <i aria-hidden="true" class="pi pi-plus mr-1 text-xs" />
+                <Plus aria-hidden="true" class="mr-1 text-xs"  />
                 Add Track
               </button>
             </div>
@@ -298,7 +299,7 @@
     >
       <template #header>
         <div class="flex items-center gap-2 px-1">
-          <i aria-hidden="true" class="pi pi-search text-sm text-spotify" />
+          <Search aria-hidden="true" class="text-sm text-spotify"  />
           <span>Add Track</span>
         </div>
       </template>
@@ -306,7 +307,7 @@
       <div class="flex flex-col max-h-[70vh]">
         <div class="shrink-0 p-3">
           <div class="relative">
-            <i aria-hidden="true" class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/20" />
+            <Search aria-hidden="true" class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/20"  />
             <input
               v-model="addTrackQuery"
               type="text"
@@ -320,19 +321,19 @@
 
         <div class="flex-1 overflow-y-auto px-1">
           <div v-if="addTrackLoading" class="flex items-center justify-center py-12">
-            <i aria-hidden="true" class="pi pi-spin pi-spinner text-lg text-white/20" />
+            <Loader2 aria-hidden="true" class="text-lg text-white/20 animate-spin"  />
           </div>
 
           <div
             v-else-if="addTrackResults.length === 0 && addTrackQuery"
             class="flex flex-col items-center gap-2 py-12 text-center"
           >
-            <i aria-hidden="true" class="pi pi-search text-2xl text-white/20" />
+            <Search aria-hidden="true" class="text-2xl text-white/20"  />
             <p class="text-sm text-white/40">No tracks found</p>
           </div>
 
           <div v-else-if="!addTrackQuery" class="flex flex-col items-center gap-2 py-12 text-center">
-            <i aria-hidden="true" class="pi pi-music text-2xl text-white/20" />
+            <Music aria-hidden="true" class="text-2xl text-white/20"  />
             <p class="text-sm text-white/40">Type to search tracks</p>
           </div>
 
@@ -352,7 +353,7 @@
                 class="h-full w-full object-cover"
               />
               <div v-else class="flex h-full items-center justify-center">
-                <i aria-hidden="true" class="pi pi-music text-xs text-white/20" />
+                <Music aria-hidden="true" class="text-xs text-white/20"  />
               </div>
             </div>
             <div class="min-w-0 flex-1">
@@ -360,19 +361,30 @@
               <p class="truncate text-xs text-white/40">{{ t.artist_name }}</p>
             </div>
             <span class="text-xs text-white/30">{{ formatDuration(t.duration_seconds as number) }}</span>
-            <i v-if="addingTrackId === t.id" aria-hidden="true" class="pi pi-spin pi-spinner text-xs text-spotify" />
-            <i v-else aria-hidden="true" class="pi pi-plus text-xs text-white/30" />
+            <Loader2 v-if="addingTrackId === t.id" aria-hidden="true" class="text-xs text-spotify animate-spin"  />
+            <Plus v-else aria-hidden="true" class="text-xs text-white/30"  />
           </button>
         </div>
       </div>
     </Dialog>
+    <ContextMenu
+      v-model:visible="menuVisible"
+      :sections="sections"
+      :header="header"
+      :accent-color="accentColor"
+      :position="{ x: menuX, y: menuY }"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import { AlertCircle, Camera, GripVertical, List, Loader2, Music, Play, Plus, Search, Trash2, User, Users, X } from 'lucide-vue-next'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
+import type { TrackContextItem } from '@/composables/useTrackContextMenu'
+import { useTrackContextMenu } from '@/composables/useTrackContextMenu'
+import ContextMenu from '@/components/common/ContextMenu.vue'
 import { useUserAuthStore } from '@/stores'
 import { PlaylistCoverGrid } from '@/components/music'
 import { usePlaylistDetail } from '@/composables/catalog/usePlaylistDetail'
@@ -603,7 +615,7 @@ function playAll() {
 }
 
 function playTrack(index: number) {
-  const queue = mapToPlaybackTracks(tracks.value)
+  const queue = mapToPlaybackTracks(tracks.value.map(t => ({ ...t, id: t.track_id })))
   player.setQueueAndPlay(queue, index)
 }
 
@@ -621,4 +633,21 @@ function formatTime(seconds?: number | null) {
   const s = Math.floor(seconds % 60)
   return `${m}:${String(s).padStart(2, '0')}`
 }
+
+// ── Context menu ──────────────────────────────────────────────────
+const menuVisible = ref(false)
+const menuX = ref(0)
+const menuY = ref(0)
+const contextTrack = ref<TrackContextItem | null>(null)
+
+function openContextMenu(e: MouseEvent, item: Record<string, unknown>) {
+  menuX.value = e.clientX
+  menuY.value = e.clientY
+  contextTrack.value = item as unknown as TrackContextItem
+  menuVisible.value = true
+}
+
+const { sections, header, accentColor } = useTrackContextMenu(
+  computed(() => contextTrack.value),
+)
 </script>

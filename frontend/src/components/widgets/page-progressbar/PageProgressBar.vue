@@ -105,7 +105,7 @@ function stop(): void {
 
 /* ---------- Reactivity ---------- */
 watchImmediate(
-  () => loadingStore.isLoading,
+  () => loadingStore.loading,
   (newVal) => (newVal ? !isLoading.value && start() : stop()),
 )
 

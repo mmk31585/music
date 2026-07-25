@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen overflow-hidden bg-black text-white" :dir="dir">
+  <div class="h-screen overflow-hidden bg-[var(--bg-base)] text-[var(--text-primary)]" :dir="dir">
     <!-- Skip link for keyboard users -->
     <a href="#main-content" class="skip-link">Skip to main content</a>
 
@@ -10,7 +10,7 @@
       class="fixed top-0 left-0 right-0 z-9999 flex items-center justify-center gap-2 bg-red-600/90 px-4 py-2 text-sm font-medium text-white backdrop-blur-xs"
       style="padding-top: max(0.5rem, env(safe-area-inset-top, 0.5rem))"
     >
-      <i class="pi pi-wifi text-xs" aria-hidden="true" />
+      <Wifi class="text-xs" aria-hidden="true"  />
       <span>You are offline. Some features may be unavailable.</span>
     </div>
 
@@ -24,15 +24,13 @@
 
       <!-- Mobile overlay backdrop -->
       <Transition name="fade">
-        <div
+        <button
+          type="button"
           v-if="mobileOpen"
-          class="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden"
-          role="button"
-          tabindex="0"
+          class="fixed inset-0 z-40 bg-[var(--bg-overlay)] backdrop-blur-xs lg:hidden"
+          aria-label="Close sidebar"
           @click="mobileOpen = false"
-          @keydown.enter="mobileOpen = false"
-          @keydown.space.prevent="mobileOpen = false"
-        />
+        ></button>
       </Transition>
 
       <!-- Mobile sidebar drawer -->
@@ -54,7 +52,7 @@
         />
         <main
           id="main-content"
-          class="flex-1 overflow-y-auto bg-linear-to-b from-[#151515] to-black"
+          class="flex-1 overflow-y-auto bg-linear-to-b from-[var(--surface-1)] to-[var(--surface-0)]"
           :class="mainPadding"
         >
           <ErrorBoundary>
@@ -80,6 +78,7 @@
 </template>
 
 <script setup lang="ts">
+import { Wifi } from 'lucide-vue-next'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRTL, useOnlineStatus } from '@/composables'
 import { AdminSidebar, AdminTopbar } from '@/components/admin'

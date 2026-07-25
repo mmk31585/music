@@ -28,7 +28,7 @@
             class="text-xs text-white/40 transition-colors hover:text-white/60"
             @click="step = 1; selectedType = null"
           >
-            <i aria-hidden="true" class="pi pi-arrow-left mr-1" /> Back
+            <ArrowLeft aria-hidden="true" class="mr-1"  /> Back
           </button>
           <span class="text-white/20">|</span>
           <span class="text-sm font-medium text-white/70">{{ typeLabel }}</span>
@@ -112,7 +112,7 @@ For LRC format: [00:00.00]Line 1&#10;[00:05.00]Line 2"
           class="spring flex-1 rounded-xl bg-spotify py-3 text-sm font-bold text-black transition-all hover:bg-spotify-hover disabled:opacity-40"
           @click="submit"
         >
-          <i aria-hidden="true" v-if="submitting" class="pi pi-spin pi-spinner mr-2" />
+          <Loader2 aria-hidden="true" v-if="submitting" class="mr-2 animate-spin"  />
           Submit {{ typeLabel }}
         </button>
       </div>
@@ -124,6 +124,7 @@ For LRC format: [00:00.00]Line 1&#10;[00:05.00]Line 2"
 </template>
 
 <script setup lang="ts">
+import { ArrowLeft, Loader2 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useContributionApi } from '@/services/api/contribution'
 import type { ContributionType, TargetType } from '@/services/api/contribution'

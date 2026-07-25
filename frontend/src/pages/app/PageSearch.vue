@@ -28,7 +28,7 @@
         class="spring w-full rounded-full shadow-md transition-all duration-300 focus-within:ring-4 focus-within:ring-spotify/15"
       >
         <InputIcon class="text-white/40 text-base">
-          <i aria-hidden="true" class="pi pi-search" />
+          <Search aria-hidden="true" class=""  />
         </InputIcon>
         <InputText
           ref="inputRef"
@@ -55,7 +55,7 @@
             @click="clearSearch"
           >
             <template #icon>
-              <i aria-hidden="true" class="pi pi-times text-xs" />
+              <X aria-hidden="true" class="text-xs"  />
             </template>
           </Button>
         </div>
@@ -94,12 +94,28 @@
             @remove="removeRecentSearch(entry.query)"
           >
             <template #icon>
-              <i aria-hidden="true" class="pi pi-history text-[10px] text-white/30" />
+              <History aria-hidden="true" class="text-[10px] text-white/30"  />
             </template>
           </Chip>
         </div>
       </div>
     </Transition>
+
+    <!-- ─────────────────── Filter Tabs ─────────────────── -->
+    <div v-if="hasSearched && !searching" class="mb-6 flex flex-wrap gap-2">
+      <button
+        v-for="tab in tabs"
+        :key="tab.value"
+        class="spring rounded-full px-4 py-1.5 text-xs font-bold transition-all"
+        :class="searchType === tab.value
+          ? 'bg-white text-black shadow-md'
+          : 'border border-white/8 bg-white/4 text-white/50 hover:border-white/20 hover:text-white'"
+        @click="searchType = tab.value"
+      >
+        {{ tab.label }}
+        <span v-if="getCount(tab.value)" class="ml-1.5 text-[10px] opacity-60">({{ getCount(tab.value) }})</span>
+      </button>
+    </div>
 
     <!-- ─────────────────── Search Loading Skeleton ─────────────────── -->
     <div v-if="searching" class="space-y-2" aria-live="polite">
@@ -115,7 +131,13 @@
     <!-- ═══════════════════════ SEARCH RESULTS ═══════════════════════ -->
     <template v-else-if="hasSearched">
       <AppEmptyState
-        v-if="hasNoResults"
+        v-if="searchError"
+        icon="pi pi-exclamation-circle"
+        title="Search failed"
+        description="Something went wrong. Check your connection and try again."
+      />
+      <AppEmptyState
+        v-else-if="hasNoResults"
         icon="pi pi-search"
         title="No results found"
         :description="noResultsText"
@@ -123,76 +145,80 @@
 
       <div v-else class="space-y-10" aria-live="polite">
         <!-- ── Songs ── -->
-        <section v-if="results.tracks.length">
+        <section v-if="filteredResults.tracks.length">
           <div class="mb-4 flex items-center gap-3">
             <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
-              <i aria-hidden="true" class="pi pi-play-circle text-xs text-emerald-400" />
+              <PlayCircle aria-hidden="true" class="text-xs text-emerald-400"  />
             </div>
             <h2 class="text-lg font-bold text-white">Songs</h2>
-            <Badge :value="results.tracks.length" severity="success" class="bg-emerald-500/15! text-emerald-400! text-[10px]! font-bold! min-w-5! h-5!" />
+            <Badge :value="filteredResults.tracks.length" severity="success" class="bg-emerald-500/15! text-emerald-400! text-[10px]! font-bold! min-w-5! h-5!" />
+            <button
+              class="ml-auto flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-400 transition hover:bg-emerald-500/20"
+              @click.stop="playAllSearchResults"
+            >
+              <Play aria-hidden="true" class="text-[10px]"  />
+              Play All
+            </button>
           </div>
           <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
-            <div
-              v-for="(track, i) in results.tracks"
+            <button
+              v-for="(track, i) in filteredResults.tracks"
               :key="track.id"
-              role="button"
-              tabindex="0"
-              class="group flex cursor-pointer items-center gap-3 px-4 py-2.5 transition hover:bg-white/3 active:bg-white/5"
+              type="button"
+              class="group flex w-full items-center gap-3 px-4 py-2.5 transition hover:bg-white/3 active:bg-white/5"
               @click="playTrack(track)"
-              @keydown.enter="playTrack(track)"
-              @keydown.space.prevent="playTrack(track)"
             >
               <span class="relative flex w-6 items-center justify-center text-xs text-white/30 tabular-nums">
                 <span class="group-hover:hidden">{{ i + 1 }}</span>
-                <i aria-hidden="true" class="pi pi-play-fill absolute hidden text-sm text-white group-hover:block" />
+                <Play aria-hidden="true" class="absolute hidden text-sm text-white group-hover:block"  />
               </span>
               <div class="h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-white/4">
                 <img
-                  v-if="track.cover_url"
-                  :src="track.cover_url"
+                  v-if="track.coverUrl"
+                  :src="track.coverUrl"
                   :alt="track.title"
                   class="h-full w-full object-cover"
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full items-center justify-center">
-                  <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
+                  <Music aria-hidden="true" class="text-xs text-white/30"  />
                 </div>
               </div>
               <div class="min-w-0 flex-1">
                 <p class="truncate text-sm font-medium text-white">{{ track.title }}</p>
-                <p class="truncate text-xs text-white/40">{{ track.artist_name || 'Unknown artist' }}</p>
+                <p class="truncate text-xs text-white/40">{{ (track as any).artist_name || (track.artists?.[0]?.name) || 'Unknown artist' }}</p>
               </div>
-              <span class="text-xs text-white/40 tabular-nums">{{ formatDuration(track.duration_seconds) }}</span>
-            </div>
+              <span class="text-xs text-white/40 tabular-nums">{{ formatDuration(track.durationSeconds) }}</span>
+            </button>
           </div>
         </section>
 
         <!-- ── Artists ── -->
-        <section v-if="results.artists.length">
+        <section v-if="filteredResults.artists.length">
           <div class="mb-4 flex items-center gap-3">
             <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
-              <i aria-hidden="true" class="pi pi-users text-xs text-blue-400" />
+              <Users aria-hidden="true" class="text-xs text-blue-400"  />
             </div>
             <h2 class="text-lg font-bold text-white">Artists</h2>
-            <Badge :value="results.artists.length" severity="info" class="bg-blue-500/15! text-blue-400! text-[10px]! font-bold! min-w-5! h-5!" />
+            <Badge :value="filteredResults.artists.length" severity="info" class="bg-blue-500/15! text-blue-400! text-[10px]! font-bold! min-w-5! h-5!" />
           </div>
           <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             <RouterLink
-              v-for="artist in results.artists"
+              v-for="artist in filteredResults.artists"
               :key="artist.id"
               :to="`/artist/${artist.id}`"
               class="group spring rounded-2xl border border-white/6 bg-white/2 p-4 text-center transition-all hover:border-white/12 hover:bg-white/5 active:scale-[0.97]"
             >
               <div class="mx-auto h-20 w-20 overflow-hidden rounded-full bg-white/6 ring-1 ring-white/10 transition-all duration-300 group-hover:ring-spotify/50">
                 <img
-                  v-if="artist.image_url"
-                  :src="artist.image_url"
+                  v-if="artist.imageUrl"
+                  :src="artist.imageUrl"
                   :alt="artist.name"
                   class="h-full w-full object-cover"
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full items-center justify-center">
-                  <i aria-hidden="true" class="pi pi-user text-xl text-white/30" />
+                  <User aria-hidden="true" class="text-xl text-white/30"  />
                 </div>
               </div>
               <p class="mt-3 truncate text-sm font-medium text-white">{{ artist.name }}</p>
@@ -202,40 +228,40 @@
         </section>
 
         <!-- ── Albums ── -->
-        <section v-if="results.albums.length">
+        <section v-if="filteredResults.albums.length">
           <div class="mb-4 flex items-center gap-3">
             <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
-              <i aria-hidden="true" class="pi pi-book text-xs text-purple-400" />
+              <Book aria-hidden="true" class="text-xs text-purple-400"  />
             </div>
             <h2 class="text-lg font-bold text-white">Albums</h2>
-            <Badge :value="results.albums.length" severity="warn" class="bg-purple-500/15! text-purple-400! text-[10px]! font-bold! min-w-5! h-5!" />
+            <Badge :value="filteredResults.albums.length" severity="warn" class="bg-purple-500/15! text-purple-400! text-[10px]! font-bold! min-w-5! h-5!" />
           </div>
           <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             <RouterLink
-              v-for="album in results.albums"
+              v-for="album in filteredResults.albums"
               :key="album.id"
               :to="`/album/${album.id}`"
               class="group active:scale-[0.98]"
             >
               <div class="spring relative aspect-square overflow-hidden rounded-2xl bg-white/4 ring-1 ring-white/10 transition-all group-hover:shadow-lg group-hover:ring-spotify/50">
                 <img
-                  v-if="album.cover_url"
-                  :src="album.cover_url"
+                  v-if="album.coverUrl"
+                  :src="album.coverUrl"
                   :alt="album.title"
                   class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full items-center justify-center">
-                  <i aria-hidden="true" class="pi pi-compact-disc text-3xl text-white/30" />
+                  <Disc3 aria-hidden="true" class="text-3xl text-white/30"  />
                 </div>
                 <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100">
                   <div class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify text-black shadow-xl transition-transform group-hover:scale-110">
-                    <i aria-hidden="true" class="pi pi-play-fill text-lg" />
+                    <Play aria-hidden="true" class="text-lg"  />
                   </div>
                 </div>
               </div>
               <p class="mt-2 truncate text-sm font-medium text-white">{{ album.title }}</p>
-              <p class="truncate text-xs text-white/40">{{ album.artist_name || '\u2014' }}</p>
+              <p class="truncate text-xs text-white/40">{{ (album as any).artist_name || (album.artists?.[0]?.name) || '\u2014' }}</p>
             </RouterLink>
           </div>
         </section>
@@ -345,7 +371,7 @@
             >
               Explore moods
               <template #icon>
-                <i aria-hidden="true" class="pi pi-chevron-left text-[10px] ml-0.5" />
+                <ChevronLeft aria-hidden="true" class="text-[10px] ml-0.5"  />
               </template>
             </Button>
           </div>
@@ -376,15 +402,12 @@
             </div>
           </div>
           <div class="grid gap-3 md:grid-cols-2">
-            <div
+            <button
               v-for="(track, idx) in popular.slice(0, 4)"
               :key="track.id"
-              role="button"
-              tabindex="0"
-              class="group spring flex cursor-pointer items-center gap-4 rounded-2xl border border-white/6 bg-white/2 px-4 py-3 transition-all hover:border-white/12 hover:bg-white/6 active:scale-[0.99]"
+              type="button"
+              class="group spring flex w-full items-center gap-4 rounded-2xl border border-white/6 bg-white/2 px-4 py-3 transition-all hover:border-white/12 hover:bg-white/6 active:scale-[0.99]"
               @click="playTrack(track)"
-              @keydown.enter="playTrack(track)"
-              @keydown.space.prevent="playTrack(track)"
             >
               <div class="flex w-8 items-center justify-center">
                 <span class="text-lg font-black text-white/30 tabular-nums">{{ idx + 1 }}</span>
@@ -399,7 +422,7 @@
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full items-center justify-center">
-                  <i aria-hidden="true" class="pi pi-music text-white/30" />
+                  <Music aria-hidden="true" class="text-white/30"  />
                 </div>
               </div>
               <div class="min-w-0 flex-1">
@@ -410,7 +433,7 @@
                 <span class="glow-spread inline-block h-1.5 w-1.5 rounded-full bg-spotify" />
                 Trending
               </Chip>
-            </div>
+            </button>
           </div>
         </section>
 
@@ -465,7 +488,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { Book, ChevronLeft, Disc3, History, Music, Play, PlayCircle, Search, User, Users, X } from 'lucide-vue-next'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useSearchApi } from '@/services/api/catalog/search'
 import type { SearchResult } from '@/services/api/catalog/search'
 import { useSocialApi } from '@/services/api/social'
@@ -493,6 +518,8 @@ import type { ActivityItemData } from '@/components/music/ActivityItem.vue'
 import type { ActivityFeedItem } from '@/services/api/social/types'
 
 // ── Composables ──
+const route = useRoute()
+const router = useRouter()
 const searchApi = useSearchApi()
 const socialApi = useSocialApi()
 const recsApi = useRecommendationsApi()
@@ -505,10 +532,13 @@ const { recentSearches, addRecentSearch, removeRecentSearch, clearRecentSearches
 const inputRef = ref<HTMLInputElement | null>(null)
 const query = ref('')
 const lastQuery = ref('')
-const results = ref<SearchResult>({ tracks: [], artists: [], albums: [] })
+const results = ref<SearchResult>({ tracks: [], artists: [], albums: [], playlists: [] })
 const searching = ref(false)
 const hasSearched = ref(false)
 const hasNoResults = ref(false)
+const searchError = ref(false)
+type SearchTab = 'all' | 'tracks' | 'artists' | 'albums'
+const searchType = ref<SearchTab>('all')
 const showRecent = ref(false)
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -529,6 +559,30 @@ const pageTitle = computed(() =>
 const noResultsText = computed(() =>
   `No results for "${lastQuery.value}". Try a different search term.`,
 )
+
+const filteredResults = computed(() => {
+  if (searchType.value === 'all') return results.value
+  return {
+    tracks: searchType.value === 'tracks' ? results.value.tracks : [],
+    artists: searchType.value === 'artists' ? results.value.artists : [],
+    albums: searchType.value === 'albums' ? results.value.albums : [],
+  }
+})
+
+const tabs = [
+  { value: 'all' as const, label: 'All' },
+  { value: 'tracks' as const, label: 'Songs' },
+  { value: 'artists' as const, label: 'Artists' },
+  { value: 'albums' as const, label: 'Albums' },
+]
+
+function getCount(tab: string): number {
+  if (tab === 'all') return results.value.tracks.length + results.value.artists.length + results.value.albums.length
+  if (tab === 'tracks') return results.value.tracks.length
+  if (tab === 'artists') return results.value.artists.length
+  if (tab === 'albums') return results.value.albums.length
+  return 0
+}
 
 // ── Moods ──
 const moods = MOOD_OPTIONS.slice(0, 8).map((m) => {
@@ -571,22 +625,30 @@ function onInput() {
 async function doSearch() {
   const q = query.value.trim()
   if (!q) return
+  searchType.value = 'all'
 
   lastQuery.value = q
   searching.value = true
   hasSearched.value = true
   hasNoResults.value = false
+  searchError.value = false
   showRecent.value = false
   addRecentSearch(q)
+
+  // Sync query to URL param (debounced)
+  router.replace({ query: { ...route.query, q } })
 
   try {
     const res = await searchApi.searchCatalog({ query: q, limit: 20 })
     results.value = res
-    hasNoResults.value = !res.tracks.length && !res.artists.length && !res.albums.length
+    const empty = !res.tracks.length && !res.artists.length && !res.albums.length
+    hasNoResults.value = empty
+    searchError.value = false
   } catch (err) {
     console.error('Failed to search catalog:', err)
-    hasNoResults.value = true
-    results.value = { tracks: [], artists: [], albums: [] }
+    searchError.value = true
+    hasNoResults.value = false
+    results.value = { tracks: [], artists: [], albums: [], playlists: [] }
   } finally {
     searching.value = false
   }
@@ -594,9 +656,10 @@ async function doSearch() {
 
 function clearSearch() {
   query.value = ''
-  results.value = { tracks: [], artists: [], albums: [] }
+  results.value = { tracks: [], artists: [], albums: [], playlists: [] }
   hasSearched.value = false
   hasNoResults.value = false
+  searchType.value = 'all'
   inputRef.value?.focus()
 }
 
@@ -647,31 +710,60 @@ async function fetchDiscover() {
 }
 
 function playTrack(track: TrackCardItem) {
-  void player.setQueueAndPlay(
-    [buildPlaybackTrack({
+  void player.playTrack(
+    buildPlaybackTrack({
       id: String(track.id),
       title: (track.title as string) || undefined,
       artist_name: (track.artist_name as string) || 'Unknown',
       album_title: (track.album_title as string) || null,
       cover_url: (track.cover_url as string) || null,
       duration_seconds: (track.duration_seconds as number) ?? null,
-    })],
-    0,
+    }),
   )
 }
 
 function playHistoryItem(item: TrackCardItem) {
-  player.setQueueAndPlay(
-    [buildPlaybackTrack({
+  void player.playTrack(
+    buildPlaybackTrack({
       id: String(item.track_id),
       title: (item.track_title as string) || 'Unknown',
       artist_name: (item.artist_name as string) || 'Unknown',
       cover_url: (item.track_cover_url as string) || null,
       duration_seconds: (item.track_duration as number) ?? null,
-    })],
-    0,
+    }),
   )
 }
+
+function playAllSearchResults() {
+  const tracks = filteredResults.value.tracks
+  if (!tracks.length) return
+  const queue = tracks.map((t: any) =>
+    buildPlaybackTrack({
+      id: String(t.id),
+      title: t.title || undefined,
+      artist_name: t.artist_name || 'Unknown',
+      album_title: t.album_title || null,
+      cover_url: t.cover_url || null,
+      duration_seconds: t.duration_seconds ?? null,
+    })
+  )
+  void player.setQueueAndPlay(queue, 0)
+}
+
+// Restore query from URL on mount
+const initialQuery = route.query.q as string | undefined
+if (initialQuery) {
+  query.value = initialQuery
+  doSearch()
+}
+
+// Sync query to URL with debounce
+watch(query, () => {
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    router.replace({ query: { q: query.value || undefined } })
+  }, 500)
+})
 
 onMounted(fetchDiscover)
 </script>

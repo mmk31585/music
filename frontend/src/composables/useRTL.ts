@@ -13,7 +13,7 @@ export function useRTL() {
   const localeStore = useLocaleStore()
 
   const isRTL = computed(() => localeStore.locale === 'fa')
-  const dir = computed(() => localeStore.dir())
+  const dir = computed(() => localeStore.dir)
 
   function toggleRTL() {
     localeStore.toggleLocale()

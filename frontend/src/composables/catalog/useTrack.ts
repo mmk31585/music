@@ -60,7 +60,12 @@ export function useTrack(id: string | number) {
         ? likedTracks.some((t) => t.track_id === String(id))
         : false
 
-      trackArtists.value = []
+      trackArtists.value = (trackData.artists || []).map((a: any) => ({
+        id: a.artist_id,
+        artistId: a.artist_id ?? undefined,
+        name: a.name,
+        role: a.role,
+      }))
       trackCredits.value = []
 
       recsApi

@@ -60,14 +60,14 @@
       >
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-2 text-sm text-red-400">
-            <i aria-hidden="true" class="pi pi-exclamation-circle text-xs" />
+            <AlertCircle aria-hidden="true" class="text-xs"  />
             <span>{{ playerStore.error }}</span>
           </div>
           <button
             class="inline-flex items-center gap-1 rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/30 active:scale-95"
             @click="retryPlayback"
           >
-            <i aria-hidden="true" class="pi pi-refresh text-xs" />
+            <RefreshCw aria-hidden="true" class="text-xs"  />
             Retry
           </button>
         </div>
@@ -80,28 +80,28 @@
           :disabled="!nowPlayingTrackId || isTrackTransitioning"
           @click="skipTrack"
         >
-          <i aria-hidden="true" class="pi pi-forward text-xs" />
+          <Forward aria-hidden="true" class="text-xs"  />
           Skip
         </button>
         <button
           class="rounded-xl bg-green-500/10 px-4 py-2 text-sm font-semibold text-green-400 transition hover:bg-green-500/20"
           @click="updateStatus('active')"
         >
-          <i aria-hidden="true" class="pi pi-play text-xs" />
+          <Play aria-hidden="true" class="text-xs"  />
           Resume Playback
         </button>
         <button
           class="rounded-xl bg-yellow-500/10 px-4 py-2 text-sm font-semibold text-yellow-400 transition hover:bg-yellow-500/20"
           @click="updateStatus('paused')"
         >
-          <i aria-hidden="true" class="pi pi-pause text-xs" />
+          <Pause aria-hidden="true" class="text-xs"  />
           Pause Playback
         </button>
         <button
           class="rounded-xl bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/20"
           @click="updateStatus('ended')"
         >
-          <i aria-hidden="true" class="pi pi-stop text-xs" />
+          <Square aria-hidden="true" class="text-xs"  />
           End Party
         </button>
       </div>
@@ -137,6 +137,7 @@
 </template>
 
 <script setup lang="ts">
+import { AlertCircle, Forward, Pause, Play, RefreshCw, Square } from 'lucide-vue-next'
 /*
  * MANUAL TEST — RUN WITH TWO BROWSER WINDOWS:
  * 1. Start backend (go run cmd/api/main.go) + frontend (npm run dev)

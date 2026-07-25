@@ -1,6 +1,8 @@
 package importcmd
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 
 	appErr "music/internal/common/errors"
@@ -19,13 +21,13 @@ func NewHandler(importSvc *ImportService, artistSearcher *ArtistSearcher) *Handl
 func (h *Handler) Search(c *gin.Context) {
 	q := c.Query("q")
 	if q == "" {
-		response.Error(c, appErr.BadRequest("search query 'q' is required", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "search query 'q' is required", nil))
 		return
 	}
 
 	results, err := h.importSvc.Search(c.Request.Context(), q)
 	if err != nil {
-		response.Error(c, appErr.Internal("search failed: "+err.Error(), err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "search failed: "+err.Error(), err))
 		return
 	}
 
@@ -56,51 +58,51 @@ func (h *Handler) Search(c *gin.Context) {
 		})
 	}
 
-	response.OK(c, "search results retrieved", dto)
+	response.Success(c, http.StatusOK, "search results retrieved", dto)
 }
 
 func (h *Handler) Import(c *gin.Context) {
 	var req ImportRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, appErr.BadRequest("invalid request body", err))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "invalid request body", err))
 		return
 	}
 
 	// Validate: need either a URL or at least title+artist
 	if req.URL == "" && (req.Title == "" || req.Artist == "") {
-		response.Error(c, appErr.BadRequest("either 'url' or 'title'+'artist' is required", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "either 'url' or 'title'+'artist' is required", nil))
 		return
 	}
 
 	userID := getUserID(c)
 	if userID == "" {
-		response.Error(c, appErr.Unauthorized("user not authenticated", nil))
+		response.Error(c, appErr.New(http.StatusUnauthorized, appErr.CodeUnauthorized, "user not authenticated", nil))
 		return
 	}
 
 	resp, err := h.importSvc.Import(c.Request.Context(), req.URL, req.Source, req.Title, req.Artist, req.Album, req.ExternalIDs, userID)
 	if err != nil {
-		response.Error(c, appErr.Internal("import failed: "+err.Error(), err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "import failed: "+err.Error(), err))
 		return
 	}
 
-	response.Created(c, "track import initiated", resp)
+	response.Success(c, http.StatusCreated, "track import initiated", resp)
 }
 
 func (h *Handler) GetProgress(c *gin.Context) {
 	jobID := c.Param("jobId")
 	if jobID == "" {
-		response.Error(c, appErr.BadRequest("jobId is required", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "jobId is required", nil))
 		return
 	}
 
 	pu, err := h.importSvc.GetProgress(c.Request.Context(), jobID)
 	if err != nil {
-		response.Error(c, appErr.Internal("failed to get progress: "+err.Error(), err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to get progress: "+err.Error(), err))
 		return
 	}
 	if pu == nil {
-		response.Error(c, appErr.NotFound("job not found", nil))
+		response.Error(c, appErr.New(http.StatusNotFound, appErr.CodeNotFound, "job not found", nil))
 		return
 	}
 
@@ -113,19 +115,19 @@ func (h *Handler) GetProgress(c *gin.Context) {
 		DraftID:  pu.DraftID,
 	}
 
-	response.OK(c, "import progress", resp)
+	response.Success(c, http.StatusOK, "import progress", resp)
 }
 
 func (h *Handler) SearchArtist(c *gin.Context) {
 	name := c.Query("name")
 	if name == "" {
-		response.Error(c, appErr.BadRequest("artist name 'name' is required", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "artist name 'name' is required", nil))
 		return
 	}
 
 	result, err := h.artistSearcher.SearchArtist(c.Request.Context(), name)
 	if err != nil {
-		response.Error(c, appErr.Internal("artist search failed: "+err.Error(), err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "artist search failed: "+err.Error(), err))
 		return
 	}
 
@@ -158,49 +160,49 @@ func (h *Handler) SearchArtist(c *gin.Context) {
 		})
 	}
 
-	response.OK(c, "artist discography retrieved", dto)
+	response.Success(c, http.StatusOK, "artist discography retrieved", dto)
 }
 
 func (h *Handler) BatchImport(c *gin.Context) {
 	var req BatchImportRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, appErr.BadRequest("invalid request body", err))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "invalid request body", err))
 		return
 	}
 
 	userID := getUserID(c)
 	if userID == "" {
-		response.Error(c, appErr.Unauthorized("user not authenticated", nil))
+		response.Error(c, appErr.New(http.StatusUnauthorized, appErr.CodeUnauthorized, "user not authenticated", nil))
 		return
 	}
 
 	resp, err := h.importSvc.BatchImport(c.Request.Context(), req.Tracks, userID)
 	if err != nil {
-		response.Error(c, appErr.Internal("batch import failed: "+err.Error(), err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "batch import failed: "+err.Error(), err))
 		return
 	}
 
-	response.Created(c, "batch import initiated", resp)
+	response.Success(c, http.StatusCreated, "batch import initiated", resp)
 }
 
 func (h *Handler) GetBatchProgress(c *gin.Context) {
 	batchID := c.Param("batchId")
 	if batchID == "" {
-		response.Error(c, appErr.BadRequest("batchId is required", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "batchId is required", nil))
 		return
 	}
 
 	bp, err := h.importSvc.GetBatchProgress(c.Request.Context(), batchID)
 	if err != nil {
-		response.Error(c, appErr.Internal("failed to get batch progress: "+err.Error(), err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to get batch progress: "+err.Error(), err))
 		return
 	}
 	if bp == nil {
-		response.Error(c, appErr.NotFound("batch not found", nil))
+		response.Error(c, appErr.New(http.StatusNotFound, appErr.CodeNotFound, "batch not found", nil))
 		return
 	}
 
-	response.OK(c, "batch progress", bp)
+	response.Success(c, http.StatusOK, "batch progress", bp)
 }
 
 func getUserID(c *gin.Context) string {

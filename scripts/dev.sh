@@ -74,7 +74,9 @@ cleanup_logs() {
 }
 
 is_running() {
-  local pid_file="$PID_DIR/$1.pid"
+  local name="$1"
+  local pid_file="$PID_DIR/$name.pid"
+  # Check PID file first
   if [ -f "$pid_file" ]; then
     local pid
     pid=$(cat "$pid_file")
@@ -82,6 +84,14 @@ is_running() {
       return 0
     fi
   fi
+  # Fallback for Docker-based workers
+  if [ "$name" = "worker" ]; then
+    local status
+    status=$(docker inspect moja-ml-service-worker-1 --format='{{.State.Status}}' 2>/dev/null || echo "")
+    [ "$status" = "running" ] && return 0
+  fi
+  # Fallback: check port-based health (handles stale PIDs after exec)
+  health_check "$name" 2>/dev/null && return 0
   return 1
 }
 
@@ -258,15 +268,22 @@ cmd_status() {
 
   # Docker infrastructure
   echo -e "${YELLOW}Infrastructure:${NC}"
-  for container in musicapp_postgres musicapp_redis musicapp_minio musicapp_opensearch; do
+  for container in musicapp-db musicapp_redis musicapp_minio; do
+    local display_name
+    case "$container" in
+      musicapp-db)     display_name="PostgreSQL" ;;
+      musicapp_redis)  display_name="Redis" ;;
+      musicapp_minio)  display_name="MinIO" ;;
+      *)               display_name="$container" ;;
+    esac
     local status
     status=$(docker inspect "$container" --format='{{.State.Status}}' 2>/dev/null || echo "not found")
     if [ "$status" = "running" ]; then
-      echo -e "  ${GREEN}●${NC} $container"
+      echo -e "  ${GREEN}●${NC} $display_name"
     elif [ "$status" = "not found" ]; then
-      echo -e "  ${RED}○${NC} $container (not found)"
+      echo -e "  ${RED}○${NC} $display_name (not found)"
     else
-      echo -e "  ${RED}○${NC} $container ($status)"
+      echo -e "  ${RED}○${NC} $display_name ($status)"
     fi
   done
 

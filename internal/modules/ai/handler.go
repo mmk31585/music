@@ -47,6 +47,18 @@ func (h *Handler) checkRateLimit(userID string) bool {
 	return true
 }
 
+// GenerateEmbedding godoc
+// @Summary Generate track embeddings
+// @Description Generates AI embeddings for one or more tracks for similarity search.
+// @Tags ai
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body EmbeddingRequest true "Embedding request with track IDs"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /ai/embeddings [post]
 func (h *Handler) GenerateEmbedding(c *gin.Context) {
 	var req EmbeddingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -76,6 +88,19 @@ func (h *Handler) GenerateEmbedding(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": results})
 }
 
+// AnalyzeMood godoc
+// @Summary Analyze track mood
+// @Description Analyzes and generates mood data for a specific track using AI.
+// @Tags ai
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body MoodAnalysisRequest true "Mood analysis request with track ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /ai/moods [post]
 func (h *Handler) AnalyzeMood(c *gin.Context) {
 	var req MoodAnalysisRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -110,6 +135,18 @@ func (h *Handler) AnalyzeMood(c *gin.Context) {
 	})
 }
 
+// GetMood godoc
+// @Summary Get track mood
+// @Description Returns cached mood data for a specific track.
+// @Tags ai
+// @Produce json
+// @Security Bearer
+// @Param trackId path string true "Track ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /ai/moods/{trackId} [get]
 func (h *Handler) GetMood(c *gin.Context) {
 	trackID := c.Param("trackId")
 	if trackID == "" {
@@ -140,6 +177,20 @@ func (h *Handler) GetMood(c *gin.Context) {
 	})
 }
 
+// GeneratePlaylist godoc
+// @Summary Generate AI playlist
+// @Description Generates a playlist based on a text prompt, mood, or seed track using AI.
+// @Tags ai
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body GeneratePlaylistRequest true "Playlist generation request"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 429 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /ai/playlists/generate [post]
 func (h *Handler) GeneratePlaylist(c *gin.Context) {
 	var req GeneratePlaylistRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -178,6 +229,17 @@ func (h *Handler) GeneratePlaylist(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": playlist})
 }
 
+// SimilarByMood godoc
+// @Summary Find similar tracks by mood
+// @Description Returns tracks with similar mood characteristics to a given track.
+// @Tags ai
+// @Produce json
+// @Security Bearer
+// @Param trackId path string true "Source track ID"
+// @Param mood query string false "Target mood filter"
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /ai/similar/mood/{trackId} [get]
 func (h *Handler) SimilarByMood(c *gin.Context) {
 	trackID := c.Param("trackId")
 	mood := c.Query("mood")
@@ -192,6 +254,17 @@ func (h *Handler) SimilarByMood(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": results})
 }
 
+// SimilarByEmbedding godoc
+// @Summary Find similar tracks by embedding
+// @Description Returns tracks with similar audio/text embeddings to a given track.
+// @Tags ai
+// @Produce json
+// @Security Bearer
+// @Param trackId path string true "Source track ID"
+// @Param space query string false "Embedding space (audio, text)" default(audio)
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /ai/similar/embedding/{trackId} [get]
 func (h *Handler) SimilarByEmbedding(c *gin.Context) {
 	trackID := c.Param("trackId")
 	limit := 20

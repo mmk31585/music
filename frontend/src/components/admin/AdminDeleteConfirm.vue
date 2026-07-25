@@ -6,7 +6,7 @@
     :draggable="false"
     :style="{ width: '420px' }"
     :pt="{
-      root: { class: 'border-white/6! bg-[#141414]! rounded-2xl! shadow-2xl!' },
+      root: { class: 'border-white/6! bg-surface-raised! rounded-2xl! shadow-2xl!' },
       header: { class: 'bg-transparent! border-0! pb-0!' },
       content: { class: 'bg-transparent! pt-0!' },
       footer: { class: 'bg-transparent! border-0!' },
@@ -16,7 +16,7 @@
     <template #header>
       <div class="flex items-center gap-3">
         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10">
-          <i aria-hidden="true" class="pi pi-trash text-red-400" />
+          <Trash2 aria-hidden="true" class="text-red-400"  />
         </div>
         <div>
           <h3 class="text-base font-semibold text-white">{{ title }}</h3>
@@ -54,6 +54,7 @@
 </template>
 
 <script setup lang="ts">
+import { Trash2 } from 'lucide-vue-next'
 
 const visible = defineModel<boolean>({ default: false })
 

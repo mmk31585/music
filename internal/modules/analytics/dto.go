@@ -13,3 +13,12 @@ type TrackEventRequest struct {
 type TrackEventResponse struct {
 	Message string `json:"message"`
 }
+
+type OverviewResponse struct {
+	TotalTracks      int     `json:"total_tracks"`
+	TotalUsers       int     `json:"total_users"`
+	TotalAlbums      int     `json:"total_albums"`
+	TotalPlays       int     `json:"total_plays"`
+	ActiveUsers24h   int     `json:"active_users_last_24h"`
+	StorageUsedMB    float64 `json:"storage_used_mb"`
+}

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import PwaInstallPrompt from '@/components/common/pwa/PwaInstallPrompt.vue'
+import PwaUpdateToast from '@/components/common/pwa/PwaUpdateToast.vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ThemeProvider } from '@/components/layouts'
 import PageProgressBar from '@/components/widgets/page-progressbar/PageProgressBar.vue'
 import { registerRouter, registerToast } from '@/composables'
 import { useToast } from 'primevue/usetoast'
@@ -8,6 +11,8 @@ import { useMaintenanceStore, useUserAuthStore, usePlayerStore } from '@/stores'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useLibraryApi } from '@/services/api/library'
 import { pendingUnlikeTrackId } from '@/composables/player/useTrackLike'
+import { pendingPlaylistRemoveData } from '@/composables/catalog/usePlaylistDetail'
+import { usePlaylistsApi } from '@/services/api/playlist'
 
 const route = useRoute()
 const maintenanceStore = useMaintenanceStore()
@@ -15,7 +20,6 @@ const authStore = useUserAuthStore()
 const playerStore = usePlayerStore()
 const toast = useToast()
 
-// ── Track-change live region for screen readers (WCAG 4.1.3) ──────
 const trackAnnouncement = ref('')
 watch(() => playerStore.currentTrack?.title, (title, oldTitle) => {
   if (title && title !== oldTitle) {
@@ -28,11 +32,9 @@ const layout = computed(() => {
   return route?.meta?.layout ?? 'layout-empty'
 })
 
-// Injection for request wrapper working
 registerToast(useToast())
 registerRouter(useRouter())
 
-// Watch for auth restore failures and show toast
 watch(() => authStore.restoreError, (hasError) => {
   if (hasError) {
     toast.add({
@@ -44,7 +46,6 @@ watch(() => authStore.restoreError, (hasError) => {
   }
 })
 
-// ── Undo unlike ───────────────────────────────────────────────
 const libraryApi = useLibraryApi()
 const undoToast = useToast()
 async function undoUnlike() {
@@ -59,12 +60,23 @@ async function undoUnlike() {
   }
 }
 
-// Check maintenance mode and feature flags at app startup
+async function undoPlaylistRemove() {
+  const data = pendingPlaylistRemoveData.value
+  if (!data) return
+  pendingPlaylistRemoveData.value = null
+  try {
+    const api = usePlaylistsApi()
+    await api.addTrack(data.playlistId, { track_id: data.trackId })
+    undoToast.add({ severity: 'success', summary: `Track re-added to ${data.playlistName}`, life: 3000 })
+  } catch {
+    undoToast.add({ severity: 'error', summary: 'Failed to undo', life: 3000 })
+  }
+}
+
 onMounted(() => {
   maintenanceStore.checkStatus()
   useFeatureFlags().init()
 })
-
 </script>
 
 <template>
@@ -73,17 +85,28 @@ onMounted(() => {
   <Toast group="undo">
     <template #message="{ message }">
       <div class="flex items-center gap-3 px-2 py-1">
-        <span class="text-sm font-medium">{{ message.summary }}</span>
+        <span class="text-sm font-medium text-primary">{{ message.summary }}</span>
         <button
           type="button"
-          class="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white transition hover:bg-white/20"
+          class="rounded-full bg-surface-active px-3 py-1 text-xs font-bold text-primary transition hover:bg-surface-hover"
           @click="undoUnlike"
         >Undo</button>
       </div>
     </template>
   </Toast>
+  <Toast group="playlist-undo">
+    <template #message="{ message }">
+      <div class="flex items-center gap-3 px-2 py-1">
+        <span class="text-sm font-medium text-primary">{{ message.summary }}</span>
+        <button
+          type="button"
+          class="rounded-full bg-surface-active px-3 py-1 text-xs font-bold text-primary transition hover:bg-surface-hover"
+          @click="undoPlaylistRemove"
+        >Undo</button>
+      </div>
+    </template>
+  </Toast>
 
-  <!-- Route announcer for screen readers (WCAG 4.1.3, visually hidden) -->
   <div
     id="route-announcer"
     aria-live="polite"
@@ -91,14 +114,18 @@ onMounted(() => {
     class="sr-only"
   />
 
-  <!-- Track-change announcer for screen readers (WCAG 4.1.3, visually hidden) -->
   <div
     aria-live="polite"
     aria-atomic="true"
     class="sr-only"
   >{{ trackAnnouncement }}</div>
 
-  <component :is="layout">
-    <router-view />
-  </component>
+  <ThemeProvider>
+    <PwaInstallPrompt />
+    <PwaUpdateToast />
+
+    <component :is="layout">
+      <router-view />
+    </component>
+  </ThemeProvider>
 </template>

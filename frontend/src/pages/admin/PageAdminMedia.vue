@@ -24,7 +24,7 @@
           <h3 class="text-sm font-bold text-white">{{ item.title }}</h3>
           <p class="mt-0.5 text-xs text-slate-500">{{ item.subtitle }}</p>
         </div>
-        <i aria-hidden="true" class="pi pi-upload text-xs text-slate-600 opacity-0 transition group-hover:opacity-100" />
+        <Upload aria-hidden="true" class="text-xs text-slate-600 opacity-0 transition group-hover:opacity-100"  />
       </div>
     </div>
   </div>
@@ -43,16 +43,24 @@
     <div v-if="loading" class="space-y-2">
       <div v-for="i in 3" :key="i" class="h-14 animate-pulse rounded-lg bg-white/4" />
     </div>
-    <div v-else-if="mediaList.length" class="space-y-2">
+    <AdminEmptyState
+      v-else-if="loadError"
+      icon="pi pi-exclamation-triangle"
+      title="Failed to load media"
+      :description="loadError"
+    >
+      <template #action>
+        <Button label="Retry" icon="pi pi-refresh" @click="fetchMediaList" />
+      </template>
+    </AdminEmptyState>
+    <div v-else-if="paginatedItems.length" class="space-y-2">
       <div
-        v-for="item in mediaList"
+        v-for="item in paginatedItems"
         :key="item.id"
         class="group flex items-center gap-3 rounded-lg bg-white/4 px-4 py-2.5"
       >
-        <i
-          :class="item.mediaType === 'audio' ? 'pi pi-music text-blue-400' : 'pi pi-image text-green-400'"
-          class="text-sm"
-        />
+        <Image aria-hidden="true" :class="item.mediaType === 'audio' ? 'pi text-blue-400' : 'pi text-green-400'"
+          class="text-sm" />
         <div class="min-w-0 flex-1">
           <p class="truncate text-sm text-white">{{ item.originalFilename || item.objectKey.split('/').pop() }}</p>
           <p class="text-xs text-slate-500">
@@ -79,9 +87,24 @@
         />
       </div>
     </div>
-    <p v-else class="mt-2 text-sm text-slate-400">
-      No media uploaded yet.
-    </p>
+    <AdminEmptyState
+      v-else
+      icon="pi pi-inbox"
+      title="No media yet"
+      description="Upload audio files or cover images to get started."
+    />
+    <div v-if="mediaList.length > pageSize" class="mt-4">
+      <Paginator
+        v-model:first="firstRecord"
+        :rows="pageSize"
+        :total-records="mediaList.length"
+        :pt="{
+          root: 'bg-transparent! border-white/6!',
+          page: 'text-slate-400!',
+          pageSelected: 'bg-spotify! text-black!',
+        }"
+      />
+    </div>
   </div>
 
   <UploadMediaDialog
@@ -101,13 +124,15 @@
 </template>
 
 <script setup lang="ts">
+import { Image, Upload } from 'lucide-vue-next'
 // TODO MEDIUM: Media from ingestion flow (uploaded audio/covers) don't appear here — they're in ingestion_drafts, not media table.
-// TODO LOW: No pagination — large media lists may impact performance.
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import AdminDeleteConfirm from '@/components/admin/AdminDeleteConfirm.vue'
+import AdminEmptyState from '@/components/admin/AdminEmptyState.vue'
 import { useToast } from 'primevue/usetoast'
 import { AdminSectionHeader } from '@/components/admin'
 import UploadMediaDialog from '@/components/admin/UploadMediaDialog.vue'
+import Paginator from 'primevue/paginator'
 import { useMediaApi } from '@/services/api/media'
 import type { Media } from '@/services/api/media'
 
@@ -165,16 +190,28 @@ const selectedKind = ref<UploadKind>('track-audio')
 
 const mediaList = ref<Media[]>([])
 const loading = ref(false)
+const loadError = ref('')
 const showDeleteConfirm = ref(false)
 const deleteTarget = ref<Media | null>(null)
 const deleting = ref(false)
 
+// ── Client-side pagination ──
+const pageSize = 10
+const firstRecord = ref(0)
+
+const paginatedItems = computed(() => {
+  const end = firstRecord.value + pageSize
+  return mediaList.value.slice(firstRecord.value, end)
+})
+
 async function fetchMediaList() {
   loading.value = true
+  loadError.value = ''
   try {
     mediaList.value = await mediaApi.listAdminMedia()
-  } catch {
-    toast.add({ severity: 'error', summary: 'Failed to load media', life: 3000 })
+    firstRecord.value = 0
+  } catch (err) {
+    loadError.value = err instanceof Error ? err.message : 'Failed to load media'
   } finally {
     loading.value = false
   }

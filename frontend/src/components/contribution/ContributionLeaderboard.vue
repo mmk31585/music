@@ -18,7 +18,7 @@
       class="flex flex-col items-center gap-3 py-8 text-center"
     >
       <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5">
-        <i aria-hidden="true" class="pi pi-trophy text-xl text-white/15" />
+        <Trophy aria-hidden="true" class="text-xl text-white/15"  />
       </div>
       <p class="text-sm text-white/25">No contributors yet. Be the first!</p>
     </div>
@@ -35,13 +35,13 @@
           :class="rankClass(idx)"
         >
           <template v-if="idx === 0">
-            <i aria-hidden="true" class="pi pi-star-fill text-sm text-amber-500" />
+            <Star aria-hidden="true" class="text-sm text-amber-500"  />
           </template>
           <template v-else-if="idx === 1">
-            <i aria-hidden="true" class="pi pi-star-fill text-sm text-slate-400" />
+            <Star aria-hidden="true" class="text-sm text-slate-400"  />
           </template>
           <template v-else-if="idx === 2">
-            <i aria-hidden="true" class="pi pi-star-fill text-sm text-[#cd7f32]" />
+            <Star aria-hidden="true" class="text-sm text-[#cd7f32]"  />
           </template>
           <template v-else>
             {{ c.rank }}
@@ -88,6 +88,7 @@
 </template>
 
 <script setup lang="ts">
+import { Star, Trophy } from 'lucide-vue-next'
 import { onImgError } from '@/utils/helpers'
 import type { ContributorStats } from '@/services/api/contribution'
 

@@ -6,7 +6,7 @@
     :draggable="false"
     :style="{ width: '520px' }"
     :pt="{
-      root: { class: 'border-white/6! bg-[#141414]! rounded-2xl! shadow-2xl!' },
+      root: { class: 'border-white/6! bg-surface-raised! rounded-2xl! shadow-2xl!' },
       header: { class: 'bg-transparent! border-0! pb-2!' },
       content: { class: 'bg-transparent! px-6! pt-0! pb-2!' },
       footer: { class: 'bg-transparent! border-0!' },
@@ -16,7 +16,7 @@
     <template #header>
       <div class="flex items-center gap-3" lang="fa" dir="rtl">
         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
-          <i aria-hidden="true" class="pi pi-headphones text-emerald-400" />
+          <Headphones aria-hidden="true" class="text-emerald-400"  />
         </div>
         <div>
           <h3 class="text-base font-semibold text-white">
@@ -45,18 +45,19 @@
       </div>
 
       <div class="mt-2 flex items-center gap-2 text-xs text-white/40">
-        <span>تا حالا {{ guestPlayCount }} از ۳ آهنگ رایگان شنیدی</span>
+        <span>{{ remainingPlays }} از {{ GUEST_PLAY_LIMIT }} پخش رایگان امروز باقی مونده</span>
       </div>
     </div>
   </Dialog>
 </template>
 
 <script setup lang="ts">
+import { Headphones } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { useGuestSession } from '@/composables/useGuestSession'
 
 const router = useRouter()
-const { guestPlayCount } = useGuestSession()
+const { remainingPlays, GUEST_PLAY_LIMIT } = useGuestSession()
 
 const visible = defineModel<boolean>('visible', { default: false })
 </script>

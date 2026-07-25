@@ -22,6 +22,7 @@ type Config struct {
 	Payment    PaymentConfig
 	MLService  MLServiceConfig
 	OpenRouter OpenRouterConfig
+	Sentry     SentryConfig
 
 	// Legacy song module compatibility. The active upload path lives in
 	// internal/modules/media, but these keep old packages buildable until the
@@ -50,6 +51,7 @@ func Load() (*Config, error) {
 		Payment:    loadPaymentConfig(),
 		MLService:  loadMLServiceConfig(),
 		OpenRouter: loadOpenRouterConfig(),
+		Sentry:     loadSentryConfig(),
 	}
 
 	cfg.applyLegacyUploadCompatibility()

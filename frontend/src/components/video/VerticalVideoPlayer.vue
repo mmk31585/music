@@ -21,52 +21,26 @@
             aria-label="Close"
             @click="handleClose"
           >
-            <i aria-hidden="true" class="pi pi-chevron-right text-lg" />
+            <ChevronRight aria-hidden="true" class="text-lg"  />
           </button>
 
           <button
             type="button"
             class="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-xs transition hover:bg-white/20"
             aria-label="More options"
-            @click="showOverflow = !showOverflow"
+            @click="openOverflowMenu"
           >
-            <i aria-hidden="true" class="pi pi-ellipsis-v text-sm" />
+            <MoreVertical aria-hidden="true" class="text-sm"  />
           </button>
         </div>
       </Transition>
 
       <!-- Overflow menu -->
-      <Transition name="fade">
-        <div
-          v-if="showOverflow"
-          class="absolute top-16 left-4 z-20 min-w-44 overflow-hidden rounded-2xl border border-white/10 bg-surface-raised shadow-2xl shadow-black/40 backdrop-blur-2xl"
-        >
-          <button
-            type="button"
-            class="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10"
-            @click="shareOnTelegram"
-          >
-            <i aria-hidden="true" class="pi pi-telegram text-base" />
-            Share on Telegram
-          </button>
-          <button
-            type="button"
-            class="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10"
-            @click="goToTrack"
-          >
-            <i aria-hidden="true" class="pi pi-music text-base" />
-            Go to track page
-          </button>
-          <button
-            type="button"
-            class="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-red-400/80 transition hover:bg-white/10"
-            @click="showOverflow = false"
-          >
-            <i aria-hidden="true" class="pi pi-flag text-base" />
-            Report
-          </button>
-        </div>
-      </Transition>
+      <ContextMenu
+        v-model:visible="showOverflow"
+        :sections="overflowSections"
+        :position="{ x: menuX, y: menuY }"
+      />
 
       <!-- Desktop side navigation arrows -->
       <button
@@ -76,7 +50,7 @@
         aria-label="Previous video"
         @click="goToPrevious"
       >
-        <i aria-hidden="true" class="pi pi-chevron-up text-xl" />
+        <ChevronUp aria-hidden="true" class="text-xl"  />
       </button>
       <button
         v-if="hasNext && !isTransitioning"
@@ -85,7 +59,7 @@
         aria-label="Next video"
         @click="goToNext"
       >
-        <i aria-hidden="true" class="pi pi-chevron-down text-xl" />
+        <ChevronDown aria-hidden="true" class="text-xl"  />
       </button>
 
       <!-- Swipeable video area -->
@@ -147,7 +121,7 @@
             class="absolute bottom-20 left-1/2 z-20 -translate-x-1/2 animate-bounce"
           >
             <div class="flex flex-col items-center gap-1 rounded-full bg-black/40 px-4 py-2 backdrop-blur-xs">
-              <i aria-hidden="true" class="pi pi-chevron-down text-sm text-white/60" />
+              <ChevronDown aria-hidden="true" class="text-sm text-white/60"  />
               <span class="text-[10px] font-medium text-white/40">Swipe for more</span>
             </div>
           </div>
@@ -166,7 +140,7 @@
             @click.stop="toggleLike"
             :aria-label="isLiked ? 'Unlike' : 'Like'"
           >
-            <i aria-hidden="true" :class="isLiked ? 'pi pi-heart-fill' : 'pi pi-heart'" />
+            <component :is="isLiked ? Heart : Heart"<i aria-hidden="true"  /> />
           </button>
           <span class="text-[10px] font-bold text-white/70">{{ formatCount(currentVideo?.like_count || 0) }}</span>
         </div>
@@ -179,7 +153,7 @@
             aria-label="Comments"
             @click.stop="showComments = !showComments"
           >
-            <i aria-hidden="true" class="pi pi-comment text-lg" />
+            <MessageCircle aria-hidden="true" class="text-lg"  />
           </button>
           <span class="text-[10px] font-bold text-white/70">{{ commentCount }}</span>
         </div>
@@ -210,7 +184,7 @@
           class="pointer-events-none absolute top-1/2 left-1/2 z-20 -translate-x-1/2 -translate-y-1/2"
         >
           <div class="flex h-16 w-16 items-center justify-center rounded-full bg-black/50 backdrop-blur-xs">
-            <i aria-hidden="true" :class="isMuted ? 'pi pi-volume-off' : 'pi pi-volume-up'" class="text-2xl text-white" />
+            <component :is="isMuted ? VolumeOff : Volume2"<i aria-hidden="true"  class="text-2xl text-white" /> />
           </div>
         </div>
       </Transition>
@@ -259,7 +233,7 @@
               aria-label="Close comments"
               @click="showComments = false"
             >
-              <i aria-hidden="true" class="pi pi-times text-sm" />
+              <X aria-hidden="true" class="text-sm"  />
             </button>
           </div>
 
@@ -267,7 +241,7 @@
           <div class="flex-1 overflow-y-auto px-4 py-3">
             <div v-if="comments.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
               <div class="flex h-12 w-12 items-center justify-center rounded-full bg-white/5">
-                <i aria-hidden="true" class="pi pi-comment text-slate-500" />
+                <MessageCircle aria-hidden="true" class="text-slate-500"  />
               </div>
               <p class="mt-3 text-sm font-medium text-white/50">No comments yet</p>
               <p class="mt-1 text-xs text-white/30">Be the first to share your thoughts!</p>
@@ -308,8 +282,8 @@
                 :disabled="!newComment.trim() || submittingComment"
                 @click="submitComment"
               >
-                <i v-if="!submittingComment" class="pi pi-send text-sm" />
-                <i v-else class="pi pi-spin pi-spinner text-sm" />
+                <Send aria-hidden="true" v-if="!submittingComment" class="text-sm" />
+                <Loader2 aria-hidden="true" v-else class="text-sm animate-spin" />
               </button>
             </div>
           </div>
@@ -320,10 +294,13 @@
 </template>
 
 <script setup lang="ts">
+import { ChevronDown, ChevronRight, ChevronUp, Flag, Heart, Loader2, MessageCircle, MoreVertical, Music, Send, Volume2, VolumeOff, X } from 'lucide-vue-next'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { VideoItem, TrackSummary } from '@/services/api/video/types'
+import type { ContextMenuSection } from '@/types/context-menu'
 import AppImage from '@/components/common/AppImage.vue'
+import ContextMenu from '@/components/common/ContextMenu.vue'
 import NowPlayingStrip from '@/components/video/NowPlayingStrip.vue'
 import { useVerticalSwipe } from '@/composables/useVerticalSwipe'
 import { usePlayerStore } from '@/stores/player'
@@ -382,6 +359,59 @@ let commentsAbort: AbortController | null = null
 // Animation
 const reducedMotion = ref(false)
 const transitionDuration = '250ms'
+
+// ── Overflow menu ──────────────────────────────────────────────────
+const menuX = ref(0)
+const menuY = ref(0)
+
+function openOverflowMenu(e: MouseEvent) {
+  menuX.value = e.clientX
+  menuY.value = e.clientY
+  showOverflow.value = true
+}
+
+const overflowSections = computed<ContextMenuSection[]>(() => {
+  const video = currentVideo.value
+  if (!video) return []
+
+  return [
+    {
+      id: 'share',
+      items: [
+        {
+          id: 'telegram',
+          label: 'Share on Telegram',
+          icon: 'Share2',
+          action: shareOnTelegram,
+        },
+      ],
+    },
+    {
+      id: 'navigate',
+      items: [
+        {
+          id: 'track-page',
+          label: 'Go to track page',
+          icon: 'Music2',
+          action: goToTrack,
+        },
+      ],
+    },
+    {
+      id: 'safety',
+      items: [
+        {
+          id: 'report',
+          label: 'Report',
+          icon: 'Flag',
+          danger: true,
+          separator: true,
+          action: () => { showOverflow.value = false },
+        },
+      ],
+    },
+  ]
+})
 
 // ── Computed ──────────────────────────────────────────────────────────
 

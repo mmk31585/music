@@ -43,7 +43,7 @@
           <h2 class="mt-1 text-2xl font-black text-white">Start exploring</h2>
         </div>
 
-        <i aria-hidden="true" class="pi pi-headphones text-3xl text-white/20" />
+        <Headphones aria-hidden="true" class="text-3xl text-white/20"  />
       </div>
 
       <p class="mt-4 max-w-2xl text-sm leading-6 text-slate-400">
@@ -55,6 +55,7 @@
 </template>
 
 <script setup lang="ts">
+import { Headphones } from 'lucide-vue-next'
 const cards = [
   {
     title: 'Popular Tracks',

@@ -11,6 +11,7 @@ import (
 
 	"music/internal/app"
 	"music/internal/common/middleware"
+	"music/internal/platform/sentry"
 	"music/internal/platform/tracing"
 
 	"github.com/gin-gonic/gin"
@@ -54,6 +55,15 @@ func main() {
 	}
 	defer otelShutdown()
 
+	// ── Sentry Error Tracking ──────────────────────────────────────
+	if application.Config.Sentry.DSN != "" {
+		if err := sentry.Init(application.Config.Sentry.DSN, application.Config.App.Env); err != nil {
+			log.Fatal("failed to init sentry", zap.Error(err))
+		}
+		defer sentry.Flush()
+		log.Info("sentry initialized")
+	}
+
 	// ── Router setup (exactly once, all middleware explicit) ──
 	router := gin.New()
 	router.Use(
@@ -62,6 +72,7 @@ func main() {
 		otelgin.Middleware("music-api"),
 		middleware.GinZapLogger(log),
 		middleware.GinZapRecovery(log),
+		middleware.Sentry(),
 	)
 
 	// Serve uploaded media from local storage
@@ -72,7 +83,6 @@ func main() {
 
 	application.Router = router
 	application.HTTPServer = application.NewHTTPServer()
-	application.HTTPServer.Handler = application.Router
 
 	go func() {
 		log.Info("starting server",

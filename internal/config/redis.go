@@ -1,5 +1,10 @@
 package config
 
+import (
+	"os"
+	"strconv"
+)
+
 type RedisConfig struct {
 	Addr     string
 	Password string
@@ -7,9 +12,19 @@ type RedisConfig struct {
 }
 
 func loadRedisConfig() RedisConfig {
+	addr := os.Getenv("REDIS_ADDR")
+	if addr == "" {
+		addr = "localhost:6379"
+	}
+	db := 0
+	if v := os.Getenv("REDIS_DB"); v != "" {
+		if parsed, err := strconv.Atoi(v); err == nil {
+			db = parsed
+		}
+	}
 	return RedisConfig{
-		Addr:     getEnv("REDIS_ADDR", "localhost:6379"),
-		Password: getEnv("REDIS_PASSWORD", ""),
-		DB:       getEnvAsInt("REDIS_DB", 0),
+		Addr:     addr,
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       db,
 	}
 }

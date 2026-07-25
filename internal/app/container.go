@@ -11,14 +11,17 @@ import (
 	"music/internal/modules/analytics"
 	"music/internal/modules/auth"
 	"music/internal/modules/catalog"
+	"music/internal/modules/cacheadmin"
 	"music/internal/modules/catalog/album"
 	artist "music/internal/modules/catalog/artist"
 	"music/internal/modules/catalog/genre"
+	"music/internal/modules/catalog/stats"
 	"music/internal/modules/catalog/track"
 	"music/internal/modules/contribution"
 	"music/internal/modules/covers"
 	"music/internal/modules/creator"
 	"music/internal/modules/dashboard"
+	"music/internal/modules/features"
 	"music/internal/modules/follow"
 	"music/internal/modules/gamification"
 	"music/internal/modules/health"
@@ -35,7 +38,10 @@ import (
 	"music/internal/modules/media"
 	"music/internal/modules/moderation"
 	"music/internal/modules/notification"
+	"music/internal/modules/permissions"
 	"music/internal/modules/player"
+	"music/internal/modules/reputation"
+	"music/internal/modules/upload"
 	"music/internal/modules/playlist"
 	"music/internal/modules/queue"
 	"music/internal/modules/reactions"
@@ -70,12 +76,23 @@ type Container struct {
 	Storage platformstorage.Storage
 
 	AuthMW         gin.HandlerFunc
-	OptionalAuthMW gin.HandlerFunc
+	OptionalAuthMW  gin.HandlerFunc
+	TokenManager   *auth.TokenManager
 
-	HealthHandler *health.Handler
+	HealthHandler   *health.Handler
+	FeaturesHandler *features.Handler
 
 	AuthService *auth.Service
 	AuthHandler *auth.Handler
+
+	PermissionService *permissions.Service
+	PermissionHandler *permissions.Handler
+
+	ReputationService *reputation.Service
+	ReputationHandler *reputation.Handler
+
+	UploadService *upload.Service
+	UploadHandler *upload.Handler
 
 	MediaService *media.Service
 	MediaHandler *media.Handler
@@ -88,6 +105,8 @@ type Container struct {
 
 	GenreService *genre.Service
 	GenreHandler *genre.Handler
+
+	StatsHandler *stats.Handler
 
 	TrackService *track.Service
 	TrackHandler *track.Handler
@@ -176,6 +195,8 @@ type Container struct {
 
 	AIHandler *ai.Handler
 
+	CacheAdminHandler *cacheadmin.Handler
+
 	MLServiceClient  *lyrics.MLServiceClient
 	MLServiceHMACMW  gin.HandlerFunc
 	OpenRouterClient *lyrics.OpenRouterClient
@@ -208,6 +229,9 @@ func NewContainer(a *App) *Container {
 	c.buildHealth(a)
 	c.buildStorage(a)
 	c.buildAuth(a)
+	c.buildPermissions(a)
+	c.buildReputation()
+	c.buildUpload()
 	c.buildMedia(a)
 	c.buildCatalog()
 	c.buildLyrics(a)
@@ -237,7 +261,9 @@ func NewContainer(a *App) *Container {
 	c.buildContribution()
 	c.buildImport()
 	c.buildAI(a)
+	c.buildCacheadmin()
 	c.buildVideo()
+	c.buildFeatures(a)
 	c.subscribeEvents()
 
 	// Wire the transactional outbox store into the event bus for durable,
@@ -250,6 +276,10 @@ func NewContainer(a *App) *Container {
 
 func (c *Container) buildHealth(a *App) {
 	c.HealthHandler = health.NewHandler(a.DB, a.Redis)
+}
+
+func (c *Container) buildFeatures(a *App) {
+	c.FeaturesHandler = features.NewHandler(a.Config.Features)
 }
 
 func (c *Container) buildStorage(a *App) {
@@ -291,6 +321,25 @@ func (c *Container) buildAuth(a *App) {
 	c.AuthHandler = auth.NewHandler(c.AuthService, a.Validator)
 	c.AuthMW = auth.AuthMiddleware(tokenManager)
 	c.OptionalAuthMW = auth.OptionalAuthMiddleware(tokenManager)
+	c.TokenManager = tokenManager
+}
+
+func (c *Container) buildPermissions(a *App) {
+	permRepo := permissions.NewRepository(a.DB)
+	c.PermissionService = permissions.NewService(permRepo)
+	c.PermissionHandler = permissions.NewHandler(c.PermissionService)
+}
+
+func (c *Container) buildReputation() {
+	reputationRepo := reputation.NewRepository(c.SQLX)
+	c.ReputationService = reputation.NewService(reputationRepo)
+	c.ReputationHandler = reputation.NewHandler(c.ReputationService)
+}
+
+func (c *Container) buildUpload() {
+	uploadRepo := upload.NewRepository(c.SQLX)
+	c.UploadService = upload.NewService(uploadRepo, c.Bus)
+	c.UploadHandler = upload.NewHandler(c.UploadService, c.Storage)
 }
 
 func (c *Container) buildMedia(a *App) {
@@ -345,6 +394,9 @@ func (c *Container) buildCatalog() {
 	trackRepo := track.NewRepository(c.SQLX)
 	c.TrackService = track.NewService(trackRepo)
 	c.TrackHandler = track.NewHandler(c.TrackService)
+
+	statsRepo := stats.NewRepository(c.SQLX)
+	c.StatsHandler = stats.NewHandler(stats.NewService(statsRepo))
 }
 
 func (c *Container) buildEnrich() {
@@ -600,6 +652,10 @@ func (c *Container) buildAI(a *App) {
 	c.AIHandler = ai.NewHandler(ai.NewService(aiRepo, aiClient, zap.L(), a.Config.AI.Enabled))
 }
 
+func (c *Container) buildCacheadmin() {
+	c.CacheAdminHandler = cacheadmin.NewHandler(c.RDB)
+}
+
 func (c *Container) buildVideo() {
 	videoRepo := video.NewRepository(c.SQLX)
 	c.VideoService = video.NewService(videoRepo, c.FollowService)
@@ -694,6 +750,10 @@ func (c *Container) subscribeEvents() {
 	c.Bus.Subscribe(events.EventPlaybackSignalRecorded, c.ProfileEventHandler.OnPlaybackSignalRecorded)
 	c.Bus.Subscribe(events.EventTrackLiked, c.ProfileEventHandler.OnTrackLiked)
 	c.Bus.Subscribe(events.EventTrackLiked, c.GamificationEventHandler.OnTrackLiked)
+
+	c.Bus.Subscribe(events.EventTrackUploaded, c.GamificationEventHandler.OnTrackUploaded)
+	c.Bus.Subscribe(events.EventUploadPublished, c.GamificationEventHandler.OnUploadPublished)
+	c.Bus.Subscribe(events.EventContributionAccepted, c.GamificationEventHandler.OnContributionAccepted)
 
 	c.Bus.Subscribe(events.EventPlaylistCreated, analyticsEvents.OnPlaylistCreated)
 	c.Bus.Subscribe(events.EventPlaylistCreated, notificationEvents.OnPlaylistCreated)

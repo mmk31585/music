@@ -1,5 +1,7 @@
 package config
 
+import "os"
+
 type OpenSearchConfig struct {
 	URL      string
 	Username string
@@ -8,10 +10,14 @@ type OpenSearchConfig struct {
 }
 
 func loadOpenSearchConfig() OpenSearchConfig {
+	index := os.Getenv("OPENSEARCH_INDEX")
+	if index == "" {
+		index = "tracks"
+	}
 	return OpenSearchConfig{
-		URL:      getEnv("OPENSEARCH_URL", ""),
-		Username: getEnv("OPENSEARCH_USERNAME", ""),
-		Password: getEnv("OPENSEARCH_PASSWORD", ""),
-		Index:    getEnv("OPENSEARCH_INDEX", "tracks"),
+		URL:      os.Getenv("OPENSEARCH_URL"),
+		Username: os.Getenv("OPENSEARCH_USERNAME"),
+		Password: os.Getenv("OPENSEARCH_PASSWORD"),
+		Index:    index,
 	}
 }

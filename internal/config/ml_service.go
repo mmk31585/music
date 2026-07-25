@@ -1,6 +1,10 @@
 package config
 
-import "time"
+import (
+	"os"
+	"strconv"
+	"time"
+)
 
 type MLServiceConfig struct {
 	BaseURL           string
@@ -9,9 +13,19 @@ type MLServiceConfig struct {
 }
 
 func loadMLServiceConfig() MLServiceConfig {
+	baseURL := os.Getenv("ML_SERVICE_BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:8000"
+	}
+	requestTimeout := 30
+	if v := os.Getenv("ML_SERVICE_REQUEST_TIMEOUT"); v != "" {
+		if parsed, err := strconv.Atoi(v); err == nil {
+			requestTimeout = parsed
+		}
+	}
 	return MLServiceConfig{
-		BaseURL:           getEnv("ML_SERVICE_BASE_URL", "http://localhost:8000"),
-		WebhookHMACSecret: getEnv("ML_SERVICE_WEBHOOK_HMAC_SECRET", ""),
-		RequestTimeout:    getEnvAsDurationSeconds("ML_SERVICE_REQUEST_TIMEOUT", 30),
+		BaseURL:           baseURL,
+		WebhookHMACSecret: os.Getenv("ML_SERVICE_WEBHOOK_HMAC_SECRET"),
+		RequestTimeout:    time.Duration(requestTimeout) * time.Second,
 	}
 }

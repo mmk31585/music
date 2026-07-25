@@ -3,6 +3,7 @@ package validator
 import (
 	"strings"
 
+	"net/http"
 	apperrors "music/internal/common/errors"
 
 	govalidator "github.com/go-playground/validator/v10"
@@ -22,7 +23,7 @@ func New() *Validator {
 
 func (v *Validator) Struct(data interface{}) error {
 	if err := v.validate.Struct(data); err != nil {
-		return apperrors.Validation("validation failed", formatValidationErrors(err))
+		return apperrors.New(http.StatusUnprocessableEntity, apperrors.CodeValidation, "validation failed", formatValidationErrors(err))
 	}
 
 	return nil

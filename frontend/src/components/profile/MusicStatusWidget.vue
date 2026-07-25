@@ -40,7 +40,7 @@
             class="h-full w-full object-cover"
           />
           <div v-else class="flex h-full items-center justify-center">
-            <i aria-hidden="true" class="pi pi-music text-sm text-slate-500" />
+            <Music aria-hidden="true" class="text-sm text-slate-500"  />
           </div>
         </div>
 
@@ -62,7 +62,7 @@
           @click="playTrack"
           aria-label="Play track"
         >
-          <i aria-hidden="true" class="pi pi-play-fill text-sm" />
+          <Play aria-hidden="true" class="text-sm"  />
         </button>
       </div>
 
@@ -89,6 +89,7 @@
 </template>
 
 <script setup lang="ts">
+import { Music, Play } from 'lucide-vue-next'
 import { ref, watch, onMounted } from 'vue'
 import { usePlayerStore } from '@/stores/player'
 import { useVideoApi } from '@/services/api/video'

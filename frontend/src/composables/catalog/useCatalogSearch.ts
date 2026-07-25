@@ -1,3 +1,32 @@
+/**
+ * Persian/Arabic character normalization map for typo-tolerant search.
+ * Maps visually similar characters to a canonical form.
+ */
+const PERSIAN_NORMALIZE: Record<string, string> = {
+  // Yeh variants → standard ی
+  'ي': 'ی', 'ى': 'ی', 'ێ': 'ی', 'ۍ': 'ی',
+  // Kaf variants → standard ک
+  'ك': 'ک', 'ڪ': 'ک', 'ګ': 'ک',
+  // Heh variants → standard ه
+  'ة': 'ه', 'ۀ': 'ه',
+  // Other common Persian substitutions
+  'إ': 'ا', 'أ': 'ا', 'آ': 'ا',
+  'ؤ': 'و',
+  'ئ': 'ی',
+  'ٱ': 'ا',
+  'ے': 'ی',
+  'ۓ': 'ی',
+}
+
+/** Normalize a Persian search query for typo-tolerant matching. */
+function normalizePersianQuery(q: string): string {
+  let normalized = ''
+  for (const ch of q) {
+    normalized += PERSIAN_NORMALIZE[ch] ?? ch
+  }
+  return normalized.trim()
+}
+
 import { computed, ref } from 'vue'
 import { useSearchApi, type SearchResult } from '@/services/api/catalog/search'
 import type { PlaylistListItem } from '@/services/api/playlist'
@@ -31,7 +60,9 @@ export function useCatalogSearch() {
   const hasResults = computed(() => totalResults.value > 0)
 
   async function runSearch() {
-    const q = query.value.trim()
+    const raw = query.value.trim()
+    // Normalize Persian characters for typo-tolerant search
+    const q = normalizePersianQuery(raw)
 
     if (!q) {
       results.value = {
@@ -43,6 +74,7 @@ export function useCatalogSearch() {
       return results.value
     }
 
+    // Keep the original query in the input but send normalized version to API
     loading.value = true
     error.value = null
 

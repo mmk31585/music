@@ -24,4 +24,6 @@ WORKDIR /app
 RUN chown -R appuser:appuser /app
 USER appuser
 EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -sf http://localhost:8080/api/v1/health || exit 1
 ENTRYPOINT ["./server"]

@@ -202,27 +202,4 @@ export const arrUtil = {
     return out
   },
 
-  /**
-   * Like Laravel's Arr::first for arrays.
-   */
-  first<T>(arr: T[], predicate?: (item: T, index: number) => boolean): T | undefined {
-    if (!predicate) return arr[0]
-    for (let i = 0; i < arr.length; i++) if (predicate(arr[i] as T, i)) return arr[i]
-    return undefined
-  },
-
-  /**
-   * Like Laravel's Arr::last for arrays.
-   */
-  last<T>(arr: T[]): T | undefined {
-    return arr.length ? arr[arr.length - 1] : undefined
-  },
-
-  /**
-   * Like Laravel's Arr::wrap.
-   */
-  wrap<T>(value: T | T[] | null | undefined): T[] {
-    if (value == null) return []
-    return Array.isArray(value) ? value : [value]
-  },
 } as const

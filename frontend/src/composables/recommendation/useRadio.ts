@@ -8,15 +8,30 @@ import { buildPlaybackTrack } from '@/factories/playbackTrack'
 const REFILL_THRESHOLD = 3
 const BATCH_SIZE = 10
 
-export function useRadio() {
-  const currentSession = ref<RadioSession | null>(null)
-  const isRadioActive = ref(false)
-  const isLoadingBatch = ref(false)
-  const radioSeedLabel = ref('')
+const currentSession = ref<RadioSession | null>(null)
+const isRadioActive = ref(false)
+const isLoadingBatch = ref(false)
+const radioSeedLabel = ref('')
+const radioSeedType = ref<'track' | 'artist' | 'album' | 'genre'>('track')
 
+let refillWatcherInitialized = false
+
+export function useRadio() {
   const player = usePlayer()
   const radioApi = useRadioApi()
   const toast = useAppToast()
+
+  if (!refillWatcherInitialized) {
+    refillWatcherInitialized = true
+    watch(
+      () => player.queue.value.length,
+      (length) => {
+        if (isRadioActive.value && length <= REFILL_THRESHOLD && !isLoadingBatch.value) {
+          fetchNextBatch()
+        }
+      },
+    )
+  }
 
   function mapToPlaybackTrack(t: any): PlaybackTrack {
     return buildPlaybackTrack(t)
@@ -29,14 +44,13 @@ export function useRadio() {
       currentSession.value = { session_id: result.session_id, seed_track_id: trackId }
       isRadioActive.value = true
       radioSeedLabel.value = trackName || ''
-
+      radioSeedType.value = 'track'
       const tracks: PlaybackTrack[] = (result.tracks || []).map(mapToPlaybackTrack)
-
       if (tracks.length > 0) {
         player.updateQueue(tracks)
       }
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to start radio')
+      toast.error(err?.message || 'خطا در شروع رادیو')
     } finally {
       isLoadingBatch.value = false
     }
@@ -44,7 +58,6 @@ export function useRadio() {
 
   async function fetchNextBatch() {
     if (!currentSession.value || isLoadingBatch.value) return
-
     isLoadingBatch.value = true
     try {
       const result = await radioApi.getNextRadioBatch(currentSession.value.session_id, BATCH_SIZE)
@@ -53,7 +66,7 @@ export function useRadio() {
         player.updateQueue([...player.queue.value, ...newTracks])
       }
     } catch {
-      // silent — keep current queue intact
+      // silent
     } finally {
       isLoadingBatch.value = false
     }
@@ -70,23 +83,15 @@ export function useRadio() {
     currentSession.value = null
     isRadioActive.value = false
     radioSeedLabel.value = ''
+    radioSeedType.value = 'track'
   }
-
-  // Auto-refill: watch the queue length and fetch more when running low
-  watch(
-    () => player.queue.value.length,
-    (length) => {
-      if (isRadioActive.value && length <= REFILL_THRESHOLD && !isLoadingBatch.value) {
-        fetchNextBatch()
-      }
-    },
-  )
 
   return {
     currentSession,
     isRadioActive,
     isLoadingBatch,
     radioSeedLabel,
+    radioSeedType,
     startFromTrack,
     fetchNextBatch,
     endRadio,

@@ -244,6 +244,10 @@ export function createRequestWrapper(client: AxiosInstance, hooks: RequestHooks 
       const requestConfig = (config ?? {}) as AxiosRequestConfig
       requestConfig.method = requestConfig.method ?? 'GET'
 
+      if (resultConfig?.headers) {
+        requestConfig.headers = { ...(requestConfig.headers ?? {}), ...resultConfig.headers }
+      }
+
       // ----- actual request --------------------------------------------
       client(url, requestConfig)
         .then((response) => {

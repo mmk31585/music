@@ -12,7 +12,7 @@
         <!-- HERO — Your Library                      -->
         <!-- ════════════════════════════════════════ -->
         <section
-          class="relative overflow-hidden rounded-3xl border border-white/6 bg-linear-to-br from-spotify/10 via-[#0C0C14] to-black/60 p-8 backdrop-blur-2xl md:p-12"
+          class="relative overflow-hidden rounded-3xl border border-white/6 bg-linear-to-br from-spotify/10 via-surface-overlay to-black/60 p-8 backdrop-blur-2xl md:p-12"
         >
           <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
             <div class="absolute -top-1/2 -right-1/4 h-80 w-80 rounded-full bg-spotify/8 blur-[120px]" />
@@ -27,16 +27,16 @@
             <!-- Quick stats -->
             <div v-if="!loading" class="mt-5 flex flex-wrap items-center gap-3">
               <div class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/50">
-                <i aria-hidden="true" class="pi pi-heart text-[10px]" /> {{ likedTracks.length }} tracks
+                <Heart aria-hidden="true" class="text-[10px]"  /> {{ likedTracks.length }} tracks
               </div>
               <div class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/50">
-                <i aria-hidden="true" class="pi pi-images text-[10px]" /> {{ likedAlbums.length }} albums
+                <Images aria-hidden="true" class="text-[10px]"  /> {{ likedAlbums.length }} albums
               </div>
               <div class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/50">
-                <i aria-hidden="true" class="pi pi-users text-[10px]" /> {{ followedArtists.length }} artists
+                <Users aria-hidden="true" class="text-[10px]"  /> {{ followedArtists.length }} artists
               </div>
               <div class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/50">
-                <i aria-hidden="true" class="pi pi-list text-[10px]" /> {{ playlists.length }} playlists
+                <List aria-hidden="true" class="text-[10px]"  /> {{ playlists.length }} playlists
               </div>
             </div>
           </div>
@@ -92,7 +92,7 @@
             <div class="mb-4 flex items-center justify-between">
               <h2 class="text-lg font-bold text-white">Liked Tracks</h2>
               <div class="relative">
-                <i aria-hidden="true" class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/20" />
+                <Search aria-hidden="true" class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/20"  />
                 <input
                   v-model="trackFilter"
                   type="text"
@@ -103,23 +103,42 @@
             </div>
 
             <div
-              v-if="filteredTracks.length"
+              v-if="sectionErrors.tracks"
+              class="rounded-xl bg-red-500/10 p-4 text-center text-sm text-red-400"
+            >
+              Could not load tracks.
+              <button @click="fetchAll" class="underline">Retry</button>
+            </div>
+            <div
+              v-else-if="filteredTracks.length"
               class="overflow-hidden rounded-2xl border border-white/6 bg-white/2 backdrop-blur-xs"
             >
-              <TrackRow
+              <div
                 v-for="(item, index) in filteredTracks"
                 :key="item.track_id"
-                :track="item"
-                :index="index"
-                :queue="filteredTracks"
-              />
+                class="group/track relative"
+              >
+                <TrackRow
+                  :track="item"
+                  :index="index"
+                  :queue="filteredTracks"
+                />
+                <button
+                  type="button"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500/20 text-red-400 opacity-0 transition hover:bg-red-500/30 group-hover/track:opacity-100"
+                  :aria-label="`Remove ${item.title}`"
+                  @click.stop="removeTrack(item.track_id)"
+                >
+                  <X aria-hidden="true" class="text-[10px]" />
+                </button>
+              </div>
             </div>
             <div
               v-else
               class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-16 text-center"
             >
               <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/4">
-                <i aria-hidden="true" class="pi pi-heart text-xl text-white/20" />
+                <Heart aria-hidden="true" class="text-xl text-white/20"  />
               </div>
               <h3 class="text-base font-bold text-white">No liked tracks yet</h3>
               <p class="text-sm text-white/40">
@@ -136,7 +155,14 @@
             </div>
 
             <div
-              v-if="likedAlbums.length"
+              v-if="sectionErrors.albums"
+              class="rounded-xl bg-red-500/10 p-4 text-center text-sm text-red-400"
+            >
+              Could not load albums.
+              <button @click="fetchAll" class="underline">Retry</button>
+            </div>
+            <div
+              v-else-if="likedAlbums.length"
               class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
             >
               <RouterLink
@@ -155,11 +181,19 @@
                     @error="onImgError"
                   />
                   <div v-else class="flex h-full items-center justify-center">
-                    <i aria-hidden="true" class="pi pi-images text-3xl text-white/20" />
+                    <Images aria-hidden="true" class="text-3xl text-white/20"  />
                   </div>
+                  <button
+                    type="button"
+                    class="absolute top-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-red-500/20 text-red-400 opacity-0 transition hover:bg-red-500/30 group-hover:opacity-100"
+                    :aria-label="`Remove ${album.title}`"
+                    @click.prevent.stop="removeAlbum(album.album_id)"
+                  >
+                    <X aria-hidden="true" class="text-xs" />
+                  </button>
                   <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-xs transition group-hover:opacity-100">
                     <div class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify/90 text-black shadow-xl">
-                      <i aria-hidden="true" class="pi pi-play-fill text-lg" />
+                      <Play aria-hidden="true" class="text-lg"  />
                     </div>
                   </div>
                 </div>
@@ -172,7 +206,7 @@
               class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-16 text-center"
             >
               <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/4">
-                <i aria-hidden="true" class="pi pi-images text-xl text-white/20" />
+                <Images aria-hidden="true" class="text-xl text-white/20"  />
               </div>
               <h3 class="text-base font-bold text-white">No saved albums</h3>
               <p class="text-sm text-white/40">Save albums to your library to find them quickly.</p>
@@ -187,16 +221,23 @@
             </div>
 
             <div
-              v-if="followedArtists.length"
+              v-if="sectionErrors.artists"
+              class="rounded-xl bg-red-500/10 p-4 text-center text-sm text-red-400"
+            >
+              Could not load artists.
+              <button @click="fetchAll" class="underline">Retry</button>
+            </div>
+            <div
+              v-else-if="followedArtists.length"
               class="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
             >
               <RouterLink
                 v-for="artist in followedArtists"
                 :key="artist.artist_id"
                 :to="`/artist/${artist.artist_id}`"
-                class="group block text-center"
+                class="group relative block text-center"
               >
-                <div class="mx-auto mb-3 h-36 w-36 overflow-hidden rounded-full bg-white/4 ring-1 ring-white/6 transition-all duration-300 group-hover:ring-spotify/30">
+                <div class="relative mx-auto mb-3 h-36 w-36 overflow-hidden rounded-full bg-white/4 ring-1 ring-white/6 transition-all duration-300 group-hover:ring-spotify/30">
                   <img
                     v-if="artist.cover_url"
                     :src="artist.cover_url"
@@ -206,8 +247,16 @@
                     @error="onImgError"
                   />
                   <div v-else class="flex h-full items-center justify-center">
-                    <i aria-hidden="true" class="pi pi-user text-3xl text-white/20" />
+                    <User aria-hidden="true" class="text-3xl text-white/20"  />
                   </div>
+                  <button
+                    type="button"
+                    class="absolute top-0 right-0 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-red-500/20 text-red-400 opacity-0 transition hover:bg-red-500/30 group-hover:opacity-100"
+                    :aria-label="`Unfollow ${artist.name}`"
+                    @click.prevent.stop="unfollowArtist(artist.artist_id)"
+                  >
+                    <X aria-hidden="true" class="text-xs" />
+                  </button>
                 </div>
                 <p class="truncate text-sm font-bold text-white">{{ artist.name }}</p>
                 <p class="text-xs text-white/40">Artist</p>
@@ -218,7 +267,7 @@
               class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-16 text-center"
             >
               <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/4">
-                <i aria-hidden="true" class="pi pi-users text-xl text-white/20" />
+                <Users aria-hidden="true" class="text-xl text-white/20"  />
               </div>
               <h3 class="text-base font-bold text-white">No followed artists</h3>
               <p class="text-sm text-white/40">Follow artists to keep up with their latest releases.</p>
@@ -234,13 +283,20 @@
                 class="inline-flex items-center gap-2 rounded-full bg-spotify px-5 py-2.5 text-xs font-bold text-black transition hover:bg-spotify-hover hover:scale-105"
                 @click="showCreate = true"
               >
-                <i aria-hidden="true" class="pi pi-plus text-[10px]" />
+                <Plus aria-hidden="true" class="text-[10px]"  />
                 Create
               </button>
             </div>
 
             <div
-              v-if="playlists.length"
+              v-if="sectionErrors.playlists"
+              class="rounded-xl bg-red-500/10 p-4 text-center text-sm text-red-400"
+            >
+              Could not load playlists.
+              <button @click="fetchAll" class="underline">Retry</button>
+            </div>
+            <div
+              v-else-if="playlists.length"
               class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4"
             >
               <RouterLink
@@ -264,9 +320,17 @@
                     :track-count="playlist.track_count"
                     class="h-full w-full"
                   />
+                  <button
+                    type="button"
+                    class="absolute top-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-red-500/20 text-red-400 opacity-0 transition hover:bg-red-500/30 group-hover:opacity-100"
+                    :aria-label="`Delete ${playlist.name}`"
+                    @click.prevent.stop="deletePlaylist(playlist.id)"
+                  >
+                    <X aria-hidden="true" class="text-xs" />
+                  </button>
                   <div class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 backdrop-blur-xs transition group-hover:opacity-100">
                     <div class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify/90 text-black shadow-xl">
-                      <i aria-hidden="true" class="pi pi-play-fill text-lg" />
+                      <Play aria-hidden="true" class="text-lg"  />
                     </div>
                   </div>
                 </div>
@@ -279,7 +343,7 @@
               class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-16 text-center"
             >
               <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/4">
-                <i aria-hidden="true" class="pi pi-list text-xl text-white/20" />
+                <List aria-hidden="true" class="text-xl text-white/20"  />
               </div>
               <h3 class="text-base font-bold text-white">No playlists yet</h3>
               <p class="text-sm text-white/40">Create your first playlist to start organizing your music.</p>
@@ -288,7 +352,7 @@
                 class="mt-2 rounded-full bg-spotify px-6 py-2.5 text-sm font-bold text-black transition hover:bg-spotify-hover"
                 @click="showCreate = true"
               >
-                <i aria-hidden="true" class="pi pi-plus mr-1 text-xs" />
+                <Plus aria-hidden="true" class="mr-1 text-xs"  />
                 Create Playlist
               </button>
             </div>
@@ -302,7 +366,14 @@
             </div>
 
             <div
-              v-if="recentTracks.length"
+              v-if="sectionErrors.history"
+              class="rounded-xl bg-red-500/10 p-4 text-center text-sm text-red-400"
+            >
+              Could not load history.
+              <button @click="fetchAll" class="underline">Retry</button>
+            </div>
+            <div
+              v-else-if="recentTracks.length"
               class="overflow-hidden rounded-2xl border border-white/6 bg-white/2 backdrop-blur-xs"
             >
               <TrackRow
@@ -318,7 +389,7 @@
               class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/6 bg-white/2 px-6 py-16 text-center"
             >
               <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/4">
-                <i aria-hidden="true" class="pi pi-history text-xl text-white/20" />
+                <History aria-hidden="true" class="text-xl text-white/20"  />
               </div>
               <h3 class="text-base font-bold text-white">No history yet</h3>
               <p class="text-sm text-white/40">Start playing tracks and your history will appear here.</p>
@@ -352,7 +423,7 @@
     >
       <template #header>
         <div class="flex items-center gap-2 px-1">
-          <i aria-hidden="true" class="pi pi-plus text-sm text-spotify" />
+          <Plus aria-hidden="true" class="text-sm text-spotify"  />
           <span>Create Playlist</span>
         </div>
       </template>
@@ -402,9 +473,10 @@
 </template>
 
 <script setup lang="ts">
+import { Heart, History, Images, List, Play, Plus, Search, User, Users, X } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useToast } from 'primevue/usetoast'
+import { useAppToast } from '@/composables/useAppToast'
 import { TrackRow, PlaylistCoverGrid } from '@/components/music'
 import { useLibraryApi } from '@/services/api/library'
 import { usePlaylistsApi } from '@/services/api/playlist'
@@ -415,6 +487,7 @@ import { onImgError } from '@/utils/helpers'
 const router = useRouter()
 const libraryApi = useLibraryApi()
 const playlistsApi = usePlaylistsApi()
+const toast = useAppToast()
 
 const loading = ref(false)
 const activeTab = ref('tracks')
@@ -429,6 +502,8 @@ const recentTrackItems = computed(() =>
   recentTracks.value.map(t => ({ ...t, id: t.track_id })),
 )
 const trackFilter = ref('')
+
+const sectionErrors = ref<Record<string, boolean>>({})
 
 // Create playlist
 const showCreate = ref(false)
@@ -464,22 +539,84 @@ const tabs = computed(() => [
 async function fetchAll() {
   loading.value = true
   try {
-    const [tracks, albums, artists, plists, recent] = await Promise.all([
-      libraryApi.getLikedTracks().catch(() => []),
-      libraryApi.getLikedAlbums().catch(() => []),
-      libraryApi.getFollowedArtists().catch(() => []),
-      playlistsApi.getMyPlaylists().catch(() => []),
-      libraryApi.getRecentlyPlayed().catch(() => []),
+    const results = await Promise.allSettled([
+      libraryApi.getLikedTracks(),
+      libraryApi.getLikedAlbums(),
+      libraryApi.getFollowedArtists(),
+      playlistsApi.getMyPlaylists(),
+      libraryApi.getRecentlyPlayed(),
     ])
-    likedTracks.value = Array.isArray(tracks) ? tracks : []
-    likedAlbums.value = Array.isArray(albums) ? albums : []
-    followedArtists.value = Array.isArray(artists) ? artists : []
-    playlists.value = Array.isArray(plists) ? plists : []
-    recentTracks.value = Array.isArray(recent) ? recent : []
-  } catch (err) {
-    console.error('Failed to fetch library data:', err)
+    const sections: readonly string[] = ['tracks', 'albums', 'artists', 'playlists', 'history']
+    sectionErrors.value = {}
+    results.forEach((result, i) => {
+      if (result.status === 'rejected') {
+        sectionErrors.value[sections[i]!] = true
+      } else {
+        const data = result.value
+        switch (sections[i]) {
+          case 'tracks':
+            likedTracks.value = Array.isArray(data) ? (data as LibraryTrack[]) : []
+            break
+          case 'albums':
+            likedAlbums.value = Array.isArray(data) ? (data as LibraryAlbum[]) : []
+            break
+          case 'artists':
+            followedArtists.value = Array.isArray(data) ? (data as LibraryArtist[]) : []
+            break
+          case 'playlists':
+            playlists.value = Array.isArray(data) ? (data as PlaylistListItem[]) : []
+            break
+          case 'history':
+            recentTracks.value = Array.isArray(data) ? (data as LibraryTrack[]) : []
+            break
+        }
+      }
+    })
+  } catch (err: unknown) {
+    toast.apiError(err, 'Failed to fetch library data')
   } finally {
     loading.value = false
+  }
+}
+
+// ── Remove from library actions ──
+async function removeTrack(trackId: string | number) {
+  try {
+    await libraryApi.unlikeTrack(trackId)
+    likedTracks.value = likedTracks.value.filter(t => t.track_id !== trackId)
+    toast.success('Removed')
+  } catch {
+    toast.error('Failed to remove track')
+  }
+}
+
+async function removeAlbum(albumId: string | number) {
+  try {
+    await libraryApi.unlikeAlbum(albumId)
+    likedAlbums.value = likedAlbums.value.filter(a => a.album_id !== albumId)
+    toast.success('Removed')
+  } catch {
+    toast.error('Failed to remove album')
+  }
+}
+
+async function unfollowArtist(artistId: string | number) {
+  try {
+    await libraryApi.unfollowArtist(artistId)
+    followedArtists.value = followedArtists.value.filter(a => a.artist_id !== artistId)
+    toast.success('Removed')
+  } catch {
+    toast.error('Failed to unfollow artist')
+  }
+}
+
+async function deletePlaylist(playlistId: string) {
+  try {
+    await playlistsApi.deletePlaylist(playlistId)
+    playlists.value = playlists.value.filter(p => p.id !== playlistId)
+    toast.success('Removed')
+  } catch {
+    toast.error('Failed to delete playlist')
   }
 }
 
@@ -502,8 +639,7 @@ async function handleCreate() {
       await fetchAll()
     }
   } catch {
-    const toast = useToast()
-    toast.add({ severity: 'error', summary: 'Failed to create playlist', life: 3000 })
+    toast.error('Failed to create playlist')
   } finally {
     creating.value = false
   }

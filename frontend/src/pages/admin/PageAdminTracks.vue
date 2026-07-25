@@ -98,14 +98,14 @@
                 class="border-b border-white/6 text-left text-xs tracking-wider text-slate-500 uppercase"
               >
                 <th class="px-5 py-3 font-medium">
-                  <i aria-hidden="true" class="pi pi-play text-xs" />
+                  <Play aria-hidden="true" class="text-xs"  />
                 </th>
                 <th class="px-5 py-3 font-medium">Title</th>
                 <th class="px-5 py-3 font-medium">Artists</th>
                 <th class="hidden px-5 py-3 font-medium lg:table-cell">Album</th>
                 <th class="hidden px-5 py-3 font-medium xl:table-cell">Genres</th>
                 <th class="px-5 py-3 text-right font-medium">
-                  <i aria-hidden="true" class="pi pi-clock text-xs" />
+                  <Clock aria-hidden="true" class="text-xs"  />
                 </th>
                 <th class="px-5 py-3" />
               </tr>
@@ -126,11 +126,11 @@
                     :title="isTrackPlaying(track) ? 'Now playing' : 'Play track'"
                     @click="handlePlayTrack(track)"
                   >
-                    <i
+                    <Loader2
                       v-if="isTrackLoading(track)"
                       aria-hidden="true"
-                      class="pi pi-spin pi-spinner text-sm"
-                    />
+                      class="text-sm animate-spin"
+                     />
                     <i
                       v-else
                       aria-hidden="true"
@@ -152,7 +152,7 @@
                       />
 
                       <div v-else class="flex h-full w-full items-center justify-center">
-                        <i aria-hidden="true" class="pi pi-headphones text-xs text-slate-700" />
+                        <Headphones aria-hidden="true" class="text-xs text-slate-700"  />
                       </div>
                     </div>
 
@@ -271,7 +271,7 @@
             />
 
             <div v-else class="flex h-full w-full items-center justify-center">
-              <i aria-hidden="true" class="pi pi-headphones text-3xl text-slate-700" />
+              <Headphones aria-hidden="true" class="text-3xl text-slate-700"  />
             </div>
 
             <div class="absolute top-2 left-2 flex flex-wrap gap-1">
@@ -293,11 +293,11 @@
                 aria-label="Play track"
                 @click="handlePlayTrack(track)"
               >
-                <i
+                <Loader2
                   v-if="isTrackLoading(track)"
                   aria-hidden="true"
-                  class="pi pi-spin pi-spinner text-lg"
-                />
+                  class="text-lg animate-spin"
+                 />
                 <i
                   v-else
                   aria-hidden="true"
@@ -409,6 +409,7 @@
 </template>
 
 <script setup lang="ts">
+import { Clock, Headphones, Loader2, Play } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
 
@@ -445,9 +446,64 @@ type CatalogOption = {
   cover_url?: string | null
 }
 
-// TODO HIGH: AnyTrack defeats TypeScript safety. The Track type should match actual API shape,
-// or normalizer functions should live in the API service layer. 10+ getter functions add 150+ fragile lines.
-type AnyTrack = Track & Record<string, any>
+/**
+ * Admin-specific Track type that extends the base Track with all the
+ * extra optional fields the admin API response may include.
+ * Replace AnyTrack with this proper interface for type safety.
+ */
+interface AdminTrack extends Track {
+  // Cover art fallback shapes
+  cover?: { url?: string | null }
+  cover_media?: { url?: string | null }
+  cover_media_url?: string | null
+  media?: { cover_url?: string | null }
+  album_cover_url?: string | null
+
+  // Album-related shapes
+  album?: { title?: string; name?: string }
+  album_name?: string | null
+
+  // Artist shapes
+  artist?: { name?: string }
+  primary_artist_name?: string | null
+  primary_artists?: Array<Record<string, unknown>>
+  featured_artists?: Array<Record<string, unknown>>
+  artists?: Array<{
+    artist_id: string | number | null
+    name: string
+    role?: string
+    is_primary?: boolean
+    artist?: Record<string, unknown>
+  }>
+  credits?: Array<{
+    role?: string
+    name?: string
+    artist_name?: string
+    artist?: Record<string, unknown>
+  }>
+
+  // Genre shapes
+  genre_names?: string[]
+  genre_name?: string | null
+  genre?: string | null
+
+  // ISRC / explicit
+  isrc?: string | null
+  is_explicit?: boolean
+
+  // Lyrics
+  lyrics?: string | null
+  lyrics_language?: string | null
+  lyrics_type?: 'plain' | 'synced' | null
+
+  // Search / metadata
+  album_artist?: string | { name?: string }
+  album_artist_name?: string | null
+  composer?: string | null
+  label?: string | null
+  language?: string | null
+  release_date?: string | null
+}
 
 const toast = useToast()
 
@@ -563,7 +619,7 @@ function openCreate() {
 
 async function openEdit(track: Track) {
   // Start with the track data from the list
-  const augmented: AnyTrack = { ...track }
+  const augmented: AdminTrack = { ...track }
 
   // Fetch lyrics from the backend — they aren't included in the tracks list
   try {
@@ -738,7 +794,7 @@ async function handleEnrichAll() {
 }
 
 function normalizeCatalogOptions(
-  items: Array<Record<string, any>> | undefined | null,
+  items: Array<Record<string, unknown>> | undefined | null,
   _type?: string,
 ) {
   if (!Array.isArray(items)) return []
@@ -753,12 +809,12 @@ function normalizeCatalogOptions(
       if (id === undefined || id === null || !name) return null
 
       const opt: CatalogOption = {
-        id,
-        name,
-        slug: item.slug,
-        image_url: item.image_url ?? item.avatar_url ?? item.cover_url ?? null,
-        avatar_url: item.avatar_url ?? item.image_url ?? null,
-        cover_url: item.cover_url ?? item.image_url ?? null,
+        id: id as CatalogId,
+        name: name as string,
+        slug: (item.slug as string | undefined) ?? undefined,
+        image_url: (item.image_url as string | null | undefined) ?? null,
+        avatar_url: (item.avatar_url as string | null | undefined) ?? null,
+        cover_url: (item.cover_url as string | null | undefined) ?? null,
       }
       return opt
     })
@@ -788,7 +844,7 @@ function uniqStrings(values: string[]) {
 }
 
 function getTrackCoverUrl(track: Track) {
-  const t = track as AnyTrack
+  const t = track as AdminTrack
 
   return (
     t.cover_url ??
@@ -797,34 +853,34 @@ function getTrackCoverUrl(track: Track) {
     t.cover_media_url ??
     t.media?.cover_url ??
     t.album_cover_url ??
-    null
+    undefined
   )
 }
 
 function getTrackAlbumTitle(track: Track) {
-  const t = track as AnyTrack
+  const t = track as AdminTrack
 
   return t.album_title ?? t.album?.title ?? t.album?.name ?? t.album_name ?? '—'
 }
 
 function getTrackIsrc(track: Track) {
-  const t = track as AnyTrack
+  const t = track as AdminTrack
   return t.isrc ?? null
 }
 
 function isExplicit(track: Track) {
-  const t = track as AnyTrack
+  const t = track as AdminTrack
   return Boolean(t.explicit ?? t.is_explicit)
 }
 
 function getTrackArtistNamesByRole(track: Track, roles: string[]) {
-  const t = track as AnyTrack
+  const t = track as AdminTrack
 
   const normalizedRoles = roles.map((role) => role.toLowerCase())
 
   const fromArtists = Array.isArray(t.artists)
     ? t.artists
-        .filter((item: Record<string, any>) => {
+        .filter((item: Record<string, unknown>) => {
           const role = String(item.role ?? '').toLowerCase()
 
           if (normalizedRoles.includes('primary')) {
@@ -833,18 +889,18 @@ function getTrackArtistNamesByRole(track: Track, roles: string[]) {
 
           return normalizedRoles.includes(role)
         })
-        .map((item: Record<string, any>) => {
-          const artist = item.artist as Record<string, any> | undefined
-          return item.name ?? item.artist_name ?? artist?.name ?? artist?.title
+        .map((item: Record<string, unknown>) => {
+          const artist = item.artist as Record<string, unknown> | undefined
+          return String(item.name ?? item.artist_name ?? artist?.name ?? artist?.title ?? '')
         })
     : []
 
   const fromCredits = Array.isArray(t.credits)
     ? t.credits
-        .filter((item: Record<string, any>) => normalizedRoles.includes(String(item.role ?? '').toLowerCase()))
-        .map((item: Record<string, any>) => {
-          const artist = item.artist as Record<string, any> | undefined
-          return item.name ?? item.artist_name ?? artist?.name ?? artist?.title
+        .filter((item: Record<string, unknown>) => normalizedRoles.includes(String(item.role ?? '').toLowerCase()))
+        .map((item: Record<string, unknown>) => {
+          const artist = item.artist as Record<string, unknown> | undefined
+          return String(item.name ?? item.artist_name ?? artist?.name ?? artist?.title ?? '')
         })
     : []
 
@@ -852,7 +908,7 @@ function getTrackArtistNamesByRole(track: Track, roles: string[]) {
 }
 
 function getTrackPrimaryArtistNames(track: Track) {
-  const t = track as AnyTrack
+  const t = track as AdminTrack
 
   const names = getTrackArtistNamesByRole(track, ['primary'])
 
@@ -862,11 +918,11 @@ function getTrackPrimaryArtistNames(track: Track) {
     compactStrings([
       t.artist_name,
       t.primary_artist_name,
-      t.artist?.name,
+      String(t.artist?.name ?? ''),
       ...(Array.isArray(t.primary_artists)
-        ? t.primary_artists.map((item: Record<string, any>) => {
-            const artist = item.artist as Record<string, any> | undefined
-            return item.name ?? item.artist_name ?? artist?.name
+        ? t.primary_artists.map((item: Record<string, unknown>) => {
+            const artist = item.artist as Record<string, unknown> | undefined
+            return String(item.name ?? item.artist_name ?? artist?.name ?? '')
           })
         : []),
     ]),
@@ -874,7 +930,7 @@ function getTrackPrimaryArtistNames(track: Track) {
 }
 
 function getTrackFeaturedArtistNames(track: Track) {
-  const t = track as AnyTrack
+  const t = track as AdminTrack
 
   const names = getTrackArtistNamesByRole(track, ['featured'])
 
@@ -883,9 +939,9 @@ function getTrackFeaturedArtistNames(track: Track) {
   return uniqStrings(
     compactStrings([
       ...(Array.isArray(t.featured_artists)
-        ? t.featured_artists.map((item: Record<string, any>) => {
-            const artist = item.artist as Record<string, any> | undefined
-            return item.name ?? item.artist_name ?? artist?.name
+        ? t.featured_artists.map((item: Record<string, unknown>) => {
+            const artist = item.artist as Record<string, unknown> | undefined
+            return String(item.name ?? item.artist_name ?? artist?.name ?? '')
           })
         : []),
     ]),
@@ -911,39 +967,39 @@ function getTrackArtistDisplay(track: Track) {
 }
 
 function getTrackGenreNames(track: Track) {
-  const t = track as AnyTrack
+  const t = track as AdminTrack
 
   const fromGenres = Array.isArray(t.genres)
-    ? t.genres.map((item: Record<string, any>) => {
-        const genre = item.genre as Record<string, any> | undefined
-        return item.name ?? item.genre_name ?? genre?.name
+    ? t.genres.map((item: Record<string, unknown>) => {
+        const genre = item.genre as Record<string, unknown> | undefined
+        return String(item.name ?? item.genre_name ?? genre?.name ?? '')
       })
     : []
 
   const fromGenreNames = Array.isArray(t.genre_names) ? t.genre_names : []
 
-  const legacy = compactStrings([t.genre_name, t.genre])
+  const legacy = compactStrings([t.genre_name, String(t.genre ?? '')])
 
   return uniqStrings(compactStrings([...fromGenres, ...fromGenreNames, ...legacy]))
 }
 
 function getTrackCreditNames(track: Track) {
-  const t = track as AnyTrack
+  const t = track as AdminTrack
 
   if (!Array.isArray(t.credits)) return []
 
   return uniqStrings(
     compactStrings(
-      t.credits.map((item: Record<string, any>) => {
-        const artist = item.artist as Record<string, any> | undefined
-        return item.name ?? item.artist_name ?? artist?.name
+      t.credits.map((item: Record<string, unknown>) => {
+        const artist = item.artist as Record<string, unknown> | undefined
+        return String(item.name ?? item.artist_name ?? artist?.name ?? '')
       }),
     ),
   )
 }
 
 function getTrackSearchText(track: Track) {
-  const t = track as AnyTrack
+  const t = track as AdminTrack
 
   const parts = compactStrings([
     t.title,
@@ -951,9 +1007,8 @@ function getTrackSearchText(track: Track) {
     getTrackArtistDisplay(track),
     getTrackGenreNames(track).join(' '),
     getTrackCreditNames(track).join(' '),
-    t.album_artist,
     t.album_artist_name,
-    t.album_artist?.name,
+    typeof t.album_artist === 'object' && t.album_artist ? t.album_artist.name : t.album_artist,
     t.composer,
     t.isrc,
     t.label,

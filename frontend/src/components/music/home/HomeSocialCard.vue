@@ -1,22 +1,22 @@
 <template>
-  <div class="w-48 shrink-0 rounded-2xl border border-white/6 bg-white/4 p-4 backdrop-blur-xs">
+  <div class="w-48 shrink-0 rounded-2xl border border-border-subtle bg-surface-overlay/60 p-4 backdrop-blur-xs">
     <div class="flex items-center gap-2">
       <div
-        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-spotify to-aurora-blue text-sm font-bold text-white"
+        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-accent to-aurora-blue text-sm font-bold text-primary"
       >
         {{ initials }}
       </div>
       <div class="min-w-0 flex-1">
-        <p class="truncate text-sm font-semibold text-white">
+        <p class="truncate text-sm font-semibold text-primary">
           {{ username }}
         </p>
-        <p class="text-[11px] text-white/60">
+        <p class="text-[11px] text-secondary">
           {{ timeAgo }}
         </p>
       </div>
     </div>
     <div class="mt-3 flex justify-center">
-      <div class="h-20 w-20 overflow-hidden rounded-xl bg-white/10 ring-1 ring-white/10">
+      <div class="h-20 w-20 overflow-hidden rounded-xl bg-surface-active ring-1 ring-border-default">
         <img
           v-if="coverUrl"
           :src="coverUrl"
@@ -25,21 +25,21 @@
           loading="lazy"
         />
         <div v-else class="flex h-full items-center justify-center">
-          <i aria-hidden="true" class="pi pi-music text-xl text-white/30" />
+          <Music aria-hidden="true" class="text-xl text-muted"  />
         </div>
       </div>
     </div>
     <div class="mt-2 text-center">
-      <p class="truncate text-sm font-semibold text-white">
+      <p class="truncate text-sm font-semibold text-primary">
         {{ trackTitle }}
       </p>
-      <p class="truncate text-xs text-white/60">
+      <p class="truncate text-xs text-secondary">
         {{ artistName }}
       </p>
     </div>
     <button
       type="button"
-      class="mt-3 w-full rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-spotify focus-visible:outline-hidden"
+      class="mt-3 w-full rounded-full border border-border-default bg-surface-overlay/60 px-3 py-1.5 text-xs font-medium text-primary/80 transition hover:bg-surface-active focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-hidden"
       @click="$emit('listen-together', activity)"
     >
       پخش با هم
@@ -48,6 +48,7 @@
 </template>
 
 <script setup lang="ts">
+import { Music } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 interface SocialActivity {

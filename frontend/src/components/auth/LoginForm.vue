@@ -4,9 +4,9 @@
   >
     <div class="mb-8 text-center">
       <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-spotify/10">
-        <i class="pi pi-headphones text-2xl text-spotify" />
+        <Headphones aria-hidden="true" class="text-2xl text-spotify" />
       </div>
-      <h1 class="font-display text-2xl font-bold text-white tracking-tight">Welcome back</h1>
+      <h1 class="font-display text-2xl font-bold text-white tracking-tight">{{ $t('auth.login_title') }}</h1>
       <p class="mt-1.5 text-sm text-white/40">Log in to continue your music journey</p>
     </div>
 
@@ -14,10 +14,10 @@
       <!-- Email -->
       <div class="group">
         <label for="login-email" class="mb-1.5 block text-sm font-medium text-white/60 group-focus-within:text-spotify transition-colors duration-200">
-          Email
+          {{ $t('auth.email') }}
         </label>
         <span class="relative block">
-          <i class="pi pi-envelope absolute top-1/2 left-3 -translate-y-1/2 text-sm text-white/30" />
+          <Mail aria-hidden="true" class="absolute top-1/2 left-3 -translate-y-1/2 text-sm text-white/30" />
           <InputText
             id="login-email"
             v-model="form.email"
@@ -46,10 +46,10 @@
       <!-- Password -->
       <div class="group">
         <label for="login-password" class="mb-1.5 block text-sm font-medium text-white/60 group-focus-within:text-spotify transition-colors duration-200">
-          Password
+          {{ $t('auth.password') }}
         </label>
         <span class="relative block">
-          <i class="pi pi-lock absolute top-1/2 left-3 -translate-y-1/2 text-sm text-white/30 z-10" />
+          <Lock aria-hidden="true" class="absolute top-1/2 left-3 -translate-y-1/2 text-sm text-white/30 z-10" />
           <Password
             id="login-password"
             v-model="form.password"
@@ -83,7 +83,7 @@
           to="/auth/forgot-password"
           class="text-xs text-white/40 transition hover:text-spotify"
         >
-          Forgot password?
+          {{ $t('auth.forgot_password') }}
         </RouterLink>
       </div>
 
@@ -107,7 +107,7 @@
           class="flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/8 px-4 py-3 text-sm text-red-300"
           role="alert"
         >
-          <i class="pi pi-exclamation-circle mt-0.5 shrink-0 text-red-400" />
+          <AlertCircle aria-hidden="true" class="mt-0.5 shrink-0 text-red-400" />
           <span>{{ apiError }}</span>
         </div>
       </Transition>
@@ -115,7 +115,7 @@
       <!-- Submit -->
       <Button
         type="submit"
-        label="Log in"
+        :label="$t('nav.login')"
         icon="pi pi-arrow-right"
         icon-pos="right"
         :loading="loading"
@@ -128,7 +128,7 @@
           <div class="w-full border-t border-white/6" />
         </div>
         <div class="relative flex justify-center text-xs">
-          <span class="bg-black/40 px-3 text-white/30">or</span>
+          <span class="bg-black/40 px-3 text-white/30">{{ $t('common.or') }}</span>
         </div>
       </div>
 
@@ -137,15 +137,15 @@
         to="/"
         class="flex items-center justify-center gap-2 rounded-xl border border-white/8 px-4 py-2.5 text-sm text-white/50 transition-all duration-200 hover:border-white/20 hover:text-white/80 hover:bg-white/3"
       >
-        <i class="pi pi-user text-xs" />
+        <User aria-hidden="true" class="text-xs" />
         Continue as guest
       </RouterLink>
 
       <!-- Switch to register -->
       <p class="text-center text-sm text-white/40">
-        Don't have an account?
+        {{ $t('auth.no_account') }}
         <RouterLink to="/auth/register" class="font-medium text-spotify transition-colors duration-200 hover:text-spotify-hover">
-          Create one
+          {{ $t('nav.register') }}
         </RouterLink>
       </p>
     </form>
@@ -153,6 +153,7 @@
 </template>
 
 <script setup lang="ts">
+import { AlertCircle, Headphones, Lock, Mail, User } from 'lucide-vue-next'
 import { useLoginForm } from '@/composables/auth/useLoginForm.ts'
 
 const { form, errors, apiError, loading, rememberMe, validateField, onSubmit } = useLoginForm()
@@ -175,9 +176,9 @@ const { form, errors, apiError, loading, rememberMe, validateField, onSubmit } =
 }
 
 :deep(.auth-input) {
-  background: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  color: white !important;
+  background: var(--surface-hover) !important;
+  border: 1px solid var(--border-default) !important;
+  color: var(--text-primary) !important;
   border-radius: 12px !important;
   padding-top: 10px !important;
   padding-bottom: 10px !important;
@@ -186,25 +187,25 @@ const { form, errors, apiError, loading, rememberMe, validateField, onSubmit } =
 }
 
 :deep(.auth-input:focus) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: #1db954 !important;
-  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.15) !important;
+  background: var(--surface-active) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-muted) !important;
   outline: none !important;
 }
 
 :deep(.auth-input::placeholder) {
-  color: rgba(255, 255, 255, 0.4) !important;
+  color: var(--text-muted) !important;
 }
 
 :deep(.auth-btn) {
   border-radius: 12px !important;
   padding: 10px 0 !important;
   font-size: 0.9rem !important;
-  box-shadow: 0 4px 16px rgba(29, 185, 84, 0.25) !important;
+  box-shadow: 0 4px 16px var(--accent-glow) !important;
 }
 
 :deep(.auth-btn:hover) {
-  box-shadow: 0 6px 24px rgba(29, 185, 84, 0.35) !important;
+  box-shadow: 0 6px 24px var(--accent-glow) !important;
   transform: translateY(-1px);
 }
 
@@ -213,9 +214,9 @@ const { form, errors, apiError, loading, rememberMe, validateField, onSubmit } =
 }
 
 :deep(.p-password .p-inputtext) {
-  background: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  color: white !important;
+  background: var(--surface-hover) !important;
+  border: 1px solid var(--border-default) !important;
+  color: var(--text-primary) !important;
   border-radius: 12px !important;
   padding-top: 10px !important;
   padding-bottom: 10px !important;
@@ -223,24 +224,24 @@ const { form, errors, apiError, loading, rememberMe, validateField, onSubmit } =
 }
 
 :deep(.p-password .p-inputtext:focus) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: #1db954 !important;
-  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.15) !important;
+  background: var(--surface-active) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-muted) !important;
 }
 
 :deep(.p-password .p-input-icon) {
-  color: rgba(255, 255, 255, 0.3) !important;
+  color: var(--text-tertiary) !important;
 }
 
 :deep(.p-password-panel) {
-  background: #1a1a1a !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: var(--surface-elevated) !important;
+  border: 1px solid var(--border-default) !important;
   border-radius: 12px !important;
 }
 
 /* PrimeVue password toggle icon */
 :deep(.p-password .p-password-toggle-icon) {
-  color: rgba(255, 255, 255, 0.3) !important;
+  color: var(--text-tertiary) !important;
   right: 12px !important;
 }
 

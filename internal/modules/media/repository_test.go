@@ -30,14 +30,14 @@ func TestRepository_Create(t *testing.T) {
 	rows := sqlmock.NewRows([]string{
 		"id", "media_type", "storage_provider", "bucket", "object_key", "public_url",
 		"mime_type", "file_size", "checksum_sha256", "duration_seconds", "width", "height",
-		"original_filename", "metadata", "created_by", "created_at", "updated_at",
+		"original_filename", "metadata", "track_id", "created_by", "created_at", "updated_at",
 	}).AddRow(
 		mediaID, "audio", "local", nil, "/uploads/test.mp3", nil,
 		&mimeType, &fileSize, nil, nil, nil, nil,
-		&origFilename, "{}", nil, now, now,
+		&origFilename, "{}", nil, nil, now, now,
 	)
 
-	mock.ExpectQuery(`INSERT INTO media`).
+	mock.ExpectQuery(`INSERT INTO media_assets`).
 		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
 			sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
 			sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
@@ -73,11 +73,11 @@ func TestRepository_GetByID(t *testing.T) {
 	rows := sqlmock.NewRows([]string{
 		"id", "media_type", "storage_provider", "bucket", "object_key", "public_url",
 		"mime_type", "file_size", "checksum_sha256", "duration_seconds", "width", "height",
-		"original_filename", "metadata", "created_by", "created_at", "updated_at",
+		"original_filename", "metadata", "track_id", "created_by", "created_at", "updated_at",
 	}).AddRow(
 		mediaID, "audio", "s3", nil, "/tracks/track.mp3", nil,
 		&mimeType, &fileSize, nil, nil, nil, nil,
-		&origFilename, `{"duration": 240}`, nil, now, now,
+		&origFilename, `{"duration": 240}`, nil, nil, now, now,
 	)
 
 	mock.ExpectQuery(`SELECT`).WithArgs(mediaID).WillReturnRows(rows)
@@ -113,7 +113,7 @@ func TestRepository_Delete(t *testing.T) {
 	repo := NewRepository(sqlxDB)
 
 	mediaID := uuid.New()
-	mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM media WHERE id = $1`)).
+	mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM media_assets WHERE id = $1`)).
 		WithArgs(mediaID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 

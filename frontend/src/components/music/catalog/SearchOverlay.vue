@@ -3,23 +3,23 @@
     <Transition name="search-fade">
       <div
         v-if="visible"
-        class="fixed inset-0 z-[100] flex items-start justify-center bg-black/80 pt-16 backdrop-blur-xs md:pt-24"
+        class="fixed inset-0 z-100 flex items-start justify-center bg-bg-overlay pt-16 backdrop-blur-xs md:pt-24"
         @click.self="close"
       >
         <div
           ref="panelRef"
-          class="mx-4 w-full max-w-2xl overflow-hidden rounded-2xl bg-linear-to-b from-surface-overlay to-surface-raised shadow-2xl ring-1 ring-white/10"
+          class="mx-4 w-full max-w-2xl overflow-hidden rounded-2xl bg-linear-to-b from-surface-overlay to-surface-raised shadow-2xl ring-1 ring-border-default"
         >
           <!-- Search input -->
-          <div class="relative flex items-center border-b border-white/10 px-4">
-            <i aria-hidden="true" class="pi pi-search text-sm text-slate-400" />
+          <div class="relative flex items-center border-b border-border-default px-4">
+            <Search aria-hidden="true" class="text-sm text-secondary"  />
             <input
               ref="inputRef"
               v-model="query"
               type="text"
               placeholder="Search tracks, artists, albums, playlists..."
               aria-label="Search tracks, artists, albums, playlists"
-              class="flex-1 bg-transparent px-3 py-4 text-sm text-white outline-hidden placeholder:text-slate-500 focus-visible:ring-2 focus-visible:ring-[var(--color-primary-400)]/50"
+              class="flex-1 bg-transparent px-3 py-4 text-sm text-primary outline-hidden placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent/50"
               @keydown="onKeydown"
               @input="onInput"
             />
@@ -27,13 +27,13 @@
               v-if="query"
               type="button"
               aria-label="Clear search"
-              class="spring mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs text-slate-400 transition hover:bg-white/20"
+              class="spring mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-surface-active text-xs text-secondary transition hover:bg-surface-hover"
               @click="clearQuery"
             >
-              <i aria-hidden="true" class="pi pi-times" />
+              <X aria-hidden="true" class=""  />
             </button>
             <kbd
-              class="hidden rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-slate-500 md:inline-block"
+              class="hidden rounded-md border border-border-default bg-surface-overlay px-2 py-0.5 text-[11px] text-muted md:inline-block"
             >
               ESC
             </kbd>
@@ -43,12 +43,12 @@
           <div v-if="!query && !searching" class="max-h-[60vh] space-y-4 overflow-y-auto p-4">
             <div v-if="recentSearches.length">
               <p
-                class="mb-2 flex items-center justify-between text-xs font-bold tracking-wider text-slate-400 uppercase"
+                class="mb-2 flex items-center justify-between text-xs font-bold tracking-wider text-secondary uppercase"
               >
                 <span>Recent</span>
                 <button
                   type="button"
-                  class="text-[10px] text-spotify hover:underline"
+                  class="text-[10px] text-accent hover:underline"
                   @click="clearRecent"
                 >
                   Clear
@@ -59,17 +59,17 @@
                   v-for="term in recentSearches"
                   :key="term"
                   type="button"
-                  class="spring flex items-center gap-2 rounded-full bg-white/8 px-4 py-2 text-sm text-white transition-all hover:scale-105 hover:bg-white/12"
+                  class="spring flex items-center gap-2 rounded-full bg-surface-active px-4 py-2 text-sm text-primary transition-all hover:scale-105 hover:bg-surface-hover"
                   @click="query = term; doSearch()"
                 >
-                  <i aria-hidden="true" class="pi pi-history text-xs text-slate-500" />
+                  <History aria-hidden="true" class="text-xs text-tertiary"  />
                   {{ term }}
                 </button>
               </div>
             </div>
 
             <div>
-              <p class="mb-2 text-xs font-bold tracking-wider text-slate-400 uppercase">
+              <p class="mb-2 text-xs font-bold tracking-wider text-secondary uppercase">
                 Suggestions
               </p>
               <div class="flex flex-wrap gap-2">
@@ -77,7 +77,7 @@
                   v-for="suggestion in suggestions"
                   :key="suggestion"
                   type="button"
-                  class="spring rounded-full bg-white/6 px-4 py-2 text-sm text-slate-300 transition-all hover:scale-105 hover:bg-white/10 hover:text-white"
+                  class="spring rounded-full bg-surface-overlay px-4 py-2 text-sm text-secondary transition-all hover:scale-105 hover:bg-surface-active hover:text-primary"
                   @click="query = suggestion; doSearch()"
                 >
                   {{ suggestion }}
@@ -86,17 +86,17 @@
             </div>
 
             <!-- Keyboard shortcut hint -->
-            <div class="flex items-center gap-4 text-[11px] text-slate-600">
+            <div class="flex items-center gap-4 text-[11px] text-muted">
               <span
-                ><kbd class="rounded-sm border border-white/10 px-1.5 py-0.5 text-[10px]">↑↓</kbd>
+                ><kbd class="rounded-sm border border-border-default px-1.5 py-0.5 text-[10px]">↑↓</kbd>
                 Navigate</span
               >
               <span
-                ><kbd class="rounded-sm border border-white/10 px-1.5 py-0.5 text-[10px]">↩</kbd>
+                ><kbd class="rounded-sm border border-border-default px-1.5 py-0.5 text-[10px]">↩</kbd>
                 Select</span
               >
               <span
-                ><kbd class="rounded-sm border border-white/10 px-1.5 py-0.5 text-[10px]">Esc</kbd>
+                ><kbd class="rounded-sm border border-border-default px-1.5 py-0.5 text-[10px]">Esc</kbd>
                 Close</span
               >
             </div>
@@ -105,40 +105,37 @@
           <!-- Searching indicator -->
           <div
             v-if="searching"
-            class="flex items-center justify-center gap-3 p-12 text-sm text-slate-400"
+            class="flex items-center justify-center gap-3 p-12 text-sm text-secondary"
           >
-            <i aria-hidden="true" class="pi pi-spin pi-spinner" />
+            <Loader2 aria-hidden="true" />
             Searching...
           </div>
 
           <!-- Results -->
           <div v-if="query && !searching" class="max-h-[60vh] overflow-y-auto p-2" aria-live="polite">
             <div v-if="noResults" class="flex flex-col items-center gap-4 p-12 text-center">
-              <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5">
-                <i aria-hidden="true" class="pi pi-search text-3xl text-slate-600" />
+              <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-overlay">
+                <Search class="text-3xl text-muted"<i aria-hidden="true"  /> />
               </div>
-              <p class="text-sm text-slate-400">
-                No results for "<span class="font-medium text-white">{{ query }}</span
+              <p class="text-sm text-secondary">
+                No results for "<span class="font-medium text-primary">{{ query }}</span
                 >"
               </p>
-              <p class="text-xs text-slate-500">Try a different search term</p>
+              <p class="text-xs text-tertiary">Try a different search term</p>
             </div>
 
             <template v-else>
               <!-- Top Result (first track) -->
               <div v-if="results.tracks?.length" class="mb-4 px-2">
-                <p class="mb-2 text-xs font-bold tracking-wider text-slate-400 uppercase">
+                <p class="mb-2 text-xs font-bold tracking-wider text-secondary uppercase">
                   Top Result
                 </p>
-                <div
-                  role="button"
-                  tabindex="0"
-                  class="group spring flex cursor-pointer items-center gap-4 rounded-xl bg-white/4 p-3 transition-all hover:bg-white/8"
+                <button
+                  type="button"
+                  class="group spring flex w-full items-center gap-4 rounded-xl bg-surface-hover/60 p-3 text-left transition-all hover:bg-surface-active"
     @click="selectTrack(results.tracks[0]!)"
-                    @keydown.enter="selectTrack(results.tracks[0]!)"
-                    @keydown.space.prevent="selectTrack(results.tracks[0]!)"
                 >
-                  <div class="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-white/10 shadow-lg">
+                  <span class="block h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-surface-overlay shadow-lg">
                     <img
                       v-if="results.tracks[0]?.cover_url"
                       :src="results.tracks[0]?.cover_url"
@@ -147,47 +144,44 @@
                       class="h-full w-full object-cover"
                       @error="onImgError"
                     />
-                    <div v-else class="flex h-full items-center justify-center">
-                      <i aria-hidden="true" class="pi pi-music text-lg text-slate-500" />
-                    </div>
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="truncate text-base font-bold text-white">
+                    <span v-else class="flex h-full items-center justify-center">
+                      <Music class="text-lg text-tertiary"<i aria-hidden="true"  /> />
+                    </span>
+                  </span>
+                  <span class="block min-w-0 flex-1">
+                    <p class="truncate text-base font-bold text-primary">
                       {{ results.tracks[0]?.title }}
                     </p>
-                    <p class="truncate text-sm text-slate-400">
+                    <p class="truncate text-sm text-secondary">
                       {{ results.tracks[0]?.artist_name || 'Unknown' }}
                     </p>
-                  </div>
-                  <div
-                    class="spring flex h-12 w-12 items-center justify-center rounded-full bg-spotify/0 text-white opacity-0 transition-all group-hover:bg-spotify group-hover:opacity-100"
+                  </span>
+                  <span
+                    class="spring flex h-12 w-12 items-center justify-center rounded-full bg-accent/0 text-primary opacity-0 transition-all group-hover:bg-accent group-hover:text-accent-text group-hover:opacity-100"
                   >
-                    <i aria-hidden="true" class="pi pi-play-fill text-lg" />
-                  </div>
-                </div>
+                    <Play class="text-lg"<i aria-hidden="true"  /> />
+                  </span>
+                </button>
               </div>
 
               <!-- Tracks -->
               <div v-if="results.tracks?.length" class="mb-3">
-                <p class="mb-2 px-2 text-xs font-bold tracking-wider text-slate-400 uppercase">
+                <p class="mb-2 px-2 text-xs font-bold tracking-wider text-secondary uppercase">
                   Tracks
                 </p>
-                <div
+                <button
                   v-for="(item, i) in results.tracks.slice(0, 5)"
                   :key="item.id"
                   :ref="(el) => setItemRef('track', i, el)"
-                  role="button"
-                  tabindex="0"
-                  class="spring flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
+                  type="button"
+                  class="spring flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
                   :class="
-                    highlightedIndex === `track-${i}` ? 'bg-white/10' : 'hover:bg-white/6'
+                    highlightedIndex === `track-${i}` ? 'bg-surface-active' : 'hover:bg-surface-hover'
                   "
                   @click="selectTrack(item)"
-                  @keydown.enter="selectTrack(item)"
-                  @keydown.space.prevent="selectTrack(item)"
                   @mouseenter="highlightedIndex = `track-${i}`"
                 >
-                  <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
+                  <span class="block h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-surface-overlay">
                     <img
                       v-if="item.cover_url"
                       :src="item.cover_url"
@@ -196,25 +190,25 @@
                       class="h-full w-full object-cover"
                       @error="onImgError"
                     />
-                    <div v-else class="flex h-full items-center justify-center">
-                      <i aria-hidden="true" class="pi pi-music text-xs text-slate-500" />
-                    </div>
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="truncate text-sm font-medium text-white">{{ item.title }}</p>
-                    <p class="truncate text-xs text-slate-400">
+                    <span v-else class="flex h-full items-center justify-center">
+                      <Music aria-hidden="true" class="text-xs text-tertiary"  />
+                    </span>
+                  </span>
+                  <span class="block min-w-0 flex-1">
+                    <p class="truncate text-sm font-medium text-primary">{{ item.title }}</p>
+                    <p class="truncate text-xs text-secondary">
                       {{ item.artist_name || 'Unknown' }}
                     </p>
-                  </div>
-                  <span v-if="item.duration_seconds" class="text-xs text-slate-500 tabular-nums">{{
+                  </span>
+                  <span v-if="item.duration_seconds" class="text-xs text-tertiary tabular-nums">{{
                     fmtDuration(item.duration_seconds)
                   }}</span>
-                </div>
+                </button>
               </div>
 
               <!-- Artists -->
               <div v-if="results.artists?.length" class="mb-3">
-                <p class="mb-2 px-2 text-xs font-bold tracking-wider text-slate-400 uppercase">
+                <p class="mb-2 px-2 text-xs font-bold tracking-wider text-secondary uppercase">
                   Artists
                 </p>
                 <div class="space-y-1">
@@ -226,14 +220,14 @@
                     class="spring flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
                     :class="
                       highlightedIndex === `artist-${i}`
-                        ? 'bg-white/10'
-                        : 'hover:bg-white/6'
+                        ? 'bg-surface-active'
+                        : 'hover:bg-surface-hover'
                     "
                     @click="close"
                     @mouseenter="highlightedIndex = `artist-${i}`"
                   >
                     <div
-                      class="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-white/10 ring-2 ring-white/10"
+                      class="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-surface-overlay ring-2 ring-border-default"
                     >
                       <img
                         v-if="item.cover_url"
@@ -244,23 +238,23 @@
                         @error="onImgError"
                       />
                       <div v-else class="flex h-full items-center justify-center">
-                        <i aria-hidden="true" class="pi pi-user text-sm text-slate-500" />
+                        <User aria-hidden="true" class="text-sm text-tertiary"  />
                       </div>
                     </div>
                     <div class="min-w-0 flex-1">
-                      <p class="truncate text-sm font-medium text-white">{{ item.name }}</p>
-                      <p class="truncate text-xs text-slate-400">
+                      <p class="truncate text-sm font-medium text-primary">{{ item.name }}</p>
+                      <p class="truncate text-xs text-secondary">
                         {{ item.genre ? `Artist · ${item.genre}` : 'Artist' }}
                       </p>
                     </div>
-                    <i aria-hidden="true" class="pi pi-chevron-left text-xs text-slate-500" />
+                    <ChevronLeft aria-hidden="true" class="text-xs text-tertiary"  />
                   </RouterLink>
                 </div>
               </div>
 
               <!-- Albums -->
               <div v-if="results.albums?.length" class="mb-3">
-                <p class="mb-2 px-2 text-xs font-bold tracking-wider text-slate-400 uppercase">
+                <p class="mb-2 px-2 text-xs font-bold tracking-wider text-secondary uppercase">
                   Albums
                 </p>
                 <div class="space-y-1">
@@ -272,13 +266,13 @@
                     class="spring flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
                     :class="
                       highlightedIndex === `album-${i}`
-                        ? 'bg-white/10'
-                        : 'hover:bg-white/6'
+                        ? 'bg-surface-active'
+                        : 'hover:bg-surface-hover'
                     "
                     @click="close"
                     @mouseenter="highlightedIndex = `album-${i}`"
                   >
-                    <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white/10">
+                    <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-surface-overlay">
                       <img
                         v-if="item.cover_url"
                         :src="item.cover_url"
@@ -288,23 +282,23 @@
                         @error="onImgError"
                       />
                       <div v-else class="flex h-full items-center justify-center">
-                        <i aria-hidden="true" class="pi pi-compact-disc text-sm text-slate-500" />
+                        <Disc3 aria-hidden="true" class="text-sm text-tertiary"  />
                       </div>
                     </div>
                     <div class="min-w-0 flex-1">
-                      <p class="truncate text-sm font-medium text-white">{{ item.title }}</p>
-                      <p class="truncate text-xs text-slate-400">
+                      <p class="truncate text-sm font-medium text-primary">{{ item.title }}</p>
+                      <p class="truncate text-xs text-secondary">
                         {{ item.artist_name || 'Album' }}
                       </p>
                     </div>
-                    <i aria-hidden="true" class="pi pi-chevron-left text-xs text-slate-500" />
+                    <ChevronLeft aria-hidden="true" class="text-xs text-tertiary"  />
                   </RouterLink>
                 </div>
               </div>
 
               <!-- Playlists -->
               <div v-if="results.playlists?.length" class="mb-3">
-                <p class="mb-2 px-2 text-xs font-bold tracking-wider text-slate-400 uppercase">
+                <p class="mb-2 px-2 text-xs font-bold tracking-wider text-secondary uppercase">
                   Playlists
                 </p>
                 <div class="space-y-1">
@@ -316,14 +310,14 @@
                     class="spring flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
                     :class="
                       highlightedIndex === `playlist-${i}`
-                        ? 'bg-white/10'
-                        : 'hover:bg-white/6'
+                        ? 'bg-surface-active'
+                        : 'hover:bg-surface-hover'
                     "
                     @click="close"
                     @mouseenter="highlightedIndex = `playlist-${i}`"
                   >
                     <div
-                      class="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-linear-to-br from-purple-500/20 to-purple-500/5"
+                      class="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-linear-to-br from-accent/20 to-accent/5"
                     >
                       <img
                         v-if="item.cover_url"
@@ -334,16 +328,16 @@
                         @error="onImgError"
                       />
                       <div v-else class="flex h-full items-center justify-center">
-                        <i aria-hidden="true" class="pi pi-list text-sm text-purple-400" />
+                        <List aria-hidden="true" class="text-sm text-accent"  />
                       </div>
                     </div>
                     <div class="min-w-0 flex-1">
-                      <p class="truncate text-sm font-medium text-white">{{ item.name }}</p>
-                      <p class="truncate text-xs text-slate-400">
+                      <p class="truncate text-sm font-medium text-primary">{{ item.name }}</p>
+                      <p class="truncate text-xs text-secondary">
                         {{ item.description || 'Playlist' }}
                       </p>
                     </div>
-                    <i aria-hidden="true" class="pi pi-chevron-left text-xs text-slate-500" />
+                    <ChevronLeft aria-hidden="true" class="text-xs text-tertiary"  />
                   </RouterLink>
                 </div>
               </div>
@@ -356,11 +350,13 @@
 </template>
 
 <script setup lang="ts">
+import { ChevronLeft, Disc3, History, List, Loader2, Music, Play, RefreshCw, Search, User, X } from 'lucide-vue-next'
 import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSearchApi, type SearchResult } from '@/services/api/catalog/search'
 import type { UseRequestConfig } from '@/plugins/client/types'
 import { usePlayer } from '@/composables/player'
+import { useAppToast } from '@/composables/useAppToast'
 import { onImgError } from '@/utils/helpers'
 import { buildPlaybackTrack } from '@/factories/playbackTrack'
 
@@ -387,6 +383,7 @@ interface SearchResults {
 const router = useRouter()
 const player = usePlayer()
 const searchApi = useSearchApi()
+const toast = useAppToast()
 
 const props = defineProps<{ visible: boolean }>()
 const emit = defineEmits<{ 'update:visible': [value: boolean] }>()
@@ -451,8 +448,8 @@ function loadRecent() {
   try {
     const raw = localStorage.getItem('music_recent_searches')
     recentSearches.value = raw ? JSON.parse(raw) : []
-  } catch (err) {
-    console.error('Failed to load recent searches:', err)
+  } catch (err: unknown) {
+    toast.apiError(err, 'Failed to load recent searches')
     recentSearches.value = []
   }
 }
@@ -463,8 +460,8 @@ function saveRecent(term: string) {
     list = [term, ...list.filter((t) => t !== term)].slice(0, 8)
     localStorage.setItem('music_recent_searches', JSON.stringify(list))
     recentSearches.value = list
-  } catch (err) {
-    console.error('Failed to save recent searches:', err)
+  } catch (err: unknown) {
+    toast.apiError(err, 'Failed to save recent searches')
   }
 }
 
@@ -514,7 +511,7 @@ async function doSearch() {
   } catch (err: unknown) {
     const abortErr = err as { name?: string; code?: string }
     if (abortErr?.name === 'AbortError' || abortErr?.code === 'ERR_CANCELED') return
-    console.error('Failed to search catalog:', err)
+    toast.apiError(err, 'Failed to search catalog')
     results.value = { tracks: [], artists: [], albums: [], playlists: [] }
     noResults.value = true
   } finally {
@@ -621,7 +618,7 @@ function fmtDuration(s: number) {
 function onKeybind(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
     e.preventDefault()
-    _visible.value = _visible.value!
+    _visible.value = !_visible.value
     if (_visible.value) nextTick(() => inputRef.value?.focus())
     return
   }

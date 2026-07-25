@@ -15,6 +15,19 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// React godoc
+// @Summary Create or update reaction
+// @Description Reacts to a target (like/unlike) for the authenticated user.
+// @Tags reactions
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body ReactRequest true "Reaction payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /reactions [post]
 func (h *Handler) React(c *gin.Context) {
 	userID := c.GetString("auth_user_id")
 	var req ReactRequest
@@ -29,6 +42,18 @@ func (h *Handler) React(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
+// RemoveReaction godoc
+// @Summary Remove reaction
+// @Description Removes a reaction from a target for the authenticated user.
+// @Tags reactions
+// @Produce json
+// @Security Bearer
+// @Param targetType path string true "Target type (track, album, playlist)"
+// @Param targetId path string true "Target ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /reactions/{targetType}/{targetId} [delete]
 func (h *Handler) RemoveReaction(c *gin.Context) {
 	userID := c.GetString("auth_user_id")
 	targetID := c.Param("targetId")
@@ -40,6 +65,18 @@ func (h *Handler) RemoveReaction(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
+// GetUserReaction godoc
+// @Summary Get user reaction
+// @Description Returns the authenticated user's reaction to a specific target.
+// @Tags reactions
+// @Produce json
+// @Security Bearer
+// @Param targetType path string true "Target type (track, album, playlist)"
+// @Param targetId path string true "Target ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /reactions/{targetType}/{targetId}/mine [get]
 func (h *Handler) GetUserReaction(c *gin.Context) {
 	userID := c.GetString("auth_user_id")
 	targetID := c.Param("targetId")
@@ -52,6 +89,16 @@ func (h *Handler) GetUserReaction(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"reaction": reaction})
 }
 
+// GetCounts godoc
+// @Summary Get reaction counts
+// @Description Returns reaction counts for a specific target.
+// @Tags reactions
+// @Produce json
+// @Param targetType path string true "Target type (track, album, playlist)"
+// @Param targetId path string true "Target ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /reactions/{targetType}/{targetId}/counts [get]
 func (h *Handler) GetCounts(c *gin.Context) {
 	targetID := c.Param("targetId")
 	targetType := c.Param("targetType")
@@ -63,6 +110,18 @@ func (h *Handler) GetCounts(c *gin.Context) {
 	c.JSON(http.StatusOK, counts)
 }
 
+// GetLikedTracks godoc
+// @Summary Get liked tracks
+// @Description Returns the authenticated user's liked tracks with pagination.
+// @Tags reactions
+// @Produce json
+// @Security Bearer
+// @Param limit query int false "Items per page" default(20)
+// @Param offset query int false "Number of items to skip" default(0)
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /reactions/tracks [get]
 func (h *Handler) GetLikedTracks(c *gin.Context) {
 	userID := c.GetString("auth_user_id")
 	if userID == "" {
@@ -79,6 +138,18 @@ func (h *Handler) GetLikedTracks(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"items": items, "limit": limit, "offset": offset, "count": len(items)})
 }
 
+// GetLikedAlbums godoc
+// @Summary Get liked albums
+// @Description Returns the authenticated user's liked albums with pagination.
+// @Tags reactions
+// @Produce json
+// @Security Bearer
+// @Param limit query int false "Items per page" default(20)
+// @Param offset query int false "Number of items to skip" default(0)
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /reactions/albums [get]
 func (h *Handler) GetLikedAlbums(c *gin.Context) {
 	userID := c.GetString("auth_user_id")
 	if userID == "" {

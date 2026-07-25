@@ -12,7 +12,7 @@
 #   - If image size ever becomes a concern, switch to multi-stage:
 #     builder copies uv + deps, runtime copies /app/.venv from builder.
 
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # ── System dependencies ───────────────────────────────────────────────
 # faster-whisper / ctranslate2 need libgomp (OpenMP) at runtime.
@@ -39,12 +39,14 @@ COPY . .
 
 # ── Non-root user for security ─────────────────────────────────────────
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser && \
+    mkdir -p /app/.cache && \
     chown -R appuser:appgroup /app
+ENV HOME=/app UV_NO_SYNC=1
 USER appuser
 
 # ── Runtime ───────────────────────────────────────────────────────────
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD curl -sf http://localhost:8000/health || exit 1
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health/live')" || exit 1
 
 CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

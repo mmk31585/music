@@ -13,8 +13,8 @@
             :disabled="refreshing"
             @click="refreshAll"
           >
-            <i aria-hidden="true" :class="refreshing ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'" class="text-xs" />
-            {{ refreshing ? 'Loading...' : 'Refresh' }}
+            <component :is="refreshing ? Loader2 : RefreshCw"<i aria-hidden="true"  class="text-xs" /> :class="refreshing ? 'animate-spin' : ''" />
+            {{ refreshing ? 'Loading...' : 'RefreshCw' }}
           </button>
         </div>
       </template>
@@ -108,7 +108,7 @@
               <input
                 type="checkbox"
                 :checked="selectedIds.includes(report.id)"
-                class="h-4 w-4 rounded border-white/20 bg-white/5 accent-[#1db954]"
+                class="h-4 w-4 rounded border-white/20 bg-white/5 accent-accent"
                 @change="toggleSelect(report.id)"
               />
             </label>
@@ -177,14 +177,14 @@
                 class="rounded-lg bg-white/5 p-2 text-xs text-white/30 transition hover:bg-green-500/10 hover:text-green-400"
                 @click="resolvingId = report.id; resolveNote = ''"
               >
-                <i aria-hidden="true" class="pi pi-check" />
+                <Check aria-hidden="true" class=""  />
               </button>
               <button
                 title="Flag content"
                 class="rounded-lg bg-white/5 p-2 text-xs text-white/30 transition hover:bg-red-500/10 hover:text-red-400"
                 @click="openFlagDialog(report)"
               >
-                <i aria-hidden="true" class="pi pi-flag" />
+                <Flag aria-hidden="true" class=""  />
               </button>
             </div>
           </div>
@@ -199,7 +199,7 @@
           <input
             v-model="includeExpiredFlags"
             type="checkbox"
-            class="h-4 w-4 rounded border-white/20 bg-white/5 accent-[#1db954]"
+            class="h-4 w-4 rounded border-white/20 bg-white/5 accent-accent"
             @change="fetchFlags"
           />
           Include expired
@@ -225,7 +225,7 @@
           :class="{ 'opacity-40': isExpired(flag) }"
         >
           <div class="flex min-w-0 items-center gap-3">
-            <i aria-hidden="true" class="pi pi-flag text-sm text-red-400/60" />
+            <Flag aria-hidden="true" class="text-sm text-red-400/60"  />
             <div class="min-w-0">
               <div class="flex items-center gap-2">
                 <span
@@ -446,7 +446,7 @@
       :draggable="false"
       :style="{ width: '440px' }"
       :pt="{
-        root: { class: 'border-white/6! bg-[#141414]! rounded-2xl! shadow-2xl!' },
+        root: { class: 'border-white/6! bg-surface-overlay! rounded-2xl! shadow-2xl!' },
         header: { class: 'bg-transparent! border-0! pb-2!' },
         content: { class: 'bg-transparent! px-6! pt-0! pb-2!' },
         footer: { class: 'bg-transparent! border-0!' },
@@ -456,7 +456,7 @@
       <template #header>
         <div class="flex items-center gap-3">
           <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10">
-            <i aria-hidden="true" class="pi pi-flag text-red-400" />
+            <Flag aria-hidden="true" class="text-red-400"  />
           </div>
           <div>
             <h3 class="text-base font-semibold text-white">Flag Content</h3>
@@ -518,6 +518,7 @@
 </template>
 
 <script setup lang="ts">
+import { Check, Flag, Loader2, RefreshCw } from 'lucide-vue-next'
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useModerationApi } from '@/services/api/moderation'
 import { useToast } from 'primevue/usetoast'

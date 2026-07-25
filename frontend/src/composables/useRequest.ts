@@ -17,6 +17,10 @@ export function registerRouter(r: Router) {
   checkInit()
 }
 
+export function useGlobalToast(): ToastServiceMethods | null {
+  return toast
+}
+
 export function registerToast(t: ToastServiceMethods) {
   toast = t
   checkInit()

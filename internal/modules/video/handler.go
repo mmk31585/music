@@ -50,20 +50,20 @@ func (h *Handler) UploadOfficialMV(c *gin.Context) {
 	trackIDStr := c.Param("trackId")
 	trackID, err := uuid.Parse(trackIDStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid track id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid track id", err))
 		return
 	}
 
 	userIDStr := auth.UserIDFromContext(c)
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		response.Error(c, apperrors.Unauthorized("invalid user", nil))
+		response.Error(c, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid user", nil))
 		return
 	}
 
 	var req CreateVideoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, apperrors.BadRequest("invalid request body", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid request body", err))
 		return
 	}
 
@@ -72,7 +72,7 @@ func (h *Handler) UploadOfficialMV(c *gin.Context) {
 
 	video, err := h.service.UploadOfficialMV(c.Request.Context(), trackID, userID, req)
 	if err != nil {
-		response.Error(c, apperrors.Internal("failed to upload official MV", err))
+		response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to upload official MV", err))
 		return
 	}
 
@@ -96,7 +96,7 @@ func (h *Handler) DeleteVideo(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid video id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid video id", err))
 		return
 	}
 
@@ -108,11 +108,11 @@ func (h *Handler) DeleteVideo(c *gin.Context) {
 	if err := h.service.DeleteVideo(c.Request.Context(), id, userID, isAdmin); err != nil {
 		switch {
 		case errors.Is(err, ErrVideoNotFound):
-			response.Error(c, apperrors.NotFound("video not found", nil))
+			response.Error(c, apperrors.New(http.StatusNotFound, apperrors.CodeNotFound, "video not found", nil))
 		case errors.Is(err, ErrNotOwner), errors.Is(err, ErrRequiresAdmin):
-			response.Error(c, apperrors.Forbidden("not authorized to delete this video", nil))
+			response.Error(c, apperrors.New(http.StatusForbidden, apperrors.CodeForbidden, "not authorized to delete this video", nil))
 		default:
-			response.Error(c, apperrors.Internal("failed to delete video", err))
+			response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to delete video", err))
 		}
 		return
 	}
@@ -136,7 +136,7 @@ func (h *Handler) ApproveVideo(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid video id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid video id", err))
 		return
 	}
 
@@ -144,9 +144,9 @@ func (h *Handler) ApproveVideo(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrVideoNotFound):
-			response.Error(c, apperrors.NotFound("video not found", nil))
+			response.Error(c, apperrors.New(http.StatusNotFound, apperrors.CodeNotFound, "video not found", nil))
 		default:
-			response.Error(c, apperrors.Internal("failed to approve video", err))
+			response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to approve video", err))
 		}
 		return
 	}
@@ -170,7 +170,7 @@ func (h *Handler) AdminListVideos(c *gin.Context) {
 
 	items, err := h.service.ListAll(c.Request.Context(), p.Limit, p.Offset)
 	if err != nil {
-		response.Error(c, apperrors.Internal("failed to list videos", err))
+		response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to list videos", err))
 		return
 	}
 
@@ -205,13 +205,13 @@ func (h *Handler) AdminUpdateVideo(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid video id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid video id", err))
 		return
 	}
 
 	var req AdminUpdateVideoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, apperrors.BadRequest("invalid request body", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid request body", err))
 		return
 	}
 
@@ -219,9 +219,9 @@ func (h *Handler) AdminUpdateVideo(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrVideoNotFound):
-			response.Error(c, apperrors.NotFound("video not found", nil))
+			response.Error(c, apperrors.New(http.StatusNotFound, apperrors.CodeNotFound, "video not found", nil))
 		default:
-			response.Error(c, apperrors.Internal("failed to update video", err))
+			response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to update video", err))
 		}
 		return
 	}
@@ -258,7 +258,7 @@ func (h *Handler) CreateUserEdit(c *gin.Context) {
 	userIDStr := auth.UserIDFromContext(c)
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		response.Error(c, apperrors.Unauthorized("authentication required", nil))
+		response.Error(c, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil))
 		return
 	}
 
@@ -271,7 +271,7 @@ func (h *Handler) CreateUserEdit(c *gin.Context) {
 		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSize)
 
 		if err := c.Request.ParseMultipartForm(maxSize); err != nil {
-			response.Error(c, apperrors.BadRequest("video file too large or invalid form", err))
+			response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "video file too large or invalid form", err))
 			return
 		}
 		defer c.Request.MultipartForm.RemoveAll() //nolint:errcheck
@@ -281,13 +281,13 @@ func (h *Handler) CreateUserEdit(c *gin.Context) {
 		req.Description = c.PostForm("description")
 
 		if req.TrackID == "" {
-			response.Error(c, apperrors.BadRequest("track_id is required", nil))
+			response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "track_id is required", nil))
 			return
 		}
 
 		file, header, err := c.Request.FormFile("video")
 		if err != nil {
-			response.Error(c, apperrors.BadRequest("video file is required", err))
+			response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "video file is required", err))
 			return
 		}
 		defer file.Close()
@@ -295,17 +295,17 @@ func (h *Handler) CreateUserEdit(c *gin.Context) {
 		// MIME type check: read first 512 bytes
 		buf := make([]byte, 512)
 		if _, err := file.Read(buf); err != nil {
-			response.Error(c, apperrors.BadRequest("failed to read video file", err))
+			response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "failed to read video file", err))
 			return
 		}
 		if _, err := file.Seek(0, io.SeekStart); err != nil {
-			response.Error(c, apperrors.Internal("failed to seek video file", nil))
+			response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to seek video file", nil))
 			return
 		}
 
 		mimeType := http.DetectContentType(buf)
 		if !strings.HasPrefix(mimeType, "video/") {
-			response.Error(c, apperrors.BadRequest("file must be a video", nil))
+			response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "file must be a video", nil))
 			return
 		}
 
@@ -315,20 +315,20 @@ func (h *Handler) CreateUserEdit(c *gin.Context) {
 		savePath := filepath.Join("uploads", "videos", fileName)
 
 		if err := os.MkdirAll(filepath.Dir(savePath), 0755); err != nil {
-			response.Error(c, apperrors.Internal("failed to create upload directory", err))
+			response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to create upload directory", err))
 			return
 		}
 
 		dst, err := os.Create(savePath)
 		if err != nil {
-			response.Error(c, apperrors.Internal("failed to save video file", err))
+			response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to save video file", err))
 			return
 		}
 		defer dst.Close()
 
 		written, err := io.Copy(dst, file)
 		if err != nil {
-			response.Error(c, apperrors.Internal("failed to write video file", err))
+			response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to write video file", err))
 			return
 		}
 
@@ -337,7 +337,7 @@ func (h *Handler) CreateUserEdit(c *gin.Context) {
 	} else {
 		// ── Handle JSON payload ──────────────────────────────────────
 		if err := c.ShouldBindJSON(&req); err != nil {
-			response.Error(c, apperrors.BadRequest("invalid request body", err))
+			response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid request body", err))
 			return
 		}
 	}
@@ -346,9 +346,9 @@ func (h *Handler) CreateUserEdit(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrInvalidInput):
-			response.Error(c, apperrors.BadRequest("invalid input", nil))
+			response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid input", nil))
 		default:
-			response.Error(c, apperrors.Internal("failed to create user edit", err))
+			response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to create user edit", err))
 		}
 		return
 	}
@@ -371,7 +371,7 @@ func (h *Handler) GetVideo(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid video id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid video id", err))
 		return
 	}
 
@@ -379,9 +379,9 @@ func (h *Handler) GetVideo(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrVideoNotFound):
-			response.Error(c, apperrors.NotFound("video not found", nil))
+			response.Error(c, apperrors.New(http.StatusNotFound, apperrors.CodeNotFound, "video not found", nil))
 		default:
-			response.Error(c, apperrors.Internal("failed to get video", err))
+			response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to get video", err))
 		}
 		return
 	}
@@ -406,7 +406,7 @@ func (h *Handler) StreamVideo(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid video id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid video id", err))
 		return
 	}
 
@@ -414,9 +414,9 @@ func (h *Handler) StreamVideo(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrVideoNotFound):
-			response.Error(c, apperrors.NotFound("video not found", nil))
+			response.Error(c, apperrors.New(http.StatusNotFound, apperrors.CodeNotFound, "video not found", nil))
 		default:
-			response.Error(c, apperrors.Internal("failed to get video", err))
+			response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to get video", err))
 		}
 		return
 	}
@@ -438,7 +438,7 @@ func (h *Handler) StreamVideo(c *gin.Context) {
 		return
 	}
 
-	response.Error(c, apperrors.NotFound("video file not available", nil))
+	response.Error(c, apperrors.New(http.StatusNotFound, apperrors.CodeNotFound, "video file not available", nil))
 }
 
 // DeleteOwnVideo godoc
@@ -459,25 +459,25 @@ func (h *Handler) DeleteOwnVideo(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid video id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid video id", err))
 		return
 	}
 
 	userIDStr := auth.UserIDFromContext(c)
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		response.Error(c, apperrors.Unauthorized("authentication required", nil))
+		response.Error(c, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil))
 		return
 	}
 
 	if err := h.service.DeleteOwnVideo(c.Request.Context(), id, userID); err != nil {
 		switch {
 		case errors.Is(err, ErrVideoNotFound):
-			response.Error(c, apperrors.NotFound("video not found", nil))
+			response.Error(c, apperrors.New(http.StatusNotFound, apperrors.CodeNotFound, "video not found", nil))
 		case errors.Is(err, ErrNotOwner):
-			response.Error(c, apperrors.Forbidden("not the owner of this video", nil))
+			response.Error(c, apperrors.New(http.StatusForbidden, apperrors.CodeForbidden, "not the owner of this video", nil))
 		default:
-			response.Error(c, apperrors.Internal("failed to delete video", err))
+			response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to delete video", err))
 		}
 		return
 	}
@@ -499,13 +499,13 @@ func (h *Handler) ListByTrack(c *gin.Context) {
 	trackIDStr := c.Param("trackId")
 	trackID, err := uuid.Parse(trackIDStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid track id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid track id", err))
 		return
 	}
 
 	items, err := h.service.ListByTrack(c.Request.Context(), trackID)
 	if err != nil {
-		response.Error(c, apperrors.Internal("failed to list videos", err))
+		response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to list videos", err))
 		return
 	}
 
@@ -539,7 +539,7 @@ func (h *Handler) ListExplore(c *gin.Context) {
 
 	items, err := h.service.ListExplore(c.Request.Context(), p.Limit, p.Offset)
 	if err != nil {
-		response.Error(c, apperrors.Internal("failed to list explore videos", err))
+		response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to list explore videos", err))
 		return
 	}
 
@@ -582,7 +582,7 @@ func (h *Handler) GetUserVideos(c *gin.Context) {
 	userIDStr := c.Param("id")
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid user id", nil))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid user id", nil))
 		return
 	}
 
@@ -596,7 +596,7 @@ func (h *Handler) GetUserVideos(c *gin.Context) {
 
 	items, err := h.service.ListByUser(c.Request.Context(), userID, viewerID, p.Limit, p.Offset)
 	if err != nil {
-		response.Error(c, apperrors.Internal("failed to list user videos", err))
+		response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to list user videos", err))
 		return
 	}
 
@@ -641,25 +641,25 @@ func (h *Handler) LikeVideo(c *gin.Context) {
 	idStr := c.Param("id")
 	videoID, err := uuid.Parse(idStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid video id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid video id", err))
 		return
 	}
 
 	userIDStr := auth.UserIDFromContext(c)
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		response.Error(c, apperrors.Unauthorized("authentication required", nil))
+		response.Error(c, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil))
 		return
 	}
 
 	if err := h.service.LikeVideo(c.Request.Context(), videoID, userID); err != nil {
 		switch {
 		case errors.Is(err, ErrVideoNotFound):
-			response.Error(c, apperrors.NotFound("video not found", nil))
+			response.Error(c, apperrors.New(http.StatusNotFound, apperrors.CodeNotFound, "video not found", nil))
 		case errors.Is(err, ErrAlreadyLiked):
 			response.Success[any](c, http.StatusOK, "already liked", nil)
 		default:
-			response.Error(c, apperrors.Internal("failed to like video", err))
+			response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to like video", err))
 		}
 		return
 	}
@@ -683,14 +683,14 @@ func (h *Handler) UnlikeVideo(c *gin.Context) {
 	idStr := c.Param("id")
 	videoID, err := uuid.Parse(idStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid video id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid video id", err))
 		return
 	}
 
 	userIDStr := auth.UserIDFromContext(c)
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		response.Error(c, apperrors.Unauthorized("authentication required", nil))
+		response.Error(c, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil))
 		return
 	}
 
@@ -699,7 +699,7 @@ func (h *Handler) UnlikeVideo(c *gin.Context) {
 		case errors.Is(err, ErrNotLiked):
 			response.Success[any](c, http.StatusOK, "not liked", nil)
 		default:
-			response.Error(c, apperrors.Internal("failed to unlike video", err))
+			response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to unlike video", err))
 		}
 		return
 	}
@@ -723,16 +723,16 @@ func (h *Handler) ViewVideo(c *gin.Context) {
 	idStr := c.Param("id")
 	videoID, err := uuid.Parse(idStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid video id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid video id", err))
 		return
 	}
 
 	if err := h.service.ViewVideo(c.Request.Context(), videoID); err != nil {
 		switch {
 		case errors.Is(err, ErrVideoNotFound):
-			response.Error(c, apperrors.NotFound("video not found", nil))
+			response.Error(c, apperrors.New(http.StatusNotFound, apperrors.CodeNotFound, "video not found", nil))
 		default:
-			response.Error(c, apperrors.Internal("failed to record view", err))
+			response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to record view", err))
 		}
 		return
 	}
@@ -762,20 +762,20 @@ func (h *Handler) SetTrackLikeVisibility(c *gin.Context) {
 	trackIDStr := c.Param("trackId")
 	trackID, err := uuid.Parse(trackIDStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid track id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid track id", err))
 		return
 	}
 
 	userIDStr := auth.UserIDFromContext(c)
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		response.Error(c, apperrors.Unauthorized("authentication required", nil))
+		response.Error(c, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil))
 		return
 	}
 
 	var req VideoVisibilityRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, apperrors.BadRequest("invalid request body", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid request body", err))
 		return
 	}
 
@@ -783,9 +783,9 @@ func (h *Handler) SetTrackLikeVisibility(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrInvalidInput):
-			response.Error(c, apperrors.BadRequest("invalid visibility value", nil))
+			response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid visibility value", nil))
 		default:
-			response.Error(c, apperrors.Internal("failed to set visibility", err))
+			response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to set visibility", err))
 		}
 		return
 	}
@@ -812,7 +812,7 @@ func (h *Handler) GetPublicLikedTracks(c *gin.Context) {
 	userIDStr := c.Param("id")
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid user id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid user id", err))
 		return
 	}
 
@@ -820,7 +820,7 @@ func (h *Handler) GetPublicLikedTracks(c *gin.Context) {
 
 	items, err := h.service.GetPublicLikedTracks(c.Request.Context(), userID, p.Limit, p.Offset)
 	if err != nil {
-		response.Error(c, apperrors.Internal("failed to get liked tracks", err))
+		response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to get liked tracks", err))
 		return
 	}
 
@@ -862,13 +862,13 @@ func (h *Handler) SetMusicStatus(c *gin.Context) {
 	userIDStr := auth.UserIDFromContext(c)
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		response.Error(c, apperrors.Unauthorized("authentication required", nil))
+		response.Error(c, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil))
 		return
 	}
 
 	var req UpdateMusicStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, apperrors.BadRequest("invalid request body", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid request body", err))
 		return
 	}
 
@@ -881,9 +881,9 @@ func (h *Handler) SetMusicStatus(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrInvalidInput):
-			response.Error(c, apperrors.BadRequest("invalid input", nil))
+			response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid input", nil))
 		default:
-			response.Error(c, apperrors.Internal("failed to set music status", err))
+			response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to set music status", err))
 		}
 		return
 	}
@@ -915,12 +915,12 @@ func (h *Handler) ClearMusicStatus(c *gin.Context) {
 	userIDStr := auth.UserIDFromContext(c)
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		response.Error(c, apperrors.Unauthorized("authentication required", nil))
+		response.Error(c, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil))
 		return
 	}
 
 	if err := h.service.ClearMusicStatus(c.Request.Context(), userID); err != nil {
-		response.Error(c, apperrors.Internal("failed to clear music status", err))
+		response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to clear music status", err))
 		return
 	}
 
@@ -941,7 +941,7 @@ func (h *Handler) GetMusicStatus(c *gin.Context) {
 	targetUserIDStr := c.Param("id")
 	targetUserID, err := uuid.Parse(targetUserIDStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid user id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid user id", err))
 		return
 	}
 
@@ -955,7 +955,7 @@ func (h *Handler) GetMusicStatus(c *gin.Context) {
 
 	status, err := h.service.GetMusicStatus(c.Request.Context(), targetUserID, requestingUserID)
 	if err != nil {
-		response.Error(c, apperrors.Internal("failed to get music status", err))
+		response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to get music status", err))
 		return
 	}
 

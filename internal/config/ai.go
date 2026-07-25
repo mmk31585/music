@@ -1,5 +1,7 @@
 package config
 
+import "os"
+
 type AIConfig struct {
 	OpenAIEndpoint string
 	OpenAIKey      string
@@ -8,10 +10,22 @@ type AIConfig struct {
 }
 
 func loadAIConfig() AIConfig {
+	endpoint := os.Getenv("AI_OPENAI_ENDPOINT")
+	if endpoint == "" {
+		endpoint = "https://api.openai.com/v1"
+	}
+	model := os.Getenv("AI_EMBEDDING_MODEL")
+	if model == "" {
+		model = "text-embedding-3-small"
+	}
+	enabled := os.Getenv("AI_ENABLED")
+	if enabled == "" {
+		enabled = "true"
+	}
 	return AIConfig{
-		OpenAIEndpoint: getEnv("AI_OPENAI_ENDPOINT", "https://api.openai.com/v1"),
-		OpenAIKey:      getEnv("AI_OPENAI_KEY", ""),
-		EmbeddingModel: getEnv("AI_EMBEDDING_MODEL", "text-embedding-3-small"),
-		Enabled:        getEnv("AI_ENABLED", "true") == "true",
+		OpenAIEndpoint: endpoint,
+		OpenAIKey:      os.Getenv("AI_OPENAI_KEY"),
+		EmbeddingModel: model,
+		Enabled:        enabled == "true",
 	}
 }

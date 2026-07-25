@@ -6,6 +6,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CreateRating godoc
+// @Summary Create a rating
+// @Description Creates or updates a track rating for the authenticated user.
+// @Tags social
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body CreateRatingRequest true "Create rating request"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /social/ratings [post]
 func (h *Handler) CreateRating(c *gin.Context) {
 	userID := c.GetString("auth_user_id")
 	var req CreateRatingRequest
@@ -21,6 +33,15 @@ func (h *Handler) CreateRating(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"success": true, "data": rating})
 }
 
+// GetTrackRatings godoc
+// @Summary Get track ratings
+// @Description Returns ratings and average score for a track.
+// @Tags social
+// @Produce json
+// @Param trackId path string true "Track ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /social/ratings/{trackId} [get]
 func (h *Handler) GetTrackRatings(c *gin.Context) {
 	trackID := c.Param("trackId")
 	ratings, err := h.service.GetTrackRatings(c.Request.Context(), trackID)

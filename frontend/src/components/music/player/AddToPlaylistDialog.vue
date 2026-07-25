@@ -16,7 +16,7 @@
   >
     <template #header>
       <div class="flex items-center gap-2 px-1">
-        <i aria-hidden="true" class="pi pi-list text-sm text-spotify" />
+        <List aria-hidden="true" class="text-sm text-spotify"  />
         <span id="add-to-playlist-title">Add to Playlist</span>
       </div>
     </template>
@@ -24,10 +24,10 @@
     <div class="flex flex-col max-h-[60vh]">
       <div class="shrink-0 p-3">
         <div class="relative">
-          <i
+          <Search
             aria-hidden="true"
-            class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/30"
-          />
+            class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/30"
+           />
           <input
             v-model="searchQuery"
             type="text"
@@ -40,11 +40,11 @@
 
       <div class="flex-1 overflow-y-auto px-1">
         <div v-if="loading" class="flex items-center justify-center py-12">
-          <i aria-hidden="true" class="pi pi-spin pi-spinner text-lg text-white/30" />
+          <Loader2 aria-hidden="true" class="text-lg text-white/30 animate-spin"  />
         </div>
 
         <div v-else-if="filteredPlaylists.length === 0" class="flex flex-col items-center gap-2 py-12 text-center">
-          <i aria-hidden="true" class="pi pi-inbox text-2xl text-white/20" />
+          <Inbox aria-hidden="true" class="text-2xl text-white/20"  />
           <p class="text-sm text-white/40">No playlists found</p>
         </div>
 
@@ -62,22 +62,22 @@
               :alt="p.name"
               class="h-full w-full object-cover"
             />
-            <i v-else aria-hidden="true" class="pi pi-list text-sm text-white/30" />
+            <List v-else aria-hidden="true" class="text-sm text-white/30"  />
           </div>
           <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-medium text-white">{{ p.name }}</p>
             <p class="text-xs text-white/40">{{ p.track_count || 0 }} tracks</p>
           </div>
-          <i
+          <Loader2
             v-if="addingId === p.id"
             aria-hidden="true"
-            class="pi pi-spin pi-spinner text-xs text-spotify"
-          />
-          <i
+            class="text-xs text-spotify animate-spin"
+           />
+          <Plus
             v-else
             aria-hidden="true"
-            class="pi pi-plus text-xs text-white/30 transition group-hover:text-white"
-          />
+            class="text-xs text-white/30 transition group-hover:text-white"
+           />
         </button>
       </div>
     </div>
@@ -85,6 +85,7 @@
 </template>
 
 <script setup lang="ts">
+import { Inbox, List, Loader2, Plus, Search } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
 import { usePlaylistsApi, type PlaylistListItem } from '@/services/api/playlist'
 import { useToast } from 'primevue/usetoast'

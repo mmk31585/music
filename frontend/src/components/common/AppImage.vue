@@ -6,7 +6,7 @@
     class="flex items-center justify-center bg-white/5"
     :class="[containerClass, containerStyle]"
   >
-    <i aria-hidden="true" :class="fallbackIcon || 'pi pi-music'" class="text-slate-500" :style="{ fontSize: iconSize }" />
+    <Music aria-hidden="true" :class="fallbackIcon" class="text-slate-500" :style="{ fontSize: iconSize }" />
   </div>
   <img
     v-else
@@ -22,6 +22,7 @@
 </template>
 
 <script setup lang="ts">
+import { Music } from 'lucide-vue-next'
 import { ref } from 'vue'
 
 interface Props {

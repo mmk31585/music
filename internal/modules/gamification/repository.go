@@ -224,8 +224,10 @@ func (r *Repository) CompleteChallenge(ctx context.Context, userID, challengeID 
 	return err
 }
 
-func (r *Repository) GetLeaderboard(ctx context.Context, lbType string, limit int) ([]LeaderboardEntry, error) {
+func (r *Repository) GetLeaderboard(ctx context.Context, lbType string, limit int, userID string) ([]LeaderboardEntry, error) {
 	var query string
+	var args []any
+
 	switch lbType {
 	case "xp_weekly":
 		query = `
@@ -236,6 +238,7 @@ func (r *Repository) GetLeaderboard(ctx context.Context, lbType string, limit in
 			GROUP BY u.id, u.username, u.avatar_url
 			ORDER BY score DESC LIMIT $1
 		`
+		args = []any{limit}
 	case "xp_monthly":
 		query = `
 			SELECT u.id AS user_id, u.username, COALESCE(u.avatar_url, ''), COALESCE(SUM(xt.amount), 0) AS score
@@ -245,6 +248,7 @@ func (r *Repository) GetLeaderboard(ctx context.Context, lbType string, limit in
 			GROUP BY u.id, u.username, u.avatar_url
 			ORDER BY score DESC LIMIT $1
 		`
+		args = []any{limit}
 	case "streams":
 		query = `
 			SELECT u.id AS user_id, u.username, COALESCE(u.avatar_url, ''), COUNT(lh.id) AS score
@@ -254,6 +258,7 @@ func (r *Repository) GetLeaderboard(ctx context.Context, lbType string, limit in
 			GROUP BY u.id, u.username, u.avatar_url
 			ORDER BY score DESC LIMIT $1
 		`
+		args = []any{limit}
 	case "contributions":
 		query = `
 			SELECT u.id AS user_id, u.username, COALESCE(u.avatar_url, ''), COUNT(c.id) AS score
@@ -263,6 +268,19 @@ func (r *Repository) GetLeaderboard(ctx context.Context, lbType string, limit in
 			GROUP BY u.id, u.username, u.avatar_url
 			ORDER BY score DESC LIMIT $1
 		`
+		args = []any{limit}
+	case "friends":
+		query = `
+			SELECT u.id AS user_id, u.username, COALESCE(u.avatar_url, ''), COALESCE(SUM(xt.amount), 0) AS score
+			FROM users u
+			LEFT JOIN xp_transactions xt ON xt.user_id = u.id
+			WHERE u.id IN (
+				SELECT followee_id FROM user_follows WHERE follower_id = $2
+			)
+			GROUP BY u.id, u.username, u.avatar_url
+			ORDER BY score DESC LIMIT $1
+		`
+		args = []any{limit, userID}
 	default:
 		query = `
 			SELECT u.id AS user_id, u.username, COALESCE(u.avatar_url, ''), COALESCE(SUM(xt.amount), 0) AS score
@@ -271,9 +289,10 @@ func (r *Repository) GetLeaderboard(ctx context.Context, lbType string, limit in
 			GROUP BY u.id, u.username, u.avatar_url
 			ORDER BY score DESC LIMIT $1
 		`
+		args = []any{limit}
 	}
 
-	rows, err := r.db.QueryContext(ctx, query, limit)
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -351,6 +370,49 @@ func (r *Repository) CheckAndAwardBadges(ctx context.Context, userID string) ([]
 		case "Chart Climber":
 			rank, _ := r.GetUserRank(ctx, userID)
 			met = rank <= 10
+		// Upload badges
+		case "First Upload":
+			r.db.QueryRowContext(ctx, `SELECT COUNT(*) >= 1 FROM ingestion_drafts WHERE uploaded_by = $1 AND status = 'accepted'`, userID).Scan(&met)
+		case "Prolific Uploader":
+			r.db.QueryRowContext(ctx, `SELECT COUNT(*) >= 5 FROM ingestion_drafts WHERE uploaded_by = $1 AND status = 'accepted'`, userID).Scan(&met)
+		case "Upload Master":
+			r.db.QueryRowContext(ctx, `SELECT COUNT(*) >= 25 FROM ingestion_drafts WHERE uploaded_by = $1 AND status = 'accepted'`, userID).Scan(&met)
+		case "Upload Legend":
+			r.db.QueryRowContext(ctx, `SELECT COUNT(*) >= 100 FROM ingestion_drafts WHERE uploaded_by = $1 AND status = 'accepted'`, userID).Scan(&met)
+		// Contribution badges
+		case "First Contribution":
+			r.db.QueryRowContext(ctx, `SELECT COUNT(*) >= 1 FROM contributions WHERE contributor_id = $1 AND status = 'approved'`, userID).Scan(&met)
+		case "Community Helper":
+			r.db.QueryRowContext(ctx, `SELECT COUNT(*) >= 10 FROM contributions WHERE contributor_id = $1 AND status = 'approved'`, userID).Scan(&met)
+		case "Community Pillar":
+			r.db.QueryRowContext(ctx, `SELECT COUNT(*) >= 50 FROM contributions WHERE contributor_id = $1 AND status = 'approved'`, userID).Scan(&met)
+		// Review badges
+		case "Trusted Reviewer":
+			r.db.QueryRowContext(ctx, `SELECT COUNT(*) >= 25 FROM ingestion_drafts WHERE reviewed_by = $1`, userID).Scan(&met)
+		// Published badge
+		case "Track Published":
+			r.db.QueryRowContext(ctx, `SELECT COUNT(*) >= 1 FROM tracks WHERE uploaded_by = $1`, userID).Scan(&met)
+		// Streak badges
+		case "7-Day Streak":
+			r.db.QueryRowContext(ctx, `SELECT contribution_streak_days >= 7 FROM user_reputation WHERE user_id = $1`, userID).Scan(&met)
+		case "30-Day Streak":
+			r.db.QueryRowContext(ctx, `SELECT contribution_streak_days >= 30 FROM user_reputation WHERE user_id = $1`, userID).Scan(&met)
+		// Level badges
+		case "Rising Star":
+			totalXP, _ := r.GetUserXP(ctx, userID)
+			level, _, _, _ := CalculateLevel(totalXP)
+			met = level >= 5
+		case "Music Expert":
+			totalXP, _ := r.GetUserXP(ctx, userID)
+			level, _, _, _ := CalculateLevel(totalXP)
+			met = level >= 10
+		case "Music Master":
+			totalXP, _ := r.GetUserXP(ctx, userID)
+			level, _, _, _ := CalculateLevel(totalXP)
+			met = level >= 15
+		// Auto-publish badge
+		case "Trusted Creator":
+			r.db.QueryRowContext(ctx, `SELECT auto_publish = TRUE FROM user_reputation WHERE user_id = $1`, userID).Scan(&met)
 		}
 
 		if met {

@@ -17,7 +17,7 @@
           class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-all duration-300"
           :class="stepClass(i)"
         >
-          <i v-if="stepComplete(i)" class="pi pi-check text-xs" />
+          <Check aria-hidden="true" v-if="stepComplete(i)" class="text-xs" />
           <span v-else>{{ i + 1 }}</span>
         </div>
         <span
@@ -26,10 +26,8 @@
         >
           {{ step.label }}
         </span>
-        <i
-          v-if="i < steps.length - 1"
-          class="pi pi-chevron-left text-[10px] text-white/8"
-        />
+        <ChevronLeft aria-hidden="true" v-if="i < steps.length - 1"
+          class="text-[10px] text-white/8" />
       </div>
     </div>
 
@@ -37,19 +35,15 @@
     <section class="mb-8">
       <h3 class="mb-3 text-sm font-semibold text-white/80">Select Track</h3>
       <div class="relative">
-        <i
-          class="pi pi-search absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500"
-        />
+        <Search aria-hidden="true" class="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500" />
         <InputText
           v-model="searchQuery"
           placeholder="Search tracks by title or artist..."
           class="h-11! w-full! rounded-xl! border-white/8! bg-white/3! pr-10! text-sm! text-white! placeholder:text-slate-600!"
           @input="onSearchInput"
         />
-        <i
-          v-if="searching"
-          class="pi pi-spin pi-spinner absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500"
-        />
+        <Loader2 aria-hidden="true" v-if="searching"
+          class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 animate-spin" />
       </div>
 
       <TransitionGroup
@@ -75,17 +69,15 @@
               class="h-full w-full object-cover"
             />
             <div v-else class="flex h-full items-center justify-center">
-              <i class="pi pi-music text-xs text-slate-500" />
+              <Music aria-hidden="true" class="text-xs text-slate-500" />
             </div>
           </div>
           <div class="min-w-0 flex-1 text-right">
             <p class="truncate text-sm font-medium text-white">{{ track.title }}</p>
             <p class="mt-0.5 truncate text-xs text-white/40">{{ track.artist_name || 'Unknown artist' }}</p>
           </div>
-          <i
-            v-if="selectedTrack?.id === track.id"
-            class="pi pi-check-circle text-spotify text-lg"
-          />
+          <CheckCircle aria-hidden="true" v-if="selectedTrack?.id === track.id"
+            class="text-spotify text-lg" />
         </button>
 
         <div
@@ -103,7 +95,7 @@
           class="mt-4 rounded-2xl border border-white/8 bg-white/3 p-4"
         >
           <div class="mb-2 flex items-center gap-2 text-xs text-white/60">
-            <i class="pi pi-headphones text-spotify" />
+            <Headphones aria-hidden="true" class="text-spotify" />
             <span>Audio preview — {{ selectedTrack.title }}</span>
           </div>
           <audio
@@ -191,7 +183,7 @@
           v-if="uploadedFileUrl && !uploading"
           class="mt-3 flex items-center gap-2 rounded-xl bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400"
         >
-          <i class="pi pi-check-circle" />
+          <CheckCircle aria-hidden="true" class="" />
           <span>Video uploaded successfully — ready to submit.</span>
         </div>
       </Transition>
@@ -242,7 +234,7 @@
       </Transition>
 
       <div class="mb-4 flex items-start gap-2 rounded-xl bg-blue-500/5 px-4 py-3 text-sm text-white/50">
-        <i class="pi pi-info-circle mt-0.5 shrink-0 text-xs text-blue-400" />
+        <Info aria-hidden="true" class="mt-0.5 shrink-0 text-xs text-blue-400" />
         <span>The video will be processed (audio replaced with the selected track) and published as an Official MV.</span>
       </div>
 
@@ -284,10 +276,10 @@
           : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'"
       >
         <div class="flex items-center gap-2">
-          <i
+          <component :is="statusError ? CircleAlert : CheckCircle" aria-hidden="true"<i
             class="text-base"
-            :class="statusError ? 'pi pi-exclamation-circle' : 'pi pi-check-circle'"
-          />
+            
+          /> />
           <span>{{ statusMessage }}</span>
         </div>
       </div>
@@ -301,7 +293,7 @@
       >
         <div class="flex items-center gap-3 bg-spotify/5 p-4">
           <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-spotify/10">
-            <i class="pi pi-spin pi-spinner text-spotify" />
+            <Loader2 aria-hidden="true" class="text-spotify animate-spin" />
           </div>
           <div>
             <p class="text-sm font-medium text-white/90">Processing your video...</p>
@@ -319,21 +311,15 @@
 </template>
 
 <script setup lang="ts">
+import { Check, CheckCircle, ChevronLeft, CircleAlert, Headphones, Info, Loader2, Music, Search } from 'lucide-vue-next'
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useRequest } from '@/composables/useRequest'
 import { useTracksApi } from '@/services/api/catalog/tracks/routes'
 import { AdminSectionHeader } from '@/components/admin'
-
-interface TrackResult {
-  id: string | number
-  title: string
-  artist_name?: string
-  cover_url?: string | null
-  duration_seconds?: number | null
-  audio_url?: string | null
-}
+import type { Track } from '@/services/api/catalog/tracks'
+import type { AxiosRequestConfig } from 'axios'
 
 const tracksApi = useTracksApi()
 
@@ -367,8 +353,8 @@ function stepComplete(i: number) {
 // ── Track search ──
 const searchQuery = ref('')
 const searching = ref(false)
-const searchResults = ref<TrackResult[]>([])
-const selectedTrack = ref<TrackResult | null>(null)
+const searchResults = ref<Track[]>([])
+const selectedTrack = ref<Track | null>(null)
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 function onSearchInput() {
@@ -381,8 +367,8 @@ function onSearchInput() {
   searching.value = true
   searchTimer = setTimeout(async () => {
     try {
-      const res = await tracksApi.getTracks({ q, limit: 10 })
-      searchResults.value = (res as unknown as TrackResult[]) || []
+      const tracks = await tracksApi.getTracks({ q, limit: 10 })
+      searchResults.value = tracks || []
     } catch {
       searchResults.value = []
     } finally {
@@ -391,13 +377,14 @@ function onSearchInput() {
   }, 300)
 }
 
-function selectTrack(track: TrackResult) {
+function selectTrack(track: Track) {
   selectedTrack.value = track
   if (track.id) {
-    useRequest<TrackResult>(`/catalog/tracks/${track.id}`, { method: 'GET' })
+    tracksApi
+      .getTrack(track.id)
       .then((fullTrack) => {
         if (fullTrack && selectedTrack.value?.id === track.id) {
-          selectedTrack.value = { ...selectedTrack.value, ...fullTrack }
+          selectedTrack.value = fullTrack
         }
       })
       .catch(() => {})
@@ -456,17 +443,17 @@ async function uploadToMedia(file: File) {
       {
         method: 'POST',
         data: formData,
-        onUploadProgress: (e: ProgressEvent) => {
+        onUploadProgress: (e) => {
           if (e.total) {
             uploadProgress.value = Math.round((e.loaded / e.total) * 100)
           }
         },
-      } as any,
+      } satisfies AxiosRequestConfig,
     )
     uploadedFileUrl.value = result.url
     toast.add({ severity: 'success', summary: 'Video uploaded', life: 3000 })
-  } catch (err: any) {
-    const msg = err?.message || 'Upload failed'
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Upload failed'
     toast.add({ severity: 'error', summary: msg, life: 5000 })
     uploadedFile.value = null
   } finally {
@@ -501,9 +488,9 @@ async function submitMV() {
     submittedVideoId.value = result.id
     statusMessage.value = 'MV submitted for processing!'
     toast.add({ severity: 'success', summary: 'MV uploaded successfully', life: 4000 })
-  } catch (err: any) {
+  } catch (err: unknown) {
     statusError.value = true
-    statusMessage.value = err?.message || 'Failed to submit MV'
+    statusMessage.value = err instanceof Error ? err.message : 'Failed to submit MV'
     toast.add({ severity: 'error', summary: statusMessage.value, life: 5000 })
   } finally {
     submitting.value = false

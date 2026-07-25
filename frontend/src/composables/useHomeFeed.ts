@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { useRecommendationsApi } from '@/services/api/recommendation'
 import { useAlbumsApi } from '@/services/api/catalog/albums'
 import { useArtistsApi } from '@/services/api/catalog/artists'
@@ -18,6 +18,16 @@ export function useHomeFeed() {
   const artists = ref<Artist[]>([])
   const loading = ref(false)
   const error = ref<unknown>(null)
+  const sectionErrors = ref<Record<string, boolean>>({})
+  const sectionLoading = ref(false)
+
+  function isUnauthorized(err: unknown): boolean {
+    if (err && typeof err === 'object' && 'response' in err) {
+      const resp = (err as any).response
+      return resp?.status === 401
+    }
+    return false
+  }
 
   const hasData = computed(() =>
     sections.value.length > 0 ||
@@ -67,12 +77,40 @@ export function useHomeFeed() {
 
       albums.value = results[2].status === 'fulfilled' ? results[2].value ?? [] : []
       artists.value = results[3].status === 'fulfilled' ? results[3].value ?? [] : []
+
+      const homeRejected = results[0].status === 'rejected' && isUnauthorized(results[0].reason)
+      const personalizedRejected = results[1].status === 'rejected' && isUnauthorized(results[1].reason)
+      if (homeRejected || personalizedRejected) {
+        personalized.value = []
+      }
+
+      sectionErrors.value = {}
+      if (results[0].status === 'rejected') sectionErrors.value.recs = true
+      if (results[1].status === 'rejected') sectionErrors.value.personalized = true
+      if (results[2].status === 'rejected') sectionErrors.value.albums = true
+      if (results[3].status === 'rejected') sectionErrors.value.artists = true
     } catch (err: unknown) {
       error.value = err
     } finally {
       loading.value = false
+      sectionLoading.value = false
     }
   }
+
+  let refreshTimer: ReturnType<typeof setInterval> | null = null
+  function startPeriodicRefresh(intervalMs = 5 * 60 * 1000) {
+    stopPeriodicRefresh()
+    refreshTimer = setInterval(() => {
+      fetchHomeFeed()
+    }, intervalMs)
+  }
+  function stopPeriodicRefresh() {
+    if (refreshTimer) {
+      clearInterval(refreshTimer)
+      refreshTimer = null
+    }
+  }
+  onUnmounted(stopPeriodicRefresh)
 
   return {
     sections,
@@ -86,8 +124,12 @@ export function useHomeFeed() {
     albums,
     artists,
     loading,
+    sectionLoading,
     error,
     hasData,
+    sectionErrors,
+    startPeriodicRefresh,
+    stopPeriodicRefresh,
     fetchHomeFeed,
   }
 }

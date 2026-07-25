@@ -1,11 +1,11 @@
 <template>
   <aside
-    class="hidden h-screen w-56 shrink-0 border-x border-white/4 bg-black/20 backdrop-blur-2xl lg:block"
+    class="hidden h-screen w-56 shrink-0 border-x border-border-subtle bg-bg-overlay/20 backdrop-blur-2xl lg:block"
     style="backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);"
   >
     <div class="flex h-full flex-col">
       <!-- ── Panel Header ── -->
-      <div class="flex shrink-0 items-center gap-3 border-b border-white/4 px-4 py-4">
+      <div class="flex shrink-0 items-center gap-3 border-b border-border-subtle px-4 py-4">
         <div
           class="flex h-8 w-8 items-center justify-center rounded-xl"
           :class="categoryMeta.iconBg"
@@ -13,20 +13,20 @@
           <i aria-hidden="true" :class="categoryMeta.icon" class="text-sm" />
         </div>
         <div>
-          <p class="text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">Category</p>
-          <p class="text-sm font-bold text-white">{{ categoryMeta.label }}</p>
+          <p class="text-[10px] font-bold tracking-[0.2em] text-tertiary uppercase">Category</p>
+          <p class="text-sm font-bold text-primary">{{ categoryMeta.label }}</p>
         </div>
       </div>
 
       <!-- ── Quick Filters ── -->
-      <div v-if="quickFilters.length > 0" class="shrink-0 border-b border-white/4 px-3 py-3">
+      <div v-if="quickFilters.length > 0" class="shrink-0 border-b border-border-subtle px-3 py-3">
         <div class="flex flex-wrap gap-1.5">
           <button
             v-for="filter in quickFilters"
             :key="filter.label"
             type="button"
             class="rounded-lg px-3 py-1.5 text-[11px] font-bold transition"
-            :class="filter.active ? 'bg-white/15 text-white' : 'bg-white/4 text-slate-400 hover:bg-white/10 hover:text-white'"
+            :class="filter.active ? 'bg-surface-active text-primary' : 'bg-surface-overlay/60 text-secondary hover:bg-surface-active hover:text-primary'"
             @click="filter.action?.()"
           >
             {{ filter.label }}
@@ -37,7 +37,7 @@
       <!-- ── Navigation Items ── -->
       <nav class="flex-1 space-y-0.5 overflow-y-auto px-3 pb-24 pt-3" style="scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.06) transparent;">
         <template v-for="section in navSections" :key="section.label">
-          <p class="px-2 pb-1 pt-3 text-[9px] font-bold tracking-[0.2em] text-slate-600 uppercase">
+          <p class="px-2 pb-1 pt-3 text-[9px] font-bold tracking-[0.2em] text-muted uppercase">
             {{ section.label }}
           </p>
           <RouterLink
@@ -45,14 +45,14 @@
             :key="item.to"
             :to="item.to"
             class="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition"
-            :class="isActive(item.to) ? 'bg-white/8 text-white' : 'text-slate-400 hover:bg-white/4 hover:text-white'"
+            :class="isActive(item.to) ? 'bg-surface-active/80 text-primary' : 'text-secondary hover:bg-surface-hover hover:text-primary'"
             :aria-current="isActive(item.to) ? 'page' : undefined"
           >
             <i v-if="item.icon" aria-hidden="true" :class="item.icon" class="text-xs" />
             <span>{{ item.label }}</span>
             <span
               v-if="item.badge"
-              class="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-white/10 px-1.5 text-[9px] font-bold text-slate-400"
+              class="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-surface-active px-1.5 text-[9px] font-bold text-secondary"
             >
               {{ item.badge }}
             </span>
@@ -61,12 +61,12 @@
       </nav>
 
       <!-- ── Bottom Context ── -->
-      <div class="shrink-0 border-t border-white/4 px-4 py-3">
-        <div class="flex items-center gap-2 rounded-xl bg-white/3 px-3 py-2">
-          <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-linear-to-br from-spotify/30 to-aurora-purple/30">
-            <i aria-hidden="true" class="pi pi-sparkles text-[10px] text-white/70" />
+      <div class="shrink-0 border-t border-border-subtle px-4 py-3">
+        <div class="flex items-center gap-2 rounded-xl bg-surface-overlay/50 px-3 py-2">
+          <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-linear-to-br from-accent/30 to-aurora-purple/30">
+            <Sparkles aria-hidden="true" class="text-[10px] text-secondary"  />
           </div>
-          <p class="text-[10px] font-medium text-slate-500 leading-tight">
+          <p class="text-[10px] font-medium text-tertiary leading-tight">
             {{ contextHint }}
           </p>
         </div>
@@ -76,6 +76,7 @@
 </template>
 
 <script setup lang="ts">
+import { Sparkles } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserAuthStore } from '@/stores'

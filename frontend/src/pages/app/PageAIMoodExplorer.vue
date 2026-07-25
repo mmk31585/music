@@ -26,7 +26,7 @@
             <span
               class="inline-flex items-center gap-1.5 rounded-full border border-spotify/20 bg-spotify/10 px-3 py-1 text-[10px] font-bold tracking-[0.2em] text-spotify uppercase"
             >
-              <i aria-hidden="true" class="pi pi-sparkles text-[10px]" />
+              <Sparkles class="text-[10px]"<i aria-hidden="true"  /> />
               AI-Powered
             </span>
           </div>
@@ -116,7 +116,7 @@
           <!-- Loading state -->
           <div v-if="loading" class="space-y-2">
             <div class="flex items-center gap-3 rounded-2xl bg-white/2 px-5 py-4">
-              <i aria-hidden="true" class="pi pi-spin pi-sparkles text-spotify" />
+              <Sparkles aria-hidden="true" class="text-spotify animate-spin"  />
               <div>
                 <span class="text-sm font-medium text-white">AI is analyzing your mood</span>
                 <p class="text-xs text-white/40">Matching tracks by energy and emotional profile...</p>
@@ -138,20 +138,19 @@
             v-else-if="tracks.length"
             class="overflow-hidden rounded-2xl border border-white/6 bg-white/2 backdrop-blur-xs"
           >
-            <div
+            <button
               v-for="(track, index) in tracks"
               :key="String(track.id)"
-              role="button"
-              tabindex="0"
-              class="group flex items-center gap-3 px-4 py-2.5 transition hover:bg-white/4"
+              type="button"
+              class="group flex w-full items-center gap-3 px-4 py-2.5 transition hover:bg-white/4"
               :style="{ animationDelay: `${index * 50}ms` }"
               @click="playTrack(index)"
-              @keydown.enter="playTrack(index)"
+              @contextmenu.prevent="openContextMenu($event, track)"
             >
               <!-- Number -->
               <span class="flex w-6 items-center justify-center">
                 <span class="text-xs font-bold text-white/20 group-hover:hidden">{{ index + 1 }}</span>
-                <i aria-hidden="true" class="pi pi-play-fill hidden text-xs text-white group-hover:block" />
+                <Play aria-hidden="true" class="hidden text-xs text-white group-hover:block"  />
               </span>
 
               <!-- Cover -->
@@ -165,7 +164,7 @@
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full items-center justify-center">
-                  <i aria-hidden="true" class="pi pi-music text-xs text-white/20" />
+                  <Music aria-hidden="true" class="text-xs text-white/20"  />
                 </div>
               </div>
 
@@ -207,7 +206,7 @@
               <span class="shrink-0 text-xs text-white/30 tabular-nums">
                 {{ formatTime(track.duration as number | undefined) }}
               </span>
-            </div>
+            </button>
           </div>
 
           <!-- Empty / Pick a mood state -->
@@ -218,7 +217,7 @@
             <div
               class="flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-spotify/20 to-blue-500/20"
             >
-              <i aria-hidden="true" class="pi pi-heart text-2xl text-spotify" />
+              <Heart aria-hidden="true" class="text-2xl text-spotify"  />
             </div>
             <h3 class="text-lg font-bold text-white">What's your mood?</h3>
             <p class="max-w-xs text-sm text-white/40">
@@ -234,7 +233,7 @@
             <div
               class="flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-white/5 to-white/2"
             >
-              <i aria-hidden="true" class="pi pi-inbox text-2xl text-white/20" />
+              <Inbox aria-hidden="true" class="text-2xl text-white/20"  />
             </div>
             <h3 class="text-lg font-bold text-white">No tracks found</h3>
             <p class="max-w-xs text-sm text-white/40">
@@ -244,13 +243,24 @@
         </div>
       </div>
     </div>
+    <ContextMenu
+      v-model:visible="menuVisible"
+      :sections="sections"
+      :header="header"
+      :accent-color="accentColor"
+      :position="{ x: menuX, y: menuY }"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import { Heart, Inbox, Music, Play, Sparkles } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useAIApi } from '@/services/api/ai'
 import { MOOD_OPTIONS } from '@/services/api/ai/types'
+import type { TrackContextItem } from '@/composables/useTrackContextMenu'
+import { useTrackContextMenu } from '@/composables/useTrackContextMenu'
+import ContextMenu from '@/components/common/ContextMenu.vue'
 import { usePlayer } from '@/composables/player'
 import { onImgError } from '@/utils/helpers'
 import { mapToPlaybackTracks } from '@/factories/playbackTrack'
@@ -445,7 +455,7 @@ async function toggleMood(mood: string) {
 
 function playTrack(index: number) {
   if (!tracks.value.length) return
-  const queue = mapToPlaybackTracks(tracks.value)
+  const queue = mapToPlaybackTracks(tracks.value as import('@/factories/playbackTrack').PlaybackTrackInput[])
   player.setQueueAndPlay(queue, index)
 }
 
@@ -455,4 +465,21 @@ function formatTime(seconds?: number) {
   const s = Math.floor(seconds % 60)
   return `${m}:${String(s).padStart(2, '0')}`
 }
+
+// ── Context menu ──────────────────────────────────────────────────
+const menuVisible = ref(false)
+const menuX = ref(0)
+const menuY = ref(0)
+const contextTrack = ref<TrackContextItem | null>(null)
+
+function openContextMenu(e: MouseEvent, track: Record<string, unknown>) {
+  menuX.value = e.clientX
+  menuY.value = e.clientY
+  contextTrack.value = track as unknown as TrackContextItem
+  menuVisible.value = true
+}
+
+const { sections, header, accentColor } = useTrackContextMenu(
+  computed(() => contextTrack.value),
+)
 </script>

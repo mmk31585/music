@@ -237,7 +237,7 @@ func TestRepository_Update(t *testing.T) {
 	title := "Updated Title"
 	explicit := true
 	mock.ExpectQuery(`UPDATE tracks`).
-		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{
 			"id", "artist_id", "album_id", "title", "slug",
 			"duration_seconds", "track_number", "explicit",

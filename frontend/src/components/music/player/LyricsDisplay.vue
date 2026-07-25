@@ -13,7 +13,7 @@
       v-else-if="error"
       class="flex flex-col items-center gap-3 rounded-2xl border border-white/6 bg-white/3 px-6 py-12 text-center"
     >
-      <i aria-hidden="true" class="pi pi-align-left text-2xl text-slate-500" />
+      <AlignLeft aria-hidden="true" class="text-2xl text-slate-500"  />
       <p class="text-sm text-slate-400">No lyrics available</p>
       <button
         v-if="onAddLyrics"
@@ -48,13 +48,14 @@
       v-else
       class="flex flex-col items-center gap-3 rounded-2xl border border-white/6 bg-white/3 px-6 py-12 text-center"
     >
-      <i aria-hidden="true" class="pi pi-align-left text-2xl text-slate-500" />
+      <AlignLeft aria-hidden="true" class="text-2xl text-slate-500"  />
       <p class="text-sm text-slate-400">No lyrics available</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { AlignLeft } from 'lucide-vue-next'
 import { computed } from 'vue'
 import type { Lyrics } from '@/services/api/lyrics'
 

@@ -19,7 +19,7 @@
           to="/"
           class="inline-flex items-center gap-2 rounded-full bg-spotify px-5 py-2.5 text-sm font-bold text-black transition hover:bg-spotify-hover"
         >
-          <i aria-hidden="true" class="pi pi-home" />
+          <Home aria-hidden="true" class=""  />
           Go home
         </RouterLink>
       </template>
@@ -159,6 +159,7 @@
 </template>
 
 <script setup lang="ts">
+import { Home } from 'lucide-vue-next'
 import { onMounted, ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { SkeletonLoader, AppEmptyState } from '@/components/common'

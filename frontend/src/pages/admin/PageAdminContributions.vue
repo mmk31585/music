@@ -16,8 +16,8 @@
             :disabled="loading"
             @click="refreshAll"
           >
-            <i aria-hidden="true" :class="loading ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'" class="text-xs" />
-            {{ loading ? 'Loading...' : 'Refresh' }}
+            <component :is="loading ? Loader2 : RefreshCw"<i aria-hidden="true"  class="text-xs" /> :class="loading ? 'animate-spin' : ''" />
+            {{ loading ? 'Loading...' : 'RefreshCw' }}
           </button>
         </div>
       </template>
@@ -49,7 +49,7 @@
     <!-- Search & Filter Bar -->
     <div class="mt-4 flex items-center gap-3">
       <div class="relative flex-1">
-        <i aria-hidden="true" class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/30" />
+        <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-white/30"<i aria-hidden="true"  /> />
         <input
           v-model="searchQuery"
           placeholder="Search by summary or contributor name..."
@@ -128,7 +128,7 @@
                 class="rounded-lg bg-white/5 p-2 text-xs text-white/30 transition hover:bg-white/10 hover:text-white"
                 @click="selected = c; showDetail = true"
               >
-                <i aria-hidden="true" class="pi pi-eye" />
+                <Eye aria-hidden="true" class=""  />
               </button>
               <button
                 v-if="reviewingId !== c.id"
@@ -136,7 +136,7 @@
                 class="rounded-lg bg-white/5 p-2 text-xs text-white/30 transition hover:bg-amber-500/10 hover:text-amber-400"
                 @click="reviewingId = c.id; reviewNote = ''"
               >
-                <i aria-hidden="true" class="pi pi-check-circle" />
+                <CheckCircle aria-hidden="true" class=""  />
               </button>
             </div>
           </div>
@@ -225,7 +225,7 @@
                 v-if="c.applied_at"
                 class="flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-1 text-[10px] font-medium text-blue-400"
               >
-                <i aria-hidden="true" class="pi pi-check" /> Applied
+                <Check aria-hidden="true"  /> Applied
               </span>
               <button
                 v-else
@@ -233,7 +233,7 @@
                 :disabled="applyingId === c.id"
                 @click="doApply(c.id)"
               >
-                <i aria-hidden="true" v-if="applyingId === c.id" class="pi pi-spin pi-spinner mr-1" />
+                <Loader2 aria-hidden="true" v-if="applyingId === c.id" class="mr-1 animate-spin"  />
                 Apply
               </button>
               <button
@@ -241,7 +241,7 @@
                 class="rounded-lg bg-white/5 p-2 text-xs text-white/30 transition hover:bg-white/10 hover:text-white"
                 @click="selected = c; showDetail = true"
               >
-                <i aria-hidden="true" class="pi pi-eye" />
+                <Eye aria-hidden="true" class=""  />
               </button>
             </div>
           </div>
@@ -296,7 +296,7 @@
               class="rounded-lg bg-white/5 p-2 text-xs text-white/30 transition hover:bg-white/10 hover:text-white"
               @click="selected = c; showDetail = true"
             >
-              <i aria-hidden="true" class="pi pi-eye" />
+              <Eye aria-hidden="true" class=""  />
             </button>
           </div>
         </div>
@@ -310,7 +310,7 @@
       :draggable="false"
       :style="{ width: '520px' }"
       :pt="{
-        root: { class: 'border-white/6! bg-[#141414]! rounded-2xl! shadow-2xl!' },
+        root: { class: 'border-white/6! bg-surface-raised! rounded-2xl! shadow-2xl!' },
         header: { class: 'bg-transparent! border-0! pb-2!' },
         content: { class: 'bg-transparent! px-6! pt-0! pb-2!' },
         footer: { class: 'bg-transparent! border-0!' },
@@ -320,7 +320,7 @@
       <template #header>
         <div class="flex items-center gap-3">
           <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10">
-            <i aria-hidden="true" class="pi pi-pen-to-square text-amber-400" />
+            <SquarePen aria-hidden="true" class="text-amber-400"  />
           </div>
           <div>
             <h3 class="text-base font-semibold text-white">Contribution Details</h3>
@@ -419,6 +419,7 @@
 </template>
 
 <script setup lang="ts">
+import { Check, CheckCircle, Eye, Loader2, RefreshCw, Search, SquarePen } from 'lucide-vue-next'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useContributionApi } from '@/services/api/contribution'
 import { useToast } from 'primevue/usetoast'
@@ -589,7 +590,7 @@ async function doApply(id: string) {
   try {
     await api.apply(id)
     toast.add({ severity: 'success', summary: 'Contribution applied to target', life: 2000 })
-    // Refresh both tabs
+    // RefreshCw both tabs
     await Promise.all([fetchPending(), fetchApproved()])
   } catch {
     toast.add({ severity: 'error', summary: 'Failed to apply contribution', life: 3000 })

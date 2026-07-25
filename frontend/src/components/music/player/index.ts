@@ -1,0 +1,7 @@
+export { default as NowPlayingBarRoot } from './NowPlayingBarRoot.vue'
+export { default as TrackInfo } from './TrackInfo.vue'
+export { default as PlaybackControls } from './PlaybackControls.vue'
+export { default as ProgressBar } from './ProgressBar.vue'
+export { default as VolumeControl } from './VolumeControl.vue'
+export { default as QueuePreview } from './QueuePreview.vue'
+export { default as MobilePlayer } from './MobilePlayer.vue'

@@ -9,7 +9,7 @@
     <div class="mt-6">
       <div class="flex gap-3">
         <IconField class="flex-1">
-          <InputIcon><i aria-hidden="true" class="pi pi-search"></i></InputIcon>
+          <InputIcon><Search aria-hidden="true" class=""></Search></InputIcon>
           <InputText
             v-model="query"
             placeholder="Search for a track — e.g. 'feel it from d4vd'"
@@ -28,7 +28,7 @@
     </div>
 
     <div v-if="searching" class="mt-12 text-center">
-      <i aria-hidden="true" class="pi pi-spin pi-spinner text-3xl text-slate-400"></i>
+      <Loader2 aria-hidden="true" class="text-3xl text-slate-400 animate-spin"></Loader2>
       <p class="mt-3 text-sm text-slate-500">Searching across Spotify, Deezer, MusicBrainz, Last.fm, and local catalog...</p>
     </div>
 
@@ -41,7 +41,7 @@
       <div class="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
         <div class="flex items-start gap-3">
           <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/15">
-            <i aria-hidden="true" class="pi pi-info-circle text-lg text-amber-400"></i>
+            <Info aria-hidden="true" class="text-lg text-amber-400"></Info>
           </div>
           <div class="flex-1">
             <h4 class="text-sm font-semibold text-amber-300">No downloadable source found</h4>
@@ -50,15 +50,15 @@
             </p>
             <ul class="mt-2 space-y-1 text-xs text-slate-400">
               <li class="flex items-center gap-1.5">
-                <i aria-hidden="true" class="pi pi-youtube text-[10px] text-red-400"></i>
+                <Youtube aria-hidden="true" class="text-[10px] text-red-400"></Youtube>
                 Paste a YouTube URL directly in the search box
               </li>
               <li class="flex items-center gap-1.5">
-                <i aria-hidden="true" class="pi pi-cloud text-[10px] text-orange-400"></i>
+                <Cloud aria-hidden="true" class="text-[10px] text-orange-400"></Cloud>
                 Paste a SoundCloud URL directly in the search box
               </li>
               <li class="flex items-center gap-1.5">
-                <i aria-hidden="true" class="pi pi-search text-[10px] text-slate-400"></i>
+                <Search aria-hidden="true" class="text-[10px] text-slate-400"></Search>
                 Try a different search term or check for spelling errors
               </li>
             </ul>
@@ -77,7 +77,7 @@
 
     <div v-else-if="importJobId" class="mt-6">
       <div class="rounded-xl border border-white/6 bg-white/3 p-6 text-center">
-        <i aria-hidden="true" class="pi pi-spin pi-spinner text-3xl text-emerald-400"></i>
+        <Loader2 aria-hidden="true" class="text-3xl text-emerald-400 animate-spin"></Loader2>
         <p class="mt-3 text-sm font-medium text-white">Import in progress...</p>
         <p class="mt-1 text-xs text-slate-500">{{ importStage }}</p>
         <div class="mx-auto mt-4 h-2 w-full max-w-md overflow-hidden rounded-full bg-white/6">
@@ -105,7 +105,7 @@
           class="h-16 w-16 shrink-0 rounded-lg object-cover"
         />
         <div v-else class="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-white/6">
-          <i aria-hidden="true" class="pi pi-music text-xl text-slate-500"></i>
+          <Music aria-hidden="true" class="text-xl text-slate-500"></Music>
         </div>
 
         <div class="min-w-0 flex-1">
@@ -139,18 +139,19 @@
     </div>
 
     <div v-else-if="searched" class="mt-12 text-center">
-      <i aria-hidden="true" class="pi pi-search text-3xl text-slate-500"></i>
+      <Search aria-hidden="true" class="text-3xl text-slate-500"></Search>
       <p class="mt-3 text-sm text-slate-500">No results found. Try a different search term.</p>
     </div>
 
     <div v-else class="mt-12 text-center">
-      <i aria-hidden="true" class="pi pi-cloud-download text-3xl text-slate-500"></i>
+      <CloudDownload aria-hidden="true" class="text-3xl text-slate-500"></CloudDownload>
       <p class="mt-3 text-sm text-slate-500">Search for a track to get started.</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { Cloud, CloudDownload, Info, Loader2, Music, Search, Youtube } from 'lucide-vue-next'
 import { ref, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'

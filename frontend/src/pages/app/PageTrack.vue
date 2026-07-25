@@ -19,7 +19,7 @@
         class="mb-6 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-white/50 transition hover:bg-white/6 hover:text-white"
         @click="goBack"
       >
-        <i aria-hidden="true" class="pi pi-arrow-left text-xs" />
+        <ArrowLeft aria-hidden="true" class="text-xs"  />
         Back
       </button>
 
@@ -45,7 +45,7 @@
       <!-- Error -->
       <div v-else-if="error" class="flex flex-col items-center gap-4 py-24 text-center">
         <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/4">
-          <i aria-hidden="true" class="pi pi-exclamation-circle text-3xl text-slate-500" />
+          <AlertCircle aria-hidden="true" class="text-3xl text-slate-500"  />
         </div>
         <h2 class="text-xl font-bold text-white">Track not found</h2>
         <p class="text-sm text-slate-400">This track may have been removed or the link is invalid.</p>
@@ -75,7 +75,7 @@
                 @error="onImgError"
               />
               <div v-else class="flex h-full items-center justify-center">
-                <i aria-hidden="true" class="pi pi-compact-disc text-5xl text-slate-500" />
+                <Disc3 aria-hidden="true" class="text-5xl text-slate-500"  />
               </div>
 
               <!-- Playing indicator overlay -->
@@ -100,7 +100,7 @@
                 title="Edit track in admin"
                 @click.stop
               >
-                <i aria-hidden="true" class="pi pi-pencil text-xs" />
+                <Pencil aria-hidden="true" class="text-xs"  />
               </RouterLink>
             </div>
             <!-- Sleeve frame accent -->
@@ -138,7 +138,7 @@
               <template v-for="(a, i) in trackArtists" :key="String(a.artistId || i)">
                 <RouterLink
                   :to="`/artist/${a.artistId}`"
-                  class="inline-flex items-center gap-1.5 font-bold text-white underline underline-offset-4 decoration-white/20 transition hover:text-spotify hover:decoration-[#1db954]"
+                  class="inline-flex items-center gap-1.5 font-bold text-white underline underline-offset-4 decoration-white/20 transition hover:text-spotify hover:decoration-accent"
                 >
                   {{ a.name }}
                 </RouterLink>
@@ -185,7 +185,7 @@
                 class="flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white"
                 @click="player.playPrevious"
               >
-                <i aria-hidden="true" class="pi pi-step-backward text-lg" />
+                <SkipBack aria-hidden="true" class="text-lg"  />
               </button>
 
               <button
@@ -194,10 +194,10 @@
                 class="relative flex h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-2xl transition-all hover:scale-105 hover:bg-spotify hover:text-white active:scale-95 md:h-16 md:w-16"
                 @click="togglePlay"
               >
-                <i
-                  :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'"
+                <component :is="isPlaying ? Pause : Play" aria-hidden="true"<i
+                  
                   class="ml-0.5 text-xl md:text-2xl"
-                />
+                /> />
               </button>
 
               <button
@@ -206,7 +206,7 @@
                 class="flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white"
                 @click="player.playNext"
               >
-                <i aria-hidden="true" class="pi pi-step-forward text-lg" />
+                <SkipForward aria-hidden="true" class="text-lg"  />
               </button>
             </div>
 
@@ -238,7 +238,7 @@
                 class="glow-green inline-flex items-center gap-2.5 rounded-full bg-spotify px-7 py-2.5 text-sm font-bold text-black transition hover:scale-105 hover:bg-spotify-hover"
                 @click="togglePlay"
               >
-                <i aria-hidden="true" :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" />
+                <component :is="isPlaying ? Pause : Play"<i aria-hidden="true"  /> />
                 {{ isPlaying ? 'Pause' : 'Play' }}
               </button>
 
@@ -248,7 +248,7 @@
                 :class="isLiked ? 'border-spotify/30 text-spotify' : 'text-white/80 hover:border-white/30 hover:bg-white/8 hover:text-white'"
                 @click="toggleLike"
               >
-                <i aria-hidden="true" :class="isLiked ? 'pi pi-heart-fill' : 'pi pi-heart'" />
+                <component :is="isLiked ? Heart : Heart"<i aria-hidden="true"  /> />
                 {{ isLiked ? 'Liked' : 'Like' }}
               </button>
 
@@ -257,7 +257,7 @@
                 class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/3 px-5 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/8 hover:text-white"
                 @click="showAddToPlaylist = true"
               >
-                <i aria-hidden="true" class="pi pi-plus" />
+                <Plus aria-hidden="true" class=""  />
                 Playlist
               </button>
 
@@ -266,8 +266,17 @@
                 class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/3 px-5 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/8 hover:text-white"
                 @click="shareTrack"
               >
-                <i aria-hidden="true" class="pi pi-share-alt" />
+                <Share2 aria-hidden="true" class=""  />
                 Share
+              </button>
+
+              <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-full border border-border-default px-5 py-2.5 text-sm font-medium text-secondary transition-all hover:border-accent hover:text-accent"
+                @click="handleStartRadio"
+              >
+                <Radio aria-hidden="true" class="text-base" />
+                <span>رادیو</span>
               </button>
 
               <!-- Admin edit button -->
@@ -276,7 +285,7 @@
                 :to="`/admin/catalog/tracks/${trackId}`"
                 class="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-5 py-2.5 text-sm font-bold text-amber-400 transition hover:bg-amber-500/20"
               >
-                <i aria-hidden="true" class="pi pi-pencil text-sm" />
+                <Pencil aria-hidden="true" class="text-sm"  />
                 Edit
               </RouterLink>
 
@@ -286,7 +295,7 @@
                 class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/3 px-5 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/8 hover:text-white"
                 @click="goToCreateEdit"
               >
-                <i aria-hidden="true" class="pi pi-video text-sm" />
+                <Video aria-hidden="true" class="text-sm"  />
                 Edit Video
               </button>
             </div>
@@ -299,7 +308,7 @@
                 :class="player.shuffleMode ? 'text-spotify' : 'text-slate-400 hover:text-white'"
                 @click="player.toggleShuffle"
               >
-                <i class="pi pi-sort-alt text-lg" />
+                <ArrowUpDown aria-hidden="true" class="text-lg" />
                 Shuffle
               </button>
 
@@ -309,7 +318,7 @@
                 :class="player.repeatMode.value !== 'off' ? 'text-spotify' : 'text-slate-400 hover:text-white'"
                 @click="player.toggleRepeat"
               >
-                <i aria-hidden="true" class="pi pi-refresh text-lg" />
+                <RefreshCw aria-hidden="true" class="text-lg"  />
                 <span
                   v-if="player.repeatMode.value === 'one'"
                   class="absolute -top-1 -right-3 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-spotify text-[8px] font-bold text-black"
@@ -322,7 +331,7 @@
                 class="flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-white"
                 @click="showQueue = true"
               >
-                <i aria-hidden="true" class="pi pi-list text-lg" />
+                <List aria-hidden="true" class="text-lg"  />
                 Queue
               </button>
             </div>
@@ -355,7 +364,7 @@
               <div
                 class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify/90 text-black shadow-xl backdrop-blur-xs transition-transform hover:scale-110"
               >
-                <i aria-hidden="true" :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" class="text-lg" />
+                <component :is="isPlaying ? Pause : Play"<i aria-hidden="true"  class="text-lg" /> />
               </div>
             </div>
           </div>
@@ -403,7 +412,7 @@
                   @error="($event.target as HTMLImageElement).style.display='none'"
                 />
                 <div v-else class="flex h-full items-center justify-center bg-white/3">
-                  <i aria-hidden="true" class="pi pi-video text-2xl text-slate-500" />
+                  <Video aria-hidden="true" class="text-2xl text-slate-500"  />
                 </div>
 
                 <!-- Overlay gradient -->
@@ -421,16 +430,16 @@
                 <div class="absolute right-2 bottom-2 left-2 flex items-center justify-between">
                   <div class="flex items-center gap-2 text-[11px] font-medium text-white/80">
                     <span class="flex items-center gap-1">
-                      <i aria-hidden="true" class="pi pi-eye text-[10px]" />
+                      <Eye aria-hidden="true" class="text-[10px]"  />
                       {{ formatCount(v.view_count) }}
                     </span>
                     <span class="flex items-center gap-1">
-                      <i aria-hidden="true" class="pi pi-heart text-[10px]" />
+                      <Heart aria-hidden="true" class="text-[10px]"  />
                       {{ formatCount(v.like_count) }}
                     </span>
                   </div>
                   <div class="flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white opacity-0 backdrop-blur-xs transition-opacity group-hover:opacity-100">
-                    <i aria-hidden="true" class="pi pi-play-fill text-xs" />
+                    <Play aria-hidden="true" class="text-xs"  />
                   </div>
                 </div>
               </div>
@@ -468,7 +477,7 @@
               :class="karaokeActive ? 'bg-spotify/15 text-spotify' : 'text-white/60'"
               @click="karaokeActive = !karaokeActive"
             >
-              <i aria-hidden="true" class="pi pi-mic text-[10px]" />
+              <Mic aria-hidden="true" class="text-[10px]"  />
               Karaoke
             </button>
           </div>
@@ -604,7 +613,7 @@
                       <span class="similar-eq-bar animation-delay-300 h-3" />
                     </span>
                   </template>
-                  <i v-else aria-hidden="true" class="pi pi-play text-sm" />
+                  <Play v-else aria-hidden="true" class="text-sm"  />
                 </span>
               </button>
 
@@ -642,7 +651,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { AlertCircle, ArrowLeft, ArrowUpDown, Disc3, Eye, Heart, List, Mic, Pause, Pencil, Play, Plus, Radio, RefreshCw, Share2, SkipBack, SkipForward, Video } from 'lucide-vue-next'
+import { computed, inject, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { SkeletonLoader } from '@/components/common'
 import { useTrack } from '@/composables/catalog/useTrack'
@@ -693,16 +703,16 @@ const isPlaying = player.isPlaying
 // ── Ambient background from cover art ──
 const coverUrl = computed(() => track.value?.cover_url || null)
 const { palette } = useAlbumColors(coverUrl)
-const accentColor = computed(() => palette.value.vibrant || '#1db954')
+const accentColor = computed(() => palette.value.vibrant || 'var(--accent)')
 
 const ambientBg = computed(() => {
-  if (!coverUrl.value) return { background: '#0A0A0F' }
+  if (!coverUrl.value) return { background: 'var(--bg-base)' }
   const c = accentColor.value
   return {
     background: `
       radial-gradient(ellipse 80% 50% at 50% 0%, ${c}1A 0%, transparent 70%),
       radial-gradient(ellipse 60% 40% at 100% 100%, ${c}0D 0%, transparent 50%),
-      #0A0A0F
+      var(--bg-base)
     `,
   }
 })
@@ -791,6 +801,15 @@ function shareTrack() {
     artistName: track.value.artist_name,
     coverUrl: track.value.cover_url,
   })
+}
+
+// ── Radio ──
+const openRadio = inject<((trackId: string, seedLabel?: string) => void) | null>('openRadio', null)
+
+function handleStartRadio() {
+  if (track.value?.id) {
+    openRadio?.(String(track.value.id), track.value.title)
+  }
 }
 
 // ── Formatters ──
@@ -899,10 +918,10 @@ onMounted(() => {
   border-radius: 999px;
   background: linear-gradient(
     to right,
-    #1db954 0%,
-    #1db954 var(--range-progress),
-    rgba(255, 255, 255, 0.12) var(--range-progress),
-    rgba(255, 255, 255, 0.12) 100%
+    var(--accent) 0%,
+    var(--accent) var(--range-progress),
+    var(--surface-3) var(--range-progress),
+    var(--surface-3) 100%
   );
 }
 
@@ -938,7 +957,7 @@ onMounted(() => {
 .player-range::-moz-range-progress {
   height: 4px;
   border-radius: 999px;
-  background: #1db954;
+  background: var(--accent);
 }
 
 .player-range::-moz-range-thumb {

@@ -30,7 +30,7 @@
               class="h-full w-full object-cover"
             />
             <div v-else class="flex h-full w-full items-center justify-center bg-white/5">
-              <i aria-hidden="true" class="pi pi-music text-sm text-white/30" />
+              <Music aria-hidden="true" class="text-sm text-white/30"  />
             </div>
           </div>
           <div class="min-w-0 max-w-45">
@@ -43,7 +43,7 @@
             @click="startPartyFromTrack"
           >
             <span class="flex items-center gap-1.5">
-              <i aria-hidden="true" class="pi pi-users text-[10px]" />
+              <Users aria-hidden="true" class="text-[10px]"  />
               Party
             </span>
           </button>
@@ -112,7 +112,7 @@
             </button>
           </template>
           <div v-else class="flex flex-col items-center gap-3 py-6 text-center">
-            <i aria-hidden="true" class="pi pi-megaphone text-xl text-white/20" />
+            <Megaphone aria-hidden="true" class="text-xl text-white/20"  />
             <p class="text-xs text-white/30">No live rooms right now</p>
             <button
               class="rounded-full bg-red-500/10 px-4 py-1.5 text-[10px] font-semibold text-red-400 transition hover:bg-red-500/20"
@@ -144,7 +144,7 @@
               <div class="h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-white/10">
                 <div v-if="(party as any).currentTrackCover" class="h-full w-full bg-cover bg-center" :style="{ backgroundImage: `url(${(party as any).currentTrackCover})` }" />
                 <div v-else class="flex h-full items-center justify-center">
-                  <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
+                  <Music aria-hidden="true" class="text-xs text-white/30"  />
                 </div>
               </div>
               <div class="min-w-0 flex-1">
@@ -155,7 +155,7 @@
             </div>
           </div>
           <div v-else class="flex flex-col items-center gap-3 py-8 text-center">
-            <i aria-hidden="true" class="pi pi-users text-xl text-white/20" />
+            <Users aria-hidden="true" class="text-xl text-white/20"  />
             <p class="text-xs text-white/30">No active parties</p>
             <button
               class="rounded-full bg-spotify/10 px-4 py-1.5 text-[10px] font-semibold text-spotify transition hover:bg-spotify/20"
@@ -187,12 +187,12 @@
               <div
                 class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-500/10"
               >
-                <i aria-hidden="true" class="pi pi-building text-xs text-purple-400" />
+                <Building2 aria-hidden="true" class="text-xs text-purple-400"  />
               </div>
               <div class="min-w-0 flex-1">
                 <p class="truncate text-xs font-medium text-white">{{ club.name }}</p>
                 <p class="flex items-center gap-1 text-[10px] text-white/30">
-                  <i aria-hidden="true" class="pi pi-users text-[8px]" />
+                  <Users aria-hidden="true" class="text-[8px]"  />
                   {{ club.member_count || 0 }} / {{ club.max_members || '∞' }}
                 </p>
               </div>
@@ -205,7 +205,7 @@
             </div>
           </div>
           <div v-else class="flex flex-col items-center gap-3 py-8 text-center">
-            <i aria-hidden="true" class="pi pi-building text-xl text-white/20" />
+            <Building2 aria-hidden="true" class="text-xl text-white/20"  />
             <p class="text-xs text-white/30">No clubs yet</p>
             <button
               class="rounded-full bg-purple-500/10 px-4 py-1.5 text-[10px] font-semibold text-purple-400 transition hover:bg-purple-500/20"
@@ -235,7 +235,7 @@
           />
         </div>
         <div v-else class="flex flex-col items-center gap-3 py-10 text-center">
-          <i aria-hidden="true" class="pi pi-clock text-2xl text-white/10" />
+          <Clock aria-hidden="true" class="text-2xl text-white/10"  />
           <p class="text-xs text-white/30">No activity yet — be the first!</p>
         </div>
         <button
@@ -272,6 +272,7 @@
 </template>
 
 <script setup lang="ts">
+import { Building2, Clock, Megaphone, Music, Users } from 'lucide-vue-next'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppToast } from '@/composables/useAppToast'

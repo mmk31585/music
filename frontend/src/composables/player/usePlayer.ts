@@ -34,6 +34,10 @@ export function usePlayer() {
     toggleRepeat: player.toggleRepeat,
     setPlaybackRate: player.setPlaybackRate,
     updateQueue: player.updateQueue,
+    addToQueue: player.addToQueue,
+    playNextInQueue: player.playNextInQueue,
+    appendQueueAndPlay: player.appendQueueAndPlay,
+    setCrossfadeDuration: player.setCrossfadeDuration,
     setSleepTimer: player.setSleepTimer,
     clearSleepTimer: player.clearSleepTimer,
   }

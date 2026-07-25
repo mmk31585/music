@@ -18,6 +18,7 @@ interface PlayQueueItem {
   cover_url?: string | null
   duration?: number | null
   duration_seconds?: number | null
+  [key: string]: unknown
 }
 
 export function useAIRecommendations() {
@@ -148,7 +149,7 @@ export function useAIRecommendations() {
       confident: 'from-purple-400/20 via-fuchsia-500/10 to-transparent',
       sleep: 'from-slate-400/20 via-blue-500/10 to-transparent',
     }
-    return gradients[mood] || 'from-[#1db954]/20 via-emerald-500/10 to-transparent'
+    return gradients[mood] || 'from-accent/20 via-emerald-500/10 to-transparent'
   }
 
   function buildPlayQueue(tracks: PlayQueueItem[], startIndex = 0): void {

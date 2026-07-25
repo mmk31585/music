@@ -7,6 +7,7 @@ import (
 	"music/internal/modules/catalog/album"
 	"music/internal/modules/catalog/artist"
 	"music/internal/modules/catalog/genre"
+	"music/internal/modules/catalog/stats"
 	"music/internal/modules/catalog/track"
 )
 
@@ -15,6 +16,7 @@ type Handlers struct {
 	Album  *album.Handler
 	Track  *track.Handler
 	Genre  *genre.Handler
+	Stats  *stats.Handler
 	Enrich *EnrichHandler
 }
 
@@ -96,4 +98,7 @@ func RegisterAdminRoutes(rg *gin.RouterGroup, h Handlers, authMW gin.HandlerFunc
 		genres.PATCH("/:genreID", h.Genre.Update)
 		genres.DELETE("/:genreID", h.Genre.Delete)
 	}
+
+	// Lightweight aggregate stats for the admin dashboard
+	adminCatalog.GET("/stats", h.Stats.Get)
 }

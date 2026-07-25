@@ -61,12 +61,12 @@ func (h *Handler) Register(c *gin.Context) {
 	var req RegisterRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, apperrors.BadRequest("invalid request body: "+err.Error(), nil))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid request body: "+err.Error(), nil))
 		return
 	}
 
 	if err := h.validator.Struct(req); err != nil {
-		response.Error(c, apperrors.BadRequest("validation failed: "+err.Error(), nil))
+		response.Error(c, apperrors.New(http.StatusUnprocessableEntity, apperrors.CodeValidation, "validation failed: "+err.Error(), nil))
 		return
 	}
 
@@ -97,12 +97,12 @@ func (h *Handler) Login(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warn("login bind error", zap.Error(err))
 		// Return 400 BadRequest for malformed/empty bodies, not 500
-		response.Error(c, apperrors.BadRequest("invalid request body: "+err.Error(), nil))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid request body: "+err.Error(), nil))
 		return
 	}
 
 	if err := h.validator.Struct(req); err != nil {
-		response.Error(c, apperrors.BadRequest("validation failed: "+err.Error(), nil))
+		response.Error(c, apperrors.New(http.StatusUnprocessableEntity, apperrors.CodeValidation, "validation failed: "+err.Error(), nil))
 		return
 	}
 
@@ -131,12 +131,12 @@ func (h *Handler) Refresh(c *gin.Context) {
 	var req RefreshRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, apperrors.BadRequest("invalid request body", nil))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid request body", nil))
 		return
 	}
 
 	if err := h.validator.Struct(req); err != nil {
-		response.Error(c, err)
+		response.Error(c, apperrors.New(http.StatusUnprocessableEntity, apperrors.CodeValidation, "validation failed: "+err.Error(), nil))
 		return
 	}
 
@@ -165,12 +165,12 @@ func (h *Handler) Logout(c *gin.Context) {
 	var req LogoutRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, apperrors.BadRequest("invalid request body: "+err.Error(), nil))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid request body: "+err.Error(), nil))
 		return
 	}
 
 	if err := h.validator.Struct(req); err != nil {
-		response.Error(c, apperrors.BadRequest("validation failed: "+err.Error(), nil))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "validation failed: "+err.Error(), nil))
 		return
 	}
 
@@ -195,7 +195,7 @@ func (h *Handler) ForgotPassword(c *gin.Context) {
 	var req ForgotPasswordRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, apperrors.BadRequest("invalid request body: "+err.Error(), nil))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid request body: "+err.Error(), nil))
 		return
 	}
 
@@ -301,7 +301,7 @@ func (h *Handler) AdminListUsers(c *gin.Context) {
 func (h *Handler) AdminGetUser(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		response.Error(c, apperrors.BadRequest("user id is required", nil))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "user id is required", nil))
 		return
 	}
 
@@ -333,7 +333,7 @@ func (h *Handler) AdminGetUser(c *gin.Context) {
 func (h *Handler) AdminUpdateUser(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		response.Error(c, apperrors.BadRequest("user id is required", nil))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "user id is required", nil))
 		return
 	}
 
@@ -368,7 +368,7 @@ func (h *Handler) AdminUpdateUser(c *gin.Context) {
 func (h *Handler) AdminDeleteUser(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		response.Error(c, apperrors.BadRequest("user id is required", nil))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "user id is required", nil))
 		return
 	}
 
@@ -383,14 +383,14 @@ func (h *Handler) AdminDeleteUser(c *gin.Context) {
 func (h *Handler) UpdateProfile(c *gin.Context) {
 	userID := UserIDFromContext(c)
 	if userID == "" {
-		response.Error(c, apperrors.Unauthorized("authentication required", nil))
+		response.Error(c, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil))
 		return
 	}
 
 	var req UpdateProfileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Error("update profile bind error", zap.Error(err))
-		response.Error(c, apperrors.BadRequest("invalid request body: "+err.Error(), nil))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid request body: "+err.Error(), nil))
 		return
 	}
 
@@ -411,13 +411,13 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 func (h *Handler) ChangePassword(c *gin.Context) {
 	userID := UserIDFromContext(c)
 	if userID == "" {
-		response.Error(c, apperrors.Unauthorized("authentication required", nil))
+		response.Error(c, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil))
 		return
 	}
 
 	var req ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, apperrors.BadRequest("invalid request body", nil))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid request body", nil))
 		return
 	}
 

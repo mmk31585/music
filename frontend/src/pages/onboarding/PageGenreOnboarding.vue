@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex min-h-screen items-center justify-center bg-linear-to-br from-surface-base via-[#0f0f1a] to-surface-base px-4"
+    class="flex min-h-screen items-center justify-center bg-linear-to-br from-surface-base via-surface-overlay to-surface-base px-4"
   >
     <div
       class="w-full max-w-xl rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-xl"
@@ -9,7 +9,7 @@
         <div
           class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-spotify/20"
         >
-          <i aria-hidden="true" class="pi pi-music text-3xl text-spotify" />
+          <Music aria-hidden="true" class="text-3xl text-spotify"  />
         </div>
         <h1 class="text-2xl font-bold text-white md:text-3xl">چه سبک موسیقی رو دوست داری؟</h1>
         <p class="mt-2 text-sm text-slate-400">
@@ -81,6 +81,7 @@
 </template>
 
 <script setup lang="ts">
+import { Music } from 'lucide-vue-next'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'

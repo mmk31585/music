@@ -104,7 +104,7 @@ function toCreatePayload(payload: TrackFormPayload): TrackCreatePayload {
 }
 
 
-function toUpdatePayload(payload: TrackFormPayload, currentTrack?: TrackUpdatePayload): TrackUpdatePayload {
+function toUpdatePayload(payload: TrackFormPayload, currentTrack?: Track | TrackUpdatePayload): TrackUpdatePayload {
   const primaryArtistId = payload.artist_ids?.[0] ?? payload.artist_id
 
   // Compute clear_fields: fields that are null in payload but had a value in currentTrack
@@ -280,7 +280,7 @@ export function useAdminTracks() {
     }
   }
 
-  async function updateTrack(id: string | number, payload: TrackFormPayload, currentTrack?: TrackUpdatePayload) {
+  async function updateTrack(id: string | number, payload: TrackFormPayload, currentTrack?: Track | TrackUpdatePayload) {
     saving.value = true
     error.value = null
 

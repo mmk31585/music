@@ -46,12 +46,12 @@ export const useAuthApi = () => {
     )
   }
 
-  const refresh = async (refreshToken?: string, config?: UseRequestConfig<AuthResponse>) => {
+  const refresh = async (refreshToken: string, config?: UseRequestConfig<AuthResponse>) => {
     return useRequest<AuthResponse>(
       AuthApiRoutes.REFRESH,
       {
         method: 'POST',
-        data: refreshToken ? { refreshToken } : undefined,
+        data: { refreshToken },
       },
       {
         schema: AuthResponseSchema,

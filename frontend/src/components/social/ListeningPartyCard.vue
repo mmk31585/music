@@ -35,7 +35,7 @@
           class="h-full w-full object-cover"
         />
         <div v-else class="flex h-full w-full items-center justify-center bg-white/4">
-          <i aria-hidden="true" class="pi pi-music text-sm text-white/20" />
+          <Music aria-hidden="true" class="text-sm text-white/20"  />
         </div>
       </div>
     </div>
@@ -62,7 +62,7 @@
 
     <!-- Now playing mini info -->
     <div v-if="currentTrackName" class="mt-3 flex items-center gap-1.5 text-[10px] text-white/30">
-      <i aria-hidden="true" class="pi pi-music text-[10px] shrink-0" />
+      <Music aria-hidden="true" class="text-[10px] shrink-0"  />
       <span class="truncate">{{ currentTrackName }}</span>
     </div>
 
@@ -70,27 +70,28 @@
       <button
         aria-label="Join party"
         class="flex-1 rounded-lg bg-spotify/10 py-2.5 text-xs font-bold text-spotify transition
-               hover:bg-spotify/20 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-[#1db954]"
+               hover:bg-spotify/20 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-accent"
         @click="$emit('join', party.id)"
       >
         <span class="flex items-center justify-center gap-1.5">
-          <i aria-hidden="true" class="pi pi-headphones text-[10px]" />
+          <Headphones aria-hidden="true" class="text-[10px]"  />
           Join Party
         </span>
       </button>
       <button
         aria-label="Share party"
         class="flex h-9 w-9 items-center justify-center rounded-lg text-white/30 transition
-               hover:bg-white/6 hover:text-white/60 focus-visible:outline-2 focus-visible:outline-[#1db954]"
+               hover:bg-white/6 hover:text-white/60 focus-visible:outline-2 focus-visible:outline-accent"
         @click="$emit('share', party.id)"
       >
-        <i aria-hidden="true" class="pi pi-share-alt text-sm" />
+        <Share2 aria-hidden="true" class="text-sm"  />
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { Headphones, Music, Share2 } from 'lucide-vue-next'
 import { computed } from 'vue'
 import type { ListeningParty } from '@/services/api/social'
 

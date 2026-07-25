@@ -43,7 +43,7 @@
             class="absolute -right-1 -bottom-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-black bg-spotify text-[10px] text-black transition hover:bg-spotify-hover"
             @click="triggerAvatarUpload"
           >
-            <i aria-hidden="true" class="pi pi-pencil" />
+            <Pencil aria-hidden="true" class=""  />
           </button>
           <input
             ref="avatarInput"
@@ -227,7 +227,7 @@
               v-model="preferences.rtl"
               type="checkbox"
               aria-label="Persian (RTL) Layout"
-              class="h-5 w-5 rounded border-white/20 bg-white/10 accent-[#1db954]"
+              class="h-5 w-5 rounded border-white/20 bg-white/10 accent-accent"
             />
           </div>
           <div class="flex items-center justify-between">
@@ -239,7 +239,7 @@
               v-model="preferences.lyricsAutoscroll"
               type="checkbox"
               aria-label="Lyrics Autoscroll"
-              class="h-5 w-5 rounded border-white/20 bg-white/10 accent-[#1db954]"
+              class="h-5 w-5 rounded border-white/20 bg-white/10 accent-accent"
             />
           </div>
           <div class="flex items-center justify-between">
@@ -251,7 +251,7 @@
               v-model="preferences.explicitContent"
               type="checkbox"
               aria-label="Explicit Content"
-              class="h-5 w-5 rounded border-white/20 bg-white/10 accent-[#1db954]"
+              class="h-5 w-5 rounded border-white/20 bg-white/10 accent-accent"
             />
           </div>
         </div>
@@ -269,7 +269,7 @@
             class="rounded-full border border-white/10 bg-white/4 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/8"
             @click="router.push({ name: 'onboarding.genres' })"
           >
-            <i aria-hidden="true" class="pi pi-pencil mr-1.5 text-[10px]" />
+            <Pencil aria-hidden="true" class="mr-1.5 text-[10px]"  />
             Change
           </button>
         </div>
@@ -289,7 +289,7 @@
               v-model="preferences.notifyReleases"
               type="checkbox"
               aria-label="New Releases"
-              class="h-5 w-5 rounded border-white/20 bg-white/10 accent-[#1db954]"
+              class="h-5 w-5 rounded border-white/20 bg-white/10 accent-accent"
             />
           </div>
           <div class="flex items-center justify-between">
@@ -301,7 +301,7 @@
               v-model="preferences.notifySocial"
               type="checkbox"
               aria-label="Social Activity"
-              class="h-5 w-5 rounded border-white/20 bg-white/10 accent-[#1db954]"
+              class="h-5 w-5 rounded border-white/20 bg-white/10 accent-accent"
             />
           </div>
         </div>
@@ -322,6 +322,7 @@
 </template>
 
 <script setup lang="ts">
+import { Pencil } from 'lucide-vue-next'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'

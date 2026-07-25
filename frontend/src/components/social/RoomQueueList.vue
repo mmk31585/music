@@ -1,14 +1,14 @@
 <template>
-  <div class="rounded-2xl bg-white/4 p-6 ring-1 ring-white/7">
+  <div class="rounded-2xl bg-surface-overlay/60 p-6 ring-1 ring-border-subtle">
     <div class="mb-4 flex items-center justify-between">
-      <h2 class="text-xs font-bold uppercase tracking-wider text-white/30">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-muted">
         صف پیشنهادی
       </h2>
       <button
-        class="inline-flex items-center gap-1.5 rounded-xl bg-spotify/10 px-4 py-2 text-sm font-semibold text-spotify transition hover:bg-spotify/20"
+        class="inline-flex items-center gap-1.5 rounded-xl bg-accent-subtle px-4 py-2 text-sm font-semibold text-accent transition hover:bg-accent/20"
         @click="$emit('suggest-clicked')"
       >
-        <i aria-hidden="true" class="pi pi-plus text-xs" />
+        <Plus aria-hidden="true" class="text-xs"  />
         پیشنهاد آهنگ
       </button>
     </div>
@@ -16,16 +16,16 @@
     <!-- Empty state -->
     <div
       v-if="!candidates.length"
-      class="flex flex-col items-center gap-4 py-12 text-sm text-white/30"
+      class="flex flex-col items-center gap-4 py-12 text-sm text-muted"
       role="status"
     >
-      <i aria-hidden="true" class="pi pi-music text-4xl text-white/20" />
+      <Music aria-hidden="true" class="text-4xl text-primary/20"  />
       <p>هنوز کسی آهنگی پیشنهاد نداده. اولین نفر باش!</p>
       <button
-        class="inline-flex items-center gap-1.5 rounded-xl bg-spotify px-5 py-2.5 text-sm font-bold text-black transition hover:bg-spotify/90"
+        class="inline-flex items-center gap-1.5 rounded-xl bg-accent px-5 py-2.5 text-sm font-bold text-black transition hover:bg-accent/90"
         @click="$emit('suggest-clicked')"
       >
-        <i aria-hidden="true" class="pi pi-plus text-xs" />
+        <Plus aria-hidden="true" class="text-xs"  />
         پیشنهاد آهنگ
       </button>
     </div>
@@ -40,9 +40,9 @@
       <div
         v-for="candidate in candidates"
         :key="candidate.id"
-        class="group flex items-center gap-3 rounded-xl px-3 py-2.5 ring-1 ring-transparent transition-all hover:ring-white/10"
+        class="group flex items-center gap-3 rounded-xl px-3 py-2.5 ring-1 ring-transparent transition-all hover:ring-border-default"
       >
-        <div class="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white/10">
+        <div class="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-surface-active">
           <img
             v-if="candidate.track?.cover_url"
             :src="candidate.track.cover_url"
@@ -51,29 +51,29 @@
             class="h-full w-full object-cover"
           />
           <div v-else class="flex h-full items-center justify-center">
-            <i aria-hidden="true" class="pi pi-headphones text-sm text-white/30" />
+            <Headphones aria-hidden="true" class="text-sm text-muted"  />
           </div>
         </div>
 
         <div class="min-w-0 flex-1">
-          <p v-if="candidate.track" class="truncate text-sm font-medium text-white">{{ candidate.track.title }}</p>
-          <p v-else class="truncate text-sm font-medium text-white/50">Unknown track</p>
-          <p class="truncate text-xs text-white/40">
+          <p v-if="candidate.track" class="truncate text-sm font-medium text-primary">{{ candidate.track.title }}</p>
+          <p v-else class="truncate text-sm font-medium text-primary/50">Unknown track</p>
+          <p class="truncate text-xs text-primary/40">
             پیشنهاد {{ candidate.suggested_by?.username || (candidate.suggested_by?.id ? String(candidate.suggested_by.id).slice(0, 8) : 'Unknown') }}
           </p>
         </div>
 
         <button
-          class="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition hover:bg-white/10"
-          :class="candidate.has_voted ? 'text-spotify' : 'text-white/40'"
+          class="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition hover:bg-surface-active"
+          :class="candidate.has_voted ? 'text-accent' : 'text-primary/40'"
           @click="toggleVote(candidate)"
           aria-label="Vote"
         >
-          <i
+          <component :is="candidate.has_voted ? ChevronUp : ChevronUp" aria-hidden="true"<i
             class="text-lg transition-transform duration-150"
-            :class="candidate.has_voted ? 'pi pi-caret-up' : 'pi pi-caret-up'"
+            
             :style="{ transform: candidate.has_voted ? 'scale(1.1)' : 'scale(1)' }"
-          />
+          /> />
           <span
             class="tabular-nums"
             :class="{ 'vote-pulse': candidate.vote_count > 0 }"
@@ -88,6 +88,7 @@
 </template>
 
 <script setup lang="ts">
+import { ChevronUp, Headphones, Music, Plus } from 'lucide-vue-next'
 import type { QueueCandidate } from '@/services/api/social/room-queue'
 
 defineProps<{

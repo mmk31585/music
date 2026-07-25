@@ -17,12 +17,13 @@
       class="shrink-0 whitespace-nowrap text-xs font-medium text-white/30 transition hover:text-white"
     >
       {{ seeAllLabel || 'See all' }}
-      <i aria-hidden="true" class="pi pi-chevron-left ml-0.5 text-[10px]" />
+      <ChevronLeft aria-hidden="true" class="ml-0.5 text-[10px]"  />
     </RouterLink>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ChevronLeft } from 'lucide-vue-next'
 defineProps<{
   title: string
   eyebrow?: string

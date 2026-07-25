@@ -18,7 +18,7 @@
       class="mt-3 flex items-center gap-1 text-xs"
       :class="change >= 0 ? 'text-green-400' : 'text-red-400'"
     >
-      <i aria-hidden="true" :class="change >= 0 ? 'pi pi-arrow-up' : 'pi pi-arrow-down'" class="text-[10px]" />
+      <component :is="change >= 0 ? ArrowUp : ArrowDown"<i aria-hidden="true"  class="text-[10px]" /> />
       <span>{{ Math.abs(change) }}% vs last period</span>
     </div>
   </div>
@@ -26,6 +26,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { ArrowDown, ArrowUp } from 'lucide-vue-next'
 
 const props = defineProps<{
   label: string

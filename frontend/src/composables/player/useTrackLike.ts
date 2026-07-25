@@ -3,6 +3,16 @@ import { useToast } from 'primevue/usetoast'
 import { useLibraryApi } from '@/services/api/library'
 import { useUserAuthStore } from '@/stores/user-auth'
 
+const GUEST_FREE_ACTION_KEY = 'guest_free_action_used'
+
+function isGuestFreeActionUsed(): boolean {
+  return localStorage.getItem(GUEST_FREE_ACTION_KEY) === 'true'
+}
+
+function markGuestFreeActionUsed(): void {
+  localStorage.setItem(GUEST_FREE_ACTION_KEY, 'true')
+}
+
 /**
  * Singleton set of liked track IDs shared across all instances.
  * Only the first caller fetches from the API; subsequent instances
@@ -46,7 +56,7 @@ export function useTrackLike(trackIdRef: import('vue').Ref<string | undefined>) 
 
   // Check if current track is liked
   function checkLiked(trackId: string | undefined) {
-    if (!trackId || !auth.isAuthenticated) {
+    if (!trackId) {
       liked.value = false
       return
     }
@@ -60,7 +70,28 @@ export function useTrackLike(trackIdRef: import('vue').Ref<string | undefined>) 
 
   async function toggleLike() {
     const trackId = trackIdRef.value
-    if (!trackId || !auth.isAuthenticated) return
+    if (!trackId) return
+
+    if (!auth.isAuthenticated) {
+      if (isGuestFreeActionUsed()) {
+        toast.add({
+          severity: 'info',
+          summary: 'Sign up to keep using this feature',
+          life: 4000,
+        })
+        return
+      }
+      markGuestFreeActionUsed()
+      // Local-only like/unlike without API call
+      if (liked.value) {
+        _likedTrackIds.value.delete(trackId)
+        liked.value = false
+      } else {
+        _likedTrackIds.value.add(trackId)
+        liked.value = true
+      }
+      return
+    }
 
     loading.value = true
     try {

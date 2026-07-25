@@ -8,7 +8,7 @@
         'inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition',
         currentReaction === reactionType
           ? activeClass(reactionType)
-          : 'text-slate-400 hover:bg-white/5 hover:text-white',
+          : 'text-secondary hover:bg-surface-overlay hover:text-primary',
       ]"
       @click="$emit('react', reactionType)"
     >
@@ -34,8 +34,8 @@ function iconClass(type: string) {
 }
 
 function activeClass(type: string) {
-  if (type === 'like') return 'bg-spotify/10 text-spotify'
-  if (type === 'love') return 'bg-red-500/10 text-red-400'
-  return 'bg-yellow-500/10 text-yellow-400'
+  if (type === 'like') return 'bg-accent-subtle text-accent'
+  if (type === 'love') return 'bg-danger-subtle text-danger'
+  return 'bg-warning-subtle text-warning'
 }
 </script>

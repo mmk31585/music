@@ -1,6 +1,10 @@
 package config
 
-import "time"
+import (
+	"os"
+	"strconv"
+	"time"
+)
 
 type AuthConfig struct {
 	JWTAccessSecret  string
@@ -10,12 +14,30 @@ type AuthConfig struct {
 }
 
 func loadAuthConfig() AuthConfig {
-	// NOTE: In production, JWT_ACCESS_SECRET and JWT_REFRESH_SECRET MUST be set
-	// to strong random values (at least 256 bits). Do NOT use defaults.
+	jwtAccessSecret := os.Getenv("JWT_ACCESS_SECRET")
+	if jwtAccessSecret == "" {
+		jwtAccessSecret = "change_me_access_secret"
+	}
+	jwtRefreshSecret := os.Getenv("JWT_REFRESH_SECRET")
+	if jwtRefreshSecret == "" {
+		jwtRefreshSecret = "change_me_refresh_secret"
+	}
+	accessTTL := 15
+	if v := os.Getenv("JWT_ACCESS_TTL_MINUTES"); v != "" {
+		if parsed, err := strconv.Atoi(v); err == nil {
+			accessTTL = parsed
+		}
+	}
+	refreshTTL := 30
+	if v := os.Getenv("JWT_REFRESH_TTL_DAYS"); v != "" {
+		if parsed, err := strconv.Atoi(v); err == nil {
+			refreshTTL = parsed
+		}
+	}
 	return AuthConfig{
-		JWTAccessSecret:  getEnv("JWT_ACCESS_SECRET", "change_me_access_secret"),
-		JWTRefreshSecret: getEnv("JWT_REFRESH_SECRET", "change_me_refresh_secret"),
-		AccessTTL:        time.Duration(getEnvAsInt("JWT_ACCESS_TTL_MINUTES", 15)) * time.Minute,
-		RefreshTTL:       time.Duration(getEnvAsInt("JWT_REFRESH_TTL_DAYS", 30)) * 24 * time.Hour,
+		JWTAccessSecret:  jwtAccessSecret,
+		JWTRefreshSecret: jwtRefreshSecret,
+		AccessTTL:        time.Duration(accessTTL) * time.Minute,
+		RefreshTTL:       time.Duration(refreshTTL) * 24 * time.Hour,
 	}
 }

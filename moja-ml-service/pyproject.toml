@@ -2,7 +2,7 @@
 name = "moja-ml-service"
 version = "0.1.0"
 description = "Audio/ML processing service for the Moja (موجا) Persian music platform — transcription, feature extraction, recommendations"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.13",
     "asyncpg>=0.29",

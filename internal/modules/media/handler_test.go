@@ -28,12 +28,12 @@ func (m *mockMediaService) Upload(ctx context.Context, category UploadCategory, 
 	return args.Get(0).(*UploadResponse), args.Error(1)
 }
 
-func (m *mockMediaService) ListMedia(ctx context.Context) ([]Media, error) {
+func (m *mockMediaService) ListMedia(ctx context.Context) ([]MediaAsset, error) {
 	args := m.Called(ctx)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]Media), args.Error(1)
+	return args.Get(0).([]MediaAsset), args.Error(1)
 }
 
 func (m *mockMediaService) DeleteMedia(ctx context.Context, id uuid.UUID) error {
@@ -87,7 +87,7 @@ func TestDeleteAdminMedia_InvalidID(t *testing.T) {
 func TestListAdminMedia_Success(t *testing.T) {
 	h, mockSvc, r := setupMediaHandlerTest()
 
-	expected := []Media{
+	expected := []MediaAsset{
 		{ID: uuid.MustParse("00000000-0000-0000-0000-000000000001"), MediaType: "image"},
 		{ID: uuid.MustParse("00000000-0000-0000-0000-000000000002"), MediaType: "audio"},
 	}

@@ -25,7 +25,7 @@
     <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div class="flex flex-wrap items-center gap-3">
         <div class="relative">
-          <i aria-hidden="true" class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500" />
+          <Search aria-hidden="true" class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500"  />
           <InputText
             v-model="searchQuery"
             placeholder="Search email, username, display name..."
@@ -184,7 +184,7 @@
                           class="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500/20 text-[8px] text-blue-400"
                           title="Verified"
                         >
-                          <i aria-hidden="true" class="pi pi-check" />
+                          <Check aria-hidden="true"  />
                         </span>
                         <span v-else class="text-[10px] text-slate-600" title="Not verified"
                           >unverified</span
@@ -297,7 +297,7 @@
       :closable="true"
       :draggable="false"
       :pt="{
-        root: { class: 'border-white/6! bg-[#141414]! rounded-2xl! shadow-2xl!' },
+        root: { class: 'border-white/6! bg-surface-raised! rounded-2xl! shadow-2xl!' },
         header: { class: 'bg-transparent! border-0! pb-0!' },
         content: { class: 'bg-transparent! p-0!' },
         footer: { class: 'bg-transparent! border-0!' },
@@ -307,7 +307,7 @@
       <template #header>
         <div class="flex items-center gap-3">
           <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
-            <i aria-hidden="true" class="pi pi-user text-blue-400" />
+            <User aria-hidden="true" class="text-blue-400"  />
           </div>
           <div>
             <h3 class="text-base font-semibold text-white">
@@ -393,7 +393,7 @@
       :closable="true"
       :draggable="false"
       :pt="{
-        root: { class: 'border-white/6! bg-[#141414]! rounded-2xl! shadow-2xl!' },
+        root: { class: 'border-white/6! bg-surface-raised! rounded-2xl! shadow-2xl!' },
         header: { class: 'bg-transparent! border-0! pb-0!' },
         content: { class: 'bg-transparent! p-0!' },
         footer: { class: 'bg-transparent! border-0!' },
@@ -403,7 +403,7 @@
       <template #header>
         <div class="flex items-center gap-3">
           <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10">
-            <i aria-hidden="true" class="pi pi-eye text-sky-400" />
+            <Eye aria-hidden="true" class="text-sky-400"  />
           </div>
           <div>
             <h3 class="text-base font-semibold text-white">{{ userDetail?.display_name || userDetail?.username || 'User Detail' }}</h3>
@@ -411,7 +411,7 @@
         </div>
       </template>
       <div v-if="detailLoading" class="flex items-center justify-center p-12">
-        <i aria-hidden="true" class="pi pi-spin pi-spinner text-2xl text-slate-500" />
+        <Loader2 aria-hidden="true" class="text-2xl text-slate-500 animate-spin"  />
       </div>
       <div v-else-if="userDetail" class="divide-y divide-white/6">
         <div class="flex items-center gap-4 p-6">
@@ -458,7 +458,7 @@
               v-if="userDetail.email_verified"
               class="flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-400"
             >
-              <i aria-hidden="true" class="pi pi-check-circle" /> Verified
+              <CheckCircle aria-hidden="true"  /> Verified
             </span>
             <span v-else class="text-xs text-slate-600">Not verified</span>
           </div>
@@ -469,6 +469,67 @@
           <div v-if="userDetail.updated_at" class="flex items-center justify-between">
             <span class="text-sm text-slate-400">Updated</span>
             <span class="text-sm text-white/60 tabular-nums">{{ formatDate(userDetail.updated_at) }}</span>
+          </div>
+        </div>
+
+        <!-- Reputation -->
+        <div v-if="userReputation" class="space-y-4 p-6">
+          <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Reputation</p>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-slate-400">Trust Tier</span>
+            <span
+              class="rounded-full px-2.5 py-0.5 text-xs font-medium"
+              :class="tierClass(userReputation.tier)"
+            >
+              {{ userReputation.tierLabel || userReputation.tier || '-' }}
+            </span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-slate-400">Trust Score</span>
+            <span class="text-sm text-white/80 tabular-nums">{{ userReputation.trustScore ?? userReputation.score ?? 0 }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-slate-400">Accepted Contributions</span>
+            <span class="text-sm text-white/80 tabular-nums">{{ userReputation.acceptedContributions ?? 0 }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-slate-400">Upload Slots</span>
+            <span class="text-sm text-white/80 tabular-nums">{{ userReputation.uploadSlots ?? 0 }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-slate-400">Auto-publish</span>
+            <span
+              class="rounded-full px-2.5 py-0.5 text-xs font-medium"
+              :class="userReputation.autoPublish ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-slate-500'"
+            >
+              {{ userReputation.autoPublish ? 'Yes' : 'No' }}
+            </span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-slate-400">Can Review</span>
+            <span
+              class="rounded-full px-2.5 py-0.5 text-xs font-medium"
+              :class="userReputation.canReview ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-slate-500'"
+            >
+              {{ userReputation.canReview ? 'Yes' : 'No' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Permissions -->
+        <div v-if="userPermissions" class="space-y-4 p-6">
+          <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Access</p>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-slate-400">Role</span>
+            <span class="rounded-full bg-white/8 px-2.5 py-0.5 text-xs font-medium text-white/80">
+              {{ userPermissions.roleSlug || userPermissions.role || '-' }}
+            </span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-slate-400">Permissions</span>
+            <span class="text-sm text-white/80 tabular-nums">
+              {{ userPermissions.permissions?.length ?? 0 }} granted
+            </span>
           </div>
         </div>
       </div>
@@ -495,9 +556,12 @@
 </template>
 
 <script setup lang="ts">
+import { Check, CheckCircle, Eye, Loader2, Search, User } from 'lucide-vue-next'
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useAuthApi } from '@/services/api/auth'
+import { useReputationApi } from '@/services/api/reputation'
+import { usePermissionsApi } from '@/services/api/permissions'
 import { AdminSectionHeader, AdminEmptyState } from '@/components/admin'
 import AdminDeleteConfirm from '@/components/admin/AdminDeleteConfirm.vue'
 
@@ -516,6 +580,8 @@ interface AdminUser {
 }
 
 const { adminListUsers, adminGetUser, adminUpdateUser, adminDeleteUser } = useAuthApi()
+const { getUserReputation } = useReputationApi()
+const { getUserAccess } = usePermissionsApi()
 const toast = useToast()
 
 const users = ref<AdminUser[]>([])
@@ -596,6 +662,19 @@ function roleClass(role: string): string {
   return 'bg-white/5 text-slate-400'
 }
 
+function tierClass(tier?: string): string {
+  if (!tier) return 'bg-white/5 text-slate-400'
+  const map: Record<string, string> = {
+    newcomer: 'bg-white/5 text-slate-400',
+    contributor: 'bg-blue-500/10 text-blue-400',
+    trusted: 'bg-emerald-500/10 text-emerald-400',
+    verified: 'bg-purple-500/10 text-purple-400',
+    elite: 'bg-yellow-500/10 text-yellow-400',
+    legend: 'bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-amber-400',
+  }
+  return map[tier.toLowerCase()] || 'bg-white/5 text-slate-400'
+}
+
 function toggleSort(col: string) {
   if (sortBy.value === col) {
     sortOrder.value = sortOrder.value === 'desc' ? 'asc' : 'desc'
@@ -623,7 +702,7 @@ function onSearchInput() {
 async function fetchUsers() {
   loading.value = true
   try {
-    const params: Record<string, any> = {
+    const params: Record<string, unknown> = {
       page: page.value,
       page_size: pageSize.value,
       sort_by: sortBy.value,
@@ -653,14 +732,24 @@ const editEmailVerified = ref(false)
 
 const showDetailDialog = ref(false)
 const userDetail = ref<AdminUser | null>(null)
+const userReputation = ref<Record<string, any> | null>(null)
+const userPermissions = ref<Record<string, any> | null>(null)
 const detailLoading = ref(false)
 
 function viewUser(u: AdminUser) {
   showDetailDialog.value = true
   detailLoading.value = true
-  adminGetUser(u.id)
-    .then((res: Record<string, unknown>) => {
-      if (res) userDetail.value = res as unknown as AdminUser
+  userReputation.value = null
+  userPermissions.value = null
+  Promise.all([
+    adminGetUser(u.id),
+    getUserReputation(u.id).catch(() => null),
+    getUserAccess(u.id).catch(() => null),
+  ])
+    .then(([user, rep, access]) => {
+      if (user) userDetail.value = user as unknown as AdminUser
+      userReputation.value = rep as Record<string, any> | null
+      userPermissions.value = access as Record<string, any> | null
     })
     .catch(() => {
       toast.add({ severity: 'error', summary: 'Failed to load user details', life: 3000 })

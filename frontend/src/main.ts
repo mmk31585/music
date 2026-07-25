@@ -6,6 +6,7 @@ import App from './App.vue'
 import router from './router'
 
 import LayoutEmpty from './components/layouts/LayoutEmpty.vue'
+import LayoutMusicApp from './layouts/LayoutMusicApp.vue'
 
 import PrimeVue from 'primevue/config'
 import { AppPreset } from '@/utils'
@@ -15,6 +16,7 @@ import { Buffer } from 'buffer'
 
 import i18n from '@/locales'
 import { getPrimeLocale, useLocaleStore } from '@/stores/locale'
+import { useTheme } from '@/composables/useTheme'
 
 // Preload local fonts (paths resolved by Vite for content-hashed filenames)
 const fontUrls = [
@@ -44,7 +46,8 @@ app.use(pinia)
 app.use(i18n)
 
 void (async () => {
-  // ── Initialize locale from saved preference ────────────────────────
+  // ── Initialize theme and locale from saved preference ──────────────
+  useTheme()
   const localeStore = useLocaleStore()
   const initialLocale = localeStore.locale
 
@@ -73,11 +76,12 @@ void (async () => {
     const { locale } = e.detail
     const primevue = app.config.globalProperties.$primevue
     if (primevue) {
-      primevue.config.locale = getPrimeLocale(locale)
-      primevue.config.rtl = locale === 'fa'
+      ;(primevue.config as Record<string, unknown>).locale = getPrimeLocale(locale)
+      ;(primevue.config as Record<string, unknown>).rtl = locale === 'fa'
     }
   }) as EventListener)
 
   app.component('layout-empty', LayoutEmpty)
+  app.component('layout-app', LayoutMusicApp)
   app.mount('#app')
 })()

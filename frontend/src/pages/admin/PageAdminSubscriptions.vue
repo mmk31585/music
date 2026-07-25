@@ -7,7 +7,7 @@
   >
     <template #actions>
       <Button
-        label="Refresh"
+        label="RefreshCw"
         icon="pi pi-refresh"
         severity="info"
         text
@@ -75,7 +75,7 @@
       </p>
       <p class="mt-1 text-sm text-slate-300">
         Expires:
-        {{ (currentSub as any).expires_at ? new Date((currentSub as any).expires_at).toLocaleDateString() : 'N/A' }}
+        {{ currentSub?.currentPeriodEnd ? new Date(currentSub.currentPeriodEnd).toLocaleDateString() : 'N/A' }}
       </p>
     </div>
   </div>
@@ -97,7 +97,7 @@
         <div>
           <p class="text-sm font-medium text-white">{{ formatCents(p.amountCents) }} {{ p.currency }}</p>
           <p class="text-xs text-slate-500">
-            {{ p.status }} · {{ new Date((p as any).created_at).toLocaleDateString() }}
+            {{ p.status }} · {{ new Date(p.createdAt).toLocaleDateString() }}
           </p>
         </div>
         <span class="rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-400">{{

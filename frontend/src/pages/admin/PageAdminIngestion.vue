@@ -1,4 +1,4 @@
-<!-- TODO MEDIUM: This page uses old PrimeVue surface-* / primary-* theme classes instead of the app's admin dark theme (slate-*, white/*, emerald-*). Inconsistent styling. -->
+<!-- TODO LOW: Contains enrichment detail panel with heavy logic. Consider extracting to a DraftEnrichmentPanel.vue component. -->
 <template>
   <div class="mx-auto w-full max-w-6xl px-4 py-6 md:px-6 lg:px-8">
     <AdminSectionHeader
@@ -13,22 +13,22 @@
         <div
           class="relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 transition-all"
           :class="isDragOver
-            ? 'border-primary bg-primary/10 scale-[1.02]'
-            : 'border-surface-300 dark:border-surface-600 hover:border-primary/50 hover:bg-surface-50/50 dark:hover:bg-surface-800/50'"
+            ? 'border-emerald-500/50 bg-emerald-500/10 scale-[1.02]'
+            : 'border-white/10 hover:border-emerald-500/30 hover:bg-white/3'"
           @dragover.prevent="isDragOver = true"
           @dragleave.prevent="isDragOver = false"
           @drop.prevent="handleDrop"
           @click="triggerFileInput"
         >
           <div v-if="!uploading" class="flex flex-col items-center gap-3">
-            <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-100 dark:bg-surface-800">
-              <i aria-hidden="true" class="pi pi-cloud-upload text-3xl text-surface-400"></i>
+            <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/6">
+              <CloudUpload aria-hidden="true" class="text-3xl text-slate-400"></CloudUpload>
             </div>
             <div class="text-center">
-              <p class="text-sm font-medium text-surface-700 dark:text-surface-300">
+              <p class="text-sm font-medium text-white/60">
                 Drag and drop an audio file here
               </p>
-              <p class="mt-1 text-xs text-surface-500">
+              <p class="mt-1 text-xs text-slate-500">
                 or click to browse &mdash; MP3, FLAC, OGG, M4A, AAC (max 200MB)
               </p>
             </div>
@@ -36,14 +36,14 @@
           </div>
 
           <div v-else class="flex flex-col items-center gap-3">
-            <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-              <i aria-hidden="true" class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+            <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10">
+              <Loader2 aria-hidden="true" class="text-3xl text-emerald-400 animate-spin"></Loader2>
             </div>
             <div class="text-center">
-              <p class="text-sm font-medium text-surface-700 dark:text-surface-300">
+              <p class="text-sm font-medium text-white/60">
                 Uploading &amp; extracting metadata&hellip;
               </p>
-              <p class="mt-1 text-xs text-surface-500">{{ uploadProgress }}</p>
+              <p class="mt-1 text-xs text-slate-500">{{ uploadProgress }}</p>
             </div>
             <Button
               label="Cancel"
@@ -76,16 +76,16 @@
 
     <!-- Enrichment Progress -->
     <Transition name="fade">
-      <Card v-if="enrichingPoll" class="mb-8">
+      <Card v-if="enrichPollActive" class="mb-8">
         <template #content>
           <div class="flex items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-              <i aria-hidden="true" class="pi pi-spin pi-spinner text-info"></i>
+              <Loader2 aria-hidden="true" class="text-info animate-spin"></Loader2>
               <div>
-                <p class="text-sm font-medium text-surface-700 dark:text-surface-300">
+                <p class="text-sm font-medium text-white/60">
                   Enriching metadata
                 </p>
-                <p class="text-xs text-surface-400 mt-0.5">
+                <p class="text-xs text-slate-400 mt-0.5">
                   Querying MusicBrainz, Last.fm, and Spotify&hellip;
                 </p>
               </div>
@@ -96,7 +96,7 @@
                 class="h-1.5 w-32 sm:w-48"
                 :show-value="false"
               />
-              <span class="text-xs text-surface-400 w-14 text-right tabular-nums">
+              <span class="text-xs text-slate-400 w-14 text-right tabular-nums">
                 {{ enrichAttempt }}/{{ enrichMaxAttempts }}
               </span>
             </div>
@@ -112,7 +112,7 @@
           <template #title>
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100">
+                <h3 class="text-lg font-semibold text-white">
                   Extraction Results
                 </h3>
                 <Badge :value="uploadResult.status" :severity="statusSeverity(uploadResult.status)" />
@@ -130,23 +130,24 @@
 
           <template #content>
             <!-- Enrichment Suggestions -->
-            <div v-if="showSuggestions" class="mb-6 rounded-lg border border-primary/20 bg-primary/5 p-5">
-              <h4 class="mb-4 flex items-center gap-2 text-sm font-semibold text-primary-700 dark:text-primary-300">
-                <i aria-hidden="true" class="pi pi-magic"></i>Enrichment Suggestions
+            <div v-if="showSuggestions" class="mb-6 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-5">
+              <h4 class="mb-4 flex items-center gap-2 text-sm font-semibold text-emerald-400">
+                <Wand2 aria-hidden="true" class=""></Wand2>Enrichment Suggestions
               </h4>
 
               <div v-if="uploadResult.coverArtUrl || spotifyAlbumCover" class="mb-4 flex flex-wrap gap-4">
                 <div v-if="uploadResult.coverArtUrl">
-                  <p class="mb-1.5 text-xs font-medium text-surface-500">Embedded</p>
+                  <p class="mb-1.5 text-xs font-medium text-slate-500">Embedded</p>
                   <img
                     :src="uploadResult.coverArtUrl"
                     alt="Embedded Cover"
-                    class="h-24 w-24 rounded-lg object-cover shadow-xs ring-1 ring-surface-200"
+                    class="h-24 w-24 rounded-lg object-cover shadow-xs ring-1 ring-white/8"
                     loading="lazy"
                   />
                 </div>
                 <div v-if="spotifyAlbumCover">
-                  <p class="mb-1.5 text-xs font-medium text-surface-500">Spotify Art</p>
+                  <p class="mb-1.5 text-xs font-medium text-slate-500">Spotify Art</p>
+
                   <img
                     :src="spotifyAlbumCover"
                     alt="Spotify Album Art"
@@ -155,7 +156,7 @@
                   />
                 </div>
                 <div v-if="spotifyArtistImage">
-                  <p class="mb-1.5 text-xs font-medium text-surface-500">Artist Image</p>
+                  <p class="mb-1.5 text-xs font-medium text-slate-500">Artist Image</p>
                   <img
                     :src="spotifyArtistImage"
                     alt="Artist Image"
@@ -169,10 +170,10 @@
                 <div
                   v-for="suggestion in suggestions"
                   :key="suggestion.field"
-                  class="flex items-center gap-2 rounded-lg bg-surface-50/80 px-3 py-2 dark:bg-surface-800/50"
+                  class="flex items-center gap-2 rounded-lg bg-white/4 px-3 py-2"
                 >
-                  <span class="w-24 shrink-0 text-xs font-medium text-surface-500">{{ suggestion.field }}</span>
-                  <span class="truncate text-xs font-semibold text-surface-900 dark:text-surface-100">
+                  <span class="w-24 shrink-0 text-xs font-medium text-slate-500">{{ suggestion.field }}</span>
+                  <span class="truncate text-xs font-semibold text-white">
                     {{ suggestion.value }}
                   </span>
                   <div class="ml-auto flex shrink-0 gap-1">
@@ -182,9 +183,9 @@
                 </div>
               </div>
 
-              <div v-if="musicBrainzInfo || lastFmInfo" class="mt-4 flex flex-wrap gap-x-6 gap-y-1 border-t border-primary/10 pt-4 text-xs text-surface-500">
-                <span v-if="musicBrainzInfo"><i aria-hidden="true" class="pi pi-book mr-1"></i>{{ musicBrainzInfo }}</span>
-                <span v-if="lastFmInfo"><i aria-hidden="true" class="pi pi-star mr-1"></i>{{ lastFmInfo }}</span>
+              <div v-if="musicBrainzInfo || lastFmInfo" class="mt-4 flex flex-wrap gap-x-6 gap-y-1 border-t border-emerald-500/10 pt-4 text-xs text-slate-500">
+                <span v-if="musicBrainzInfo"><Book aria-hidden="true" class="mr-1"></Book>{{ musicBrainzInfo }}</span>
+                <span v-if="lastFmInfo"><Star aria-hidden="true" class="mr-1"></Star>{{ lastFmInfo }}</span>
               </div>
             </div>
 
@@ -192,23 +193,23 @@
             <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               <div v-for="(group, gIdx) in metadataGroups" :key="gIdx" class="space-y-2.5">
                 <div v-for="field in group" :key="field.label" class="flex items-center gap-2">
-                  <span class="w-20 shrink-0 text-xs font-medium text-surface-500">{{ field.label }}</span>
+                  <span class="w-20 shrink-0 text-xs font-medium text-slate-500">{{ field.label }}</span>
                   <span
                     v-if="field.value"
                     class="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400"
                   >
-                    <i aria-hidden="true" class="pi pi-check-circle text-[10px]"></i>{{ field.value }}
+                    <CheckCircle class="text-[10px]" aria-hidden="true"></CheckCircle>{{ field.value }}
                   </span>
                   <span v-else class="flex items-center gap-1 text-xs text-orange-500">
-                    <i aria-hidden="true" class="pi pi-exclamation-circle text-[10px]"></i>Not found
+                    <AlertCircle aria-hidden="true" class="text-[10px]"></AlertCircle>Not found
                   </span>
                 </div>
               </div>
             </div>
 
-            <div v-if="lyricsSnippet" class="mt-5 border-t border-surface-200 pt-5 dark:border-surface-700">
-              <h4 class="mb-2 text-sm font-medium text-surface-700 dark:text-surface-300">Lyrics Snippet</h4>
-              <pre class="max-h-32 overflow-y-auto whitespace-pre-wrap rounded-lg bg-surface-100 p-3 text-xs leading-relaxed text-surface-600 break-words dark:bg-surface-700 dark:text-surface-400">{{ lyricsSnippet }}</pre>
+            <div v-if="lyricsSnippet" class="mt-5 border-t border-white/8 pt-5">
+              <h4 class="mb-2 text-sm font-medium text-white/60">Lyrics Snippet</h4>
+              <pre class="max-h-32 overflow-y-auto whitespace-pre-wrap rounded-lg bg-white/5 p-3 text-xs leading-relaxed text-slate-400 break-words">{{ lyricsSnippet }}</pre>
             </div>
           </template>
         </Card>
@@ -218,9 +219,9 @@
     <!-- Drafts List -->
     <div class="mt-8">
       <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-100">
+        <h3 class="text-lg font-semibold text-white">
           Drafts
-          <span v-if="totalItems > 0" class="ml-1.5 text-sm font-normal text-surface-400">({{ totalItems }})</span>
+          <span v-if="totalItems > 0" class="ml-1.5 text-sm font-normal text-slate-400">({{ totalItems }})</span>
         </h3>
         <div class="flex items-center gap-3">
           <Button
@@ -231,7 +232,7 @@
             severity="info"
             outlined
             @click="goBulkReview"
-          />
+          /> />
           <SelectButton
             v-model="statusFilter"
             :options="statusOptions"
@@ -252,7 +253,7 @@
           class="mb-4"
         >
           <div class="flex items-center gap-2">
-            <i aria-hidden="true" class="pi pi-info-circle"></i>
+            <Info aria-hidden="true" class=""></Info>
             <span>
               You have <strong>{{ draftsInReview }}</strong> draft{{ draftsInReview > 1 ? 's' : '' }} pending review.
               <a class="cursor-pointer underline" @click="goBulkReview">Review all pending</a>
@@ -290,10 +291,8 @@
             <Column field="originalFilename" header="Filename" sortable>
               <template #body="{ data }">
                 <div class="flex items-center gap-2">
-                  <i
-                    :class="data.hasCoverArt ? 'pi pi-check-circle text-emerald-500' : 'pi pi-circle-thin text-orange-400'"
-                    class="text-sm"
-                  ></i>
+                  <Circle aria-hidden="true" :class="data.hasCoverArt ? 'pi text-emerald-500' : 'pi text-orange-400'"
+                    class="text-sm"></Circle>
                   <span class="truncate max-w-48">{{ data.originalFilename }}</span>
                 </div>
               </template>
@@ -301,17 +300,17 @@
             <Column field="title" header="Title" sortable>
               <template #body="{ data }">
                 <span v-if="data.title" class="text-emerald-600 dark:text-emerald-400">
-                  <i aria-hidden="true" class="pi pi-check-circle mr-1 text-xs"></i>{{ data.title }}
+                  <CheckCircle aria-hidden="true" class="mr-1 text-xs"></CheckCircle>{{ data.title }}
                 </span>
                 <span v-else class="text-orange-500">
-                  <i aria-hidden="true" class="pi pi-exclamation-circle mr-1 text-xs"></i>Not found
+                  <AlertCircle aria-hidden="true" class="mr-1 text-xs"></AlertCircle>Not found
                 </span>
               </template>
             </Column>
             <Column field="artist" header="Artist">
               <template #body="{ data }">
                 <span v-if="data.artist" class="text-emerald-600 dark:text-emerald-400">
-                  <i aria-hidden="true" class="pi pi-check-circle mr-1 text-xs"></i>
+                  <CheckCircle aria-hidden="true" class="mr-1 text-xs"></CheckCircle>
                   {{ data.artist }}
                   <span
                     v-if="hasFeatArtists(data.artist)"
@@ -319,7 +318,7 @@
                   >feat.</span>
                 </span>
                 <span v-else class="text-orange-500">
-                  <i aria-hidden="true" class="pi pi-exclamation-circle mr-1 text-xs"></i>Not found
+                  <AlertCircle aria-hidden="true" class="mr-1 text-xs"></AlertCircle>Not found
                 </span>
               </template>
             </Column>
@@ -384,11 +383,11 @@
     >
       <div class="flex items-start gap-4">
         <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/15">
-          <i aria-hidden="true" class="pi pi-exclamation-triangle text-xl text-red-400"></i>
+          <AlertTriangle aria-hidden="true" class="text-xl text-red-400"></AlertTriangle>
         </div>
         <div>
           <p class="text-sm text-white">Are you sure you want to delete this draft?</p>
-          <p class="mt-1 text-xs text-surface-400">This action cannot be undone. The audio file and all associated metadata will be permanently removed.</p>
+          <p class="mt-1 text-xs text-slate-400">This action cannot be undone. The audio file and all associated metadata will be permanently removed.</p>
         </div>
       </div>
       <template #footer>
@@ -400,11 +399,13 @@
 </template>
 
 <script setup lang="ts">
+import { AlertCircle, AlertTriangle, Book, CheckCircle, Circle, CloudUpload, Info, Loader2, Star, Wand2 } from 'lucide-vue-next'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import AdminSectionHeader from '@/components/admin/AdminSectionHeader.vue'
 import { useIngestionApi } from '@/services/api/ingestion/routes'
+import { useEnrichmentPolling } from '@/composables/admin'
 import type { UploadResponse, DraftListItem, EnrichmentResult } from '@/services/api/ingestion/types'
 import { formatDuration } from '@/utils/format'
 
@@ -421,9 +422,8 @@ const uploadError = ref<string | null>(null)
 const uploadResult = ref<UploadResponse | null>(null)
 
 const enrichingPoll = ref(false)
-const enrichAttempt = ref(0)
 const enrichMaxAttempts = 30
-let enrichPollTimer: ReturnType<typeof setInterval> | null = null
+const { start: startPolling, stop: stopPolling, polling: enrichPollActive, attempts: enrichAttempt } = useEnrichmentPolling()
 
 const enrichmentResult = ref<EnrichmentResult | null>(null)
 
@@ -647,41 +647,23 @@ async function triggerEnrich(draftId: string) {
 }
 
 function enrichPollingStart(draftId: string) {
-  enrichingPoll.value = true
-  enrichAttempt.value = 0
-
-  enrichPollTimer =   // TODO MEDIUM: Heavy polling (2s interval x 30 = 60s). Use WebSocket or SSE instead.
-  setInterval(async () => {
-    enrichAttempt.value++
-
-    try {
-      const detail = await ingestionApi.getDraftDetail(draftId)
-      if (detail && detail.status !== 'enriching') {
-        enrichPollingStop()
-        if (detail.enrichedMetadata?.enrichment_attempted) {
-          enrichmentResult.value = detail.enrichedMetadata
-        }
-        uploadResult.value = { ...uploadResult.value!, status: detail.status }
-        await loadDrafts()
-        return
+  startPolling(draftId, {
+    maxAttempts: enrichMaxAttempts,
+    onComplete: (detail) => {
+      if (detail.enrichedMetadata?.enrichment_attempted) {
+        enrichmentResult.value = detail.enrichedMetadata
       }
-    } catch (err) {
-      console.error('Polling error:', err)
-    }
-
-    if (enrichAttempt.value >= enrichMaxAttempts) {
-      enrichPollingStop()
-    }
-  }, 2000)
+      uploadResult.value = { ...uploadResult.value!, status: detail.status }
+      loadDrafts()
+    },
+    onTimeout: () => {
+      uploadError.value = 'Enrichment timed out after 60s.'
+    },
+  })
 }
 
 function enrichPollingStop() {
-  if (enrichPollTimer) {
-    clearInterval(enrichPollTimer)
-    enrichPollTimer = null
-  }
-  enrichingPoll.value = false
-  enrichAttempt.value = 0
+  stopPolling()
 }
 
 async function loadDrafts() {

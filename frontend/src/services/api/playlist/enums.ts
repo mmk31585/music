@@ -12,6 +12,6 @@ export enum PlaylistApiRoutes {
   REMOVE_TRACK = '/playlists/:playlistId/tracks/:trackId',
   REORDER_TRACKS = '/playlists/:playlistId/tracks/reorder',
   SET_COLLABORATIVE = '/playlists/:playlistId/collaborative',
-  // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
+   
   LIST_COLLABORATORS = '/playlists/:playlistId/collaborators',
 }

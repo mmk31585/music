@@ -17,9 +17,9 @@ import (
 // Bootstrap creates the App with all core dependencies (config, logger, DB, Redis,
 // validator, event bus) but does NOT create the Gin engine or register routes.
 //
-// Route registration and HTTP server creation are handled by main.go via
-// SetupRouter() and app.NewHTTPServer(), ensuring routes are registered exactly
-// once and middleware choices are explicit at the call site.
+// Route registration and HTTP server creation are handled by main.go, ensuring
+// routes are registered exactly once and middleware choices are explicit at the
+// call site.
 func Bootstrap(ctx context.Context) (*App, error) {
 	cfg, err := config.Load()
 	if err != nil {

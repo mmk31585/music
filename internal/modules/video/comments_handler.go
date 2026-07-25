@@ -19,7 +19,7 @@ func (h *Handler) ListComments(c *gin.Context) {
 	videoIDStr := c.Param("id")
 	videoID, err := uuid.Parse(videoIDStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid video id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid video id", err))
 		return
 	}
 
@@ -34,7 +34,7 @@ func (h *Handler) ListComments(c *gin.Context) {
 
 	comments, total, err := h.commentRepo.ListByVideo(c.Request.Context(), videoID, limit, offset)
 	if err != nil {
-		response.Error(c, apperrors.Internal("failed to load comments", err))
+		response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to load comments", err))
 		return
 	}
 
@@ -67,30 +67,30 @@ func (h *Handler) CreateComment(c *gin.Context) {
 	videoIDStr := c.Param("id")
 	videoID, err := uuid.Parse(videoIDStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid video id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid video id", err))
 		return
 	}
 
 	userIDStr := auth.UserIDFromContext(c)
 	if userIDStr == "" {
-		response.Error(c, apperrors.Unauthorized("authentication required", nil))
+		response.Error(c, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil))
 		return
 	}
 	uid, err := uuid.Parse(userIDStr)
 	if err != nil {
-		response.Error(c, apperrors.Unauthorized("invalid user id", nil))
+		response.Error(c, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid user id", nil))
 		return
 	}
 
 	var req CreateCommentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, apperrors.BadRequest("invalid request", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid request", err))
 		return
 	}
 
 	cm, err := h.commentRepo.Create(c.Request.Context(), videoID, uid, req.Content)
 	if err != nil {
-		response.Error(c, apperrors.Internal("failed to create comment", err))
+		response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to create comment", err))
 		return
 	}
 
@@ -110,7 +110,7 @@ func (h *Handler) AdminListVideoComments(c *gin.Context) {
 	videoIDStr := c.Param("id")
 	videoID, err := uuid.Parse(videoIDStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid video id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid video id", err))
 		return
 	}
 
@@ -125,7 +125,7 @@ func (h *Handler) AdminListVideoComments(c *gin.Context) {
 
 	items, total, err := h.commentRepo.AdminListByVideo(c.Request.Context(), videoID, limit, offset)
 	if err != nil {
-		response.Error(c, apperrors.Internal("failed to load comments", err))
+		response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to load comments", err))
 		return
 	}
 
@@ -143,23 +143,23 @@ func (h *Handler) AdminUpdateComment(c *gin.Context) {
 	idStr := c.Param("id")
 	commentID, err := uuid.Parse(idStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid comment id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid comment id", err))
 		return
 	}
 
 	var req AdminUpdateCommentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, apperrors.BadRequest("invalid request", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid request", err))
 		return
 	}
 
 	comment, err := h.commentRepo.UpdateComment(c.Request.Context(), commentID, req.Content)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			response.Error(c, apperrors.NotFound("comment not found", nil))
+			response.Error(c, apperrors.New(http.StatusNotFound, apperrors.CodeNotFound, "comment not found", nil))
 			return
 		}
-		response.Error(c, apperrors.Internal("failed to update comment", err))
+		response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to update comment", err))
 		return
 	}
 
@@ -177,12 +177,12 @@ func (h *Handler) AdminDeleteComment(c *gin.Context) {
 	idStr := c.Param("id")
 	commentID, err := uuid.Parse(idStr)
 	if err != nil {
-		response.Error(c, apperrors.BadRequest("invalid comment id", err))
+		response.Error(c, apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid comment id", err))
 		return
 	}
 
 	if err := h.commentRepo.DeleteComment(c.Request.Context(), commentID); err != nil {
-		response.Error(c, apperrors.Internal("failed to delete comment", err))
+		response.Error(c, apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to delete comment", err))
 		return
 	}
 

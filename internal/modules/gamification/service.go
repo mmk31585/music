@@ -98,12 +98,12 @@ func (s *Service) GetActiveChallenges(ctx context.Context, userID string) ([]Dai
 	return challenges, userChallenges, nil
 }
 
-func (s *Service) GetLeaderboard(ctx context.Context, lbType string, limit int) (*LeaderboardResponse, error) {
+func (s *Service) GetLeaderboard(ctx context.Context, lbType string, limit int, userID string) (*LeaderboardResponse, error) {
 	if limit < 1 || limit > 100 {
 		limit = 20
 	}
 
-	entries, err := s.repo.GetLeaderboard(ctx, lbType, limit)
+	entries, err := s.repo.GetLeaderboard(ctx, lbType, limit, userID)
 	if err != nil {
 		return nil, err
 	}

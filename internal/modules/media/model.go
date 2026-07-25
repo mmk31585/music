@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type Media struct {
+type MediaAsset struct {
 	ID uuid.UUID `db:"id" json:"id"`
 
 	MediaType       string  `db:"media_type" json:"mediaType"`
@@ -26,6 +26,7 @@ type Media struct {
 	OriginalFilename *string `db:"original_filename" json:"originalFilename,omitempty"`
 	Metadata         string  `db:"metadata" json:"metadata"`
 
+	TrackID   *uuid.UUID `db:"track_id" json:"trackId,omitempty"`
 	CreatedBy *uuid.UUID `db:"created_by" json:"createdBy,omitempty"`
 	CreatedAt time.Time  `db:"created_at" json:"createdAt"`
 	UpdatedAt *time.Time `db:"updated_at" json:"updatedAt,omitempty"`

@@ -86,25 +86,38 @@ type CreateRequest struct {
 	GenreIDs []uuid.UUID `json:"genre_ids"`
 }
 
+// UpdateRequest for updating a track.
+// Nullable fields use double-pointer types (**T) to distinguish three states:
+//   - ptr == nil        → field not in JSON → skip (keep current value)
+//   - *ptr == nil       → field is explicit JSON null → set to SQL NULL
+//   - *ptr != nil        → field has a value → set to *ptr
+//
+// ClearedFields provides an additional explicit mechanism: list column names
+// that should be set to NULL in the database. This is useful when the caller
+// cannot send the field at all (e.g. PATCH semantics) but still wants to clear it.
+//
+// Non-nullable fields use single-pointer (*T) for optional updates (nil = skip, non-nil = set).
 type UpdateRequest struct {
 	Artists []TrackArtistRequest `json:"artists"`
 
-	AlbumID         *uuid.UUID `json:"album_id"`
-	Title           *string    `json:"title"`
-	DurationSeconds *int       `json:"duration_seconds"`
-	TrackNumber     *int       `json:"track_number"`
-	Explicit        *bool      `json:"explicit"`
+	// ClearedFields lists nullable column names to set to NULL.
+	// Must be processed BEFORE the dynamic builder so that a non-null value
+	// in the same request overrides the NULL.
+	ClearedFields []string `json:"cleared_fields"`
 
-	AudioURL *string `json:"audio_url"`
-	CoverURL *string `json:"cover_url"`
+	AlbumID         **uuid.UUID `json:"album_id"`
+	Title           *string     `json:"title"`
+	DurationSeconds *int        `json:"duration_seconds"`
+	TrackNumber     **int       `json:"track_number"`
+	Explicit        *bool       `json:"explicit"`
 
-	AudioMediaID *uuid.UUID `json:"audio_media_id"`
-	CoverMediaID *uuid.UUID `json:"cover_media_id"`
+	AudioURL     **string   `json:"audio_url"`
+	CoverURL     **string   `json:"cover_url"`
+	AudioMediaID **uuid.UUID `json:"audio_media_id"`
+	CoverMediaID **uuid.UUID `json:"cover_media_id"`
 
 	IsPublic *bool       `json:"is_public"`
 	GenreIDs []uuid.UUID `json:"genre_ids"`
-
-	ClearFields []string `json:"clear_fields,omitempty"`
 }
 
 // TrackArtistRequest is used in CreateRequest and UpdateRequest.

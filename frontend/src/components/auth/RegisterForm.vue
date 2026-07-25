@@ -4,7 +4,7 @@
   >
     <div class="mb-8 text-center">
       <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-aurora-purple/10">
-        <i class="pi pi-sparkles text-2xl text-aurora-purple" />
+        <Sparkles aria-hidden="true" class="text-2xl text-aurora-purple" />
       </div>
       <h1 class="font-display text-2xl font-bold text-white tracking-tight">Join Muse</h1>
       <p class="mt-1.5 text-sm text-white/40">Create your account and start discovering</p>
@@ -17,7 +17,7 @@
           Display name
         </label>
         <span class="relative block">
-          <i class="pi pi-user absolute top-1/2 left-3 -translate-y-1/2 text-sm text-white/30" />
+          <User aria-hidden="true" class="absolute top-1/2 left-3 -translate-y-1/2 text-sm text-white/30" />
           <InputText
             id="register-display-name"
             v-model.trim="form.displayName"
@@ -47,7 +47,7 @@
           Username
         </label>
         <span class="relative block">
-          <i class="pi pi-at absolute top-1/2 left-3 -translate-y-1/2 text-sm text-white/30" />
+          <AtSign aria-hidden="true" class="absolute top-1/2 left-3 -translate-y-1/2 text-sm text-white/30" />
           <InputText
             id="register-username"
             v-model.trim="form.username"
@@ -77,7 +77,7 @@
           Email
         </label>
         <span class="relative block">
-          <i class="pi pi-envelope absolute top-1/2 left-3 -translate-y-1/2 text-sm text-white/30" />
+          <Mail aria-hidden="true" class="absolute top-1/2 left-3 -translate-y-1/2 text-sm text-white/30" />
           <InputText
             id="register-email"
             v-model.trim="form.email"
@@ -108,7 +108,7 @@
           Password
         </label>
         <span class="relative block">
-          <i class="pi pi-lock absolute top-1/2 left-3 -translate-y-1/2 text-sm text-white/30 z-10" />
+          <Lock aria-hidden="true" class="absolute top-1/2 left-3 -translate-y-1/2 text-sm text-white/30 z-10" />
           <Password
             id="register-password"
             v-model="form.password"
@@ -142,7 +142,7 @@
           class="flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/8 px-4 py-3 text-sm text-red-300"
           role="alert"
         >
-          <i class="pi pi-exclamation-circle mt-0.5 shrink-0 text-red-400" />
+          <AlertCircle aria-hidden="true" class="mt-0.5 shrink-0 text-red-400" />
           <span>{{ apiError }}</span>
         </div>
       </Transition>
@@ -170,6 +170,7 @@
 </template>
 
 <script setup lang="ts">
+import { AlertCircle, AtSign, Lock, Mail, Sparkles, User } from 'lucide-vue-next'
 import { useRegisterForm } from '@/composables/auth/useRegisterForm'
 
 const { form, errors, apiError, loading, onSubmit } = useRegisterForm()
@@ -192,9 +193,9 @@ const { form, errors, apiError, loading, onSubmit } = useRegisterForm()
 }
 
 :deep(.auth-input) {
-  background: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  color: white !important;
+  background: var(--surface-hover) !important;
+  border: 1px solid var(--border-default) !important;
+  color: var(--text-primary) !important;
   border-radius: 12px !important;
   padding-top: 10px !important;
   padding-bottom: 10px !important;
@@ -203,32 +204,32 @@ const { form, errors, apiError, loading, onSubmit } = useRegisterForm()
 }
 
 :deep(.auth-input:focus) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: #1db954 !important;
-  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.15) !important;
+  background: var(--surface-active) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-muted) !important;
   outline: none !important;
 }
 
 :deep(.auth-input::placeholder) {
-  color: rgba(255, 255, 255, 0.4) !important;
+  color: var(--text-muted) !important;
 }
 
 :deep(.auth-btn) {
   border-radius: 12px !important;
   padding: 10px 0 !important;
   font-size: 0.9rem !important;
-  box-shadow: 0 4px 16px rgba(29, 185, 84, 0.25) !important;
+  box-shadow: 0 4px 16px var(--accent-glow) !important;
 }
 
 :deep(.auth-btn:hover) {
-  box-shadow: 0 6px 24px rgba(29, 185, 84, 0.35) !important;
+  box-shadow: 0 6px 24px var(--accent-glow) !important;
   transform: translateY(-1px);
 }
 
 :deep(.p-password .p-inputtext) {
-  background: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  color: white !important;
+  background: var(--surface-hover) !important;
+  border: 1px solid var(--border-default) !important;
+  color: var(--text-primary) !important;
   border-radius: 12px !important;
   padding-top: 10px !important;
   padding-bottom: 10px !important;
@@ -236,23 +237,23 @@ const { form, errors, apiError, loading, onSubmit } = useRegisterForm()
 }
 
 :deep(.p-password .p-inputtext:focus) {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: #1db954 !important;
-  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.15) !important;
+  background: var(--surface-active) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-muted) !important;
 }
 
 :deep(.p-password .p-input-icon) {
-  color: rgba(255, 255, 255, 0.3) !important;
+  color: var(--text-tertiary) !important;
 }
 
 :deep(.p-password-panel) {
-  background: #1a1a1a !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: var(--surface-elevated) !important;
+  border: 1px solid var(--border-default) !important;
   border-radius: 12px !important;
 }
 
 :deep(.p-password .p-password-toggle-icon) {
-  color: rgba(255, 255, 255, 0.3) !important;
+  color: var(--text-tertiary) !important;
   right: 12px !important;
 }
 

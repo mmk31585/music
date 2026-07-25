@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex items-start gap-4 rounded-xl px-4 py-3 transition hover:bg-white/4"
+    class="flex items-start gap-4 rounded-xl px-4 py-3 transition hover:bg-surface-hover"
     :class="{ 'opacity-50': notification.isRead }"
   >
     <div
@@ -10,20 +10,20 @@
       <i aria-hidden="true" :class="iconClass" class="text-sm" />
     </div>
 
-    <div class="min-w-0 flex-1 cursor-pointer" role="button" tabindex="0" @click="handleClick" @keydown.enter="handleClick" @keydown.space.prevent="handleClick">
-      <p class="text-sm leading-relaxed text-white">
+    <button type="button" class="min-w-0 flex-1 text-left" @click="handleClick">
+      <p class="text-sm leading-relaxed text-primary">
         <span class="font-semibold">{{ notification.title }}</span>
-        <span class="ml-1 text-slate-300">{{ notification.body }}</span>
+        <span class="ml-1 text-secondary">{{ notification.body }}</span>
       </p>
-      <p class="mt-0.5 text-xs text-slate-500">
+      <p class="mt-0.5 text-xs text-tertiary">
         {{ timeAgo }}
       </p>
-    </div>
+    </button>
 
     <button
       v-if="!notification.isRead"
       type="button"
-      class="shrink-0 self-center rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white transition hover:bg-white/15"
+      class="shrink-0 self-center rounded-full bg-surface-active px-3 py-1 text-xs font-bold text-primary transition hover:bg-surface-active"
       @click.stop="handleMarkRead"
     >
       Mark read

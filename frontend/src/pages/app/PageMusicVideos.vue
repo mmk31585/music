@@ -43,7 +43,7 @@
     <!-- ── Error state ── -->
     <div v-else-if="error && !videos.length && !filteredVideos.length" class="flex flex-col items-center gap-4 py-24 text-center">
       <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/4">
-        <i aria-hidden="true" class="pi pi-exclamation-circle text-3xl text-slate-500" />
+        <AlertCircle aria-hidden="true" class="text-3xl text-slate-500"  />
       </div>
       <h2 class="text-xl font-bold text-white">Failed to load videos</h2>
       <p class="text-sm text-slate-400">Something went wrong. Please try again.</p>
@@ -75,7 +75,7 @@
           class="inline-flex items-center gap-2 rounded-full bg-white/10 px-8 py-3 text-sm font-bold text-white transition hover:bg-white/20 disabled:opacity-50"
           @click="loadMore"
         >
-          <i v-if="loadingMore" class="pi pi-spin pi-spinner" />
+          <Loader2 aria-hidden="true" v-if="loadingMore" class="animate-spin" />
           {{ loadingMore ? 'Loading...' : 'Load More' }}
         </button>
       </div>
@@ -89,7 +89,7 @@
     <!-- ── Empty state (no data OR filter yields nothing) ── -->
     <div v-else class="flex flex-col items-center gap-4 py-24 text-center">
       <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/4">
-        <i aria-hidden="true" class="pi pi-video text-3xl text-slate-500" />
+        <Video aria-hidden="true" class="text-3xl text-slate-500"  />
       </div>
       <h2 class="text-xl font-bold text-white">{{ videos.length ? 'No videos match this filter' : 'No videos yet' }}</h2>
       <p class="text-sm text-slate-400">{{ videos.length ? 'Try selecting a different filter or browse all.' : 'No music videos have been added yet.' }}</p>
@@ -98,6 +98,7 @@
 </template>
 
 <script setup lang="ts">
+import { AlertCircle, Loader2, Video } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useVideoApi } from '@/services/api/video'

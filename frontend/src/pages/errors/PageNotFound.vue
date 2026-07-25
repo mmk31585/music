@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import { AlertCircle, ArrowLeft, Home } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
+const { t } = useI18n()
 </script>
 
 <template>
-  <section class="relative z-10 min-h-screen bg-[#050505] py-30">
+  <section class="relative z-10 min-h-screen bg-surface-dark py-30">
     <!-- Aurora background -->
     <div class="aurora-bg pointer-events-none fixed inset-0" aria-hidden="true">
       <div class="aurora-spot-1 -top-40 -start-40 bg-spotify/10" />
@@ -16,20 +19,20 @@ const router = useRouter()
     <div class="relative z-10 mx-auto w-full max-w-100 px-4 text-center">
       <div class="mb-6 flex justify-center">
         <div class="flex h-24 w-24 items-center justify-center rounded-full bg-white/4 ring-1 ring-white/6">
-          <i aria-hidden="true" class="pi pi-exclamation-circle text-4xl text-slate-500" />
+          <AlertCircle aria-hidden="true" class="text-4xl text-slate-500"  />
         </div>
       </div>
 
       <h2 class="mb-2 text-[80px] font-black leading-none text-white md:text-[100px]">
-        404
+        {{ $t('error.page_not_found_title') }}
       </h2>
 
       <h4 class="mb-3 text-[22px] font-bold text-white">
-        Page not found
+        {{ $t('error.not_found') }}
       </h4>
 
       <p class="mb-8 text-sm text-slate-400">
-        The page you're looking for doesn't exist or has been moved.
+        {{ $t('error.page_not_found_desc') }}
       </p>
 
       <div class="flex items-center justify-center gap-3">
@@ -37,16 +40,16 @@ const router = useRouter()
           to="/"
           class="inline-flex items-center gap-2 rounded-full bg-spotify px-8 py-3 text-sm font-bold text-black transition hover:bg-spotify-hover hover:scale-105"
         >
-          <i aria-hidden="true" class="pi pi-home" />
-          Go Home
+          <Home aria-hidden="true" class=""  />
+          {{ $t('error.go_home') }}
         </router-link>
 
         <button
           class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/4 px-8 py-3 text-sm font-bold text-white/80 transition hover:border-white/30 hover:bg-white/8 hover:text-white"
           @click="router.go(-1)"
         >
-          <i aria-hidden="true" class="pi pi-arrow-left" />
-          Go Back
+          <ArrowLeft aria-hidden="true" class=""  />
+          {{ $t('error.go_back') }}
         </button>
       </div>
     </div>

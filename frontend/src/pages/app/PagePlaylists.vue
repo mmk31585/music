@@ -1,7 +1,7 @@
 <template>
   <div class="mx-auto w-full max-w-7xl px-4 pt-6 pb-32 md:px-6 lg:px-8">
     <section
-      class="relative overflow-hidden rounded-2xl border border-white/6 bg-[#0C0C14] p-10 text-white"
+      class="relative overflow-hidden rounded-2xl border border-white/6 bg-surface-base p-10 text-white"
     >
       <div class="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-spotify/10 blur-3xl" />
       <div class="relative">
@@ -21,7 +21,7 @@
           class="rounded-full bg-spotify px-6 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-spotify-hover"
           @click="showCreate = true"
         >
-          <i aria-hidden="true" class="pi pi-plus mr-2" />
+          <Plus aria-hidden="true" class="mr-2"  />
           Create Playlist
         </button>
       </div>
@@ -37,7 +37,7 @@
         <div
           class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/10 text-2xl text-white"
         >
-          <i aria-hidden="true" class="pi pi-list" />
+          <List aria-hidden="true" class=""  />
         </div>
         <h2 class="mt-5 text-xl font-black text-white">No playlists yet</h2>
         <p class="mt-2 text-sm text-slate-400">Start by creating your first playlist.</p>
@@ -46,7 +46,7 @@
           class="mt-5 rounded-full bg-spotify px-6 py-3 text-sm font-bold text-black transition hover:bg-spotify-hover"
           @click="showCreate = true"
         >
-          <i aria-hidden="true" class="pi pi-plus mr-2" />
+          <Plus aria-hidden="true" class="mr-2"  />
           Create Playlist
         </button>
       </div>
@@ -67,11 +67,11 @@
               class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
             />
             <div v-else class="flex h-full items-center justify-center">
-              <i aria-hidden="true" class="pi pi-list text-3xl text-slate-500" />
+              <List aria-hidden="true" class="text-3xl text-slate-500"  />
             </div>
             <div class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100">
               <div class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify text-black shadow-xl">
-                <i aria-hidden="true" class="pi pi-play-fill text-lg" />
+                <Play aria-hidden="true" class="text-lg"  />
               </div>
             </div>
           </div>
@@ -128,6 +128,7 @@
 </template>
 
 <script setup lang="ts">
+import { List, Play, Plus } from 'lucide-vue-next'
 import { onMounted, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useRouter } from 'vue-router'

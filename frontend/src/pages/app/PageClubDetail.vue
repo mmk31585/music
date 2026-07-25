@@ -99,7 +99,7 @@
               class="flex flex-col items-center gap-3 py-12 text-center"
             >
               <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/4">
-                <i aria-hidden="true" class="pi pi-music text-xl text-slate-500" />
+                <Music aria-hidden="true" class="text-xl text-slate-500"  />
               </div>
               <p class="text-sm text-white/40">هنوز آهنگی به پلی‌لیست اضافه نشده.</p>
             </div>
@@ -148,7 +148,7 @@
               </button>
             </div>
             <div v-if="discussionsLoading" class="flex items-center justify-center py-8">
-              <span class="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-[#1db954]" />
+              <span class="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-accent" />
             </div>
             <div
               v-else-if="discussionsError"
@@ -251,6 +251,7 @@
 </template>
 
 <script setup lang="ts">
+import { Music } from 'lucide-vue-next'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { SkeletonLoader } from '@/components/common'
@@ -295,6 +296,8 @@ const mappedTracks = computed(() => playlistTracks.value.map(t => ({
   duration_seconds: t.duration_seconds ?? 0,
   audio_url: t.audio_url ?? null,
   cover_url: t.cover_url ?? null,
+  audio_media_id: null,
+  cover_media_id: null,
   artist_id: null,
   album_id: null,
   genre_id: null,
@@ -304,6 +307,9 @@ const mappedTracks = computed(() => playlistTracks.value.map(t => ({
   play_count: 0,
   track_number: null,
   explicit: false,
+  is_public: true,
+  created_at: null,
+  updated_at: null,
 })))
 
 const coverBg = computed(() => {

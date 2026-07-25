@@ -7,22 +7,22 @@
         @click.self="close"
       >
         <div
-          class="mx-4 w-full max-w-xl overflow-hidden rounded-2xl bg-linear-to-b from-surface-overlay to-surface-raised shadow-2xl ring-1 ring-white/10"
+          class="mx-4 w-full max-w-xl overflow-hidden rounded-2xl bg-linear-to-b from-surface-overlay to-surface-raised shadow-2xl ring-1 ring-border-default"
         >
-          <div class="flex items-center justify-between border-b border-white/10 px-4 py-3">
-            <h2 class="text-sm font-bold text-white">{{ title }}</h2>
+          <div class="flex items-center justify-between border-b border-border-default px-4 py-3">
+            <h2 class="text-sm font-bold text-primary">{{ title }}</h2>
             <button
               type="button"
-              class="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-xs text-slate-400 transition hover:bg-white/20"
+              class="flex h-7 w-7 items-center justify-center rounded-full bg-surface-active text-xs text-secondary transition hover:bg-surface-hover"
               @click="close"
               aria-label="Close"
             >
-              <i aria-hidden="true" class="pi pi-times" />
+              <X aria-hidden="true" class=""  />
             </button>
           </div>
 
-          <div class="relative flex items-center border-b border-white/10 px-4">
-            <i aria-hidden="true" class="pi pi-search text-sm text-slate-400" />
+          <div class="relative flex items-center border-b border-border-default px-4">
+            <Search aria-hidden="true" class="text-sm text-secondary"  />
             <input
               ref="inputRef"
               v-model="query"
@@ -30,19 +30,19 @@
               placeholder="Search tracks..."
               aria-label="Search tracks"
               autofocus
-              class="flex-1 bg-transparent px-3 py-3 text-sm text-white outline-hidden placeholder:text-slate-500 focus-visible:ring-2 focus-visible:ring-[var(--color-primary-400)]/50"
+              class="flex-1 bg-transparent px-3 py-3 text-sm text-primary outline-hidden placeholder:text-tertiary focus-visible:ring-2 focus-visible:ring-[var(--color-primary-400)]/50"
               @input="onInput"
               @keydown="onKeydown"
             />
-            <i aria-hidden="true" v-if="searching" class="pi pi-spin pi-spinner text-xs text-slate-400" />
+            <Loader2 aria-hidden="true" v-if="searching" class="text-xs text-secondary animate-spin"  />
           </div>
 
           <div class="max-h-72 overflow-y-auto p-2">
-            <div v-if="!query" class="flex items-center justify-center py-12 text-xs text-slate-500">
-              <i aria-hidden="true" class="pi pi-headphones mr-2" /> Type to search for tracks
+            <div v-if="!query" class="flex items-center justify-center py-12 text-xs text-tertiary">
+              <Headphones aria-hidden="true" class="mr-2"  /> Type to search for tracks
             </div>
 
-            <div v-else-if="searching" class="flex items-center justify-center py-12 text-xs text-slate-400">
+            <div v-else-if="searching" class="flex items-center justify-center py-12 text-xs text-secondary">
               <div class="flex flex-col items-center gap-2">
                 <div class="flex gap-1">
                   <div class="h-2 w-2 animate-bounce rounded-full bg-slate-500 [animation-delay:0ms]" />
@@ -53,8 +53,8 @@
               </div>
             </div>
 
-            <div v-else-if="!results.length" class="flex items-center justify-center py-12 text-xs text-slate-500">
-              <i aria-hidden="true" class="pi pi-info-circle mr-2" /> No tracks found for "{{ query }}"
+            <div v-else-if="!results.length" class="flex items-center justify-center py-12 text-xs text-tertiary">
+              <Info aria-hidden="true" class="mr-2"  /> No tracks found for "{{ query }}"
             </div>
 
             <div v-else class="space-y-1">
@@ -68,7 +68,7 @@
                 @click="selectTrack(track)"
                 @mouseenter="focusedIdx = i"
               >
-                <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
+                <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-surface-active">
                   <img
                     v-if="track.cover_url"
                     :src="track.cover_url"
@@ -77,17 +77,17 @@
                     class="h-full w-full object-cover"
                   />
                   <div v-else class="flex h-full items-center justify-center">
-                    <i aria-hidden="true" class="pi pi-headphones text-xs text-slate-500" />
+                    <Headphones aria-hidden="true" class="text-xs text-tertiary"  />
                   </div>
                   <div class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition group-hover:opacity-100">
-                    <i aria-hidden="true" class="pi pi-plus text-xs text-white" />
+                    <Plus aria-hidden="true" class="text-xs text-primary"  />
                   </div>
                 </div>
                 <div class="min-w-0 flex-1">
-                  <p class="truncate text-sm font-medium text-white">{{ track.title }}</p>
-                  <p class="truncate text-xs text-slate-400">{{ track.artist_name || 'Unknown' }}</p>
+                  <p class="truncate text-sm font-medium text-primary">{{ track.title }}</p>
+                  <p class="truncate text-xs text-secondary">{{ track.artist_name || 'Unknown' }}</p>
                 </div>
-                <span v-if="track.duration_seconds" class="shrink-0 text-xs text-slate-500 tabular-nums">
+                <span v-if="track.duration_seconds" class="shrink-0 text-xs text-tertiary tabular-nums">
                   {{ fmtDuration(track.duration_seconds) }}
                 </span>
               </div>
@@ -100,6 +100,7 @@
 </template>
 
 <script setup lang="ts">
+import { Headphones, Info, Loader2, Plus, Search, X } from 'lucide-vue-next'
 import { ref, watch, nextTick, onUnmounted } from 'vue'
 import { useSearchApi } from '@/services/api/catalog/search'
 import type { Track } from '@/services/api/catalog/tracks'
@@ -157,7 +158,7 @@ async function doSearch() {
   searching.value = true
   try {
     const res = await searchApi.searchCatalog({ query: term, type: 'tracks', limit: 10 }, { signal: abortController.signal } as Record<string, unknown>)
-    results.value = res.tracks ?? []
+    results.value = (res.tracks ?? []) as unknown as Track[]
   } catch (err) {
     if ((err as Record<string, unknown>)?.name === 'AbortError' || (err as Record<string, unknown>)?.code === 'ERR_CANCELED') return
     results.value = []

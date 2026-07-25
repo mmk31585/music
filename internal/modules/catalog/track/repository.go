@@ -444,12 +444,6 @@ func (r *Repository) Update(ctx context.Context, id uuid.UUID, req UpdateRequest
 		return nil, err
 	}
 
-	// Build the clearFields set for O(1) lookup
-	clearSet := make(map[string]bool, len(req.ClearFields))
-	for _, f := range req.ClearFields {
-		clearSet[f] = true
-	}
-
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -484,11 +478,24 @@ func (r *Repository) Update(ctx context.Context, id uuid.UUID, req UpdateRequest
 		return nil, common.ErrInternal
 	}
 
-	// Build dynamic SET clause to handle nullable field clearing
-	// Each nullable field gets a CASE: if in clearFields → NULL, else if provided → value, else → current
+	// --- Step 1: Process ClearedFields ---
+	// These columns are explicitly set to NULL. Run before the dynamic builder
+	// so that if the JSON also supplies a non-null value for the same field,
+	// the value clause (appended later) wins.
 	args := []any{id}
 	argIdx := 2
-	setClauses := []string{}
+	setClauses := make([]string, 0, 8+len(req.ClearedFields))
+	for _, field := range req.ClearedFields {
+		setClauses = append(setClauses, fmt.Sprintf("%s = NULL", field))
+	}
+
+	// --- Step 2: Dynamic SET clauses ---
+	// Nullable fields use double-pointer (**T):
+	//   ptr == nil  → field absent from JSON → skip
+	//   *ptr == nil → field is explicit JSON null → SET NULL
+	//   *ptr != nil  → field has value → SET *ptr
+	// Non-nullable fields use single-pointer (*T):
+	//   ptr == nil  → skip, ptr != nil → SET *ptr
 	setClauses = append(setClauses, fmt.Sprintf("title = $%d", argIdx), fmt.Sprintf("slug = $%d", argIdx+1))
 	if req.Title != nil {
 		args = append(args, *req.Title, slug)
@@ -497,36 +504,53 @@ func (r *Repository) Update(ctx context.Context, id uuid.UUID, req UpdateRequest
 	}
 	argIdx += 2
 
-	// Helper to build a nullable field SET clause (column allows NULL)
-	addNullableField := func(field, fieldName string, value interface{}) {
-		if clearSet[fieldName] {
-			setClauses = append(setClauses, fmt.Sprintf("%s = NULL", field))
-		} else if value != nil {
-			setClauses = append(setClauses, fmt.Sprintf("%s = $%d", field, argIdx))
-			args = append(args, value)
-			argIdx++
+	// addNullable is a helper that emits a SET clause for a column that allows NULL.
+	//   val == nil  → field absent → skip
+	//   val != nil  → SET to val (val is *T, where nil → SQL NULL, non-nil → value)
+	addNullable := func(field string, val interface{}) {
+		if val == nil {
+			return
 		}
-		// If value is nil and field not in clearSet, keep current value — no SET clause needed
+		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", field, argIdx))
+		args = append(args, val)
+		argIdx++
 	}
 
-	// Helper for non-nullable fields (bool, int) — can't SET NULL
-	addValueField := func(field string, value interface{}) {
-		if value != nil {
-			setClauses = append(setClauses, fmt.Sprintf("%s = $%d", field, argIdx))
-			args = append(args, value)
-			argIdx++
-		}
+	// Double-pointer fields: deref to *T before passing to addNullable.
+	// Effectively the same as checking `ptr != nil` and passing `*ptr` (the inner pointer).
+	if req.AlbumID != nil {
+		addNullable("album_id", *req.AlbumID)
 	}
-
-	addNullableField("album_id", "albumId", req.AlbumID)
-	addValueField("duration_seconds", req.DurationSeconds)
-	addNullableField("track_number", "trackNumber", req.TrackNumber)
-	addValueField("explicit", req.Explicit)
-	addNullableField("audio_url", "audioUrl", req.AudioURL)
-	addNullableField("cover_url", "coverUrl", req.CoverURL)
-	addNullableField("audio_media_id", "audioMediaId", req.AudioMediaID)
-	addNullableField("cover_media_id", "coverMediaId", req.CoverMediaID)
-	addValueField("is_public", req.IsPublic)
+	if req.DurationSeconds != nil {
+		args = append(args, *req.DurationSeconds)
+		setClauses = append(setClauses, fmt.Sprintf("duration_seconds = $%d", argIdx))
+		argIdx++
+	}
+	if req.TrackNumber != nil {
+		addNullable("track_number", *req.TrackNumber)
+	}
+	if req.Explicit != nil {
+		args = append(args, *req.Explicit)
+		setClauses = append(setClauses, fmt.Sprintf("explicit = $%d", argIdx))
+		argIdx++
+	}
+	if req.AudioURL != nil {
+		addNullable("audio_url", *req.AudioURL)
+	}
+	if req.CoverURL != nil {
+		addNullable("cover_url", *req.CoverURL)
+	}
+	if req.AudioMediaID != nil {
+		addNullable("audio_media_id", *req.AudioMediaID)
+	}
+	if req.CoverMediaID != nil {
+		addNullable("cover_media_id", *req.CoverMediaID)
+	}
+	if req.IsPublic != nil {
+		args = append(args, *req.IsPublic)
+		setClauses = append(setClauses, fmt.Sprintf("is_public = $%d", argIdx))
+		argIdx++
+	}
 
 	if len(setClauses) == 0 {
 		return nil, common.ErrInvalidInput

@@ -32,6 +32,9 @@ const (
 	EventUserRegistered         = "user.registered"
 	EventPlaybackSignalRecorded = "playback.signal_recorded"
 	EventTrackLiked             = "track.liked"
+	EventTrackUploaded          = "track.uploaded"
+	EventUploadPublished        = "upload.published"
+	EventContributionAccepted   = "contribution.accepted"
 )
 
 type TrackPlayedEvent struct {
@@ -116,4 +119,41 @@ type UserRegisteredEvent struct {
 
 func (e UserRegisteredEvent) EventName() string {
 	return EventUserRegistered
+}
+
+type TrackUploadedEvent struct {
+	BaseEvent
+
+	UserID  uuid.UUID `json:"user_id"`
+	DraftID string    `json:"draft_id"`
+	Title   string    `json:"title"`
+}
+
+func (e TrackUploadedEvent) EventName() string {
+	return EventTrackUploaded
+}
+
+type UploadPublishedEvent struct {
+	BaseEvent
+
+	UserID  uuid.UUID `json:"user_id"`
+	TrackID uuid.UUID `json:"track_id"`
+	DraftID string    `json:"draft_id"`
+	Title   string    `json:"title"`
+}
+
+func (e UploadPublishedEvent) EventName() string {
+	return EventUploadPublished
+}
+
+type ContributionAcceptedEvent struct {
+	BaseEvent
+
+	UserID           uuid.UUID `json:"user_id"`
+	ContributionID   int64     `json:"contribution_id"`
+	ContributionType string    `json:"contribution_type"`
+}
+
+func (e ContributionAcceptedEvent) EventName() string {
+	return EventContributionAccepted
 }

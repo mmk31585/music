@@ -45,7 +45,7 @@
               @error="($event.target as HTMLImageElement).style.display='none'"
             />
             <div v-else class="flex h-full w-full items-center justify-center">
-              <i aria-hidden="true" class="pi pi-user text-5xl text-slate-600" />
+              <User aria-hidden="true" class="text-5xl text-slate-600"  />
             </div>
           </div>
         </div>
@@ -53,7 +53,7 @@
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-3">
             <h1 class="text-2xl font-bold text-white lg:text-3xl">{{ artist.name }}</h1>
-            <i aria-hidden="true" v-if="artist.is_verified" class="pi pi-verified text-emerald-400" v-tooltip.top="'Verified'" />
+            <BadgeCheck aria-hidden="true" v-if="artist.is_verified" class="text-emerald-400" v-tooltip.top="'Verified'"  />
           </div>
 
           <div v-if="artist.monthly_listeners" class="mt-2 text-sm text-slate-400">
@@ -125,7 +125,7 @@
                 @error="($event.target as HTMLImageElement).style.display='none'"
               />
               <div v-else class="flex h-full w-full items-center justify-center">
-                <i aria-hidden="true" class="pi pi-image text-3xl text-slate-700" />
+                <Image aria-hidden="true" class="text-3xl text-slate-700"  />
               </div>
             </div>
             <p class="mt-2 truncate text-sm font-medium text-white">{{ album.title }}</p>
@@ -160,11 +160,11 @@
               :title="isTrackPlaying(track) ? 'Now playing' : 'Play track'"
               @click.stop="handlePlayTrack(track)"
             >
-              <i
+              <Loader2
                 v-if="loadingTrackId === String(track.id)"
                 aria-hidden="true"
-                class="pi pi-spin pi-spinner text-sm"
-              />
+                class="text-sm animate-spin"
+               />
               <i
                 v-else
                 aria-hidden="true"
@@ -180,11 +180,11 @@
               <p class="truncate text-sm font-medium text-white">{{ track.title }}</p>
               <p v-if="track.duration_seconds" class="text-xs text-slate-500">{{ formatDuration(track.duration_seconds) }}</p>
             </div>
-            <i
+            <ChevronRight
               aria-hidden="true"
-              class="pi pi-chevron-right cursor-pointer text-xs text-slate-600"
+              class="cursor-pointer text-xs text-slate-600"
               @click="router.push({ name: 'admin.track.detail', params: { id: track.id } })"
-            />
+             />
           </div>
         </div>
       </div>
@@ -208,6 +208,7 @@
 </template>
 
 <script setup lang="ts">
+import { BadgeCheck, ChevronRight, Image, Loader2, User } from 'lucide-vue-next'
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'primevue/usetoast'

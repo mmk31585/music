@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"net/http"
 	apperrors "music/internal/common/errors"
 	"go.uber.org/zap"
 )
@@ -49,15 +50,15 @@ func (s *Service) Login(ctx context.Context, req LoginRequest, userAgent, ipAddr
 
 	user, err := s.repo.FindUserByEmailOrUsername(ctx, value)
 	if err != nil {
-		return AuthResponse{}, apperrors.Unauthorized("invalid credentials", nil)
+		return AuthResponse{}, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid credentials", nil)
 	}
 
 	if !user.IsActive {
-		return AuthResponse{}, apperrors.Forbidden("user account is disabled", nil)
+		return AuthResponse{}, apperrors.New(http.StatusForbidden, apperrors.CodeForbidden, "user account is disabled", nil)
 	}
 
 	if !CheckPassword(req.Password, user.PasswordHash) {
-		return AuthResponse{}, apperrors.Unauthorized("invalid credentials", nil)
+		return AuthResponse{}, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid credentials", nil)
 	}
 
 	return s.createAuthResponse(ctx, user, userAgent, ipAddress)
@@ -75,7 +76,7 @@ func (s *Service) Refresh(ctx context.Context, req RefreshRequest, userAgent, ip
 	}
 
 	if session.UserID != claims.UserID {
-		return AuthResponse{}, apperrors.Unauthorized("invalid refresh token", nil)
+		return AuthResponse{}, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid refresh token", nil)
 	}
 
 	user, err := s.repo.FindUserByID(ctx, session.UserID)
@@ -84,7 +85,7 @@ func (s *Service) Refresh(ctx context.Context, req RefreshRequest, userAgent, ip
 	}
 
 	if !user.IsActive {
-		return AuthResponse{}, apperrors.Forbidden("user account is disabled", nil)
+		return AuthResponse{}, apperrors.New(http.StatusForbidden, apperrors.CodeForbidden, "user account is disabled", nil)
 	}
 
 	// Refresh token rotation:
@@ -98,7 +99,7 @@ func (s *Service) Refresh(ctx context.Context, req RefreshRequest, userAgent, ip
 		zap.L().Warn("refresh token reuse detected",
 			zap.String("user_id", session.UserID),
 			zap.String("session_id", session.ID))
-		return AuthResponse{}, apperrors.Unauthorized("refresh token has already been used", nil)
+		return AuthResponse{}, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "refresh token has already been used", nil)
 	}
 
 	return s.createAuthResponse(ctx, user, userAgent, ipAddress)
@@ -251,7 +252,7 @@ func (s *Service) ChangePassword(ctx context.Context, userID string, req ChangeP
 	}
 
 	if !CheckPassword(req.CurrentPassword, user.PasswordHash) {
-		return apperrors.Unauthorized("invalid credentials", nil)
+		return apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid credentials", nil)
 	}
 
 	hash, err := HashPassword(req.NewPassword)

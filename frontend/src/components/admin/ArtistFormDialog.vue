@@ -6,7 +6,7 @@
     :draggable="false"
     :style="{ width: '520px' }"
     :pt="{
-      root: { class: 'border-white/6! bg-[#141414]! rounded-2xl! shadow-2xl!' },
+      root: { class: 'border-white/6! bg-surface-raised! rounded-2xl! shadow-2xl!' },
       header: { class: 'bg-transparent! border-0! pb-2!' },
       content: { class: 'bg-transparent! px-6! pt-0! pb-2!' },
       footer: { class: 'bg-transparent! border-0!' },
@@ -16,7 +16,7 @@
     <template #header>
       <div class="flex items-center gap-3">
         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
-          <i aria-hidden="true" class="pi pi-user text-emerald-400" />
+          <User aria-hidden="true" class="text-emerald-400"  />
         </div>
         <div>
           <h3 class="text-base font-semibold text-white">
@@ -101,7 +101,7 @@
         class="flex h-32 items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/2"
       >
         <div class="text-center">
-          <i class="pi pi-image text-2xl text-slate-500"></i>
+          <Image aria-hidden="true" class="text-2xl text-slate-500"></Image>
           <p class="mt-1 text-xs text-slate-500">No image</p>
         </div>
       </div>
@@ -139,6 +139,7 @@
 </template>
 
 <script setup lang="ts">
+import { Image, User } from 'lucide-vue-next'
 import { reactive, computed, watch, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useMediaApi } from '@/services/api/media/routes'

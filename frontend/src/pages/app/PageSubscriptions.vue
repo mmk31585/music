@@ -79,7 +79,7 @@
               :key="feat"
               class="flex items-center gap-2 text-xs text-white/60"
             >
-              <i aria-hidden="true" class="pi pi-check text-[10px] text-spotify" /> {{ formatFeature(feat) }}
+              <Check aria-hidden="true" class="text-[10px] text-spotify"  /> {{ formatFeature(feat) }}
             </li>
           </ul>
 
@@ -144,7 +144,7 @@
         @click.self="showCheckout = false"
       >
         <div class="glass-strong mx-4 w-full max-w-md rounded-2xl p-8 text-center">
-          <i aria-hidden="true" class="pi pi-external-link text-4xl text-spotify" />
+          <ExternalLink aria-hidden="true" class="text-4xl text-spotify"  />
           <h3 class="mt-4 text-xl font-bold text-white">Redirecting to Payment</h3>
           <p class="mt-2 text-sm text-white/40">
             You'll be redirected to the payment gateway to complete your subscription.
@@ -171,6 +171,7 @@
 </template>
 
 <script setup lang="ts">
+import { Check, ExternalLink } from 'lucide-vue-next'
 import { ref, onMounted } from 'vue'
 import { SkeletonLoader } from '@/components/common'
 import { useSubscriptionApi } from '@/services/api/subscription'

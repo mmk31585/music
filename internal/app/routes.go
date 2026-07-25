@@ -3,14 +3,16 @@ package app
 import (
 	"context"
 	"music/internal/common/middleware"
-	ai "music/internal/modules/ai"
+	ai 	"music/internal/modules/ai"
 	"music/internal/modules/analytics"
+	"music/internal/modules/cacheadmin"
 	"music/internal/modules/auth"
 	"music/internal/modules/catalog"
 	"music/internal/modules/contribution"
 	"music/internal/modules/covers"
 	"music/internal/modules/creator"
 	"music/internal/modules/dashboard"
+	"music/internal/modules/features"
 	"music/internal/modules/follow"
 	"music/internal/modules/gamification"
 	"music/internal/modules/health"
@@ -22,7 +24,10 @@ import (
 	"music/internal/modules/media"
 	"music/internal/modules/moderation"
 	"music/internal/modules/notification"
+	"music/internal/modules/permissions"
 	"music/internal/modules/player"
+	"music/internal/modules/reputation"
+	"music/internal/modules/upload"
 	"music/internal/modules/playlist"
 	"music/internal/modules/queue"
 	"music/internal/modules/reactions"
@@ -52,8 +57,12 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	c := NewContainer(a)
 
 	health.RegisterRoutes(api, c.HealthHandler)
+	features.RegisterRoutes(api, c.FeaturesHandler)
 	dashboard.RegisterRoutes(api, c.DashboardHandler)
 	auth.RegisterRoutes(api, c.AuthHandler, c.AuthMW, c.RDB)
+	permissions.RegisterRoutes(api, c.PermissionHandler, c.TokenManager, c.PermissionService)
+	reputation.RegisterRoutes(api, c.ReputationHandler, c.TokenManager)
+	upload.RegisterRoutes(api, c.UploadHandler, c.TokenManager, c.PermissionService)
 
 	media.RegisterAdminRoutes(api, c.MediaHandler, c.AuthMW)
 
@@ -64,6 +73,7 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 		Album:  c.AlbumHandler,
 		Genre:  c.GenreHandler,
 		Track:  c.TrackHandler,
+		Stats:  c.StatsHandler,
 		Enrich: c.EnrichHandler,
 	}
 
@@ -83,6 +93,7 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	history.RegisterRoutes(api, c.HistoryHandler, c.AuthMW)
 
 	analytics.RegisterRoutes(api, c.AnalyticsHandler)
+	analytics.RegisterAdminRoutes(api, c.AnalyticsHandler, c.AuthMW)
 	notification.RegisterRoutes(api, c.NotificationHandler, c.AuthMW)
 	moderation.RegisterRoutes(api, c.ModerationHandler, c.AuthMW)
 	dashboard.RegisterAdminRoutes(api, c.DashboardHandler, c.AuthMW)
@@ -136,6 +147,8 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	creator.RegisterRoutes(api, c.CreatorHandler, c.AuthMW)
 	social.RegisterRoutes(api, c.SocialHandler, c.AuthMW)
 	ai.RegisterRoutes(api, c.AIHandler, c.AuthMW)
+
+	cacheadmin.RegisterAdminRoutes(api, c.CacheAdminHandler, c.AuthMW)
 
 	video.RegisterRoutes(api, c.VideoHandler, c.AuthMW)
 	video.RegisterInternalRoutes(api, c.VideoHandler, c.MLServiceHMACMW)

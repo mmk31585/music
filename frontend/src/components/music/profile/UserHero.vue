@@ -1,170 +1,146 @@
 <template>
-  <div class="relative overflow-hidden rounded-2xl">
-    <!-- Aurora gradient — driven by genreColor or green fallback -->
-    <div class="pointer-events-none absolute inset-0" aria-hidden="true">
-      <div
-        class="absolute inset-0 bg-linear-to-br"
-        :style="heroGradient"
-      />
-      <div
-        class="absolute -top-20 -right-20 h-80 w-80 rounded-full blur-3xl opacity-20"
-        :style="{ background: orbColor }"
-      />
-      <div
-        class="absolute -bottom-16 -left-16 h-60 w-60 rounded-full blur-3xl opacity-15"
-        :style="{ background: orbColor2 }"
-      />
-      <div class="absolute inset-0 bg-linear-to-t from-surface-base via-surface-base/20 to-transparent" />
-    </div>
+  <div class="relative h-80 w-full overflow-hidden">
+    <!-- Background aurora gradient -->
+    <div
+      class="pointer-events-none absolute inset-0"
+      aria-hidden="true"
+      :style="auroraStyle"
+    />
+    <!-- Noise texture overlay -->
+    <div
+      class="pointer-events-none absolute inset-0 opacity-[0.03] noise-overlay"
+      aria-hidden="true"
+    />
+    <!-- Bottom fade -->
+    <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-[var(--bg-base)] via-[var(--bg-base)]/60 to-transparent" aria-hidden="true" />
 
-    <div class="relative z-10 flex flex-col gap-6 px-6 pt-16 pb-8 md:flex-row md:items-end md:gap-10 md:pt-12 md:pb-10">
-      <!-- Avatar with floating ring -->
-      <div class="relative shrink-0 self-center md:self-end">
-        <div
-          v-if="musicStatus?.playing"
-          class="absolute -inset-2 motion-safe:animate-ping rounded-full border-2 border-spotify opacity-30"
-        />
-        <div
-          class="h-36 w-36 overflow-hidden rounded-full border-4 shadow-2xl md:h-44 md:w-44"
-          :class="musicStatus?.playing ? 'border-spotify' : 'border-white/10'"
-        >
-          <img
-            v-if="avatarUrl"
-            :src="avatarUrl"
-            :alt="displayName"
-            loading="lazy"
-            class="h-full w-full object-cover"
-            @error="onImgError"
-          />
+    <!-- Content -->
+    <div class="absolute inset-0 flex flex-col justify-end px-6 pb-6">
+      <div class="flex items-end gap-6">
+        <!-- Avatar block -->
+        <div class="relative shrink-0">
           <div
-            v-else
-            class="flex h-full w-full items-center justify-center bg-linear-to-br from-spotify/30 to-aurora-purple/30 text-4xl text-white/40"
+            class="relative h-[120px] w-[120px] overflow-hidden rounded-full ring-4"
+            :class="musicStatus?.playing ? 'ring-primary/60' : 'ring-border-default'"
           >
-            <i aria-hidden="true" class="pi pi-user" />
-          </div>
-        </div>
-        <!-- Creator badge -->
-        <div
-          v-if="isCreator"
-          class="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-spotify ring-2 ring-surface-base shadow-lg"
-          aria-label="Creator"
-        >
-          <i aria-hidden="true" class="pi pi-check text-[11px] text-black" />
-        </div>
-      </div>
-
-      <div class="flex flex-col items-center text-center md:items-start md:text-start">
-        <!-- Name + handle -->
-        <h1 class="text-3xl font-black text-white md:text-5xl">{{ displayName }}</h1>
-        <p v-if="handle" class="mt-1 text-sm text-white/40">@{{ handle }}</p>
-        <p v-if="bio" class="mt-2 max-w-md text-sm text-white/50 leading-relaxed">{{ bio }}</p>
-
-        <!-- Stats row -->
-        <div class="mt-4 flex flex-wrap items-center justify-center gap-5 text-sm md:justify-start">
-          <button
-            class="transition hover:text-white focus-visible:outline-2 focus-visible:outline-[#1db954]"
-            aria-label="View followers"
-            @click="$emit('showFollowers')"
-          >
-            <span class="font-bold text-white tabular-nums">{{ formatNumber(followerCount) }}</span>
-            <span class="text-white/40"> followers</span>
-          </button>
-          <button
-            class="transition hover:text-white focus-visible:outline-2 focus-visible:outline-[#1db954]"
-            aria-label="View following"
-            @click="$emit('showFollowing')"
-          >
-            <span class="font-bold text-white tabular-nums">{{ formatNumber(followingCount) }}</span>
-            <span class="text-white/40"> following</span>
-          </button>
-          <span class="text-white/30" aria-hidden="true">·</span>
-          <span class="text-white/40">
-            <span class="font-medium text-white/60">Joined</span>
-            {{ formatJoinDate }}
-          </span>
-        </div>
-
-        <!-- NOW PLAYING — prominent, animated -->
-        <div
-          v-if="musicStatus?.playing && currentTrackInfo"
-          class="mt-4 flex w-full max-w-md items-center gap-3 rounded-2xl bg-white/6 p-3 ring-1 ring-white/10 motion-safe:animate-fade-in-up"
-        >
-          <div class="h-12 w-12 shrink-0 overflow-hidden rounded-xl shadow-lg">
-            <img
-              v-if="currentTrackInfo.coverUrl"
-              :src="currentTrackInfo.coverUrl"
-              alt=""
-              class="h-full w-full object-cover"
+            <!-- Pulsing ring when playing -->
+            <div
+              v-if="musicStatus?.playing"
+              class="absolute -inset-2 rounded-full ring-2 ring-primary/60 motion-safe:animate-pulse-ring"
+              aria-hidden="true"
             />
-            <div v-else class="flex h-full w-full items-center justify-center bg-white/5">
-              <i aria-hidden="true" class="pi pi-music text-sm text-white/30" />
+            <img
+              v-if="avatarUrl"
+              :src="avatarUrl"
+              :alt="displayName"
+              class="h-full w-full object-cover"
+              loading="lazy"
+              @error="onImgError"
+            />
+            <div
+              v-else
+              class="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/30 to-accent/30"
+            >
+              <span class="text-hero font-black text-primary">{{ displayName.charAt(0).toUpperCase() }}</span>
             </div>
           </div>
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2">
-              <span class="flex gap-0.5" aria-hidden="true">
-                <span
-                  v-for="i in 4" :key="i"
-                  class="h-3 w-0.5 rounded-full bg-spotify motion-safe:animate-equalizer"
-                  :style="{ animationDelay: `${i * 100}ms` }"
-                />
-              </span>
-              <p class="truncate text-xs font-semibold text-white">{{ currentTrackInfo.title }}</p>
-            </div>
-            <p class="truncate text-[10px] text-white/40 ms-4">
-              {{ currentTrackInfo.artist }}
-            </p>
+          <!-- Creator badge -->
+          <div
+            v-if="isCreator"
+            class="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[10px] text-black ring-2 ring-[var(--bg-base)]"
+            aria-label="Creator"
+          >
+            &#x2B50;
           </div>
-          <button
-            v-if="!isOwnProfile"
-            aria-label="Listen along"
-            class="shrink-0 rounded-full bg-spotify px-4 py-1.5 text-[10px] font-bold text-black transition hover:bg-spotify-hover hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-white"
-            @click="$emit('listenAlong', currentTrackInfo.id)"
-          >
-            Listen
-          </button>
         </div>
 
-        <!-- Not playing -->
-        <div
-          v-else-if="musicStatus && !musicStatus.playing"
-          class="mt-4 text-xs text-white/30 flex items-center gap-2"
-        >
-          <i aria-hidden="true" class="pi pi-pause-circle text-sm" />
-          Not listening right now
-        </div>
+        <!-- Info block -->
+        <div class="flex flex-1 flex-col gap-3 min-w-0">
+          <!-- Name + handle -->
+          <div>
+            <h1 class="text-hero font-black text-primary leading-none">{{ displayName }}</h1>
+            <p v-if="handle" class="text-caption text-tertiary mt-1">@{{ handle }}</p>
+          </div>
 
-        <!-- Action buttons -->
-        <div class="mt-5 flex flex-wrap items-center gap-3">
-          <button
-            v-if="!isOwnProfile"
-            :class="[
-              'inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold transition',
-              'focus-visible:outline-2 focus-visible:outline-white active:scale-[0.97]',
-              isFollowing
-                ? 'border border-spotify/50 bg-spotify/10 text-spotify hover:bg-spotify/20'
-                : 'bg-spotify text-black hover:bg-spotify-hover hover:scale-105',
-            ]"
-            @click="$emit('toggleFollow')"
-          >
-            <i aria-hidden="true" :class="isFollowing ? 'pi pi-check' : 'pi pi-plus'" class="text-xs" />
-            {{ isFollowing ? 'Following' : 'Follow' }}
-          </button>
-          <button
-            aria-label="Share profile"
-            class="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/4 p-3 text-white/60 backdrop-blur-xs transition hover:bg-white/10 hover:text-white active:scale-95 focus-visible:outline-2 focus-visible:outline-[#1db954]"
-            @click="$emit('share')"
-          >
-            <i aria-hidden="true" class="pi pi-share-alt text-sm" />
-          </button>
-          <button
-            v-if="isOwnProfile"
-            class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/4 px-5 py-3 text-sm font-medium text-white/60 backdrop-blur-xs transition hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-[#1db954]"
-            @click="$emit('editProfile')"
-          >
-            <i aria-hidden="true" class="pi pi-pencil text-xs" />
-            Edit Profile
-          </button>
+          <!-- Bio (2-line clamp) -->
+          <p v-if="bio" class="text-body text-secondary line-clamp-2 max-w-lg">{{ bio }}</p>
+
+          <!-- Now Playing Badge -->
+          <NowPlayingBadge
+            :music-status="musicStatus"
+            :show-listen-along="!isOwnProfile"
+            @listen-along="$emit('listen-along', $event)"
+          />
+
+          <!-- Stats row -->
+          <div class="flex items-center gap-3 text-sm">
+            <button
+              class="inline-flex items-center gap-1"
+              @click="$emit('show-followers')"
+            >
+              <span class="font-bold text-primary tabular-nums">{{ formatNumber(followerCount) }}</span>
+              <span class="text-caption text-tertiary">دنبال‌کننده</span>
+            </button>
+            <span class="text-muted">&middot;</span>
+            <button
+              class="inline-flex items-center gap-1"
+              @click="$emit('show-following')"
+            >
+              <span class="font-bold text-primary tabular-nums">{{ formatNumber(followingCount) }}</span>
+              <span class="text-caption text-tertiary">دنبال‌شونده</span>
+            </button>
+            <span v-if="joinDate" class="text-muted">&middot;</span>
+            <span v-if="joinDate" class="text-caption text-muted">
+              از {{ formatJoinDate }}
+            </span>
+          </div>
+
+          <!-- Action buttons -->
+          <div class="flex items-center gap-2">
+            <!-- Own profile: Edit + Share -->
+            <template v-if="isOwnProfile">
+              <button
+                class="rounded-full bg-surface-active px-5 py-2 text-sm font-medium text-primary transition hover:bg-surface-active/80"
+                @click="$emit('edit-profile')"
+              >
+                ویرایش پروفایل
+              </button>
+              <button
+                class="rounded-full bg-surface-overlay border border-border-default px-4 py-2 text-sm text-secondary transition hover:text-primary"
+                @click="$emit('share')"
+              >
+                اشتراک‌گذاری
+              </button>
+            </template>
+
+            <!-- Other profile: Follow + Listen Along + Share -->
+            <template v-else>
+              <button
+                :class="[
+                  'rounded-full px-5 py-2 text-sm font-bold transition',
+                  isFollowing
+                    ? 'border border-border-strong text-secondary hover:border-danger/40 hover:text-danger'
+                    : 'bg-primary text-black hover:bg-primary-hover',
+                ]"
+                @click="$emit('toggle-follow')"
+              >
+                {{ isFollowing ? 'دنبال می‌کنی' : 'دنبال کردن' }}
+              </button>
+              <button
+                v-if="musicStatus?.playing && musicStatus?.currentTrack"
+                class="rounded-full bg-surface-active/80 border border-border-default px-4 py-2 text-sm text-secondary transition hover:bg-surface-active"
+                @click="$emit('listen-along', musicStatus.currentTrack!.id)"
+              >
+                گوش بده
+              </button>
+              <button
+                class="rounded-full bg-surface-overlay border border-border-default px-4 py-2 text-sm text-secondary transition hover:text-primary"
+                @click="$emit('share')"
+              >
+                اشتراک‌گذاری
+              </button>
+            </template>
+          </div>
         </div>
       </div>
     </div>
@@ -174,19 +150,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { onImgError } from '@/utils/helpers'
+import NowPlayingBadge from './NowPlayingBadge.vue'
 
 const props = defineProps<{
   displayName: string
-  handle?: string
-  bio?: string
+  handle?: string | null
+  bio?: string | null
   avatarUrl?: string | null
   followerCount: number
   followingCount: number
   isOwnProfile: boolean
   isFollowing: boolean
   isCreator?: boolean
-  joinDate?: string
-  genreColor?: string
+  joinDate?: string | null
   musicStatus?: {
     playing: boolean
     currentTrack?: {
@@ -195,34 +171,28 @@ const props = defineProps<{
       artist: string
       coverUrl: string
     } | null
+    current_track_id?: string | null
   } | null
 }>()
 
 defineEmits<{
-  toggleFollow: []
-  showFollowers: []
-  showFollowing: []
-  share: []
-  editProfile: []
-  listenAlong: [trackId: string]
+  'toggle-follow': []
+  'show-followers': []
+  'show-following': []
+  'share': []
+  'edit-profile': []
+  'listen-along': [trackId: string]
 }>()
 
-const currentTrackInfo = computed(() => {
-  return props.musicStatus?.currentTrack || null
-})
+const auroraStyle = computed(() => ({
+  background: `
+    radial-gradient(ellipse 80% 100% at 20% 0%, ${topGenreColor}22, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 80% 100%, #b646ff18, transparent 60%),
+    #0a0a0a
+  `,
+}))
 
-const heroGradient = computed(() => {
-  const c = props.genreColor || '#1db954'
-  return `from-${c}20 via-transparent to-transparent`
-})
-
-const orbColor = computed(() => {
-  return props.genreColor || '#1db954'
-})
-
-const orbColor2 = computed(() => {
-  return props.genreColor ? `${props.genreColor}88` : '#a855f788'
-})
+const topGenreColor = 'var(--accent)'
 
 const formatJoinDate = computed(() => {
   if (!props.joinDate) return ''
@@ -242,31 +212,32 @@ function formatNumber(n: number) {
 </script>
 
 <style scoped>
-@keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+.text-hero {
+  font-size: clamp(2rem, 5vw, 3.5rem);
 }
-.animate-fade-in-up {
-  animation: fade-in-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+.text-caption {
+  font-size: 0.75rem;
 }
-@keyframes equalizer {
-  0%, 100% { transform: scaleY(1); }
-  50% { transform: scaleY(2.5); }
+.text-body {
+  font-size: 0.875rem;
 }
-.animate-equalizer {
-  animation: equalizer 0.6s ease-in-out infinite;
-  transform-origin: bottom;
+
+@keyframes pulse-ring {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
-@keyframes ping {
-  75%, 100% { transform: scale(2); opacity: 0; }
+.motion-safe\:animate-pulse-ring {
+  animation: pulse-ring 2s ease-in-out infinite;
 }
-.animate-ping {
-  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+
+.noise-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-fade-in-up { animation: none; }
-  .animate-equalizer { animation: none; }
-  .animate-ping { animation: none; }
+  .motion-safe\:animate-pulse-ring {
+    animation: none;
+  }
 }
 </style>

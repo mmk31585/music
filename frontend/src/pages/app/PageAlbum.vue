@@ -5,7 +5,7 @@
       class="mb-6 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-white/50 transition hover:bg-white/6 hover:text-white"
       @click="goBack"
     >
-      <i aria-hidden="true" class="pi pi-arrow-left text-xs" />
+      <ArrowLeft aria-hidden="true" class="text-xs"  />
       Back
     </button>
 
@@ -32,7 +32,7 @@
           to="/"
           class="inline-flex items-center gap-2 rounded-full bg-spotify px-5 py-2.5 text-sm font-bold text-black transition hover:bg-spotify-hover"
         >
-          <i aria-hidden="true" class="pi pi-home" />
+          <Home aria-hidden="true" class=""  />
           Go home
         </RouterLink>
       </template>
@@ -71,7 +71,7 @@
                 @error="onImgError"
               />
               <div v-else class="flex h-full items-center justify-center">
-                <i aria-hidden="true" class="pi pi-compact-disc text-5xl text-slate-500" />
+                <Disc3 aria-hidden="true" class="text-5xl text-slate-500"  />
               </div>
             </div>
             <!-- Sleeve frame accent -->
@@ -94,7 +94,7 @@
               <template v-if="artist">
                 <RouterLink
                   :to="`/artist/${artist.id}`"
-                  class="font-bold text-white underline underline-offset-4 decoration-white/20 transition hover:text-spotify hover:decoration-[#1db954]"
+                  class="font-bold text-white underline underline-offset-4 decoration-white/20 transition hover:text-spotify hover:decoration-accent"
                 >
                   {{ artist.name }}
                 </RouterLink>
@@ -127,7 +127,7 @@
                 class="glow-green inline-flex items-center gap-2.5 rounded-full bg-spotify px-8 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-spotify-hover"
                 @click="playAll"
               >
-                <i aria-hidden="true" class="pi pi-play-fill" />
+                <Play aria-hidden="true" class=""  />
                 Play all
               </button>
 
@@ -136,7 +136,7 @@
                 class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/4 px-6 py-3 text-sm font-bold text-white/80 transition hover:border-white/30 hover:bg-white/8 hover:text-white"
                 @click="shuffleAll"
               >
-                <i aria-hidden="true" class="pi pi-sort-alt" />
+                <ArrowUpDown aria-hidden="true" class=""  />
                 Shuffle
               </button>
 
@@ -146,7 +146,7 @@
                 :class="{ 'border-spotify/30 text-spotify': isLiked }"
                 @click="toggleLike"
               >
-                <i aria-hidden="true" :class="isLiked ? 'pi pi-heart-fill' : 'pi pi-heart'" />
+                <component :is="isLiked ? Heart : Heart"<i aria-hidden="true"  /> />
                 {{ isLiked ? 'Saved' : 'Save' }}
               </button>
 
@@ -155,7 +155,7 @@
                 class="inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/3 px-5 py-3 text-sm font-bold text-white/60 transition hover:bg-white/8 hover:text-white"
                 @click="shareAlbum"
               >
-                <i aria-hidden="true" class="pi pi-share-alt" />
+                <Share2 aria-hidden="true" class=""  />
                 Share
               </button>
             </div>
@@ -185,6 +185,7 @@
               class="group flex cursor-pointer items-center gap-4 rounded-2xl px-4 py-3 transition-all duration-200 hover:bg-white/4"
               :class="isCurrentTrack(track) ? 'bg-white/6 ring-1 ring-inset ring-spotify/15' : ''"
               @click="playTrack(track, Number(index))"
+              @contextmenu.prevent="openContextMenu($event, track)"
               @keydown.enter="playTrack(track, Number(index))"
               @keydown.space.prevent="playTrack(track, Number(index))"
             >
@@ -206,7 +207,7 @@
                     <span class="eq-bar animation-delay-300 h-3" />
                   </span>
                 </template>
-                <i aria-hidden="true" v-else class="pi pi-play-fill text-xs text-white" />
+                <Play aria-hidden="true" v-else class="text-xs text-white"  />
               </span>
 
               <!-- Thumbnail -->
@@ -220,7 +221,7 @@
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full items-center justify-center">
-                  <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
+                  <Music aria-hidden="true" class="text-xs text-white/30"  />
                 </div>
               </div>
 
@@ -307,7 +308,7 @@
               class="text-xs font-medium text-white/30 transition hover:text-white"
             >
               View artist
-              <i aria-hidden="true" class="pi pi-chevron-left ml-0.5 text-[10px]" />
+              <ChevronLeft aria-hidden="true" class="ml-0.5 text-[10px]"  />
             </RouterLink>
           </div>
           <div class="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -329,7 +330,7 @@
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full items-center justify-center">
-                  <i aria-hidden="true" class="pi pi-compact-disc text-2xl text-slate-500" />
+                  <Disc3 aria-hidden="true" class="text-2xl text-slate-500"  />
                 </div>
                 <div
                   class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
@@ -337,7 +338,7 @@
                   <div
                     class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify/90 text-black shadow-xl backdrop-blur-xs transition-transform group-hover:scale-110"
                   >
-                    <i aria-hidden="true" class="pi pi-play-fill text-lg" />
+                    <Play aria-hidden="true" class="text-lg"  />
                   </div>
                 </div>
               </div>
@@ -348,12 +349,23 @@
         </section>
       </div>
     </template>
+    <ContextMenu
+      v-model:visible="menuVisible"
+      :sections="sections"
+      :header="header"
+      :accent-color="accentColor"
+      :position="{ x: menuX, y: menuY }"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { ArrowLeft, ArrowUpDown, ChevronLeft, Disc3, Heart, Home, Music, Play, Share2 } from 'lucide-vue-next'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import type { TrackContextItem } from '@/composables/useTrackContextMenu'
+import { useTrackContextMenu } from '@/composables/useTrackContextMenu'
+import ContextMenu from '@/components/common/ContextMenu.vue'
 import { SkeletonLoader, AppEmptyState } from '@/components/common'
 import { useAlbum } from '@/composables/catalog/useAlbum'
 import { usePlayer } from '@/composables/player'
@@ -385,16 +397,16 @@ const {
 const coverUrl = computed(() => album.value?.cover_url || null)
 const { palette } = useAlbumColors(coverUrl)
 
-const accentColor = computed(() => palette.value.vibrant || '#1db954')
+const accentColor = computed(() => palette.value.vibrant || 'var(--accent)')
 
 const ambientBg = computed(() => {
-  if (!coverUrl.value) return { background: '#06060A' }
+  if (!coverUrl.value) return { background: 'var(--bg-base)' }
   const c = accentColor.value
   return {
     background: `
       radial-gradient(ellipse 80% 50% at 50% 0%, ${c}1A 0%, transparent 70%),
       radial-gradient(ellipse 60% 40% at 100% 100%, ${c}0D 0%, transparent 50%),
-      #06060A
+      var(--bg-base)
     `,
   }
 })
@@ -467,6 +479,23 @@ function shareAlbum() {
     coverUrl: album.value.cover_url,
   })
 }
+
+// ── Context menu ──────────────────────────────────────────────────
+const menuVisible = ref(false)
+const menuX = ref(0)
+const menuY = ref(0)
+const contextTrack = ref<TrackContextItem | null>(null)
+
+function openContextMenu(e: MouseEvent, track: Record<string, unknown>) {
+  menuX.value = e.clientX
+  menuY.value = e.clientY
+  contextTrack.value = track as unknown as TrackContextItem
+  menuVisible.value = true
+}
+
+const { sections, header, accentColor: contextAccentColor } = useTrackContextMenu(
+  computed(() => contextTrack.value),
+)
 </script>
 
 <style scoped>

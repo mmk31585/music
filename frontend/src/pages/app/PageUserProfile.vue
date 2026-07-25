@@ -11,7 +11,7 @@
     <!-- Error -->
     <div v-else-if="error" class="flex flex-col items-center gap-4 py-24 text-center">
       <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/4">
-        <i aria-hidden="true" class="pi pi-exclamation-circle text-4xl text-slate-500" />
+        <AlertCircle aria-hidden="true" class="text-4xl text-slate-500"  />
       </div>
       <h2 class="text-xl font-bold text-white">Failed to load profile</h2>
       <p class="text-sm text-white/40">Something went wrong. Try again?</p>
@@ -96,7 +96,7 @@
                 :class="trackViewMode === 'mosaic' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/50'"
                 @click="trackViewMode = 'mosaic'"
               >
-                <i aria-hidden="true" class="pi pi-th-large text-xs" />
+                <LayoutGrid aria-hidden="true" class="text-xs"  />
               </button>
               <button
                 aria-label="List view"
@@ -104,7 +104,7 @@
                 :class="trackViewMode === 'list' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/50'"
                 @click="trackViewMode = 'list'"
               >
-                <i aria-hidden="true" class="pi pi-list text-xs" />
+                <List aria-hidden="true" class="text-xs"  />
               </button>
             </div>
           </div>
@@ -116,6 +116,7 @@
               class="group relative overflow-hidden rounded-2xl bg-white/4 ring-1 ring-white/6
                      transition-all duration-300 hover:ring-spotify/30 hover:bg-white/6
                      focus-within:ring-spotify"
+              @contextmenu.prevent="openContextMenu($event, track)"
             >
               <!-- Cover art -->
               <div class="aspect-square overflow-hidden">
@@ -127,7 +128,7 @@
                   class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />
                 <div v-else class="flex h-full items-center justify-center bg-linear-to-br from-white/4 to-white/2">
-                  <i aria-hidden="true" class="pi pi-music text-2xl text-white/20" />
+                  <Music aria-hidden="true" class="text-2xl text-white/20"  />
                 </div>
               </div>
 
@@ -138,7 +139,7 @@
                   class="flex h-10 w-10 items-center justify-center rounded-full bg-spotify text-black shadow-lg transition hover:scale-110 active:scale-95 focus-visible:outline-2 focus-visible:outline-white"
                   @click="playLikedTrack(track)"
                 >
-                  <i aria-hidden="true" class="pi pi-play-fill text-sm ms-0.5" />
+                  <Play aria-hidden="true" class="text-sm ms-0.5"  />
                 </button>
               </div>
 
@@ -155,7 +156,7 @@
                   :class="isTrackPublic(track) ? 'bg-black/30 text-white/60' : 'bg-amber-500/30 text-amber-300'"
                   :title="isTrackPublic(track) ? 'Public' : 'Private'"
                 >
-                  <i aria-hidden="true" :class="isTrackPublic(track) ? 'pi pi-globe' : 'pi pi-lock'" class="text-[9px]" />
+                  <component :is="isTrackPublic(track) ? Globe : Lock"<i aria-hidden="true"  class="text-[9px]" /> />
                 </span>
               </div>
             </div>
@@ -166,6 +167,7 @@
             <div
               v-for="(track, i) in likedTracks" :key="track.id || track.track_id || i"
               class="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-white/4 focus-within:bg-white/4"
+              @contextmenu.prevent="openContextMenu($event, track)"
             >
               <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
                 <img
@@ -176,7 +178,7 @@
                   loading="lazy"
                 />
                 <div v-else class="flex h-full items-center justify-center">
-                  <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
+                  <Music aria-hidden="true" class="text-xs text-white/30"  />
                 </div>
               </div>
               <div class="min-w-0 flex-1">
@@ -185,19 +187,19 @@
               </div>
               <button
                 v-if="isOwnProfile"
-                class="flex h-8 w-8 items-center justify-center rounded-lg text-sm opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition hover:bg-white/10 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-[#1db954]"
+                class="flex h-8 w-8 items-center justify-center rounded-lg text-sm opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition hover:bg-white/10 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-accent"
                 :class="isTrackPublic(track) ? 'text-white/40' : 'text-amber-400/70'"
                 :aria-label="isTrackPublic(track) ? 'Set private' : 'Set public'"
                 @click="toggleTrackVisibility(track, i)"
               >
-                <i aria-hidden="true" :class="isTrackPublic(track) ? 'pi pi-globe' : 'pi pi-lock'" class="text-xs" />
+                <component :is="isTrackPublic(track) ? Globe : Lock"<i aria-hidden="true"  class="text-xs" /> />
               </button>
               <button
                 aria-label="Play track"
-                class="flex h-8 w-8 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-[#1db954]"
+                class="flex h-8 w-8 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-accent"
                 @click="playLikedTrack(track)"
               >
-                <i aria-hidden="true" class="pi pi-play-fill text-xs ms-0.5" />
+                <Play aria-hidden="true" class="text-xs ms-0.5"  />
               </button>
             </div>
           </div>
@@ -205,7 +207,7 @@
           <!-- Empty state -->
           <div v-else class="flex flex-col items-center gap-4 py-20 text-center">
             <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/4">
-              <i aria-hidden="true" class="pi pi-heart text-3xl text-white/10" />
+              <Heart aria-hidden="true" class="text-3xl text-white/10"  />
             </div>
             <div>
               <p class="text-base font-semibold text-white/40">
@@ -218,7 +220,7 @@
             <RouterLink v-if="isOwnProfile" to="/"
               class="rounded-full bg-spotify px-6 py-2.5 text-sm font-bold text-black transition hover:bg-spotify-hover"
             >
-              <i aria-hidden="true" class="pi pi-compass text-xs me-1.5" />
+              <Compass aria-hidden="true" class="text-xs me-1.5"  />
               Discover music
             </RouterLink>
           </div>
@@ -231,7 +233,7 @@
           </div>
           <div v-else class="flex flex-col items-center gap-4 py-20 text-center">
             <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/4">
-              <i aria-hidden="true" class="pi pi-compact-disc text-3xl text-white/10" />
+              <Disc3 aria-hidden="true" class="text-3xl text-white/10"  />
             </div>
             <p class="text-base font-semibold text-white/40">No liked albums yet</p>
           </div>
@@ -249,7 +251,7 @@
           </div>
           <div v-else class="flex flex-col items-center gap-4 py-20 text-center">
             <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/4">
-              <i aria-hidden="true" class="pi pi-video text-3xl text-white/10" />
+              <Video aria-hidden="true" class="text-3xl text-white/10"  />
             </div>
             <div>
               <p class="text-base font-semibold text-white/40">
@@ -259,7 +261,7 @@
             <RouterLink v-if="isOwnProfile" to="/create-edit"
               class="rounded-full bg-spotify px-5 py-2 text-xs font-bold text-black transition hover:bg-spotify-hover"
             >
-              <i aria-hidden="true" class="pi pi-plus text-xs me-1" />
+              <Plus aria-hidden="true" class="text-xs me-1"  />
               Create edit
             </RouterLink>
           </div>
@@ -279,7 +281,7 @@
               v-for="f in followers"
               :key="f.follower_id"
               :to="`/profile/${f.follower_id}`"
-              class="flex flex-col items-center gap-3 rounded-2xl bg-white/4 p-5 ring-1 ring-white/6 transition-all duration-200 hover:bg-white/8 hover:ring-white/12 focus-visible:outline-2 focus-visible:outline-[#1db954]"
+              class="flex flex-col items-center gap-3 rounded-2xl bg-white/4 p-5 ring-1 ring-white/6 transition-all duration-200 hover:bg-white/8 hover:ring-white/12 focus-visible:outline-2 focus-visible:outline-accent"
             >
               <div class="h-16 w-16 overflow-hidden rounded-full ring-2 ring-white/10">
                 <img
@@ -301,7 +303,7 @@
           </div>
           <div v-else class="flex flex-col items-center gap-4 py-20 text-center">
             <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/4">
-              <i aria-hidden="true" class="pi pi-users text-3xl text-white/10" />
+              <Users aria-hidden="true" class="text-3xl text-white/10"  />
             </div>
             <p class="text-base font-semibold text-white/40">No followers yet</p>
             <p class="text-sm text-white/30">Share your profile to grow your community</p>
@@ -315,7 +317,7 @@
               v-for="f in following"
               :key="f.followed_id"
               :to="`/profile/${f.followed_id}`"
-              class="flex flex-col items-center gap-3 rounded-2xl bg-white/4 p-5 ring-1 ring-white/6 transition-all duration-200 hover:bg-white/8 hover:ring-white/12 focus-visible:outline-2 focus-visible:outline-[#1db954]"
+              class="flex flex-col items-center gap-3 rounded-2xl bg-white/4 p-5 ring-1 ring-white/6 transition-all duration-200 hover:bg-white/8 hover:ring-white/12 focus-visible:outline-2 focus-visible:outline-accent"
             >
               <div class="h-16 w-16 overflow-hidden rounded-full ring-2 ring-white/10">
                 <img
@@ -337,7 +339,7 @@
           </div>
           <div v-else class="flex flex-col items-center gap-4 py-20 text-center">
             <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/4">
-              <i aria-hidden="true" class="pi pi-user-plus text-3xl text-white/10" />
+              <UserPlus aria-hidden="true" class="text-3xl text-white/10"  />
             </div>
             <p class="text-base font-semibold text-white/40">Not following anyone yet</p>
           </div>
@@ -353,11 +355,22 @@
       @close="playerOpen = false"
     />
   </div>
+  <ContextMenu
+    v-model:visible="menuVisible"
+    :sections="sections"
+    :header="header"
+    :accent-color="accentColor"
+    :position="{ x: menuX, y: menuY }"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { AlertCircle, Compass, Disc3, Globe, Heart, LayoutGrid, List, Lock, Music, Play, Plus, UserPlus, Users, Video } from 'lucide-vue-next'
+import { computed, onMounted, ref, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
+import type { TrackContextItem } from '@/composables/useTrackContextMenu'
+import { useTrackContextMenu } from '@/composables/useTrackContextMenu'
+import ContextMenu from '@/components/common/ContextMenu.vue'
 import { SkeletonLoader } from '@/components/common'
 import { useSocialApi } from '@/services/api/social'
 import { useReactionsApi } from '@/services/api/reactions'
@@ -475,7 +488,7 @@ const statsTrends = computed(() => ({
 
 const topGenreName = computed(() => '—')
 const topGenrePercent = computed(() => '')
-const topGenreColor = computed(() => '#1db954')
+const topGenreColor = computed(() => 'var(--accent)')
 const badgeCount = computed(() => gamificationProfile.value?.badges?.length ?? 0)
 const xpLevel = computed(() => gamificationProfile.value?.level ?? '—')
 const xpTitle = computed(() => {
@@ -543,7 +556,7 @@ async function fetchProfile() {
       userVideosHasMore.value = items.length >= VIDEOS_LIMIT
     }
 
-    if (musicStatusData) {
+    if (musicStatusData && !isOwnProfile) {
       const ms = musicStatusData as any
       if (ms?.playing && ms?.current_track) {
         musicStatus.value = {
@@ -666,5 +679,48 @@ function openVideoPlayer(index: number) {
   playerOpen.value = true
 }
 
+// Reflect the local player's live state on the owner's own profile
+watchEffect(() => {
+  if (!isOwnProfile) return
+  const track = playerStore.currentTrack
+  const playing = playerStore.isPlaying
+  if (track) {
+    musicStatus.value = {
+      playing,
+      currentTrack: {
+        id: track.id,
+        title: track.title,
+        artist: track.artistName ?? '',
+        coverUrl: track.coverUrl ?? '',
+      },
+      current_track_id: track.id,
+    }
+  } else {
+    musicStatus.value = { playing: false, currentTrack: null }
+  }
+})
+
 onMounted(fetchProfile)
+
+// ── Context menu ──────────────────────────────────────────────────
+const menuVisible = ref(false)
+const menuX = ref(0)
+const menuY = ref(0)
+const contextTrack = ref<TrackContextItem | null>(null)
+
+function openContextMenu(e: MouseEvent, track: Record<string, unknown>) {
+  menuX.value = e.clientX
+  menuY.value = e.clientY
+  contextTrack.value = {
+    id: (track.id ?? track.track_id) as string | number,
+    title: (track.track_title ?? track.title) as string | null,
+    artist_name: track.artist_name as string | null,
+    cover_url: track.cover_url as string | null,
+  }
+  menuVisible.value = true
+}
+
+const { sections, header, accentColor } = useTrackContextMenu(
+  computed(() => contextTrack.value),
+)
 </script>

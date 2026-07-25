@@ -55,7 +55,7 @@ func (s *ListeningStatsService) GetStats(ctx context.Context, userID string, per
 
 	var totalMinutes sql.NullFloat64
 	err = s.db.GetContext(ctx, &totalMinutes, `
-		SELECT COALESCE(SUM(COALESCE(played_duration_ms, duration * 1000)), 0) / 60000.0
+		SELECT COALESCE(SUM(duration), 0) / 60.0
 		FROM listening_history
 		WHERE user_id = $1 AND played_at >= $2
 	`, userID, since)

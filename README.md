@@ -38,11 +38,156 @@
 
 ## Prerequisites
 
-- **Go** 1.25+ — [download](https://go.dev/dl/)
-- **Node.js** ^20.19.0 or >=22.12.0 — [download](https://nodejs.org/)
-- **Docker** & **Docker Compose** — for Postgres, Redis, OpenSearch, MinIO
-- **Air** (optional, for live-reload) — `go install github.com/air-verse/air@latest`
-- **Goose** (optional, for migrations) — `go install github.com/pressly/goose/v3/cmd/goose@latest`
+| Tool | Purpose |
+|------|---------|
+| **Go** 1.25+ | Backend API |
+| **Node.js** ^20.19 or >=22.12 | Frontend dev server |
+| **Docker** & **Docker Compose** | Database, Redis, search, storage |
+| **Air** | Go hot-reload (optional but recommended) |
+| **Goose** | Database migrations |
+| **Python** 3.10+ | ML microservice (Whisper) |
+| **Make** | Build automation |
+
+---
+
+## Installation — Linux
+
+### 1. System packages
+
+```bash
+sudo apt update
+sudo apt install -y build-essential git curl wget unzip make
+```
+
+### 2. Go
+
+```bash
+# Download latest stable
+curl -OL https://go.dev/dl/go1.25.2.linux-amd64.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.25.2.linux-amd64.tar.gz
+echo 'export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin' >> ~/.bashrc
+source ~/.bashrc
+go version
+```
+
+### 3. Node.js (via nvm)
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+source ~/.bashrc
+nvm install 22
+node -v && npm -v
+```
+
+### 4. Docker & Docker Compose
+
+```bash
+# Docker
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER
+# Log out and back in for group to take effect
+
+# Verify
+docker --version
+docker compose version
+```
+
+### 5. Air (Go hot-reload)
+
+```bash
+go install github.com/air-verse/air@latest
+air -v
+```
+
+### 6. Goose (migrations)
+
+```bash
+go install github.com/pressly/goose/v3/cmd/goose@latest
+goose -version
+```
+
+### 7. Python & ML dependencies
+
+```bash
+sudo apt install -y python3 python3-pip python3-venv
+python3 -m venv ~/muse-ml-venv
+source ~/muse-ml-venv/bin/activate
+cd moja-ml-service
+pip install -r requirements.txt
+```
+
+---
+
+## Installation — Windows
+
+### 1. Go
+
+Download the installer from <https://go.dev/dl/> (`.msi` for Windows amd64). Run it. Verify:
+
+```powershell
+# Open a new terminal after install
+go version
+```
+
+### 2. Node.js (via nvm-windows)
+
+Download and install **nvm-windows** from <https://github.com/coreybutler/nvm-windows/releases>. Then:
+
+```powershell
+nvm install 22
+nvm use 22
+node -v && npm -v
+```
+
+Alternatively, download the LTS installer directly from <https://nodejs.org/>.
+
+### 3. Docker Desktop
+
+Download **Docker Desktop for Windows** from <https://www.docker.com/products/docker-desktop/>. Install and enable **WSL 2 backend** (Settings > General > Use WSL 2 based engine).
+
+```powershell
+docker --version
+docker compose version
+```
+
+### 4. Air (Go hot-reload)
+
+```powershell
+go install github.com/air-verse/air@latest
+air -v
+```
+
+### 5. Goose (migrations)
+
+```powershell
+go install github.com/pressly/goose/v3/cmd/goose@latest
+goose -version
+```
+
+### 6. Python & ML dependencies
+
+Download Python 3.10+ from <https://www.python.org/downloads/> (check "Add to PATH" during install).
+
+```powershell
+python -m venv %USERPROFILE%\muse-ml-venv
+%USERPROFILE%\muse-ml-venv\Scripts\activate
+cd moja-ml-service
+pip install -r requirements.txt
+```
+
+### 7. Make (optional)
+
+Windows does not ship `make`. Install via [Chocolatey](https://chocolatey.org/) or [Scoop](https://scoop.sh/):
+
+```powershell
+# Chocolatey
+choco install make
+
+# Scoop
+scoop install make
+```
+
+If you skip `make`, you can run the underlying commands directly (e.g. `go run ./cmd/api`, `docker compose up -d`).
 
 ---
 

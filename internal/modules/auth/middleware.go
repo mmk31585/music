@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"net/http"
 	apperrors "music/internal/common/errors"
 	"music/internal/common/response"
 )
@@ -28,7 +29,7 @@ func AuthMiddleware(tokens *TokenManager) gin.HandlerFunc {
 
 		parts := strings.SplitN(header, " ", 2)
 		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-			response.Error(c, apperrors.Unauthorized("invalid authorization header", nil))
+			response.Error(c, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid authorization header", nil))
 			c.Abort()
 			return
 		}
@@ -59,7 +60,7 @@ func RequireRole(roles ...string) gin.HandlerFunc {
 				return
 			}
 		}
-		response.Error(c, apperrors.Forbidden("insufficient permissions", nil))
+		response.Error(c, apperrors.New(http.StatusForbidden, apperrors.CodeForbidden, "insufficient permissions", nil))
 		c.Abort()
 	}
 }
@@ -122,5 +123,5 @@ func OptionalAuthMiddleware(tokens *TokenManager) gin.HandlerFunc {
 
 // ErrUnauthorized returns a standard unauthorized error.
 func ErrUnauthorized() error {
-	return apperrors.Unauthorized("authentication required", nil)
+	return apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil)
 }

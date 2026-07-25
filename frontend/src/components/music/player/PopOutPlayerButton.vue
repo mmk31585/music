@@ -5,12 +5,13 @@
     :disabled="disabled"
     @click="onClick"
   >
-    <i aria-hidden="true" class="pi pi-external-link text-xs" />
+    <ExternalLink aria-hidden="true" class="text-xs"  />
     <span>{{ label }}</span>
   </button>
 </template>
 
 <script setup lang="ts">
+import { ExternalLink } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 const props = withDefaults(

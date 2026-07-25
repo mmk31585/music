@@ -45,7 +45,7 @@
               @error="($event.target as HTMLImageElement).style.display='none'"
             />
             <div v-else class="flex h-full w-full items-center justify-center">
-              <i aria-hidden="true" class="pi pi-image text-5xl text-slate-600" />
+              <Image aria-hidden="true" class="text-5xl text-slate-600"  />
             </div>
           </div>
         </div>
@@ -62,11 +62,11 @@
               {{ artist.name }}
             </button>
             <span v-if="album.release_date">
-              <i aria-hidden="true" class="pi pi-calendar mr-1" />
+              <Calendar aria-hidden="true" class="mr-1"  />
               {{ album.release_date }}
             </span>
             <span v-if="album.track_count">
-              <i aria-hidden="true" class="pi pi-music mr-1" />
+              <Music aria-hidden="true" class="mr-1"  />
               {{ album.track_count }} tracks
             </span>
           </div>
@@ -127,11 +127,11 @@
               :title="isTrackPlaying(track) ? 'Now playing' : 'Play track'"
               @click.stop="handlePlayTrack(track)"
             >
-              <i
+              <Loader2
                 v-if="loadingTrackId === String(track.id)"
                 aria-hidden="true"
-                class="pi pi-spin pi-spinner text-sm"
-              />
+                class="text-sm animate-spin"
+               />
               <i
                 v-else
                 aria-hidden="true"
@@ -148,11 +148,11 @@
               <p v-if="track.artist_name" class="truncate text-xs text-slate-500">{{ track.artist_name }}</p>
             </div>
             <span v-if="track.duration_seconds" class="text-xs text-slate-500">{{ formatDuration(track.duration_seconds) }}</span>
-            <i
+            <ChevronRight
               aria-hidden="true"
-              class="pi pi-chevron-right cursor-pointer text-xs text-slate-600"
+              class="cursor-pointer text-xs text-slate-600"
               @click="router.push({ name: 'admin.track.detail', params: { id: track.id } })"
-            />
+             />
           </div>
         </div>
       </div>
@@ -176,6 +176,7 @@
 </template>
 
 <script setup lang="ts">
+import { Calendar, ChevronRight, Image, Loader2, Music } from 'lucide-vue-next'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'primevue/usetoast'

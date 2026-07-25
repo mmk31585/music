@@ -17,6 +17,31 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// GetOverview godoc
+// @Summary Get platform analytics overview
+// @Description Returns platform-wide stats: total tracks, users, albums, plays, active users, storage.
+// @Tags analytics
+// @Produce json
+// @Success 200 {object} OverviewResponse
+// @Failure 500 {object} map[string]interface{}
+// @Router /admin/analytics/overview [get]
+func (h *Handler) GetOverview(c *gin.Context) {
+	ov, err := h.service.GetOverview(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch analytics overview"})
+		return
+	}
+
+	c.JSON(http.StatusOK, OverviewResponse{
+		TotalTracks:    ov.TotalTracks,
+		TotalUsers:     ov.TotalUsers,
+		TotalAlbums:    ov.TotalAlbums,
+		TotalPlays:     ov.TotalPlays,
+		ActiveUsers24h: ov.ActiveUsers24h,
+		StorageUsedMB:  ov.StorageUsedMB,
+	})
+}
+
 // TrackEvent godoc
 // @Summary Track analytics event
 // @Description Records an analytics event for an authenticated or anonymous user.

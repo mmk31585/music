@@ -14,10 +14,10 @@
 
     <div v-if="mode === 'expanded' || isPiP" class="popout-header">
         <button type="button" class="popout-btn" aria-label="Minimize" @click="mode = 'mini'">
-          <i aria-hidden="true" class="pi pi-window-minimize" />
+          <Minimize2 aria-hidden="true" class=""  />
         </button>
         <button type="button" class="popout-btn" aria-label="Full player" @click="openFullscreen">
-          <i aria-hidden="true" class="pi pi-expand" />
+          <Maximize2 aria-hidden="true" class=""  />
         </button>
         <button
           type="button"
@@ -25,23 +25,23 @@
           :aria-label="isPiP ? 'Return to app' : 'Pop out'"
           @click="onTogglePiP"
         >
-          <i aria-hidden="true" :class="isPiP ? 'pi pi-window-maximize' : 'pi pi-external-link'" />
+          <component :is="isPiP ? Maximize2 : ExternalLink"<i aria-hidden="true"  /> />
         </button>
         <button v-if="!isPiP" type="button" class="popout-btn" aria-label="Close" @click="close">
-        <i aria-hidden="true" class="pi pi-times" />
+        <X aria-hidden="true" class=""  />
       </button>
     </div>
 
     <div v-if="mode === 'mini' && !isPiP" class="popout-mini" @dblclick="mode = 'expanded'">
       <img v-if="coverUrl" :src="coverUrl" :alt="title" loading="lazy" class="popout-cover" @error="onImgError" />
       <div v-else class="popout-cover-placeholder">
-        <i aria-hidden="true" class="pi pi-music" />
+        <Music aria-hidden="true" class=""  />
       </div>
       <div v-if="isPlaying" class="popout-equalizer">
         <span /><span /><span />
       </div>
       <div role="button" tabindex="0" class="popout-mini-overlay" @click="togglePlayPause" @keydown.enter="togglePlayPause" @keydown.space.prevent="togglePlayPause">
-        <i aria-hidden="true" :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" class="popout-play-icon" />
+        <component :is="isPlaying ? Pause : Play"<i aria-hidden="true"  class="popout-play-icon" /> />
       </div>
     </div>
 
@@ -49,7 +49,7 @@
       <div class="popout-track-info">
         <img v-if="coverUrl" :src="coverUrl" :alt="title" loading="lazy" class="popout-expanded-cover" @error="onImgError" />
         <div v-else class="popout-expanded-cover-placeholder">
-          <i aria-hidden="true" class="pi pi-music" />
+          <Music aria-hidden="true" class=""  />
         </div>
         <div class="popout-meta">
           <p class="popout-title">{{ title || 'No track' }}</p>
@@ -69,13 +69,13 @@
 
       <div class="popout-controls">
         <button type="button" class="popout-ctrl-btn" aria-label="Previous track" @click="playPrevious" :disabled="!hasPrevious">
-          <i aria-hidden="true" class="pi pi-step-backward" />
+          <SkipBack aria-hidden="true" class=""  />
         </button>
         <button type="button" class="popout-play-btn" :style="{ background: accentColor }" :aria-label="isPlaying ? 'Pause' : 'Play'" @click="togglePlayPause">
-          <i aria-hidden="true" :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'" />
+          <component :is="isPlaying ? Pause : Play"<i aria-hidden="true"  /> />
         </button>
         <button type="button" class="popout-ctrl-btn" aria-label="Next track" @click="playNext" :disabled="!hasNext">
-          <i aria-hidden="true" class="pi pi-step-forward" />
+          <SkipForward aria-hidden="true" class=""  />
         </button>
       </div>
 
@@ -98,6 +98,7 @@
 </template>
 
 <script setup lang="ts">
+import { ExternalLink, Maximize2, Minimize2, Music, Pause, Play, SkipBack, SkipForward, X } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { usePlayerControls } from '@/composables/player'
 import { onImgError } from '@/utils/helpers'
@@ -144,7 +145,7 @@ const artistName = computed(() => currentTrack.value?.artistName || '')
 const coverUrl = computed(() => currentTrack.value?.coverUrl || '')
 
 const { palette } = useAlbumColors(computed(() => currentTrack.value?.coverUrl || null))
-const accentColor = computed(() => palette.value.vibrant || '#1db954')
+const accentColor = computed(() => palette.value.vibrant || 'var(--accent)')
 
 const backdropStyle = computed(() => {
   if (!coverUrl.value) return {}
@@ -313,7 +314,7 @@ onBeforeUnmount(() => {
 .popout-backdrop {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, #1a1a2e, #121212, #0a0a0a);
+  background: linear-gradient(135deg, var(--surface-2), var(--surface-1), var(--surface-0));
   transition: background 0.5s ease;
 }
 .popout-backdrop-image {
@@ -415,7 +416,7 @@ onBeforeUnmount(() => {
 .popout-equalizer span {
   display: block;
   width: 3px;
-  background: #1db954;
+  background: var(--accent);
   border-radius: 1px;
   animation: eq 0.6s infinite alternate ease-in-out;
 }
@@ -497,7 +498,7 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   border-radius: 2px;
-  background: linear-gradient(to right, #1db954, #1ed760);
+  background: linear-gradient(to right, var(--accent), var(--accent-hover));
   transform-origin: left center;
   transition: transform 0.2s linear;
 }

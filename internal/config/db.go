@@ -1,11 +1,13 @@
 package config
 
+import "os"
+
 type PostgresConfig struct {
 	URL string
 }
 
 func loadPostgresConfig() PostgresConfig {
 	return PostgresConfig{
-		URL: getEnv("POSTGRES_URL", ""),
+		URL: os.Getenv("POSTGRES_URL"),
 	}
 }

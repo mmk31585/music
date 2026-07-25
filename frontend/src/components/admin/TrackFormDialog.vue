@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Image, Loader2, Tag, User, UserPlus } from 'lucide-vue-next'
 import { computed, reactive, ref, watch, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
@@ -131,7 +132,7 @@ type ExistingTrack = Partial<{
   featured_artist_ids: CatalogId[]
 
   artists: Array<{
-    artist_id: CatalogId
+    artist_id: CatalogId | null
     role?: string
     is_primary?: boolean
     position?: number
@@ -1373,7 +1374,7 @@ async function syncLyricsWithAI() {
   aiSyncing.value = true
   try {
     const result = await lyricsApi.syncWithAI({
-      track_id: trackId,
+      track_id: String(trackId),
       plain_text: plainText,
       track_title: form.title?.trim() || undefined,
       artist_name: primaryArtistModels.value[0]?.name || detectedArtistNames.value[0] || undefined,
@@ -1413,7 +1414,7 @@ async function reviewLyricsWithAI() {
   aiReviewing.value = true
   try {
     const result = await lyricsApi.reviewWithAI({
-      track_id: trackId,
+      track_id: String(trackId),
       existing_lrc: currentLRC,
       track_title: form.title?.trim() || undefined,
       artist_name: primaryArtistModels.value[0]?.name || detectedArtistNames.value[0] || undefined,
@@ -1526,8 +1527,8 @@ function seekAudioPreview(event: Event) {
     modal
     :header="isEditMode ? 'Edit track' : 'Create track'"
     class="w-[95vw] max-w-5xl"
-    content-class="bg-surface-raised! text-white!"
-    header-class="bg-surface-raised! text-white!"
+    content-class="bg-slate-900! text-white!"
+    header-class="bg-slate-900! text-white!"
   >
     <form class="space-y-6" @submit.prevent="submitForm">
       <!-- Uploads + Audio Preview -->
@@ -1631,7 +1632,7 @@ function seekAudioPreview(event: Event) {
                 alt="Cover"
                 class="h-full w-full object-cover"
               />
-              <i aria-hidden="true" v-else class="pi pi-image text-2xl text-slate-500" />
+              <Image aria-hidden="true" v-else class="text-2xl text-slate-500"  />
             </div>
 
             <div class="flex flex-col gap-2">
@@ -1676,10 +1677,8 @@ function seekAudioPreview(event: Event) {
           <div>
             <label class="mb-1.5 flex items-center gap-2 text-xs font-medium text-slate-400">
               Primary artists
-              <i
-                v-if="artistSearchLoading"
-                class="pi pi-spin pi-spinner text-[10px] text-emerald-400"
-              />
+              <Loader2 aria-hidden="true" v-if="artistSearchLoading"
+                class="text-[10px] text-emerald-400 animate-spin" />
             </label>
 
             <AutoComplete
@@ -1692,12 +1691,12 @@ function seekAudioPreview(event: Event) {
               placeholder="Search primary artists"
               class="w-full"
               input-class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
-              panel-class="bg-[#181818]! border-white/8!"
+              panel-class="bg-surface-overlay! border-white/8!"
               @complete="searchArtists"
             >
               <template #option="{ option }">
                 <div class="flex items-center gap-2 text-sm text-white">
-                  <i aria-hidden="true" class="pi pi-user text-xs text-slate-500" />
+                  <User aria-hidden="true" class="text-xs text-slate-500"  />
                   <span>{{ option.name }}</span>
                 </div>
               </template>
@@ -1728,10 +1727,8 @@ function seekAudioPreview(event: Event) {
           <div>
             <label class="mb-1.5 flex items-center gap-2 text-xs font-medium text-slate-400">
               Featured artists
-              <i
-                v-if="artistSearchLoading"
-                class="pi pi-spin pi-spinner text-[10px] text-emerald-400"
-              />
+              <Loader2 aria-hidden="true" v-if="artistSearchLoading"
+                class="text-[10px] text-emerald-400 animate-spin" />
             </label>
 
             <AutoComplete
@@ -1744,12 +1741,12 @@ function seekAudioPreview(event: Event) {
               placeholder="Search featured artists"
               class="w-full"
               input-class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
-              panel-class="bg-[#181818]! border-white/8!"
+              panel-class="bg-surface-overlay! border-white/8!"
               @complete="searchArtists"
             >
               <template #option="{ option }">
                 <div class="flex items-center gap-2 text-sm text-white">
-                  <i aria-hidden="true" class="pi pi-user-plus text-xs text-slate-500" />
+                  <UserPlus aria-hidden="true" class="text-xs text-slate-500"  />
                   <span>{{ option.name }}</span>
                 </div>
               </template>
@@ -1772,7 +1769,7 @@ function seekAudioPreview(event: Event) {
               completeOnFocus
               class="w-full"
               input-class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
-              panel-class="bg-[#181818]! border-white/8!"
+              panel-class="bg-surface-overlay! border-white/8!"
               @complete="searchAlbums"
               @blur="resolveAlbumInput"
             />
@@ -1797,10 +1794,8 @@ function seekAudioPreview(event: Event) {
           <div>
             <label class="mb-1.5 flex items-center gap-2 text-xs font-medium text-slate-400">
               Album artist
-              <i
-                v-if="artistSearchLoading"
-                class="pi pi-spin pi-spinner text-[10px] text-emerald-400"
-              />
+              <Loader2 aria-hidden="true" v-if="artistSearchLoading"
+                class="text-[10px] text-emerald-400 animate-spin" />
             </label>
 
             <AutoComplete
@@ -1812,7 +1807,7 @@ function seekAudioPreview(event: Event) {
               completeOnFocus
               class="w-full"
               input-class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
-              panel-class="bg-[#181818]! border-white/8!"
+              panel-class="bg-surface-overlay! border-white/8!"
               @complete="searchArtists"
               @blur="resolveAlbumArtistInput"
             />
@@ -1853,12 +1848,12 @@ function seekAudioPreview(event: Event) {
             placeholder="Search genres"
             class="w-full"
             input-class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
-            panel-class="bg-[#181818]! border-white/8!"
+            panel-class="bg-surface-overlay! border-white/8!"
             @complete="searchGenres"
           >
             <template #option="{ option }">
               <div class="flex items-center gap-2 text-sm text-white">
-                <i aria-hidden="true" class="pi pi-tag text-xs text-slate-500" />
+                <Tag aria-hidden="true" class="text-xs text-slate-500"  />
                 <span>{{ option.name }}</span>
               </div>
             </template>
@@ -2036,7 +2031,7 @@ function seekAudioPreview(event: Event) {
             completeOnFocus
             class="w-full"
             input-class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
-            panel-class="bg-[#181818]! border-white/8!"
+            panel-class="bg-surface-overlay! border-white/8!"
             @complete="searchArtists"
           />
 
@@ -2048,7 +2043,7 @@ function seekAudioPreview(event: Event) {
             editable
             placeholder="Role"
             class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
-            panel-class="bg-[#181818]! border-white/8!"
+            panel-class="bg-surface-overlay! border-white/8!"
           />
 
           <Button
@@ -2094,7 +2089,7 @@ function seekAudioPreview(event: Event) {
               optionLabel="label"
               optionValue="value"
               class="w-full rounded-xl! border-white/8! bg-white/3! text-white!"
-              panel-class="bg-[#181818]! border-white/8!"
+              panel-class="bg-surface-overlay! border-white/8!"
             />
           </div>
         </div>

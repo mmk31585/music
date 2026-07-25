@@ -33,7 +33,7 @@
 
     <div v-else-if="!clubs.length" class="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-white/6 py-20 text-center" role="status">
       <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/4">
-        <i aria-hidden="true" class="pi pi-building text-2xl text-slate-500" />
+        <Building2 aria-hidden="true" class="text-2xl text-slate-500"  />
       </div>
       <p class="text-sm font-medium text-white/40">هنوز کلابی با این فیلتر وجود نداره</p>
     </div>
@@ -56,16 +56,19 @@
 </template>
 
 <script setup lang="ts">
+import { Building2 } from 'lucide-vue-next'
 import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { SkeletonLoader } from '@/components/common'
 import MusicClubCard from '@/components/social/MusicClubCard.vue'
 import CreateClubDialog from '@/components/social/CreateClubDialog.vue'
 import { useSocialApi } from '@/services/api/social'
+import { useAppToast } from '@/composables/useAppToast'
 import type { MusicClub } from '@/services/api/social'
 
 const router = useRouter()
 const api = useSocialApi()
+const toast = useAppToast()
 
 const loading = ref(true)
 const clubs = ref<MusicClub[]>([])
@@ -94,8 +97,8 @@ async function loadClubs() {
     if (selectedGenre.value) params.genre = selectedGenre.value
     const res = await api.listClubsWithGenre(params)
     clubs.value = Array.isArray(res) ? res : []
-  } catch (err) {
-    console.error('Failed to load clubs:', err)
+  } catch (err: unknown) {
+    toast.apiError(err, 'Failed to load clubs')
     clubs.value = []
   } finally {
     loading.value = false

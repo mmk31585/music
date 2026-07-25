@@ -44,9 +44,19 @@ type LyricsCallbackPayload struct {
 	WhisperModelVersion string  `json:"whisper_model_version"`
 }
 
-// HandleLyricsCallback receives the result of an AI lyrics generation job
-// from the Python ML service and persists the lyrics to the database.
-// This endpoint is protected by HMAC signature verification, not JWT auth.
+// HandleLyricsCallback godoc
+// @Summary Handle AI lyrics callback
+// @Description Receives the result of an AI lyrics generation job from the Python ML service and persists lyrics. Protected by HMAC signature verification (not JWT).
+// @Tags lyrics
+// @Accept json
+// @Produce json
+// @Param request body LyricsCallbackPayload true "Lyrics callback payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 409 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /internal/v1/lyrics/callback [post]
 func (h *Handler) HandleLyricsCallback(c *gin.Context) {
 	var payload LyricsCallbackPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {

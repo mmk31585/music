@@ -11,24 +11,25 @@
       v-if="showScroll && !isAtStart"
       type="button"
       aria-label="Scroll left"
-      class="absolute top-1/2 -left-3 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/80 text-white shadow-lg backdrop-blur-xs transition hover:bg-black/90"
+      class="absolute top-1/2 -left-3 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-bg-overlay/80 text-primary shadow-lg backdrop-blur-xs transition hover:bg-bg-overlay/90"
       @click="scroll(-300)"
     >
-      <i aria-hidden="true" class="pi pi-chevron-left text-sm" />
+      <ChevronLeft aria-hidden="true" class="text-sm"  />
     </button>
     <button
       v-if="showScroll && !isAtEnd"
       type="button"
       aria-label="Scroll right"
-      class="absolute top-1/2 -right-3 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/80 text-white shadow-lg backdrop-blur-xs transition hover:bg-black/90"
+      class="absolute top-1/2 -right-3 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-bg-overlay/80 text-primary shadow-lg backdrop-blur-xs transition hover:bg-bg-overlay/90"
       @click="scroll(300)"
     >
-      <i aria-hidden="true" class="pi pi-chevron-right text-sm" />
+      <ChevronRight aria-hidden="true" class="text-sm"  />
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useSwipe } from '@/composables'
 

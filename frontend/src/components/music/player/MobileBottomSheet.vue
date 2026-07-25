@@ -9,7 +9,7 @@
       >
         <!-- Background with dynamic album color -->
         <div class="absolute inset-0 backdrop-blur-2xl" :style="{ background: bgGradient }" />
-        <div class="absolute inset-0 bg-black/40" />
+        <div class="absolute inset-0 bg-bg-overlay/40" />
 
         <!-- Drag handle (44px min touch target for WCAG 2.5.8) -->
         <div
@@ -17,15 +17,15 @@
           @touchstart.prevent="onDragStart"
           @mousedown.prevent="onDragStart"
         >
-          <div class="h-1 w-10 rounded-full bg-white/30" />
-          <div class="h-0.5 w-6 rounded-full bg-white/15" />
+          <div class="h-1 w-10 rounded-full bg-surface-active" />
+          <div class="h-0.5 w-6 rounded-full bg-surface-active" />
         </div>
 
         <div ref="sheetRef" class="relative z-10 flex h-full flex-col px-5 pt-12" :style="{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }">
           <!-- Track info + art -->
           <div class="flex items-start gap-4">
             <div
-              class="h-20 w-20 shrink-0 overflow-hidden rounded-2xl shadow-xl ring-1 ring-white/10 transition-transform duration-300"
+              class="h-20 w-20 shrink-0 overflow-hidden rounded-2xl shadow-xl ring-1 ring-border-default transition-transform duration-300"
               :class="{ 'scale-105': isPlaying }"
             >
               <img
@@ -37,23 +37,23 @@
                 loading="lazy"
                 @error="onImgError"
               />
-              <div v-else class="flex h-full items-center justify-center bg-white/10">
-                <i aria-hidden="true" class="pi pi-music text-white/30" />
+              <div v-else class="flex h-full items-center justify-center bg-surface-active">
+                <Music aria-hidden="true" class="text-primary/30"  />
               </div>
             </div>
 
             <div class="min-w-0 flex-1">
-              <p class="truncate text-base font-bold text-white">{{ title }}</p>
-              <p class="truncate text-sm text-white/50">{{ artistName }}</p>
+              <p class="truncate text-base font-bold text-primary">{{ title }}</p>
+              <p class="truncate text-sm text-secondary">{{ artistName }}</p>
             </div>
 
             <button
               type="button"
-              class="flex h-10 w-10 items-center justify-center rounded-full text-white/50 transition-all hover:bg-white/10 hover:text-white"
+              class="flex h-10 w-10 items-center justify-center rounded-full text-secondary transition-all hover:bg-surface-active hover:text-primary"
               aria-label="Close"
               @click="close"
             >
-              <i aria-hidden="true" class="pi pi-chevron-down text-lg" />
+              <ChevronDown aria-hidden="true" class="text-lg"  />
             </button>
           </div>
 
@@ -62,14 +62,14 @@
             <button
               type="button"
               class="spring flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-all active:scale-95 min-h-11"
-              :class="liked ? '' : 'text-white/40 hover:bg-white/5'"
+              :class="liked ? '' : 'text-tertiary hover:bg-surface-overlay'"
               :style="liked ? { color: accentColor, backgroundColor: `${accentColor}15` } : {}"
               @click="liked = !liked"
             >
-              <i
-                :class="liked ? 'pi pi-heart-fill heart-pulse' : 'pi pi-heart'"
+              <component :is="liked ? Heart : Heart" aria-hidden="true"<i
+                
                 class="text-base"
-              />
+              /> :class="liked ? 'heart-pulse' : ''" />
               <span>{{ liked ? 'Liked' : 'Like' }}</span>
             </button>
           </div>
@@ -86,7 +86,7 @@
               :value="progressPercent"
               @input="onSeek"
             />
-            <div class="mt-1 flex justify-between text-[10px] text-white/40 tabular-nums">
+            <div class="mt-1 flex justify-between text-[10px] text-tertiary tabular-nums">
               <span>{{ currentTimeLabel }}</span>
               <span>{{ durationLabel }}</span>
             </div>
@@ -99,33 +99,33 @@
           >
             <button
               type="button"
-              class="relative flex flex-col items-center gap-1 transition-all hover:text-white active:scale-90"
-              :class="shuffleMode !== 'off' ? '' : 'text-white/40'"
+              class="relative flex flex-col items-center gap-1 transition-all hover:text-primary active:scale-90"
+              :class="shuffleMode !== 'off' ? '' : 'text-tertiary'"
               :style="shuffleMode !== 'off' ? { color: accentColor } : {}"
               :title="shuffleMode === 'off' ? 'Shuffle off' : shuffleMode === 'queue' ? 'Shuffle queue' : shuffleMode === 'catalog' ? 'Random catalog tracks' : 'Similar tracks'"
               @click="toggleShuffle"
             >
-              <i aria-hidden="true" class="pi pi-sort-alt text-lg" />
+              <ArrowUpDown aria-hidden="true" class="text-lg"  />
               <span class="text-[8px] font-medium">Shuffle</span>
               <span
                 v-if="shuffleMode !== 'off'"
-                class="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-aurora-purple text-[8px] font-bold text-white"
+                class="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-aurora-purple text-[8px] font-bold text-primary"
               >{{ shuffleMode === 'queue' ? 'Q' : shuffleMode === 'catalog' ? 'R' : 'S' }}</span>
             </button>
 
             <button
               type="button"
-              class="text-white/50 transition-all hover:text-white active:scale-90 disabled:opacity-30"
+              class="text-secondary transition-all hover:text-primary active:scale-90 disabled:opacity-30"
               :disabled="!hasPrevious"
               aria-label="Previous track"
               @click="playPrevious"
             >
-              <i aria-hidden="true" class="pi pi-step-backward text-2xl" />
+              <SkipBack aria-hidden="true" class="text-2xl"  />
             </button>
 
             <button
               type="button"
-              class="spring relative flex h-16 w-16 items-center justify-center rounded-full bg-white text-black shadow-xl transition-all hover:scale-110 hover:text-white active:scale-95"
+              class="spring relative flex h-16 w-16 items-center justify-center rounded-full bg-white text-black shadow-xl transition-all hover:scale-110 hover:text-primary active:scale-95"
               :style="
                 isPlaying
                   ? {
@@ -135,17 +135,17 @@
                     }
                   : { '--accent-hover': accentColor }
               "
-              :class="isPlaying! ? 'hover:bg-[var(--accent-hover,#1db954)]' : ''"
+              :class="isPlaying! ? 'hover:bg-[var(--accent-hover)]' : ''"
               :disabled="!currentTrack"
               :aria-label="isPlaying ? 'Pause' : 'Play'"
               @click="togglePlayPause"
             >
-              <i aria-hidden="true" v-if="isBuffering" class="pi pi-spin pi-spinner text-xl" />
-              <i
+              <Loader2 aria-hidden="true" v-if="isBuffering" class="text-xl animate-spin"  />
+              <component :is="isPlaying ? Pause : Play" aria-hidden="true"<i
                 v-else
-                :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'"
+                
                 class="text-xl"
-              />
+              /> />
               <span
                 v-if="isPlaying"
                 class="absolute -inset-1.5 animate-ping rounded-full"
@@ -155,22 +155,22 @@
 
             <button
               type="button"
-              class="text-white/50 transition-all hover:text-white active:scale-90 disabled:opacity-30"
+              class="text-secondary transition-all hover:text-primary active:scale-90 disabled:opacity-30"
               :disabled="!hasNext"
               aria-label="Next track"
               @click="playNext"
             >
-              <i aria-hidden="true" class="pi pi-step-forward text-2xl" />
+              <SkipForward aria-hidden="true" class="text-2xl"  />
             </button>
 
             <button
               type="button"
-              class="flex flex-col items-center gap-1 transition-all hover:text-white active:scale-90"
-              :class="repeatMode !== 'off' ? '' : 'text-white/40'"
+              class="flex flex-col items-center gap-1 transition-all hover:text-primary active:scale-90"
+              :class="repeatMode !== 'off' ? '' : 'text-tertiary'"
               :style="repeatMode !== 'off' ? { color: accentColor } : {}"
               @click="toggleRepeat"
             >
-              <i aria-hidden="true" class="pi pi-refresh text-lg" />
+              <RefreshCw aria-hidden="true" class="text-lg"  />
               <span class="text-[8px] font-medium">
                 {{ repeatMode === 'one' ? '1' : repeatMode === 'all' ? 'All' : 'Off' }}
               </span>
@@ -182,7 +182,7 @@
             <div class="flex items-center gap-3">
               <button
                 type="button"
-                class="flex h-10 w-10 items-center justify-center rounded-full text-white/40 transition-all hover:bg-white/10 hover:text-white"
+                class="flex h-10 w-10 items-center justify-center rounded-full text-tertiary transition-all hover:bg-surface-active hover:text-primary"
                 :aria-label="muted ? 'Unmute' : 'Mute'"
                 @click="toggleMute"
               >
@@ -202,7 +202,7 @@
             <button
               type="button"
               class="spring flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all"
-              :class="playbackRate !== 1 ? '' : 'text-white/40'"
+              :class="playbackRate !== 1 ? '' : 'text-tertiary'"
               :style="
                 playbackRate !== 1
                   ? { color: accentColor, backgroundColor: `${accentColor}18` }
@@ -210,17 +210,17 @@
               "
               @click="cycleSpeed"
             >
-              <i aria-hidden="true" class="pi pi-forward text-[10px]" />
+              <Forward aria-hidden="true" class="text-[10px]"  />
               {{ speedLabel }}
             </button>
 
             <button
               type="button"
-              class="flex h-10 w-10 items-center justify-center rounded-full text-white/40 transition-all hover:bg-white/10 hover:text-white"
+              class="flex h-10 w-10 items-center justify-center rounded-full text-tertiary transition-all hover:bg-surface-active hover:text-primary"
               aria-label="Fullscreen"
               @click="$emit('open-fullscreen')"
             >
-              <i aria-hidden="true" class="pi pi-expand text-base" />
+              <Maximize2 aria-hidden="true" class="text-base"  />
             </button>
           </div>
 
@@ -231,6 +231,7 @@
 </template>
 
 <script setup lang="ts">
+import { ArrowUpDown, ChevronDown, Forward, Heart, Loader2, Maximize2, Music, Pause, Play, RefreshCw, SkipBack, SkipForward } from 'lucide-vue-next'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { usePlayerControls } from '@/composables/player'
 import { useAlbumColors } from '@/composables/useAlbumColors'
@@ -290,11 +291,11 @@ const artistName = computed(() => currentTrack.value?.artistName || '')
 const coverUrl = computed(() => currentTrack.value?.coverUrl || '')
 
 const { palette } = useAlbumColors(coverUrl)
-const accentColor = computed(() => palette.value.vibrant || '#1db954')
+const accentColor = computed(() => palette.value.vibrant || 'var(--accent)')
 
 const bgGradient = computed(() => {
   const p = palette.value
-  if (!coverUrl.value) return 'linear-gradient(135deg, #0a0a0a 0%, #121212 100%)'
+  if (!coverUrl.value) return 'var(--bg-gradient)'
   return `linear-gradient(180deg, ${p.dark} 0%, ${p.dominant}88 40%, ${p.muted} 100%)`
 })
 
@@ -416,7 +417,7 @@ onUnmounted(() => {
    We keep the visual track thin but make the hit area 44px tall for touch. */
 .sheet-range {
   --range-progress: 0%;
-  --accent-color: #1db954;
+  --accent-color: var(--accent);
   width: 100%;
   height: 44px;
   cursor: pointer;

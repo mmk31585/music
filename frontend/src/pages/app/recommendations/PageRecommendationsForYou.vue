@@ -18,7 +18,7 @@
         class="mt-6 inline-flex items-center gap-2 rounded-full bg-spotify px-8 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-spotify-hover"
         @click="playAll"
       >
-        <i aria-hidden="true" class="pi pi-play-fill" />
+        <Play aria-hidden="true" class=""  />
         پخش همه
       </button>
     </section>
@@ -41,7 +41,7 @@
       class="mt-10 flex flex-col items-center gap-4 rounded-3xl border border-white/10 px-6 py-20 text-center"
     >
       <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
-        <i aria-hidden="true" class="pi pi-refresh text-2xl text-slate-400" />
+        <RefreshCw aria-hidden="true" class="text-2xl text-slate-400"  />
       </div>
       <h3 class="text-xl font-bold text-white">Not enough data yet</h3>
       <p class="max-w-sm text-sm text-slate-400">
@@ -61,7 +61,7 @@
       class="mt-10 flex flex-col items-center gap-4 rounded-3xl border border-white/10 px-6 py-20 text-center"
     >
       <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
-        <i aria-hidden="true" class="pi pi-exclamation-triangle text-2xl text-red-400" />
+        <AlertTriangle aria-hidden="true" class="text-2xl text-red-400"  />
       </div>
       <h3 class="text-xl font-bold text-white">Could not load Discover Weekly</h3>
       <p class="text-sm text-slate-400">{{ error }}</p>
@@ -76,20 +76,18 @@
     <!-- Track Grid -->
     <div v-else class="mt-10" aria-live="polite">
       <div class="mb-6 flex items-center gap-3 text-white/40">
-        <i aria-hidden="true" class="pi pi-info-circle text-sm" />
+        <Info aria-hidden="true" class="text-sm"  />
         <span class="text-xs">Hover a track to see why it was recommended</span>
       </div>
 
       <div class="grid gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        <div
+        <button
           v-for="(track, idx) in tracks"
           :key="track.id"
-          role="button"
-          tabindex="0"
-          class="group relative cursor-pointer"
+          type="button"
+          class="group relative w-full text-left"
           @click="play(track, idx)"
-          @keydown.enter="play(track, idx)"
-          @keydown.space.prevent="play(track, idx)"
+          @contextmenu.prevent="openContextMenu($event, track)"
         >
           <div
             class="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-white/10 shadow-lg ring-1 ring-white/10 transition group-hover:ring-pink-500/50"
@@ -103,7 +101,7 @@
               @error="onImgError"
             />
             <div v-else class="flex h-full items-center justify-center">
-              <i aria-hidden="true" class="pi pi-music text-2xl text-slate-500" />
+              <Music aria-hidden="true" class="text-2xl text-slate-500"  />
             </div>
             <div
               class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100"
@@ -111,14 +109,14 @@
               <div
                 class="flex h-12 w-12 items-center justify-center rounded-full bg-pink-500/90 text-white shadow-xl"
               >
-                <i aria-hidden="true" class="pi pi-play-fill text-lg" />
+                <Play aria-hidden="true" class="text-lg"  />
               </div>
             </div>
             <div
               class="absolute top-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold text-pink-400 opacity-0 backdrop-blur-xs transition group-hover:opacity-100"
               :title="track.genre ? `چون شبیه آهنگ‌های ${track.genre} است` : undefined"
             >
-              <i aria-hidden="true" class="pi pi-question-circle mr-1" />
+              <HelpCircle aria-hidden="true" class="mr-1"  />
               چرا این آهنگ؟
             </div>
           </div>
@@ -127,17 +125,28 @@
           <p class="mt-0.5 truncate text-[10px] text-slate-600">
             {{ track.genre ? `چون شبیه آهنگ‌های ${track.genre} است` : 'توصیه هوشمند' }}
           </p>
-        </div>
+        </button>
       </div>
     </div>
+    <ContextMenu
+      v-model:visible="menuVisible"
+      :sections="sections"
+      :header="header"
+      :accent-color="accentColor"
+      :position="{ x: menuX, y: menuY }"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import { AlertTriangle, HelpCircle, Info, Music, Play, RefreshCw } from 'lucide-vue-next'
 import { onMounted, ref, computed } from 'vue'
 import { useRecommendationsApi } from '@/services/api/recommendation'
 import type { RecommendationTrack } from '@/services/api/recommendation'
 import type { DiscoverWeeklyPlaylistMeta } from '@/services/api/recommendation'
+import type { TrackContextItem } from '@/composables/useTrackContextMenu'
+import { useTrackContextMenu } from '@/composables/useTrackContextMenu'
+import ContextMenu from '@/components/common/ContextMenu.vue'
 import { usePlayer } from '@/composables/player'
 import { onImgError } from '@/utils/helpers'
 import { mapToPlaybackTracks } from '@/factories/playbackTrack'
@@ -188,4 +197,21 @@ function playAll() {
 }
 
 onMounted(fetchDiscoverWeekly)
+
+// ── Context menu ──────────────────────────────────────────────────
+const menuVisible = ref(false)
+const menuX = ref(0)
+const menuY = ref(0)
+const contextTrack = ref<TrackContextItem | null>(null)
+
+function openContextMenu(e: MouseEvent, track: RecommendationTrack) {
+  menuX.value = e.clientX
+  menuY.value = e.clientY
+  contextTrack.value = track as TrackContextItem
+  menuVisible.value = true
+}
+
+const { sections, header, accentColor } = useTrackContextMenu(
+  computed(() => contextTrack.value),
+)
 </script>

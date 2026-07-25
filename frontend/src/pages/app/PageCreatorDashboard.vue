@@ -10,7 +10,7 @@
 
     <!-- Not a creator -->
     <div v-else-if="!isCreator" class="flex flex-col items-center gap-4 py-24 text-center">
-      <i aria-hidden="true" class="pi pi-megaphone text-4xl text-slate-500" />
+      <Megaphone aria-hidden="true" class="text-4xl text-slate-500"  />
       <h2 class="text-xl font-bold text-white">Creator Studio</h2>
       <p class="max-w-md text-sm text-slate-400">
         Upload tracks and build your audience to unlock creator analytics.
@@ -42,7 +42,7 @@
               to="/admin/media"
               class="inline-flex items-center gap-2 rounded-full bg-spotify px-6 py-2.5 text-sm font-bold text-black transition hover:scale-105 hover:bg-spotify-hover"
             >
-              <i aria-hidden="true" class="pi pi-upload text-xs" /> Upload
+              <Upload aria-hidden="true" class="text-xs"  /> Upload
             </RouterLink>
             <button
               type="button"
@@ -50,8 +50,8 @@
               @click="refreshStats"
               class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/4 px-5 py-2.5 text-sm font-medium text-white backdrop-blur-xs transition hover:bg-white/10 disabled:opacity-50"
             >
-              <i aria-hidden="true" :class="refreshing ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'" />
-              {{ refreshing ? 'Refreshing...' : 'Refresh' }}
+              <component :is="refreshing ? Loader2 : RefreshCw"<i aria-hidden="true"  /> :class="refreshing ? 'animate-spin' : ''" />
+              {{ refreshing ? 'RefreshCwing...' : 'RefreshCw' }}
             </button>
           </div>
         </div>
@@ -102,7 +102,7 @@
               v-if="dailyStats.length === 0"
               class="flex flex-col items-center gap-3 py-16 text-center"
             >
-              <i aria-hidden="true" class="pi pi-inbox text-4xl text-slate-500" />
+              <Inbox aria-hidden="true" class="text-4xl text-slate-500"  />
               <p class="text-sm text-slate-400">No daily data yet</p>
             </div>
             <div v-else class="space-y-2">
@@ -130,7 +130,7 @@
         <section>
           <h3 class="mb-3 text-lg font-bold text-white">Top Tracks</h3>
           <div v-if="!trackStats.length" class="flex flex-col items-center gap-3 py-16 text-center">
-            <i aria-hidden="true" class="pi pi-inbox text-4xl text-slate-500" />
+            <Inbox aria-hidden="true" class="text-4xl text-slate-500"  />
             <p class="text-sm text-slate-400">No track stats yet</p>
           </div>
           <div v-else class="space-y-2">
@@ -138,6 +138,7 @@
               v-for="track in trackStats.slice(0, 10)"
               :key="track.track_id"
               @click="playTrack(track)"
+              @contextmenu.prevent="openContextMenu($event, track)"
               class="group flex cursor-pointer items-center gap-4 rounded-xl bg-white/3 px-4 py-3 transition hover:bg-white/6"
             >
               <div
@@ -231,7 +232,7 @@
         <section>
           <h3 class="mb-3 text-lg font-bold text-white">Payout History</h3>
           <div v-if="payouts.length === 0" class="flex flex-col items-center gap-3 py-16 text-center">
-            <i aria-hidden="true" class="pi pi-inbox text-4xl text-slate-500" />
+            <Inbox class="text-4xl text-slate-500"<i aria-hidden="true"  /> />
             <p class="text-sm text-slate-400">No payouts yet</p>
           </div>
           <div v-else class="space-y-2">
@@ -286,7 +287,7 @@
             v-if="audience.top_listeners?.length === 0"
             class="flex flex-col items-center gap-3 py-16 text-center"
           >
-            <i aria-hidden="true" class="pi pi-inbox text-4xl text-slate-500" />
+            <Inbox aria-hidden="true" class="text-4xl text-slate-500"  />
             <p class="text-sm text-slate-400">No listener data yet</p>
           </div>
           <div v-else class="space-y-2">
@@ -325,7 +326,7 @@
             v-if="audience.geographics?.length === 0"
             class="flex flex-col items-center gap-3 py-16 text-center"
           >
-            <i aria-hidden="true" class="pi pi-inbox text-4xl text-slate-500" />
+            <Inbox aria-hidden="true" class="text-4xl text-slate-500"  />
             <p class="text-sm text-slate-400">No geo data yet</p>
           </div>
           <div v-else class="space-y-2">
@@ -352,7 +353,7 @@
             Tracks ({{ contentData.tracks?.length || 0 }})
           </h3>
           <div v-if="!contentData.tracks?.length" class="flex flex-col items-center gap-3 py-16 text-center">
-            <i aria-hidden="true" class="pi pi-inbox text-4xl text-slate-500" />
+            <Inbox aria-hidden="true" class="text-4xl text-slate-500"  />
             <p class="text-sm text-slate-400">No tracks uploaded yet</p>
           </div>
           <div v-else class="space-y-2">
@@ -380,7 +381,7 @@
             Albums ({{ contentData.albums?.length || 0 }})
           </h3>
           <div v-if="!contentData.albums?.length" class="flex flex-col items-center gap-3 py-16 text-center">
-            <i aria-hidden="true" class="pi pi-inbox text-4xl text-slate-500" />
+            <Inbox aria-hidden="true" class="text-4xl text-slate-500"  />
             <p class="text-sm text-slate-400">No albums yet</p>
           </div>
           <div v-else class="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -398,7 +399,7 @@
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full items-center justify-center text-white/20">
-                  <i aria-hidden="true" class="pi pi-compact-disc text-2xl" />
+                  <Disc3 aria-hidden="true" class="text-2xl"  />
                 </div>
               </div>
               <p class="truncate text-sm font-medium text-white">{{ album.title }}</p>
@@ -450,7 +451,7 @@
               <input
                 v-model="editForm.explicit"
                 type="checkbox"
-                class="h-5 w-5 rounded border-white/10 bg-white/5 accent-[#1db954]"
+                class="h-5 w-5 rounded border-white/10 bg-white/5 accent-accent"
               />
               <span class="text-sm text-white/60">Explicit</span>
             </label>
@@ -473,10 +474,21 @@
       </div>
     </Teleport>
   </div>
+  <ContextMenu
+    v-model:visible="menuVisible"
+    :sections="sections"
+    :header="header"
+    :accent-color="accentColor"
+    :position="{ x: menuX, y: menuY }"
+  />
 </template>
 
 <script setup lang="ts">
+import { Disc3, Inbox, Loader2, Megaphone, RefreshCw, Upload } from 'lucide-vue-next'
 import { ref, reactive, onMounted, computed } from 'vue'
+import type { TrackContextItem } from '@/composables/useTrackContextMenu'
+import { useTrackContextMenu } from '@/composables/useTrackContextMenu'
+import ContextMenu from '@/components/common/ContextMenu.vue'
 import { SkeletonLoader } from '@/components/common'
 import { useCreatorApi } from '@/services/api/creator'
 import { buildPlaybackTrack } from '@/factories/playbackTrack'
@@ -682,4 +694,26 @@ onMounted(async () => {
   await fetchDashboard()
   if (isCreator.value) await fetchSecondaryData()
 })
+
+// ── Context menu ──────────────────────────────────────────────────
+const menuVisible = ref(false)
+const menuX = ref(0)
+const menuY = ref(0)
+const contextTrack = ref<TrackContextItem | null>(null)
+
+function openContextMenu(e: MouseEvent, track: TrackStats) {
+  menuX.value = e.clientX
+  menuY.value = e.clientY
+  contextTrack.value = {
+    id: track.track_id,
+    title: track.title,
+    artist_name: null,
+    cover_url: null,
+  }
+  menuVisible.value = true
+}
+
+const { sections, header, accentColor } = useTrackContextMenu(
+  computed(() => contextTrack.value),
+)
 </script>

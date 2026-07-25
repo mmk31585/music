@@ -57,20 +57,20 @@ func (h *Handler) Upload(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, hardLimit)
 
 	if err := c.Request.ParseMultipartForm(hardLimit); err != nil {
-		response.Error(c, appErr.BadRequest("file too large or invalid multipart form", err))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "file too large or invalid multipart form", err))
 		return
 	}
 
 	file, header, err := c.Request.FormFile("audio")
 	if err != nil {
-		response.Error(c, appErr.BadRequest("no audio file provided in 'audio' field", err))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "no audio file provided in 'audio' field", err))
 		return
 	}
 	defer file.Close()
 
 	userID := auth.UserIDFromContext(c)
 	if userID == "" {
-		response.Error(c, appErr.Unauthorized("user not authenticated", nil))
+		response.Error(c, appErr.New(http.StatusUnauthorized, appErr.CodeUnauthorized, "user not authenticated", nil))
 		return
 	}
 
@@ -78,42 +78,42 @@ func (h *Handler) Upload(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrInvalidFileType):
-			response.Error(c, appErr.BadRequest("unsupported audio format (allowed: mp3, flac, ogg, m4a, aac)", err))
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "unsupported audio format (allowed: mp3, flac, ogg, m4a, aac)", err))
 		case errors.Is(err, ErrFileTooLarge):
-			response.Error(c, appErr.BadRequest("file exceeds maximum size of 200MB", err))
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "file exceeds maximum size of 200MB", err))
 		case errors.Is(err, ErrNoFileProvided):
-			response.Error(c, appErr.BadRequest("no file provided", err))
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "no file provided", err))
 		case errors.Is(err, ErrStorageFailed):
-			response.Error(c, appErr.Internal("failed to store uploaded file", err))
+			response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to store uploaded file", err))
 		case errors.Is(err, ErrDuplicateFile):
-			response.Error(c, appErr.Conflict("this file already exists in the catalog", err))
+			response.Error(c, appErr.New(http.StatusConflict, appErr.CodeConflict, "this file already exists in the catalog", err))
 		default:
-			response.Error(c, appErr.Internal("upload failed", err))
+			response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "upload failed", err))
 		}
 		return
 	}
 
-	response.Created(c, "file uploaded and enrichment started", res)
+	response.Success(c, http.StatusCreated, "file uploaded and enrichment started", res)
 }
 
 func (h *Handler) GetDraft(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		response.Error(c, appErr.BadRequest("draft ID is required", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "draft ID is required", nil))
 		return
 	}
 
 	draft, err := h.service.GetDraftByID(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, ErrDraftNotFound) {
-			response.Error(c, appErr.NotFound("draft not found", nil))
+			response.Error(c, appErr.New(http.StatusNotFound, appErr.CodeNotFound, "draft not found", nil))
 			return
 		}
-		response.Error(c, appErr.Internal("failed to get draft", err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to get draft", err))
 		return
 	}
 
-	response.OK(c, "draft retrieved successfully", draft)
+	response.Success(c, http.StatusOK, "draft retrieved successfully", draft)
 }
 
 func (h *Handler) ListDrafts(c *gin.Context) {
@@ -124,10 +124,10 @@ func (h *Handler) ListDrafts(c *gin.Context) {
 	res, err := h.service.ListDrafts(c.Request.Context(), status, p.Page, p.Limit)
 	if err != nil {
 		if errors.Is(err, ErrInvalidStatus) {
-			response.Error(c, appErr.BadRequest("invalid status filter", err))
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "invalid status filter", err))
 			return
 		}
-		response.Error(c, appErr.Internal("failed to list drafts", err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to list drafts", err))
 		return
 	}
 
@@ -137,13 +137,13 @@ func (h *Handler) ListDrafts(c *gin.Context) {
 
 	meta := pagination.NewMeta(p, res.Total)
 
-	response.SuccessWithMeta(c, http.StatusOK, "drafts retrieved successfully", res.Items, meta)
+	response.Success(c, http.StatusOK, "drafts retrieved successfully", res.Items, meta)
 }
 
 func (h *Handler) EnrichDraft(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		response.Error(c, appErr.BadRequest("draft ID is required", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "draft ID is required", nil))
 		return
 	}
 
@@ -165,10 +165,10 @@ func (h *Handler) EnrichDraft(c *gin.Context) {
 
 	if err := h.service.EnrichDraft(c.Request.Context(), id, scope); err != nil {
 		if errors.Is(err, ErrDraftNotFound) {
-			response.Error(c, appErr.NotFound("draft not found", nil))
+			response.Error(c, appErr.New(http.StatusNotFound, appErr.CodeNotFound, "draft not found", nil))
 			return
 		}
-		response.Error(c, appErr.Internal("failed to start enrichment", err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to start enrichment", err))
 		return
 	}
 
@@ -176,27 +176,27 @@ func (h *Handler) EnrichDraft(c *gin.Context) {
 	if len(scope) > 0 {
 		status = "refetching"
 	}
-	response.OK(c, "enrichment started", gin.H{"draftId": id, "status": status})
+	response.Success(c, http.StatusOK, "enrichment started", gin.H{"draftId": id, "status": status})
 }
 
 func (h *Handler) GetDraftSuggestions(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		response.Error(c, appErr.BadRequest("draft ID is required", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "draft ID is required", nil))
 		return
 	}
 
 	suggestions, err := h.service.GetDraftSuggestions(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, ErrDraftNotFound) {
-			response.Error(c, appErr.NotFound("draft not found", nil))
+			response.Error(c, appErr.New(http.StatusNotFound, appErr.CodeNotFound, "draft not found", nil))
 			return
 		}
-		response.Error(c, appErr.Internal("failed to get suggestions", err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to get suggestions", err))
 		return
 	}
 
-	response.OK(c, "suggestions retrieved successfully", suggestions)
+	response.Success(c, http.StatusOK, "suggestions retrieved successfully", suggestions)
 }
 
 // UpdateDraftMetadata updates a draft's extracted metadata fields (title, artist, album)
@@ -204,89 +204,89 @@ func (h *Handler) GetDraftSuggestions(c *gin.Context) {
 func (h *Handler) UpdateDraftMetadata(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		response.Error(c, appErr.BadRequest("draft ID is required", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "draft ID is required", nil))
 		return
 	}
 
 	var req UpdateDraftMetadataRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, appErr.BadRequest("invalid request body", err))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "invalid request body", err))
 		return
 	}
 
 	if err := h.service.UpdateExtractedMetadata(c.Request.Context(), id, req.Title, req.Artist, req.Album); err != nil {
 		if errors.Is(err, ErrDraftNotFound) {
-			response.Error(c, appErr.NotFound("draft not found", nil))
+			response.Error(c, appErr.New(http.StatusNotFound, appErr.CodeNotFound, "draft not found", nil))
 			return
 		}
-		response.Error(c, appErr.Internal("failed to update draft metadata", err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to update draft metadata", err))
 		return
 	}
 
-	response.OK(c, "draft metadata updated", gin.H{})
+	response.Success(c, http.StatusOK, "draft metadata updated", gin.H{})
 }
 
 func (h *Handler) SaveFinalMetadata(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		response.Error(c, appErr.BadRequest("draft ID is required", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "draft ID is required", nil))
 		return
 	}
 
 	var req SaveFinalMetadataRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, appErr.BadRequest("invalid request body", err))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "invalid request body", err))
 		return
 	}
 
 	if err := h.service.SaveFinalMetadata(c.Request.Context(), id, req); err != nil {
 		switch {
 		case errors.Is(err, ErrDraftNotFound):
-			response.Error(c, appErr.NotFound("draft not found", nil))
+			response.Error(c, appErr.New(http.StatusNotFound, appErr.CodeNotFound, "draft not found", nil))
 		case errors.Is(err, ErrInvalidStatus):
-			response.Error(c, appErr.BadRequest("draft must be in review status", nil))
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "draft must be in review status", nil))
 		default:
-			response.Error(c, appErr.Internal("failed to save final metadata", err))
+			response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to save final metadata", err))
 		}
 		return
 	}
 
-	response.OK(c, "final metadata saved and draft accepted", gin.H{})
+	response.Success(c, http.StatusOK, "final metadata saved and draft accepted", gin.H{})
 }
 
 func (h *Handler) DeleteDraft(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		response.Error(c, appErr.BadRequest("draft ID is required", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "draft ID is required", nil))
 		return
 	}
 
 	userID := auth.UserIDFromContext(c)
 	if userID == "" {
-		response.Error(c, appErr.Unauthorized("user not authenticated", nil))
+		response.Error(c, appErr.New(http.StatusUnauthorized, appErr.CodeUnauthorized, "user not authenticated", nil))
 		return
 	}
 
 	if err := h.service.DeleteDraft(c.Request.Context(), id, userID); err != nil {
 		if errors.Is(err, ErrDraftNotFound) {
-			response.Error(c, appErr.NotFound("draft not found", nil))
+			response.Error(c, appErr.New(http.StatusNotFound, appErr.CodeNotFound, "draft not found", nil))
 			return
 		}
 		if errors.Is(err, ErrUnauthorized) {
-			response.Error(c, appErr.Forbidden("you do not have permission to delete this draft", nil))
+			response.Error(c, appErr.New(http.StatusForbidden, appErr.CodeForbidden, "you do not have permission to delete this draft", nil))
 			return
 		}
-		response.Error(c, appErr.Internal("failed to delete draft", err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to delete draft", err))
 		return
 	}
 
-	response.SuccessNoContent(c)
+	c.Status(http.StatusNoContent)
 }
 
 func (h *Handler) RejectDraft(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		response.Error(c, appErr.BadRequest("draft ID is required", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "draft ID is required", nil))
 		return
 	}
 
@@ -297,30 +297,30 @@ func (h *Handler) RejectDraft(c *gin.Context) {
 
 	if err := h.service.RejectDraft(c.Request.Context(), id, req.Reason); err != nil {
 		if errors.Is(err, ErrDraftNotFound) {
-			response.Error(c, appErr.NotFound("draft not found", nil))
+			response.Error(c, appErr.New(http.StatusNotFound, appErr.CodeNotFound, "draft not found", nil))
 			return
 		}
-		response.Error(c, appErr.Internal("failed to reject draft", err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to reject draft", err))
 		return
 	}
 
-	response.OK(c, "draft rejected", gin.H{})
+	response.Success(c, http.StatusOK, "draft rejected", gin.H{})
 }
 
 func (h *Handler) SearchArtists(c *gin.Context) {
 	q := c.Query("q")
 	if q == "" {
-		response.Error(c, appErr.BadRequest("search query 'q' is required", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "search query 'q' is required", nil))
 		return
 	}
 
 	results, err := h.service.SearchArtists(c.Request.Context(), q)
 	if err != nil {
-		response.Error(c, appErr.Internal("failed to search artists", err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to search artists", err))
 		return
 	}
 
-	response.OK(c, "artists retrieved", results)
+	response.Success(c, http.StatusOK, "artists retrieved", results)
 }
 
 func (h *Handler) SetFinalizer(f *finalization.Service) {
@@ -330,22 +330,22 @@ func (h *Handler) SetFinalizer(f *finalization.Service) {
 func (h *Handler) FinalizeDraft(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		response.Error(c, appErr.BadRequest("draft ID is required", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "draft ID is required", nil))
 		return
 	}
 
 	if h.finalizer == nil {
-		response.Error(c, appErr.Internal("finalization not configured", nil))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "finalization not configured", nil))
 		return
 	}
 
 	draft, err := h.service.GetDraftRaw(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, ErrDraftNotFound) {
-			response.Error(c, appErr.NotFound("draft not found", nil))
+			response.Error(c, appErr.New(http.StatusNotFound, appErr.CodeNotFound, "draft not found", nil))
 			return
 		}
-		response.Error(c, appErr.Internal("failed to get draft", err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to get draft", err))
 		return
 	}
 
@@ -356,7 +356,7 @@ func (h *Handler) FinalizeDraft(c *gin.Context) {
 
 	result, err := h.finalizer.Finalize(c.Request.Context(), draft.ID, string(draft.Status), draft.FilePath, draft.Format, finalMeta, draft.ExtractedMetadata)
 	if err != nil {
-		response.Error(c, appErr.Internal("failed to finalize draft: "+err.Error(), err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to finalize draft: "+err.Error(), err))
 		return
 	}
 
@@ -365,7 +365,7 @@ func (h *Handler) FinalizeDraft(c *gin.Context) {
 		h.enqueueAILyricsGeneration(c.Request.Context(), draft, result)
 	}
 
-	response.OK(c, "draft published successfully", result)
+	response.Success(c, http.StatusOK, "draft published successfully", result)
 }
 
 // enqueueAILyricsGeneration fires a non-blocking request to the ML service
@@ -415,82 +415,82 @@ func (h *Handler) enqueueAILyricsGeneration(ctx context.Context, draft *Ingestio
 func (h *Handler) SearchAlbums(c *gin.Context) {
 	q := c.Query("q")
 	if q == "" {
-		response.Error(c, appErr.BadRequest("search query 'q' is required", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "search query 'q' is required", nil))
 		return
 	}
 
 	results, err := h.service.SearchAlbums(c.Request.Context(), q)
 	if err != nil {
-		response.Error(c, appErr.Internal("failed to search albums", err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to search albums", err))
 		return
 	}
 
-	response.OK(c, "albums retrieved", results)
+	response.Success(c, http.StatusOK, "albums retrieved", results)
 }
 
 func (h *Handler) GetStats(c *gin.Context) {
 	stats, err := h.service.GetIngestionStats(c.Request.Context())
 	if err != nil {
-		response.Error(c, appErr.Internal("failed to get ingestion stats", err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to get ingestion stats", err))
 		return
 	}
-	response.OK(c, "ingestion stats retrieved", stats)
+	response.Success(c, http.StatusOK, "ingestion stats retrieved", stats)
 }
 
 func (h *Handler) TriggerCleanup(c *gin.Context) {
 	if h.cleanup == nil {
-		response.Error(c, appErr.Internal("cleanup service not configured", nil))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "cleanup service not configured", nil))
 		return
 	}
 	flagged, err := h.cleanup.FlagStaleDrafts(c.Request.Context(), 24*time.Hour)
 	if err != nil {
-		response.Error(c, appErr.Internal("cleanup failed", err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "cleanup failed", err))
 		return
 	}
-	response.OK(c, "cleanup completed", gin.H{"flagged": flagged})
+	response.Success(c, http.StatusOK, "cleanup completed", gin.H{"flagged": flagged})
 }
 
 func (h *Handler) UploadDraftImage(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		response.Error(c, appErr.BadRequest("draft ID is required", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "draft ID is required", nil))
 		return
 	}
 
 	entityType := c.Param("entity")
 	if entityType != "artist" && entityType != "album" && entityType != "track" && entityType != "cover" {
-		response.Error(c, appErr.BadRequest("entity must be 'artist', 'album', 'track', or 'cover'", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "entity must be 'artist', 'album', 'track', or 'cover'", nil))
 		return
 	}
 
 	file, header, err := c.Request.FormFile("image")
 	if err != nil {
-		response.Error(c, appErr.BadRequest("no image file provided in 'image' field", err))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "no image file provided in 'image' field", err))
 		return
 	}
 	defer file.Close()
 
 	ext := strings.ToLower(filepath.Ext(header.Filename))
 	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".webp" {
-		response.Error(c, appErr.BadRequest("unsupported image format (allowed: jpg, png, webp)", nil))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "unsupported image format (allowed: jpg, png, webp)", nil))
 		return
 	}
 
 	imageURL, err := h.service.UploadDraftImage(c.Request.Context(), id, entityType, file, ext)
 	if err != nil {
 		if errors.Is(err, ErrDraftNotFound) {
-			response.Error(c, appErr.NotFound("draft not found", nil))
+			response.Error(c, appErr.New(http.StatusNotFound, appErr.CodeNotFound, "draft not found", nil))
 			return
 		}
-		response.Error(c, appErr.Internal("failed to upload image", err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to upload image", err))
 		return
 	}
 
-	response.OK(c, "image uploaded", gin.H{"url": imageURL})
+	response.Success(c, http.StatusOK, "image uploaded", gin.H{"url": imageURL})
 }
 
 func (h *Handler) GetConfig(c *gin.Context) {
-	response.OK(c, "ingestion config", IngestionConfigResponse{
+	response.Success(c, http.StatusOK, "ingestion config", IngestionConfigResponse{
 		MaxUploadSize:     200 << 20,
 		EnrichmentEnabled: true,
 	})

@@ -1,11 +1,63 @@
 <template>
   <div class="mx-auto max-w-6xl space-y-8 px-4 py-6 md:px-6 md:py-8">
     <!-- Header -->
-    <div>
-      <h1 class="text-3xl font-bold text-white md:text-4xl">Contributions</h1>
-      <p class="mt-1 text-sm text-white/40">
-        Help improve the community by contributing lyrics, translations, credits, and more
-      </p>
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-white md:text-4xl">Contributions</h1>
+        <p class="mt-1 text-sm text-white/40">
+          Help improve the community by contributing lyrics, translations, credits, and more
+        </p>
+      </div>
+      <router-link
+        to="/upload"
+        class="spring shrink-0 rounded-xl bg-spotify/10 px-4 py-2.5 text-sm font-medium text-spotify transition-all hover:bg-spotify/20"
+      >
+        <Upload aria-hidden="true" class="mr-1.5 inline text-xs" />
+        Upload Music
+      </router-link>
+    </div>
+
+    <!-- Reputation Strip -->
+    <div
+      v-if="reputation"
+      class="flex flex-wrap items-center gap-4 rounded-2xl border border-white/6 bg-white/3 px-5 py-3"
+    >
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-9 w-9 items-center justify-center rounded-full"
+          :class="tierBgClass(reputation.tier)"
+        >
+          <Shield aria-hidden="true" class="text-sm" :class="tierIconClass(reputation.tier)" />
+        </div>
+        <div>
+          <p class="text-xs font-medium text-white/70">
+            {{ reputation.tierLabel || reputation.tier || 'Newcomer' }}
+          </p>
+          <p class="text-[10px] text-white/30">Trust Tier</p>
+        </div>
+      </div>
+      <div class="h-8 w-px bg-white/6" />
+      <div class="flex items-center gap-2 text-sm tabular-nums">
+        <span class="font-semibold text-white">{{ reputation.trustScore ?? reputation.score ?? 0 }}</span>
+        <span class="text-xs text-white/30">Score</span>
+      </div>
+      <div class="h-8 w-px bg-white/6" />
+      <div class="flex items-center gap-2 text-sm tabular-nums">
+        <span class="font-semibold text-white">{{ reputation.acceptedContributions ?? 0 }}</span>
+        <span class="text-xs text-white/30">Accepted</span>
+      </div>
+      <div class="h-8 w-px bg-white/6" />
+      <div class="flex items-center gap-2 text-sm tabular-nums">
+        <span class="font-semibold text-white">{{ reputation.uploadSlots ?? 0 }}</span>
+        <span class="text-xs text-white/30">Upload Slots</span>
+      </div>
+      <div class="h-8 w-px bg-white/6" />
+      <div
+        class="rounded-full px-2.5 py-0.5 text-[10px] font-medium"
+        :class="reputation.autoPublish ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'"
+      >
+        {{ reputation.autoPublish ? 'Auto-publish' : 'Needs review' }}
+      </div>
     </div>
 
     <!-- Tabs -->
@@ -42,7 +94,7 @@
         class="glass-strong flex flex-col items-center gap-3 rounded-2xl py-12 text-center"
       >
         <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
-          <i aria-hidden="true" class="pi pi-inbox text-2xl text-white/15" />
+          <Inbox aria-hidden="true" class="text-2xl text-white/15"  />
         </div>
         <p class="text-sm text-white/25">No contributions yet</p>
         <button
@@ -98,7 +150,7 @@
                 @click="viewHistory(c)"
                 aria-label="View history"
               >
-                <i aria-hidden="true" class="pi pi-history text-xs" />
+                <History aria-hidden="true" class="text-xs"  />
               </button>
             </div>
           </div>
@@ -151,7 +203,7 @@
         class="glass-strong flex flex-col items-center gap-3 rounded-2xl py-12 text-center"
       >
         <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
-          <i aria-hidden="true" class="pi pi-check-circle text-2xl text-white/15" />
+          <CheckCircle class="text-2xl text-white/15"<i aria-hidden="true"  /> />
         </div>
         <p class="text-sm text-white/25">All caught up! No pending contributions to review</p>
       </div>
@@ -188,10 +240,10 @@
             @click="showData = showData === c.id ? null : c.id"
             aria-label="Toggle contribution data"
           >
-            <i
-              class="pi pi-chevron-right mr-1 text-[10px]"
+            <ChevronRight aria-hidden="true" class="mr-1 text-[10px]"<i
+              
               :class="{ 'rotate-90': showData === c.id }"
-            />
+            /> />
             {{ showData === c.id ? 'Hide' : 'View' }} data
           </button>
 
@@ -202,7 +254,7 @@
               class="spring rounded-lg bg-spotify/10 px-4 py-2 text-xs font-medium text-spotify transition-all hover:bg-spotify/20 disabled:opacity-40"
               @click="reviewContribution(c.id, 'approve')"
             >
-              <i aria-hidden="true" v-if="reviewingId === c.id" class="pi pi-spin pi-spinner mr-1" />
+              <Loader2 class="mr-1"<i aria-hidden="true" v-if="reviewingId === c.id"  /> />
               Approve
             </button>
             <button
@@ -211,7 +263,7 @@
               class="spring rounded-lg bg-red-500/10 px-4 py-2 text-xs font-medium text-red-400 transition-all hover:bg-red-500/20 disabled:opacity-40"
               @click="reviewContribution(c.id, 'reject')"
             >
-              <i aria-hidden="true" v-if="reviewingId === c.id" class="pi pi-spin pi-spinner mr-1" />
+              <Loader2 class="mr-1"<i aria-hidden="true" v-if="reviewingId === c.id"  /> />
               Reject
             </button>
             <span class="text-[10px] text-white/20">{{ formatDate(c.created_at) }}</span>
@@ -223,10 +275,21 @@
 </template>
 
 <script setup lang="ts">
+import {
+  CheckCircle,
+  ChevronRight,
+  History,
+  Inbox,
+  Loader2,
+  Shield,
+  Upload,
+} from 'lucide-vue-next'
 import { onMounted, ref } from 'vue'
-import { useToast } from 'primevue/usetoast'
+import { useUserAuthStore } from '@/stores'
+import { useAppToast } from '@/composables/useAppToast'
 import { SkeletonLoader } from '@/components/common'
 import { useContributionApi } from '@/services/api/contribution'
+import { useReputationApi } from '@/services/api/reputation'
 import type {
   Contribution,
   ContributionHistoryItem,
@@ -237,7 +300,11 @@ import ContributionHistory from '@/components/contribution/ContributionHistory.v
 import ContributionLeaderboard from '@/components/contribution/ContributionLeaderboard.vue'
 
 const api = useContributionApi()
-const toast = useToast()
+const reputationApi = useReputationApi()
+const auth = useUserAuthStore()
+const toast = useAppToast()
+
+const reputation = ref<Record<string, any> | null>(null)
 
 const tabs = [
   { key: 'submit', label: 'Submit', icon: 'pi pi-plus' },
@@ -277,8 +344,8 @@ async function loadMyContributions(page = 1) {
     const res = await api.listMy({ page, page_size: 20 })
     myContributions.value = res?.data ?? []
     myMeta.value = res?.meta ?? null
-  } catch (err) {
-    console.error('Failed to load contributions:', err)
+  } catch (err: unknown) {
+    toast.apiError(err, 'Failed to load contributions')
     myContributions.value = []
   } finally {
     loadingMy.value = false
@@ -290,8 +357,8 @@ async function loadPending() {
   try {
     const res = await api.listPending({ page: 1, page_size: 50 })
     pendingItems.value = res?.data ?? []
-  } catch (err) {
-    console.error('Failed to load pending:', err)
+  } catch (err: unknown) {
+    toast.apiError(err, 'Failed to load pending')
     pendingItems.value = []
   } finally {
     loadingPending.value = false
@@ -303,8 +370,8 @@ async function loadLeaderboard() {
   try {
     const res = await api.getLeaderboard({ limit: 20 })
     leaderboardData.value = res ?? []
-  } catch (err) {
-    console.error('Failed to load leaderboard:', err)
+  } catch (err: unknown) {
+    toast.apiError(err, 'Failed to load leaderboard')
     leaderboardData.value = []
   } finally {
     loadingLeaderboard.value = false
@@ -321,8 +388,8 @@ async function viewHistory(c: Contribution) {
   try {
     const res = await api.getHistory(c.id)
     historyItems.value = res ?? []
-  } catch (err) {
-    console.error('Failed to load history:', err)
+  } catch (err: unknown) {
+    toast.apiError(err, 'Failed to load history')
     historyItems.value = []
   } finally {
     loadingHistory.value = false
@@ -334,10 +401,9 @@ async function reviewContribution(id: string, action: 'approve' | 'reject') {
   try {
     await api.review(id, { action })
     pendingItems.value = pendingItems.value.filter((c) => c.id !== id)
-    toast.add({ severity: 'success', summary: `Contribution ${action}d`, life: 2000 })
-  } catch (err) {
-    console.error(`Failed to ${action} contribution:`, err)
-    toast.add({ severity: 'error', summary: `Failed to ${action} contribution`, life: 3000 })
+    toast.success(`Contribution ${action}d`)
+  } catch (err: unknown) {
+    toast.apiError(err, `Failed to ${action} contribution`)
   } finally {
     reviewingId.value = null
   }
@@ -399,7 +465,36 @@ function formatContributionData(data: unknown): string {
   return JSON.stringify(data, null, 2)
 }
 
+function tierBgClass(tier?: string) {
+  const map: Record<string, string> = {
+    newcomer: 'bg-white/5',
+    contributor: 'bg-blue-500/10',
+    trusted: 'bg-emerald-500/10',
+    verified: 'bg-purple-500/10',
+    elite: 'bg-yellow-500/10',
+    legend: 'bg-gradient-to-br from-yellow-500/20 to-amber-500/20',
+  }
+  return map[tier?.toLowerCase() ?? ''] || 'bg-white/5'
+}
+
+function tierIconClass(tier?: string) {
+  const map: Record<string, string> = {
+    newcomer: 'text-white/40',
+    contributor: 'text-blue-400',
+    trusted: 'text-emerald-400',
+    verified: 'text-purple-400',
+    elite: 'text-yellow-400',
+    legend: 'text-amber-400',
+  }
+  return map[tier?.toLowerCase() ?? ''] || 'text-white/40'
+}
+
 onMounted(() => {
   loadTab('submit')
+  if (auth.isAuthenticated) {
+    reputationApi.getUserReputation(String(auth.user?.id)).then((r) => {
+      reputation.value = r as Record<string, any>
+    }).catch(() => {})
+  }
 })
 </script>

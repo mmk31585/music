@@ -257,6 +257,47 @@ func rollback(tx *sqlx.Tx) {
 	_ = tx.Rollback()
 }
 
+type Overview struct {
+	TotalTracks    int     `db:"total_tracks"`
+	TotalUsers     int     `db:"total_users"`
+	TotalAlbums    int     `db:"total_albums"`
+	TotalPlays     int     `db:"total_plays"`
+	ActiveUsers24h int     `db:"active_users_last_24h"`
+	StorageUsedMB  float64 `db:"storage_used_mb"`
+}
+
+func (r *Repository) GetOverview(ctx context.Context) (Overview, error) {
+	var ov Overview
+	err := r.db.GetContext(ctx, &ov, `
+		SELECT
+			(SELECT COUNT(*) FROM tracks) AS total_tracks,
+			(SELECT COUNT(*) FROM users) AS total_users,
+			(SELECT COUNT(*) FROM albums) AS total_albums,
+			(SELECT COUNT(*) FROM listening_history WHERE played_at >= NOW() - INTERVAL '24 hours') AS active_users_last_24h,
+			COALESCE((
+				SELECT COUNT(DISTINCT user_id)
+				FROM listening_history
+				WHERE played_at >= NOW() - INTERVAL '24 hours'
+			), 0) AS active_users_last_24h,
+			COALESCE((
+				SELECT SUM(file_size)::numeric / 1048576.0
+				FROM media_assets
+				WHERE deleted_at IS NULL
+			), 0) AS storage_used_mb
+	`)
+	if err != nil {
+		return Overview{}, err
+	}
+
+	// TotalPlays — get count from the partitioned listening_history table
+	err = r.db.GetContext(ctx, &ov.TotalPlays, `SELECT COUNT(*) FROM listening_history`)
+	if err != nil {
+		return Overview{}, err
+	}
+
+	return ov, nil
+}
+
 func nullableUUID(id *uuid.UUID) any {
 	if id == nil {
 		return sql.NullString{}

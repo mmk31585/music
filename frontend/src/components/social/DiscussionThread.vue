@@ -11,7 +11,7 @@
         :key="cat.key"
         role="tab"
         :aria-selected="activeTab === cat.key"
-        class="shrink-0 rounded-full px-4 py-2 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-[#1db954]"
+        class="shrink-0 rounded-full px-4 py-2 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-accent"
         :class="activeTab === cat.key
           ? 'bg-white/15 text-white shadow-lg'
           : 'bg-white/4 text-white/40 hover:bg-white/8 hover:text-white/60'"
@@ -28,10 +28,10 @@
     <div v-if="!showStartInput" class="flex justify-end">
       <button
         aria-label="Start a new discussion"
-        class="inline-flex items-center gap-1.5 rounded-full bg-spotify/10 px-4 py-2 text-xs font-semibold text-spotify transition hover:bg-spotify/20 focus-visible:outline-2 focus-visible:outline-[#1db954]"
+        class="inline-flex items-center gap-1.5 rounded-full bg-spotify/10 px-4 py-2 text-xs font-semibold text-spotify transition hover:bg-spotify/20 focus-visible:outline-2 focus-visible:outline-accent"
         @click="showStartInput = true"
       >
-        <i aria-hidden="true" class="pi pi-plus text-[10px]" />
+        <Plus aria-hidden="true" class="text-[10px]"  />
         Start Discussion
       </button>
     </div>
@@ -78,13 +78,14 @@
       v-else
       class="flex flex-col items-center gap-3 py-12 text-center"
     >
-      <i aria-hidden="true" class="pi pi-comments text-2xl text-white/10" />
+      <MessageSquare aria-hidden="true" class="text-2xl text-white/10"  />
       <p class="text-sm text-white/30">No discussions yet in this category</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { MessageSquare, Plus } from 'lucide-vue-next'
 import { ref, computed } from 'vue'
 import DiscussionCard from './DiscussionCard.vue'
 import type { Discussion } from '@/services/api/social'

@@ -10,7 +10,7 @@
           to="/admin/media"
           class="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
         >
-          <i aria-hidden="true" class="pi pi-upload text-xs" />
+          <Upload aria-hidden="true" class="text-xs"  />
           Upload media
         </RouterLink>
       </template>
@@ -21,7 +21,7 @@
       class="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-300"
     >
       <div class="flex items-start gap-3">
-        <i aria-hidden="true" class="pi pi-exclamation-triangle mt-0.5 text-xs" />
+        <AlertTriangle aria-hidden="true" class="mt-0.5 text-xs"  />
         <div>
           <p class="font-semibold">Dashboard data could not be fully loaded.</p>
           <p class="mt-1 text-xs text-red-300/80">
@@ -103,7 +103,7 @@
         to="/admin/ingestion"
         class="flex items-center justify-center gap-2 rounded-2xl border border-white/6 bg-white/2 px-5 py-8 transition-colors hover:bg-white/4"
       >
-        <i aria-hidden="true" class="pi pi-arrow-right text-sm text-primary" />
+        <ArrowRight aria-hidden="true" class="text-sm text-emerald-400"  />
         <span class="text-sm font-medium text-white">Go to Ingestion</span>
       </RouterLink>
     </section>
@@ -120,7 +120,7 @@
         <div class="flex items-center justify-between border-b border-white/6 px-5 py-4">
           <div class="flex items-center gap-3">
             <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
-              <i aria-hidden="true" class="pi pi-play-circle text-xs text-emerald-400" />
+              <PlayCircle aria-hidden="true" class="text-xs text-emerald-400"  />
             </div>
 
             <div>
@@ -149,7 +149,7 @@
         </div>
 
         <div v-else-if="recentTracks.length === 0" class="py-12 text-center">
-          <i aria-hidden="true" class="pi pi-play-circle text-2xl text-slate-700" />
+          <PlayCircle aria-hidden="true" class="text-2xl text-slate-700"  />
           <p class="mt-2 text-sm text-slate-500">No tracks yet</p>
         </div>
 
@@ -167,11 +167,11 @@
               :title="isTrackPlaying(track) ? 'Now playing' : 'Play track'"
               @click.stop="handlePlayTrack(track)"
             >
-              <i
+              <Loader2
                 v-if="loadingTrackId === String(track.id)"
                 aria-hidden="true"
-                class="pi pi-spin pi-spinner text-sm"
-              />
+                class="text-sm animate-spin"
+               />
               <i
                 v-else
                 aria-hidden="true"
@@ -194,7 +194,7 @@
               />
 
               <div v-else class="flex h-full w-full items-center justify-center">
-                <i aria-hidden="true" class="pi pi-music text-xs text-slate-700" />
+                <Music aria-hidden="true" class="text-xs text-slate-700"  />
               </div>
             </div>
 
@@ -222,7 +222,7 @@
           <div class="border-b border-white/6 px-5 py-4">
             <div class="flex items-center gap-3">
               <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
-                <i aria-hidden="true" class="pi pi-info-circle text-xs text-blue-400" />
+                <Info aria-hidden="true" class="text-xs text-blue-400"  />
               </div>
 
               <h2 class="text-base font-semibold text-white">Getting started</h2>
@@ -240,7 +240,7 @@
                       : 'bg-white/6 text-slate-500'
                   "
                 >
-                  <i aria-hidden="true" v-if="tip.done" class="pi pi-check text-[10px]" />
+                  <Check aria-hidden="true" v-if="tip.done" class="text-[10px]"  />
                   <span v-else>{{ i + 1 }}</span>
                 </div>
 
@@ -266,10 +266,8 @@
                 class="flex h-8 w-8 items-center justify-center rounded-lg"
                 :class="error ? 'bg-red-500/10' : 'bg-emerald-500/10'"
               >
-                <i
-                  class="pi pi-server text-xs"
-                  :class="error ? 'text-red-400' : 'text-emerald-400'"
-                />
+                <Server aria-hidden="true" class="text-xs"
+                  :class="error ? 'text-red-400' : 'text-emerald-400'" />
               </div>
 
               <h2 class="text-base font-semibold text-white">System</h2>
@@ -304,6 +302,7 @@
 </template>
 
 <script setup lang="ts">
+import { AlertTriangle, ArrowRight, Check, Info, Loader2, Music, PlayCircle, Server, Upload } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import AdminSectionHeader from '@/components/admin/AdminSectionHeader.vue'
 import AdminStatCard from '@/components/admin/AdminStatCard.vue'

@@ -9,12 +9,28 @@ import (
 	"strings"
 	"time"
 
+	"net/http"
 	apperrors "music/internal/common/errors"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+type RepositoryInterface interface {
+	CreateUser(ctx context.Context, user User) (User, error)
+	FindUserByEmailOrUsername(ctx context.Context, value string) (User, error)
+	FindUserByID(ctx context.Context, id string) (User, error)
+	FindPublicUser(ctx context.Context, id string) (User, error)
+	CreateSession(ctx context.Context, userID string, refreshToken string, userAgent *string, ipAddress *string, expiresAt time.Time) error
+	FindValidSessionByRefreshToken(ctx context.Context, refreshToken string) (AuthSession, error)
+	RevokeSessionByRefreshToken(ctx context.Context, refreshToken string) error
+	RevokeSessionByID(ctx context.Context, sessionID string) (bool, error)
+	ListUsers(ctx context.Context, params ListUsersParams) ([]User, int, error)
+	UpdateUser(ctx context.Context, id string, updates map[string]any) error
+	UpdatePassword(ctx context.Context, id string, passwordHash string) error
+	DeleteUser(ctx context.Context, id string) error
+}
 
 type Repository struct {
 	db *pgxpool.Pool
@@ -59,7 +75,7 @@ func (r *Repository) CreateUser(ctx context.Context, user User) (User, error) {
 
 	if err != nil {
 		if isUniqueViolation(err) {
-			return User{}, apperrors.Conflict("email or username already exists", nil)
+			return User{}, apperrors.New(http.StatusConflict, apperrors.CodeConflict, "email or username already exists", nil)
 		}
 
 		return User{}, err
@@ -138,7 +154,7 @@ func (r *Repository) FindValidSessionByRefreshToken(ctx context.Context, refresh
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return AuthSession{}, apperrors.Unauthorized("invalid refresh token", nil)
+		return AuthSession{}, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid refresh token", nil)
 	}
 
 	if err != nil {
@@ -193,7 +209,7 @@ func (r *Repository) scanUser(row pgx.Row) (User, error) {
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return User{}, apperrors.NotFound("user not found", nil)
+		return User{}, apperrors.New(http.StatusNotFound, apperrors.CodeNotFound, "user not found", nil)
 	}
 
 	if err != nil {
@@ -312,10 +328,10 @@ func (r *Repository) UpdateUser(ctx context.Context, id string, updates map[stri
 		col, ok := allowedUserUpdateColumns[key]
 		if !ok {
 			// Reject unknown keys instead of interpolating them raw (SQL injection prevention)
-			return apperrors.BadRequest("unknown user field: "+key, map[string]string{
-				"field":   key,
-				"allowed": "role, is_active, email_verified, display_name, username, email, avatar_url",
-			})
+		return apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "unknown user field: "+key, map[string]string{
+			"field":   key,
+			"allowed": "role, is_active, email_verified, display_name, username, email, avatar_url",
+		})
 		}
 
 		// Handle email_verified as a special boolean→SET NULL logic

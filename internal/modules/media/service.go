@@ -224,7 +224,7 @@ func sanitizeFilename(name string) string {
 
 	return name
 }
-func uploadResponseFromMedia(item *Media, duplicate bool) *UploadResponse {
+func uploadResponseFromMedia(item *MediaAsset, duplicate bool) *UploadResponse {
 	if item == nil {
 		return nil
 	}
@@ -268,7 +268,7 @@ func uploadResponseFromMedia(item *Media, duplicate bool) *UploadResponse {
 	}
 }
 
-func (s *Service) ListMedia(ctx context.Context) ([]Media, error) {
+func (s *Service) ListMedia(ctx context.Context) ([]MediaAsset, error) {
 	return s.repo.List(ctx)
 }
 

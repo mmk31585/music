@@ -122,9 +122,9 @@ export const useUserAuthStore = defineStore('auth', () => {
         ? { testing: testingOrOptions }
         : (testingOrOptions ?? {})
 
-      const config = options.testing
-        ? { headers: { 'X-Testing': 'true' } } as UseRequestConfig<AuthResponse>
-        : {} as UseRequestConfig<AuthResponse>
+      const config: UseRequestConfig<AuthResponse> = options.testing
+        ? { headers: { 'X-Testing': 'true' } }
+        : {}
 
       const response = await useAuthApi().login(payload, config)
 
@@ -136,9 +136,9 @@ export const useUserAuthStore = defineStore('auth', () => {
         throw new Error('Login failed: no user data received')
       }
 
-      // Persist rememberMe preference
+      // Persist rememberMe preference (always store a boolean)
       if (options.rememberMe !== undefined) {
-        safeLocalStorage.setItem('remember_me', options.rememberMe)
+        safeLocalStorage.setItem<boolean>('remember_me', options.rememberMe)
       }
 
       setSession({
@@ -153,7 +153,7 @@ export const useUserAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function me(config: UseRequestConfig<any> = {}) {
+  async function me(config: UseRequestConfig<unknown> = {}) {
     loading.value = true
 
     try {

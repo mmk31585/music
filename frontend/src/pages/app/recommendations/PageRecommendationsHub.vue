@@ -31,7 +31,7 @@
                 <span
                   class="inline-flex items-center gap-1.5 rounded-full border border-spotify/20 bg-spotify/10 px-3 py-1 text-[10px] font-bold tracking-[0.2em] text-spotify uppercase"
                 >
-                  <i aria-hidden="true" class="pi pi-sparkles text-[10px]" />
+                  <Sparkles class="text-[10px]"<i aria-hidden="true"  /> />
                   AI-Powered
                 </span>
                 <span class="text-[10px] font-medium text-white/40">
@@ -70,27 +70,27 @@
                   v-if="!loadingStats && listeningStats"
                   class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/60"
                 >
-                  <i aria-hidden="true" class="pi pi-clock text-[10px]" />
+                  <Clock aria-hidden="true" class="text-[10px]"  />
                   {{ listeningStats.total_minutes_listened }} min
                 </div>
                 <div
                   v-if="!loadingStats && listeningStats"
                   class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/60"
                 >
-                  <i aria-hidden="true" class="pi pi-users text-[10px]" />
+                  <Users aria-hidden="true" class="text-[10px]"  />
                   {{ listeningStats.unique_artists_count }} artists
                 </div>
                 <div
                   v-if="!loadingStats && listeningStats"
                   class="flex items-center gap-1.5 rounded-full border border-spotify/20 bg-spotify/10 px-3 py-1.5 text-xs text-spotify"
                 >
-                  <i aria-hidden="true" class="pi pi-chart-line text-[10px]" />
+                  <TrendingUp aria-hidden="true" class="text-[10px]"  />
                   {{ discoveryScore }} discovery
                 </div>
                 <div
                   class="flex items-center gap-1.5 rounded-full border border-white/6 bg-white/4 px-3 py-1.5 text-xs text-white/60"
                 >
-                  <i aria-hidden="true" class="pi pi-star text-[10px]" />
+                  <Star aria-hidden="true" class="text-[10px]"  />
                   {{ forYouTracks.length + popularTracks.length }} recommendations
                 </div>
               </div>
@@ -116,7 +116,7 @@
               class="text-xs text-white/40 transition hover:text-white"
             >
               Explore all moods
-              <i aria-hidden="true" class="pi pi-arrow-right ml-1 text-[10px]" />
+              <ArrowRight aria-hidden="true" class="ml-1 text-[10px]"  />
             </RouterLink>
           </div>
 
@@ -151,7 +151,7 @@
                 v-if="selectedMood === mood.value"
                 class="flex h-4 w-4 items-center justify-center rounded-full bg-spotify text-[8px] text-black"
               >
-                <i aria-hidden="true" class="pi pi-check" />
+                <Check aria-hidden="true"  />
               </span>
             </button>
           </div>
@@ -159,7 +159,7 @@
           <!-- Inline AI Mood Results -->
           <div v-if="loadingMoodPlaylist" class="mt-4">
             <div class="flex items-center gap-3 rounded-2xl bg-white/2 px-6 py-4">
-              <i aria-hidden="true" class="pi pi-spin pi-sparkles text-spotify" />
+              <Sparkles aria-hidden="true" class="text-spotify animate-spin"  />
               <div>
                 <span class="text-sm font-medium text-white">AI is curating tracks</span>
                 <p class="text-xs text-white/40">Finding tracks that match this feeling...</p>
@@ -177,7 +177,7 @@
             </div>
           </div>
           <div
-            v-else-if="moodPlaylist && moodPlaylist.tracks.length"
+            v-else-if="moodPlaylist && moodPlaylist.tracks?.length"
             class="mt-4 overflow-hidden rounded-2xl border border-white/6 bg-white/2"
           >
             <!-- Header with mood info -->
@@ -196,10 +196,10 @@
                   <div class="flex items-center gap-2">
                     <span class="text-sm font-bold text-white">{{ moodPlaylist.name }}</span>
                     <span class="rounded-full bg-white/6 px-2 py-0.5 text-[9px] font-medium text-white/40">
-                      {{ moodPlaylist.tracks.length }} tracks
+                      {{ (moodPlaylist.tracks ?? []).length }} tracks
                     </span>
                     <span class="flex items-center gap-1 rounded-full bg-spotify/10 px-2 py-0.5 text-[9px] font-medium text-spotify">
-                      <i aria-hidden="true" class="pi pi-sparkles text-[8px]" />
+                      <Sparkles aria-hidden="true" class="text-[8px]"  />
                       AI
                     </span>
                   </div>
@@ -215,7 +215,7 @@
                   title="Regenerate with AI"
                   @click="handleMoodPick(String(selectedMood))"
                 >
-                  <i aria-hidden="true" class="pi pi-refresh text-[9px]" />
+                  <RefreshCw aria-hidden="true" class="text-[9px]"  />
                   Regenerate
                 </button>
                 <button
@@ -223,20 +223,19 @@
                   class="text-[10px] text-white/30 transition hover:text-white"
                   @click="selectedMood = ''; moodPlaylist = null"
                 >
-                  <i aria-hidden="true" class="pi pi-times" />
+                  <X aria-hidden="true" class=""  />
                 </button>
               </div>
             </div>
             <!-- Track list -->
             <div class="border-t border-white/6">
-              <div
-                v-for="(track, index) in moodPlaylist.tracks.slice(0, 5)"
+              <button
+                v-for="(track, index) in (moodPlaylist.tracks ?? []).slice(0, 5)"
                 :key="track.id"
-                role="button"
-                tabindex="0"
-                class="group flex cursor-pointer items-center gap-3 px-4 py-2.5 transition hover:bg-white/4"
+                type="button"
+                class="group flex w-full items-center gap-3 px-4 py-2.5 transition hover:bg-white/4"
                 @click="playTrack(track, index)"
-                @keydown.enter="playTrack(track, index)"
+                @contextmenu.prevent="openContextMenu($event, track)"
               >
                 <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10">
                   <img
@@ -248,12 +247,12 @@
                     @error="onImgError"
                   />
                   <div v-else class="flex h-full items-center justify-center">
-                    <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
+                    <Music aria-hidden="true" class="text-xs text-white/30"  />
                   </div>
                   <div
                     class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
                   >
-                    <i aria-hidden="true" class="pi pi-play-fill text-xs text-white" />
+                    <Play aria-hidden="true" class="text-xs text-white"  />
                   </div>
                 </div>
                 <div class="min-w-0 flex-1">
@@ -276,17 +275,17 @@
                 <span class="shrink-0 text-xs text-white/30 tabular-nums">
                   {{ formatDuration(track.duration) }}
                 </span>
-              </div>
+              </button>
               <div
-                v-if="moodPlaylist.tracks.length > 5"
+                v-if="(moodPlaylist.tracks?.length ?? 0) > 5"
                 class="border-t border-white/4 px-4 py-2.5 text-center"
               >
                 <RouterLink
                   to="/ai/mood-explorer"
                   class="text-xs text-white/30 transition hover:text-white"
                 >
-                  View all {{ moodPlaylist.tracks.length }} tracks
-                  <i aria-hidden="true" class="pi pi-arrow-right ml-0.5 text-[9px]" />
+                  View all {{ (moodPlaylist.tracks ?? []).length }} tracks
+                  <ArrowRight aria-hidden="true" class="ml-0.5 text-[9px]"  />
                 </RouterLink>
               </div>
             </div>
@@ -327,7 +326,7 @@
             <div
               class="absolute right-5 bottom-5 flex h-8 w-8 items-center justify-center rounded-full border border-white/6 text-xs text-white/30 transition-all duration-300 group-hover:border-white/15 group-hover:text-white/70"
             >
-              <i aria-hidden="true" class="pi pi-arrow-right" />
+              <ArrowRight aria-hidden="true" class=""  />
             </div>
           </RouterLink>
         </div>
@@ -364,15 +363,14 @@
 
           <!-- Track Grid -->
           <div v-else class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            <div
+            <button
               v-for="(track, idx) in forYouTracks"
               :key="track.id"
-              role="button"
-              tabindex="0"
-              class="group cursor-pointer"
+              type="button"
+              class="group w-full text-left"
               :style="{ animationDelay: `${idx * 80}ms` }"
               @click="playTrack(track, idx)"
-              @keydown.enter="playTrack(track, idx)"
+              @contextmenu.prevent="openContextMenu($event, track)"
             >
               <div
                 class="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-white/5 shadow-lg ring-1 ring-white/6 transition-all duration-500 group-hover:scale-[1.02] group-hover:ring-spotify/30"
@@ -386,7 +384,7 @@
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full items-center justify-center">
-                  <i aria-hidden="true" class="pi pi-music text-2xl text-white/20" />
+                  <Music aria-hidden="true" class="text-2xl text-white/20"  />
                 </div>
                 <!-- Play overlay -->
                 <div
@@ -395,7 +393,7 @@
                   <div
                     class="flex h-12 w-12 items-center justify-center rounded-full bg-spotify/90 text-black shadow-xl shadow-spotify/20 transition-transform duration-300 group-hover:scale-105"
                   >
-                    <i aria-hidden="true" class="pi pi-play-fill text-lg" />
+                    <Play aria-hidden="true" class="text-lg"  />
                   </div>
                 </div>
                 <!-- AI Reason Chip -->
@@ -408,7 +406,7 @@
               </div>
               <p class="truncate text-sm font-semibold text-white">{{ track.title }}</p>
               <p class="truncate text-xs text-white/40">{{ track.artist_name || 'Unknown' }}</p>
-            </div>
+            </button>
           </div>
         </div>
       </section>
@@ -431,15 +429,14 @@
           </div>
 
           <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            <div
+            <button
               v-for="(track, idx) in personalizedTracks.slice(0, 5)"
               :key="track.id"
-              role="button"
-              tabindex="0"
-              class="group cursor-pointer"
+              type="button"
+              class="group w-full text-left"
               :style="{ animationDelay: `${idx * 80}ms` }"
               @click="playTrack(track, idx)"
-              @keydown.enter="playTrack(track, idx)"
+              @contextmenu.prevent="openContextMenu($event, track)"
             >
               <div
                 class="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-white/5 shadow-lg ring-1 ring-white/6 transition-all duration-500 group-hover:scale-[1.02] group-hover:ring-aurora-purple/30"
@@ -453,7 +450,7 @@
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full items-center justify-center">
-                  <i aria-hidden="true" class="pi pi-music text-2xl text-white/20" />
+                  <Music aria-hidden="true" class="text-2xl text-white/20"  />
                 </div>
                 <div
                   class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-xs transition-all duration-300 group-hover:opacity-100"
@@ -461,19 +458,19 @@
                   <div
                     class="flex h-12 w-12 items-center justify-center rounded-full bg-aurora-purple/90 text-white shadow-xl shadow-aurora-purple/20 transition-transform duration-300 group-hover:scale-105"
                   >
-                    <i aria-hidden="true" class="pi pi-play-fill text-lg" />
+                    <Play aria-hidden="true" class="text-lg"  />
                   </div>
                 </div>
                 <div
                   class="absolute top-2 left-2 rounded-full bg-aurora-purple/30 px-2 py-0.5 text-[9px] font-medium text-white/80 backdrop-blur-xs"
                 >
-                  <i aria-hidden="true" class="pi pi-bolt mr-0.5 text-[8px]" />
+                  <Zap aria-hidden="true" class="mr-0.5 text-[8px]"  />
                   Similar
                 </div>
               </div>
               <p class="truncate text-sm font-semibold text-white">{{ track.title }}</p>
               <p class="truncate text-xs text-white/40">{{ track.artist_name || 'Unknown' }}</p>
-            </div>
+            </button>
           </div>
         </div>
       </section>
@@ -504,7 +501,7 @@
                   <span
                     class="inline-flex items-center gap-1.5 rounded-full border border-aurora-purple/20 bg-aurora-purple/10 px-3 py-1 text-[10px] font-bold tracking-[0.2em] text-aurora-purple uppercase"
                   >
-                    <i aria-hidden="true" class="pi pi-calendar text-[10px]" />
+                    <Calendar class="text-[10px]"<i aria-hidden="true"  /> />
                     Weekly
                   </span>
                 </div>
@@ -520,7 +517,7 @@
                 to="/recommendations/for-you"
                 class="inline-flex items-center gap-2 rounded-full bg-white/10 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/20"
               >
-                <i aria-hidden="true" class="pi pi-play" />
+                <Play aria-hidden="true" class=""  />
                 Listen now
               </RouterLink>
             </div>
@@ -528,14 +525,12 @@
             <!-- Preview of discover weekly tracks -->
             <div class="relative mt-6">
               <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                <div
+                <button
                   v-for="(track, idx) in discoverWeekly.tracks.slice(0, 5)"
                   :key="track.id"
-                  role="button"
-                  tabindex="0"
-                  class="group cursor-pointer"
+                  type="button"
+                  class="group w-full text-left"
                   @click="playTrack(track, idx)"
-                  @keydown.enter="playTrack(track, idx)"
                 >
                   <div
                     class="relative mb-2 aspect-square overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/6 transition-all duration-300 group-hover:ring-aurora-purple/30"
@@ -549,7 +544,7 @@
                       @error="onImgError"
                     />
                     <div v-else class="flex h-full items-center justify-center">
-                      <i aria-hidden="true" class="pi pi-music text-xl text-white/20" />
+                      <Music aria-hidden="true" class="text-xl text-white/20"  />
                     </div>
                     <div
                       class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100"
@@ -557,12 +552,12 @@
                       <div
                         class="flex h-10 w-10 items-center justify-center rounded-full bg-aurora-purple/80 text-white"
                       >
-                        <i aria-hidden="true" class="pi pi-play-fill text-sm" />
+                        <Play aria-hidden="true" class="text-sm"  />
                       </div>
                     </div>
                   </div>
                   <p class="truncate text-xs font-medium text-white/80">{{ track.title }}</p>
-                </div>
+                </button>
               </div>
             </div>
           </div>
@@ -602,23 +597,22 @@
             v-else
             class="overflow-hidden rounded-2xl border border-white/6 bg-white/2 backdrop-blur-xs"
           >
-            <div
+            <button
               v-for="(track, index) in popularTracks"
               :key="track.id"
-              role="button"
-              tabindex="0"
+              type="button"
               :style="{ animationDelay: `${index * 60}ms` }"
-              class="group flex cursor-pointer items-center gap-4 px-4 py-3 transition hover:bg-white/4"
+              class="group flex w-full items-center gap-4 px-4 py-3 transition hover:bg-white/4"
               @click="playTrack(track, index)"
-              @keydown.enter="playTrack(track, index)"
+              @contextmenu.prevent="openContextMenu($event, track)"
             >
               <!-- Number / Play icon -->
               <span class="flex w-7 items-center justify-center">
                 <span class="text-sm font-bold text-white/20 group-hover:hidden">{{ index + 1 }}</span>
-                <i
+                <Play
                   aria-hidden="true"
-                  class="pi pi-play-fill hidden text-sm text-white group-hover:block"
-                />
+                  class="hidden text-sm text-white group-hover:block"
+                 />
               </span>
 
               <!-- Cover -->
@@ -634,7 +628,7 @@
                   @error="onImgError"
                 />
                 <div v-else class="flex h-full items-center justify-center">
-                  <i aria-hidden="true" class="pi pi-music text-xs text-white/20" />
+                  <Music aria-hidden="true" class="text-xs text-white/20"  />
                 </div>
               </div>
 
@@ -659,7 +653,7 @@
                 v-if="track.score"
                 class="hidden items-center gap-1 text-xs text-white/30 sm:flex"
               >
-                <i aria-hidden="true" class="pi pi-chart-line text-[10px]" />
+                <ChartLine class="text-[10px]"<i aria-hidden="true"  /> />
                 {{ Math.round(track.score) }}
               </span>
 
@@ -667,7 +661,7 @@
               <span class="shrink-0 text-xs text-white/30 tabular-nums">
                 {{ formatDuration(track.duration_seconds) }}
               </span>
-            </div>
+            </button>
           </div>
         </div>
       </section>
@@ -678,20 +672,27 @@
       <div class="h-8" />
     </div>
   </div>
+  <ContextMenu
+    v-model:visible="menuVisible"
+    :sections="sections"
+    :header="header"
+    :accent-color="accentColor"
+    :position="{ x: menuX, y: menuY }"
+  />
 </template>
 
 <script setup lang="ts">
+import { ArrowRight, Calendar, ChartLine, Check, Clock, Music, Play, RefreshCw, Sparkles, Star, TrendingUp, Users, X, Zap } from 'lucide-vue-next'
 import { onMounted, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAIRecommendations } from '@/composables/useAIRecommendations'
 import { usePlayer } from '@/composables/player'
 import { mapToPlaybackTracks } from '@/factories/playbackTrack'
 import { MOOD_OPTIONS } from '@/services/api/ai/types'
 import type { RecommendationTrack } from '@/services/api/recommendation/types'
-import type { AITrackItem } from '@/services/api/ai/types'
+import type { TrackContextItem } from '@/composables/useTrackContextMenu'
+import { useTrackContextMenu } from '@/composables/useTrackContextMenu'
+import ContextMenu from '@/components/common/ContextMenu.vue'
 import { onImgError } from '@/utils/helpers'
-
-const router = useRouter()
 const player = usePlayer()
 
 const {
@@ -848,7 +849,7 @@ async function handleMoodPick(mood: string) {
   await fetchMoodPlaylist(mood)
 }
 
-function playTrack(track: RecommendationTrack | Record<string, unknown>, index: number) {
+function playTrack(track: RecommendationTrack | Record<string, unknown>, _index: number) {
   const allTracks = [...forYouTracks.value, ...popularTracks.value, ...personalizedTracks.value]
   const source = track.id ? forYouTracks.value.find(t => t.id === track.id)
     ? forYouTracks.value
@@ -873,4 +874,27 @@ onMounted(async () => {
   fetchDiscoverWeekly()
   fetchListeningStats('month')
 })
+
+// ── Context menu ──────────────────────────────────────────────────
+const menuVisible = ref(false)
+const menuX = ref(0)
+const menuY = ref(0)
+const contextTrack = ref<TrackContextItem | null>(null)
+
+function openContextMenu(e: MouseEvent, track: Record<string, unknown>) {
+  menuX.value = e.clientX
+  menuY.value = e.clientY
+  contextTrack.value = {
+    id: (track.id ?? '') as string | number,
+    title: (track.title ?? '') as string | null,
+    artist_name: (track.artist_name ?? track.artist ?? null) as string | null,
+    cover_url: (track.cover_url ?? null) as string | null,
+    duration_seconds: (track.duration_seconds ?? track.duration ?? null) as number | null,
+  }
+  menuVisible.value = true
+}
+
+const { sections, header, accentColor } = useTrackContextMenu(
+  computed(() => contextTrack.value),
+)
 </script>

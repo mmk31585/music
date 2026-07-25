@@ -4,7 +4,7 @@
     <div class="mb-6">
       <div class="flex items-center gap-3">
         <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-spotify/10">
-          <i aria-hidden="true" class="pi pi-compass text-spotify" />
+          <Compass aria-hidden="true" class="text-spotify"  />
         </div>
         <div>
           <h1 class="text-2xl font-black text-white sm:text-3xl">Explore</h1>
@@ -66,7 +66,7 @@
       class="flex flex-col items-center justify-center py-24"
     >
       <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5">
-        <i aria-hidden="true" class="pi pi-video text-2xl text-slate-500" />
+        <Video aria-hidden="true" class="text-2xl text-slate-500"  />
       </div>
       <p class="mt-4 text-sm font-medium text-white/60">
         {{ activeFilter === 'all' ? 'No videos yet' : `No ${activeFilter === 'official_mv' ? 'official MVs' : 'fan edits'} found` }}
@@ -83,7 +83,7 @@
       class="flex items-center justify-center py-8"
     >
       <div v-if="loadingMore" class="flex items-center gap-3 text-sm text-white/40">
-        <i aria-hidden="true" class="pi pi-spin pi-spinner" />
+        <Loader2 aria-hidden="true" class="animate-spin"  />
         <span>Loading more...</span>
       </div>
       <div v-else class="flex items-center gap-2 text-xs text-white/20">
@@ -104,6 +104,7 @@
 </template>
 
 <script setup lang="ts">
+import { Compass, Loader2, Video } from 'lucide-vue-next'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { VideoItem } from '@/services/api/video/types'
 import { useVideoApi } from '@/services/api/video'

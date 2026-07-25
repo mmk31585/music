@@ -99,7 +99,7 @@ const artistName = computed(() => pc.currentTrack.value?.artistName || '')
 const coverUrl = computed(() => pc.currentTrack.value?.coverUrl || '')
 
 const { palette } = useAlbumColors(computed(() => pc.currentTrack.value?.coverUrl || null))
-const accentColor = computed(() => palette.value.vibrant || '#1db954')
+const accentColor = computed(() => palette.value.vibrant || 'var(--accent)')
 const bgDark = computed(() => palette.value.dark || '#1a1a2e')
 const bgDominant = computed(() => palette.value.dominant || '#121212')
 const bgMuted = computed(() => palette.value.muted || '#0a0a0a')
@@ -334,8 +334,8 @@ const liveDotStyle = {
   width: '6px',
   height: '6px',
   borderRadius: '50%',
-  background: '#1db954',
-  boxShadow: '0 0 8px rgba(29,185,84,0.7)',
+  background: 'var(--accent)',
+  boxShadow: '0 0 8px var(--accent-glow)',
 }
 
 const timeCache = new Map<number, string>()

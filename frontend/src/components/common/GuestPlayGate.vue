@@ -18,7 +18,7 @@ const emit = defineEmits<{
 }>()
 
 const { isAuthenticated } = useUserAuthStore()
-const { hasReachedLimit, incrementGuestPlay } = useGuestSession()
+const { canPlay, incrementPlay } = useGuestSession()
 
 const showPrompt = ref(false)
 
@@ -28,8 +28,8 @@ function handleAction() {
     return
   }
 
-  if (props.action === 'play' && !hasReachedLimit.value) {
-    incrementGuestPlay()
+  if (props.action === 'play' && canPlay()) {
+    incrementPlay()
     emit('proceed')
     return
   }

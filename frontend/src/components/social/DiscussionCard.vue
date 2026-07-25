@@ -7,7 +7,7 @@
     <!-- Avatar -->
     <RouterLink
       :to="`/profile/${discussion.user_id}`"
-      class="shrink-0 h-8 w-8 overflow-hidden rounded-full ring-1 ring-white/10 focus-visible:outline-2 focus-visible:outline-[#1db954]"
+      class="shrink-0 h-8 w-8 overflow-hidden rounded-full ring-1 ring-white/10 focus-visible:outline-2 focus-visible:outline-accent"
     >
       <img
         v-if="discussion.avatarUrl"
@@ -36,17 +36,17 @@
       <div class="mt-2 flex items-center gap-3">
         <button
           aria-label="Reply to discussion"
-          class="inline-flex items-center gap-1 text-[11px] text-blue-400/50 transition hover:text-blue-400 focus-visible:outline-2 focus-visible:outline-[#1db954]"
+          class="inline-flex items-center gap-1 text-[11px] text-blue-400/50 transition hover:text-blue-400 focus-visible:outline-2 focus-visible:outline-accent"
           @click="$emit('reply', discussion.id)"
         >
-          <i aria-hidden="true" class="pi pi-reply text-[10px]" />
+          <Reply aria-hidden="true" class="text-[10px]"  />
           Reply
         </button>
         <span
           v-if="discussion.reply_count !== undefined"
           class="inline-flex items-center gap-1 text-[11px] text-white/20"
         >
-          <i aria-hidden="true" class="pi pi-comments text-[10px]" />
+          <MessageCircle class="text-[10px]" aria-hidden="true" />
           {{ discussion.reply_count }}
         </span>
       </div>
@@ -55,6 +55,7 @@
 </template>
 
 <script setup lang="ts">
+import { MessageCircle, Reply } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 export interface DiscussionCardData {

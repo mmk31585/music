@@ -28,6 +28,7 @@ export const TrackSchema = z.object({
   artist_id: IdSchema.optional().nullable().default(null),
   artist_name: z.string().optional().nullable().default(null),
   album_id: IdSchema.optional().nullable().default(null),
+  artists: z.array(TrackArtistSchema).optional().default([]),
   genres: z.array(GenreSchema).optional().default([]),
   play_count: z.number().default(0),
   track_number: z.number().optional().nullable().default(null),
@@ -49,6 +50,8 @@ export type Track = {
   artist_id: string | number | null
   artist_name: string | null
   album_id: string | number | null
+  album_title?: string | null
+  artists?: Array<{ artist_id: string | number | null; name: string; slug?: string; role?: string; position?: number }>
   genres: any[]
   play_count: number
   track_number: number | null
@@ -99,7 +102,7 @@ export interface TrackUploadPayload extends TrackCreatePayload {
   audioFile: File
 }
 
-export function toTrackMutationPayload(payload: Partial<Track> & { genre_ids?: Array<string | number> }): TrackCreatePayload {
+export function toTrackMutationPayload(payload: Partial<Track> & { genre_ids?: Array<string | number>; artist_ids?: Array<string | number> }): TrackCreatePayload {
   if (!payload.title) {
     throw new Error('title is required')
   }

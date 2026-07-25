@@ -10,7 +10,7 @@
     <div class="mt-6">
       <div class="flex gap-3">
         <IconField class="flex-1">
-          <InputIcon><i aria-hidden="true" class="pi pi-search"></i></InputIcon>
+          <InputIcon><Search aria-hidden="true" class=""></Search></InputIcon>
           <InputText
             v-model="artistName"
             placeholder="Enter artist name — e.g. 'd4vd', 'Arctic Monkeys'"
@@ -30,7 +30,7 @@
 
     <!-- Loading -->
     <div v-if="searching" class="mt-12 text-center">
-      <i aria-hidden="true" class="pi pi-spin pi-spinner text-3xl text-slate-400"></i>
+      <Loader2 aria-hidden="true" class="text-3xl text-slate-400 animate-spin"></Loader2>
       <p class="mt-3 text-sm text-slate-500">Searching Deezer and MusicBrainz for discography...</p>
     </div>
 
@@ -43,7 +43,7 @@
     <div v-else-if="batchId" class="mt-6">
       <div class="rounded-xl border border-white/6 bg-white/3 p-6">
         <div class="text-center">
-          <i aria-hidden="true" class="pi pi-spin pi-spinner text-3xl text-emerald-400"></i>
+          <Loader2 aria-hidden="true" class="text-3xl text-emerald-400 animate-spin"></Loader2>
           <p class="mt-3 text-sm font-medium text-white">Importing {{ batchTotal }} tracks...</p>
           <p class="mt-1 text-xs text-slate-400">
             {{ batchCompleted + batchFailed }} / {{ batchTotal }} processed
@@ -109,7 +109,7 @@
           class="h-16 w-16 shrink-0 rounded-full object-cover ring-2 ring-white/8"
         />
         <div v-else class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/6">
-          <i aria-hidden="true" class="pi pi-user text-2xl text-slate-500"></i>
+          <User aria-hidden="true" class="text-2xl text-slate-500"></User>
         </div>
         <div>
           <h2 class="text-xl font-bold text-white">{{ discography.artist_info.name }}</h2>
@@ -126,7 +126,7 @@
       <!-- Filter bar -->
       <div class="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-white/6 bg-white/3 px-4 py-3">
         <IconField class="min-w-50 flex-1">
-          <InputIcon><i aria-hidden="true" class="pi pi-filter"></i></InputIcon>
+          <InputIcon><Filter aria-hidden="true" class=""></Filter></InputIcon>
           <InputText
             v-model="filterQuery"
             placeholder="Filter tracks by name..."
@@ -195,7 +195,7 @@
               class="h-12 w-12 shrink-0 rounded-lg object-cover"
             />
             <div v-else class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-white/6">
-              <i aria-hidden="true" class="pi pi-compact-disc text-lg text-slate-500"></i>
+              <Disc3 aria-hidden="true" class="text-lg text-slate-500"></Disc3>
             </div>
             <div class="min-w-0 flex-1">
               <p class="text-sm font-medium text-white truncate">{{ album.title || 'Unknown Album' }}</p>
@@ -261,7 +261,7 @@
       </div>
 
       <div v-if="visibleAlbumCount === 0" class="mt-12 text-center">
-        <i aria-hidden="true" class="pi pi-compact-disc text-3xl text-slate-500"></i>
+        <Disc3 aria-hidden="true" class="text-3xl text-slate-500"></Disc3>
         <p class="mt-3 text-sm text-slate-500">
           No albums match the current filter.
         </p>
@@ -270,18 +270,19 @@
 
     <!-- Empty state -->
     <div v-else-if="searched" class="mt-12 text-center">
-      <i aria-hidden="true" class="pi pi-search text-3xl text-slate-500"></i>
+      <Search aria-hidden="true" class="text-3xl text-slate-500"></Search>
       <p class="mt-3 text-sm text-slate-500">No results found. Try a different artist name.</p>
     </div>
 
     <div v-else class="mt-12 text-center">
-      <i aria-hidden="true" class="pi pi-cloud-download text-3xl text-slate-500"></i>
+      <CloudDownload aria-hidden="true" class="text-3xl text-slate-500"></CloudDownload>
       <p class="mt-3 text-sm text-slate-500">Enter an artist name to discover their discography.</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { CloudDownload, Disc3, Filter, Loader2, Search, User } from 'lucide-vue-next'
 import { ref, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'

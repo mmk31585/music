@@ -66,7 +66,7 @@
               :aria-label="'پخش ' + currentItem.title"
               @click="$emit('play', currentItem)"
             >
-              <i aria-hidden="true" class="pi pi-play-fill text-sm" />
+              <Play aria-hidden="true" class="text-sm"  />
               پخش
             </button>
             <button
@@ -74,7 +74,7 @@
               class="inline-flex h-12 cursor-pointer items-center gap-2 rounded-full border border-white/15 bg-white/4 px-6 text-base font-medium text-white backdrop-blur-xs transition-all hover:bg-white/10 active:scale-95 focus-visible:ring-2 focus-visible:ring-spotify focus-visible:ring-offset-2 focus-visible:outline-hidden"
               @click="$emit('add-to-library', currentItem)"
             >
-              <i aria-hidden="true" class="pi pi-plus text-sm" />
+              <Plus aria-hidden="true" class="text-sm"  />
               افزودن به کتابخانه
             </button>
           </div>
@@ -105,7 +105,7 @@
       aria-label="اسلاید قبلی"
       @click="prev"
     >
-      <i aria-hidden="true" class="pi pi-chevron-right text-sm" />
+      <ChevronRight aria-hidden="true" class="text-sm"  />
     </button>
     <button
       type="button"
@@ -114,7 +114,7 @@
       aria-label="اسلاید بعدی"
       @click="next"
     >
-      <i aria-hidden="true" class="pi pi-chevron-left text-sm" />
+      <ChevronLeft aria-hidden="true" class="text-sm"  />
     </button>
 
     <!-- Indicators -->
@@ -140,12 +140,13 @@
       :aria-label="autoRotating ? 'توقف چرخش خودکار' : 'شروع چرخش خودکار'"
       @click="toggleAutoRotate"
     >
-      <i aria-hidden="true" :class="autoRotating ? 'pi pi-pause' : 'pi pi-play'" class="text-xs" />
+      <component :is="autoRotating ? Pause : Play"<i aria-hidden="true"  class="text-xs" /> />
     </button>
   </section>
 </template>
 
 <script setup lang="ts">
+import { ChevronLeft, ChevronRight, Pause, Play, Plus } from 'lucide-vue-next'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 export interface HeroItem {

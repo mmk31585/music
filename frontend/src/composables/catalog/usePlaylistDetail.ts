@@ -6,6 +6,8 @@ import {
 } from '@/services/api/playlist'
 import { useToast } from 'primevue/usetoast'
 
+export const pendingPlaylistRemoveData = ref<{ playlistId: string; trackId: string; playlistName: string } | null>(null)
+
 export function usePlaylistDetail(id: string) {
   const playlistsApi = usePlaylistsApi()
   const toast = useToast()
@@ -34,6 +36,7 @@ export function usePlaylistDetail(id: string) {
 
   async function removeTrack(trackId: string) {
     pendingRemoveTrackId.value = trackId
+    pendingPlaylistRemoveData.value = { playlistId: id, trackId, playlistName: playlist.value?.name || 'Playlist' }
     try {
       await playlistsApi.removeTrack(id, trackId)
       tracks.value = tracks.value.filter((t) => t.track_id !== trackId)
@@ -57,6 +60,7 @@ export function usePlaylistDetail(id: string) {
     const trackId = pendingRemoveTrackId.value
     if (!trackId) return
     pendingRemoveTrackId.value = null
+    pendingPlaylistRemoveData.value = null
     try {
       await playlistsApi.addTrack(id, { track_id: trackId })
       await fetchPlaylist()

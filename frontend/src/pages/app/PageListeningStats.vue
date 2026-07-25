@@ -42,7 +42,7 @@
       <!-- Big Number Cards -->
       <section class="mt-10 grid gap-5 sm:grid-cols-2">
         <div
-          class="group rounded-3xl border border-white/6 bg-linear-to-br from-purple-600/20 to-[#0C0C14] p-8 text-center transition hover:-translate-y-0.5 hover:border-purple-500/30"
+          class="group rounded-3xl border border-white/6 bg-linear-to-br from-purple-600/20 to-surface-overlay p-8 text-center transition hover:-translate-y-0.5 hover:border-purple-500/30"
         >
           <p class="text-5xl font-black text-white tabular-nums">
             <CountUp :to="stats.total_minutes_listened" />
@@ -51,7 +51,7 @@
         </div>
 
         <div
-          class="group rounded-3xl border border-white/6 bg-linear-to-br from-pink-600/20 to-[#0C0C14] p-8 text-center transition hover:-translate-y-0.5 hover:border-pink-500/30"
+          class="group rounded-3xl border border-white/6 bg-linear-to-br from-pink-600/20 to-surface-overlay p-8 text-center transition hover:-translate-y-0.5 hover:border-pink-500/30"
         >
           <p class="text-5xl font-black text-white tabular-nums">
             <CountUp :to="stats.total_tracks_played" />
@@ -101,7 +101,7 @@
           >
             <span class="w-8 text-center text-sm font-bold text-slate-500">{{ i + 1 }}</span>
             <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-500/20 text-lg text-purple-400">
-              <i aria-hidden="true" class="pi pi-music" />
+              <Music aria-hidden="true" class=""  />
             </div>
             <div class="min-w-0 flex-1">
               <p class="truncate font-semibold text-white">{{ track.title }}</p>
@@ -123,7 +123,7 @@
           >
             <span class="w-8 text-center text-sm font-bold text-slate-500">{{ i + 1 }}</span>
             <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-pink-500/20 text-lg text-pink-400">
-              <i aria-hidden="true" class="pi pi-user" />
+              <User aria-hidden="true" class=""  />
             </div>
             <div class="min-w-0 flex-1">
               <p class="truncate font-semibold text-white">{{ artist.artist_name }}</p>
@@ -154,7 +154,7 @@
           class="inline-flex items-center gap-2 rounded-full bg-sky-500/20 px-6 py-3 text-sm font-bold text-sky-300 transition hover:bg-sky-500/30"
           @click="shareStats"
         >
-          <i aria-hidden="true" class="pi pi-telegram" />
+          <Send aria-hidden="true" class=""  />
           اشتراک‌گذاری در تلگرام
         </button>
       </section>
@@ -166,7 +166,7 @@
       class="mt-10 flex flex-col items-center gap-4 rounded-3xl border border-white/10 px-6 py-20 text-center"
     >
       <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
-        <i aria-hidden="true" class="pi pi-chart-bar text-2xl text-slate-400" />
+        <BarChart3 aria-hidden="true" class="text-2xl text-slate-400"  />
       </div>
       <h3 class="text-xl font-bold text-white">No stats yet</h3>
       <p class="text-sm text-slate-400">Start listening to see your listening stats.</p>
@@ -175,13 +175,16 @@
 </template>
 
 <script setup lang="ts">
+import { BarChart3, Music, Send, User } from 'lucide-vue-next'
 import { ref, onMounted } from 'vue'
 import { useRecommendationsApi } from '@/services/api/recommendation'
 import { SkeletonLoader } from '@/components/common'
+import { useAppToast } from '@/composables/useAppToast'
 import CountUp from '@/components/common/CountUp.vue'
 import type { ListeningStats } from '@/services/api/recommendation'
 
 const api = useRecommendationsApi()
+const toast = useAppToast()
 const loading = ref(false)
 const stats = ref<ListeningStats | null>(null)
 const activePeriod = ref('month')
@@ -197,8 +200,8 @@ async function fetchStats(period: string) {
   try {
     const response = await api.getListeningStats({ period })
     stats.value = response
-  } catch (err) {
-    console.error('Failed to fetch stats:', err)
+  } catch (err: unknown) {
+    toast.apiError(err, 'Failed to fetch stats')
     stats.value = null
   } finally {
     loading.value = false

@@ -28,7 +28,7 @@
           @error="onImgError"
         />
         <div v-else class="flex h-full items-center justify-center">
-          <i aria-hidden="true" class="pi pi-compact-disc text-4xl text-slate-500" />
+          <Disc3 aria-hidden="true" class="text-4xl text-slate-500"  />
         </div>
 
         <!-- Dark gradient overlay for text readability -->
@@ -53,12 +53,12 @@
             class="flex items-center gap-1.5 font-medium text-white/60 transition hover:text-white"
             @click="emit('update:visible', false)"
           >
-            <i aria-hidden="true" class="pi pi-book text-[10px]" />
+            <Book aria-hidden="true" class="text-[10px]"  />
             {{ albumTitle }}
           </RouterLink>
 
           <span v-if="durationSeconds" class="tabular-nums">
-            <i aria-hidden="true" class="pi pi-clock mr-1 text-[10px]" />
+            <Clock aria-hidden="true" class="mr-1 text-[10px]"  />
             {{ formatDuration(durationSeconds) }}
           </span>
 
@@ -94,7 +94,7 @@
             :class="{ 'bg-white/20! text-white! shadow-none!': isCurrentTrack }"
             @click="handlePlay"
           >
-            <i aria-hidden="true" :class="isCurrentTrack && player.isPlaying.value ? 'pi pi-pause-fill' : 'pi pi-play-fill'" />
+            <component :is="isCurrentTrack && player.isPlaying.value ? Pause : Play"<i aria-hidden="true"  /> />
             {{ isCurrentTrack && player.isPlaying.value ? 'Pause' : 'Play' }}
           </button>
 
@@ -103,7 +103,7 @@
             class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/4 px-4 py-2 text-sm font-bold text-white/80 transition hover:border-white/30 hover:bg-white/8 hover:text-white"
             @click="addToQueue"
           >
-            <i aria-hidden="true" class="pi pi-list text-xs" />
+            <List aria-hidden="true" class="text-xs"  />
             Queue
           </button>
 
@@ -113,7 +113,7 @@
             :class="liked ? 'border-spotify/30 text-spotify' : 'text-white/60 hover:bg-white/8 hover:text-white'"
             @click="emit('toggle-like')"
           >
-            <i aria-hidden="true" :class="liked ? 'pi pi-heart-fill' : 'pi pi-heart'" />
+            <component :is="liked ? Heart : Heart"<i aria-hidden="true"  /> />
             {{ liked ? 'Liked' : 'Like' }}
           </button>
 
@@ -122,7 +122,7 @@
             class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/3 px-4 py-2 text-sm font-bold text-white/60 transition hover:bg-white/8 hover:text-white"
             @click="shareTrack"
           >
-            <i aria-hidden="true" class="pi pi-share-alt" />
+            <Share2 aria-hidden="true" class=""  />
             Share
           </button>
         </div>
@@ -135,7 +135,7 @@
             class="flex items-center gap-1 transition hover:text-white"
             @click="emit('update:visible', false)"
           >
-            <i aria-hidden="true" class="pi pi-user" />
+            <User aria-hidden="true" class=""  />
             View artist
           </RouterLink>
           <RouterLink
@@ -144,7 +144,7 @@
             class="flex items-center gap-1 transition hover:text-white"
             @click="emit('update:visible', false)"
           >
-            <i aria-hidden="true" class="pi pi-book" />
+            <Book aria-hidden="true" class=""  />
             View album
           </RouterLink>
         </div>
@@ -154,6 +154,7 @@
 </template>
 
 <script setup lang="ts">
+import { Book, Clock, Disc3, Heart, List, Pause, Play, Share2, User } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { usePlayer } from '@/composables/player'
 import { buildPlaybackTrack } from '@/factories/playbackTrack'

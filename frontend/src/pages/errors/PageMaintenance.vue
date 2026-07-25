@@ -9,7 +9,7 @@
     <div class="relative z-10 flex flex-col items-center gap-6">
       <!-- Icon -->
       <div class="flex h-20 w-20 items-center justify-center rounded-full bg-amber-500/10">
-        <i aria-hidden="true" class="pi pi-exclamation-triangle text-4xl text-amber-400" />
+        <AlertTriangle aria-hidden="true" class="text-4xl text-amber-400"  />
       </div>
 
       <!-- Title -->
@@ -36,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import { AlertTriangle } from 'lucide-vue-next'
 // Simple maintenance page — no complex dependencies needed.
 // Styled to work without the main app layout (layout-empty).
 </script>

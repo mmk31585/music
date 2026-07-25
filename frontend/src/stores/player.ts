@@ -7,6 +7,7 @@ import { useTracksApi } from '@/services/api/catalog/tracks'
 import { useRecommendationsApi } from '@/services/api/recommendation'
 import { useLibraryApi } from '@/services/api/library'
 import { useVideoApi } from '@/services/api/video'
+import { useHistoryApi } from '@/services/api/history'
 import { useUserAuthStore } from '@/stores/user-auth'
 import {
   PlayerEngine,
@@ -51,6 +52,7 @@ export const usePlayerStore = defineStore('player', () => {
   const tracksApi = useTracksApi()
   const recsApi = useRecommendationsApi()
   const libraryApi = useLibraryApi()
+  const historyApi = useHistoryApi()
 
 const currentTrack = ref<PlaybackTrack | null>(null)
 const queue = ref<PlaybackTrack[]>([])
@@ -83,6 +85,27 @@ const repeatMode = ref<RepeatMode>('off')
   let consecutiveFailures = 0
   const maxConsecutiveFailures = 3
   let playbackStopped = false
+
+  // Play tracking: reports plays to backend for gamification (XP, challenges, badges)
+  let playSessionId = crypto.randomUUID()
+  let lastReportedTrackId: string | null = null
+  let playStartTime = 0
+
+  /** Report a completed play to the backend (fire-and-forget). */
+  function reportPlay(track: PlaybackTrack, durationSec: number, completed: boolean) {
+    if (!track?.id) return
+    // Don't double-report the same track consecutively
+    if (track.id === lastReportedTrackId && completed) return
+    lastReportedTrackId = track.id
+
+    historyApi.recordPlay({
+      track_id: track.id,
+      duration: Math.floor(durationSec),
+      completed,
+      session_id: playSessionId,
+      track_duration_ms: track.durationSeconds ? track.durationSeconds * 1000 : undefined,
+    }).catch(() => {})
+  }
 
   const progressPercent = computed(() => {
     if (!duration.value) return 0
@@ -307,6 +330,11 @@ const repeatMode = ref<RepeatMode>('off')
       _pageHideHandler = () => {
         if (currentTrack.value) {
           persistSession()
+          // Report current track play on page hide
+          if (playStartTime > 0) {
+            const playedSec = (Date.now() - playStartTime) / 1000
+            reportPlay(currentTrack.value, playedSec, false)
+          }
         }
       }
       window.addEventListener('pagehide', _pageHideHandler)
@@ -314,7 +342,16 @@ const repeatMode = ref<RepeatMode>('off')
 
     unsubs.push(
       engine.on('trackchange', (track) => {
+        // Report the previous track as played when switching to a new one
+        if (currentTrack.value && playStartTime > 0) {
+          const playedSec = (Date.now() - playStartTime) / 1000
+          const durationSec = currentTrack.value.durationSeconds || 0
+          const completed = durationSec > 0 && playedSec >= durationSec * 0.8
+          reportPlay(currentTrack.value, playedSec, completed)
+        }
+
         currentTrack.value = track ? { ...track } : null
+        playStartTime = track ? Date.now() : 0
         updateMusicStatus(track?.id)
       }),
     )
@@ -384,7 +421,7 @@ const repeatMode = ref<RepeatMode>('off')
             console.warn(`[Player] Retrying track in ${backoffMs}ms: ${currentTrack.value.title}`)
           }
           setTimeout(() => {
-            engine?.play(currentTrack.value!.streamUrl!).catch(() => {})
+            engine?.play(currentTrack.value!).catch(() => {})
           }, backoffMs)
           return
         }
@@ -817,13 +854,13 @@ const repeatMode = ref<RepeatMode>('off')
   function addToQueue(track: PlaybackTrack) {
     queueManager.addToQueue(track)
     queue.value = queueManager.all()
-    engine?.emit('queuechange', queue.value)
+    engine?.updateQueue(queue.value)
   }
 
   function playNextInQueue(track: PlaybackTrack) {
     queueManager.playNext(track)
     queue.value = queueManager.all()
-    engine?.emit('queuechange', queue.value)
+    engine?.updateQueue(queue.value)
   }
 
   function setCrossfadeDuration(seconds: number) {

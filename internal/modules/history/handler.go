@@ -114,6 +114,39 @@ func (h *Handler) ClearHistory(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+// RecordPlay godoc
+// @Summary Record a play event
+// @Description Records that the user listened to a track. Triggers gamification (XP, challenges, badges).
+// @Tags history
+// @Produce json
+// @Security Bearer
+// @Param body body RecordListeningRequest true "Play event data"
+// @Success 201 {object} ListeningHistoryItem
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Router /history/record [post]
+func (h *Handler) RecordPlay(c *gin.Context) {
+	userID, ok := getUserIDFromGin(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	var req RecordListeningRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	item, err := h.service.Record(c.Request.Context(), userID, req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, item)
+}
+
 func getUserIDFromGin(c *gin.Context) (uuid.UUID, bool) {
 	value, exists := c.Get("auth_user_id")
 	if !exists {

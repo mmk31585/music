@@ -9,7 +9,7 @@
       class="flex h-full flex-col items-center justify-center gap-3 px-6 text-center"
     >
       <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/3">
-        <i aria-hidden="true" class="pi pi-align-left text-2xl text-white/12" />
+        <AlignLeft aria-hidden="true" class="text-2xl text-white/12"  />
       </div>
       <p class="text-sm font-medium text-white/20">No synced lyrics</p>
       <p class="text-xs text-white/10">Lyrics will appear here when available</p>
@@ -17,20 +17,17 @@
 
     <!-- Scrolling lyrics list -->
     <div v-else ref="scrollRef" class="flex min-h-full flex-col items-center justify-center py-16 md:py-20">
-      <div
+      <button
         v-for="(line, idx) in lines"
         :key="idx"
         :ref="(el) => { if (el) lineRefs[idx] = el as HTMLElement }"
-        role="button"
-        tabindex="0"
-        class="w-full max-w-2xl cursor-pointer px-8 py-1.5 select-none"
+        type="button"
+        class="w-full max-w-2xl px-8 py-1.5 select-none text-left"
         :class="isRtl?'text-right':'text-left'"
         :style="lineStyle(idx)"
         @click="emit('seek', line.timeSeconds)"
-        @keydown.enter="emit('seek', line.timeSeconds)"
-        @keydown.space.prevent="emit('seek', line.timeSeconds)"
       >
-        <div
+        <span
           class="relative inline-block text-center leading-[1.8]"
           :class="{
             'font-bold': idx === activeIdx,
@@ -41,7 +38,7 @@
           }"
         >
           <!-- Active line: glow pill + particle shimmer -->
-          <div
+          <span
             v-if="idx === activeIdx"
             class="absolute -inset-x-6 -inset-y-2 rounded-2xl transition-all duration-700 ease-out"
             :class="isRtl ? 'glow-rtl' : 'glow-ltr'"
@@ -66,20 +63,21 @@
             <span
               v-for="(word, wIdx) in line.words"
               :key="wIdx"
-              class="transition-all duration-[80ms] ease-linear relative"
+              class="transition-all duration-80 ease-linear relative"
               :style="wordStyle(line, wIdx)"
             >{{ word.text }}&nbsp;</span>
           </template>
           <template v-else>
             <span class="relative transition-all duration-300">{{ line.text }}</span>
           </template>
-        </div>
-      </div>
+        </span>
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { AlignLeft } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { ParsedLine } from '@/composables/lyrics'
 
@@ -207,9 +205,6 @@ function wordStyle(line: ParsedLine, wordIdx: number): Record<string, string> {
 
   const isActive = t >= start && t < end
   const progress = isActive && end > start ? Math.min(1, (t - start) / (end - start)) : (isActive ? 1 : 0)
-
-  // Smooth interpolation from dim to bright with gradient-like feel
-  const brightness = isActive ? 1 : 0.3
 
   return {
     color: isActive ? '#fff' : 'rgba(255,255,255,0.25)',

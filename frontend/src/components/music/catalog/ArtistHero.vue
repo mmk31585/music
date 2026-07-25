@@ -23,7 +23,7 @@
           v-else
           class="flex h-full w-full items-center justify-center bg-linear-to-br from-spotify/30 to-surface-raised text-5xl text-white/40"
         >
-          <i aria-hidden="true" class="pi pi-user" />
+          <User aria-hidden="true" class=""  />
         </div>
       </div>
 
@@ -32,7 +32,7 @@
           v-if="artist?.is_verified"
           class="mb-2 flex items-center justify-center gap-1.5 md:justify-start"
         >
-          <i aria-hidden="true" class="pi pi-verified text-sm text-spotify" />
+          <BadgeCheck aria-hidden="true" class="text-sm text-spotify"  />
           <span class="text-xs font-medium text-spotify">Verified Artist</span>
         </div>
 
@@ -55,7 +55,7 @@
             class="inline-flex items-center gap-2 rounded-full bg-spotify px-8 py-3 text-sm font-bold text-black transition hover:scale-105 hover:bg-spotify-hover"
             @click="$emit('playAll')"
           >
-            <i aria-hidden="true" class="pi pi-play-fill" />
+            <Play aria-hidden="true" class=""  />
             Play
           </button>
 
@@ -64,7 +64,7 @@
             class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-8 py-3 text-sm font-bold text-white backdrop-blur-xs transition hover:bg-white/15"
             @click="$emit('shuffle')"
           >
-            <i aria-hidden="true" class="pi pi-shuffle" />
+            <Shuffle aria-hidden="true" class=""  />
             Shuffle
           </button>
 
@@ -78,7 +78,7 @@
             ]"
             @click="$emit('toggleFollow')"
           >
-            <i aria-hidden="true" :class="isFollowing ? 'pi pi-check' : 'pi pi-plus'" class="text-xs" />
+            <component :is="isFollowing ? Check : Plus"<i aria-hidden="true"  class="text-xs" /> />
             {{ isFollowing ? 'Following' : 'Follow' }}
           </button>
         </div>
@@ -92,6 +92,7 @@
 </template>
 
 <script setup lang="ts">
+import { BadgeCheck, Check, Play, Plus, Shuffle, User } from 'lucide-vue-next'
 import { onImgError } from '@/utils/helpers'
 import type { Artist } from '@/services/api/catalog/artists'
 

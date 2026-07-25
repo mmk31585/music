@@ -276,13 +276,13 @@ class AudioEngine {
 
   /** Quick fade out (uses crossfadeDuration or 300ms default). */
   async fadeOut(duration?: number) {
-    const dur = duration ?? this.crossfadeDuration || 0.3
+    const dur = duration ?? (this.crossfadeDuration || 0.3)
     await this.fadeTo(0, dur)
   }
 
   /** Fade in from 0 to 1 over given duration. */
   async fadeIn(duration?: number) {
-    const dur = duration ?? this.crossfadeDuration || 0.3
+    const dur = duration ?? (this.crossfadeDuration || 0.3)
     // Reset gain to 0 before fading in
     if (this.gainNode) this.gainNode.gain.value = 0
     await this.fadeTo(1, dur)

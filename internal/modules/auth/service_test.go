@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"net/http"
 	apperrors "music/internal/common/errors"
 
 	"github.com/stretchr/testify/assert"
@@ -116,7 +117,7 @@ func TestService_Register_DuplicateEmail(t *testing.T) {
 	svc := NewService(mockRepo, tokens)
 
 	mockRepo.On("CreateUser", mock.Anything, mock.Anything).
-		Return(User{}, apperrors.Conflict("email or username already exists", nil))
+		Return(User{}, apperrors.New(http.StatusConflict, apperrors.CodeConflict, "email or username already exists", nil))
 
 	_, err := svc.Register(context.Background(), RegisterRequest{
 		Email:       "dup@example.com",
@@ -126,7 +127,9 @@ func TestService_Register_DuplicateEmail(t *testing.T) {
 	}, "", "")
 
 	assert.Error(t, err)
-	assert.True(t, apperrors.IsConflict(err))
+	var aeConflict *apperrors.AppError
+	assert.ErrorAs(t, err, &aeConflict)
+	assert.Equal(t, apperrors.CodeConflict, aeConflict.Code)
 	mockRepo.AssertExpectations(t)
 }
 
@@ -190,7 +193,9 @@ func TestService_Login_WrongPassword(t *testing.T) {
 	}, "", "")
 
 	assert.Error(t, err)
-	assert.True(t, apperrors.IsUnauthorized(err))
+	var aeUnauthorized *apperrors.AppError
+	assert.ErrorAs(t, err, &aeUnauthorized)
+	assert.Equal(t, apperrors.CodeUnauthorized, aeUnauthorized.Code)
 	mockRepo.AssertExpectations(t)
 }
 
@@ -220,7 +225,9 @@ func TestService_Login_InactiveUser(t *testing.T) {
 	}, "", "")
 
 	assert.Error(t, err)
-	assert.True(t, apperrors.IsForbidden(err))
+	var aeForbidden *apperrors.AppError
+	assert.ErrorAs(t, err, &aeForbidden)
+	assert.Equal(t, apperrors.CodeForbidden, aeForbidden.Code)
 	mockRepo.AssertExpectations(t)
 }
 

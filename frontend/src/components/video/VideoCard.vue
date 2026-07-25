@@ -1,12 +1,9 @@
 <template>
-  <div
-    role="button"
-    tabindex="0"
-    class="group relative cursor-pointer overflow-hidden rounded-2xl bg-white/5 transition-all duration-150"
+  <button
+    type="button"
+    class="group relative w-full text-left overflow-hidden rounded-2xl bg-white/5 transition-all duration-150"
     :class="hoverClass"
     @click="$emit('open')"
-    @keydown.enter="$emit('open')"
-    @keydown.space.prevent="$emit('open')"
   >
     <!-- Thumbnail -->
     <div class="relative aspect-9/16 w-full overflow-hidden">
@@ -27,8 +24,8 @@
         class="absolute top-2 left-2 z-10 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold backdrop-blur-xs"
         :class="statusBadgeClass"
       >
-        <i v-if="video.status === 'processing'" class="pi pi-spin pi-spinner text-[10px]" />
-        <i v-else-if="video.status === 'failed'" class="pi pi-exclamation-circle text-[10px]" />
+        <Loader2 aria-hidden="true" v-if="video.status === 'processing'" class="text-[10px] animate-spin" />
+        <AlertCircle aria-hidden="true" v-else-if="video.status === 'failed'" class="text-[10px]" />
         <span>{{ statusLabel }}</span>
       </div>
 
@@ -45,11 +42,11 @@
       <div class="absolute right-2 bottom-2 left-2 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <span class="flex items-center gap-1 text-[11px] font-medium text-white/80">
-            <i aria-hidden="true" class="pi pi-eye text-[10px]" />
+            <Eye aria-hidden="true" class="text-[10px]"  />
             {{ formatCount(video.view_count) }}
           </span>
           <span class="flex items-center gap-1 text-[11px] font-medium text-white/80">
-            <i aria-hidden="true" class="pi pi-heart text-[10px]" />
+            <Heart aria-hidden="true" class="text-[10px]"  />
             {{ formatCount(video.like_count) }}
           </span>
         </div>
@@ -57,7 +54,7 @@
         <div
           class="flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white opacity-0 backdrop-blur-xs transition-opacity duration-150 group-hover:opacity-100"
         >
-          <i aria-hidden="true" class="pi pi-play-fill text-xs" />
+          <Play aria-hidden="true" class="text-xs"  />
         </div>
       </div>
     </div>
@@ -75,10 +72,11 @@
       v-if="!loaded"
       class="absolute inset-0 rounded-2xl bg-white/5"
     />
-  </div>
+  </button>
 </template>
 
 <script setup lang="ts">
+import { AlertCircle, Eye, Heart, Loader2, Play } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import type { VideoItem } from '@/services/api/video/types'
 import AppImage from '@/components/common/AppImage.vue'

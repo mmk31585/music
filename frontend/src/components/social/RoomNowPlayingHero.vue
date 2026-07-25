@@ -35,7 +35,7 @@
                 @error="onImgError"
               />
               <div v-else class="flex h-full w-full items-center justify-center">
-                <i aria-hidden="true" class="pi pi-headphones text-2xl text-white/40" />
+                <Headphones aria-hidden="true" class="text-2xl text-white/40"  />
               </div>
             </div>
             <div class="disc-hole" />
@@ -53,8 +53,8 @@
             <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs"
               :class="sourceBadgeClass"
             >
-              <i aria-hidden="true" v-if="nowPlaying.source === 'autofill'" class="pi pi-refresh text-xs" />
-              <i aria-hidden="true" v-else class="pi pi-thumbs-up text-xs" />
+              <RefreshCw class="text-xs" aria-hidden="true" v-if="nowPlaying.source === 'autofill'" />
+              <ThumbsUp class="text-xs" aria-hidden="true" v-else />
               {{ sourceLabel }}
             </span>
             <button
@@ -65,8 +65,8 @@
               @click="$emit('toggle-play')"
               aria-label="Toggle play"
             >
-              <i aria-hidden="true" v-if="isPlaying" class="pi pi-pause text-lg" />
-              <i aria-hidden="true" v-else class="pi pi-play ml-0.5 text-lg" />
+              <Pause aria-hidden="true" v-if="isPlaying" class="text-lg"  />
+              <Play aria-hidden="true" v-else class="ml-0.5 text-lg"  />
             </button>
             <span class="text-xs text-white/30">
               <span v-if="isPlaying" class="text-green-400">● Playing</span>
@@ -77,7 +77,7 @@
       </div>
 
       <div v-else class="flex flex-col items-center gap-3 py-8 text-sm text-white/30">
-        <i aria-hidden="true" class="pi pi-headphones text-3xl" />
+        <Headphones aria-hidden="true" class="text-3xl"  />
         <span>Waiting for a track to play...</span>
       </div>
     </div>
@@ -85,6 +85,7 @@
 </template>
 
 <script setup lang="ts">
+import { Headphones, Pause, Play, RefreshCw, ThumbsUp } from 'lucide-vue-next'
 import { computed } from 'vue'
 import type { RoomNowPlaying } from '@/services/api/social/room-queue'
 import { onImgError } from '@/utils/helpers'

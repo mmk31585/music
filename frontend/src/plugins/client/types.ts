@@ -72,6 +72,8 @@ export interface UseRequestConfig<T = unknown> {
   silent?: boolean
   allowEmptyArray?: true
   schema?: z.ZodTypeAny
+  /** Extra headers merged into the outgoing request. */
+  headers?: Record<string, string>
   beforeRequest?: () => void
   /** Called on success – receives the parsed payload (`T`). */
   success?: (data: T, total: number, response: any) => boolean | void

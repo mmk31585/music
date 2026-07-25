@@ -6,7 +6,7 @@
     :draggable="false"
     :style="{ width, maxWidth }"
     :pt="{
-      root: { class: 'border-white/6! bg-[#141414]! rounded-2xl! shadow-2xl!' },
+      root: { class: 'border-white/6! bg-surface-raised! rounded-2xl! shadow-2xl!' },
       header: { class: 'bg-transparent! border-0! pb-2!' },
       content: { class: 'bg-transparent! px-6! pt-0! pb-2!' },
       footer: { class: 'bg-transparent! border-0!' },

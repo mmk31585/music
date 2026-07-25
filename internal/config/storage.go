@@ -1,6 +1,10 @@
 package config
 
-import "time"
+import (
+	"os"
+	"strconv"
+	"time"
+)
 
 type StorageConfig struct {
 	Driver string
@@ -27,24 +31,62 @@ type S3StorageConfig struct {
 }
 
 func loadStorageConfig() StorageConfig {
+	driver := os.Getenv("STORAGE_DRIVER")
+	if driver == "" {
+		driver = "local"
+	}
+	localBaseDir := os.Getenv("STORAGE_LOCAL_BASE_DIR")
+	if localBaseDir == "" {
+		localBaseDir = "uploads"
+	}
+	localBaseURL := os.Getenv("STORAGE_LOCAL_BASE_URL")
+	if localBaseURL == "" {
+		localBaseURL = "/uploads"
+	}
+	region := os.Getenv("S3_REGION")
+	if region == "" {
+		region = "us-east-1"
+	}
+
+	usePathStyle := false
+	if v := os.Getenv("S3_USE_PATH_STYLE"); v != "" {
+		switch v {
+		case "true", "TRUE", "1", "yes", "YES", "y", "Y":
+			usePathStyle = true
+		}
+	}
+	presignURLs := false
+	if v := os.Getenv("S3_PRESIGN_URLS"); v != "" {
+		switch v {
+		case "true", "TRUE", "1", "yes", "YES", "y", "Y":
+			presignURLs = true
+		}
+	}
+	presignTTL := 900
+	if v := os.Getenv("S3_PRESIGN_TTL_SECONDS"); v != "" {
+		if parsed, err := strconv.Atoi(v); err == nil {
+			presignTTL = parsed
+		}
+	}
+
 	return StorageConfig{
-		Driver: getEnv("STORAGE_DRIVER", "local"),
+		Driver: driver,
 
 		Local: LocalStorageConfig{
-			BaseDir: getEnv("STORAGE_LOCAL_BASE_DIR", "uploads"),
-			BaseURL: getEnv("STORAGE_LOCAL_BASE_URL", "/uploads"),
+			BaseDir: localBaseDir,
+			BaseURL: localBaseURL,
 		},
 
 		S3: S3StorageConfig{
-			Bucket:          getEnv("S3_BUCKET", ""),
-			Region:          getEnv("S3_REGION", "us-east-1"),
-			Endpoint:        getEnv("S3_ENDPOINT", ""),
-			AccessKeyID:     getEnv("S3_ACCESS_KEY_ID", ""),
-			SecretAccessKey: getEnv("S3_SECRET_ACCESS_KEY", ""),
-			PublicBaseURL:   getEnv("S3_PUBLIC_BASE_URL", ""),
-			UsePathStyle:    getEnvAsBool("S3_USE_PATH_STYLE", false),
-			PresignURLs:     getEnvAsBool("S3_PRESIGN_URLS", false),
-			PresignTTL:      getEnvAsDurationSeconds("S3_PRESIGN_TTL_SECONDS", 900),
+			Bucket:          os.Getenv("S3_BUCKET"),
+			Region:          region,
+			Endpoint:        os.Getenv("S3_ENDPOINT"),
+			AccessKeyID:     os.Getenv("S3_ACCESS_KEY_ID"),
+			SecretAccessKey: os.Getenv("S3_SECRET_ACCESS_KEY"),
+			PublicBaseURL:   os.Getenv("S3_PUBLIC_BASE_URL"),
+			UsePathStyle:    usePathStyle,
+			PresignURLs:     presignURLs,
+			PresignTTL:      time.Duration(presignTTL) * time.Second,
 		},
 	}
 }

@@ -213,14 +213,4 @@ func (h *Handler) ListPayments(c *gin.Context) {
 	})
 }
 
-// ListPayments godoc
-// @Summary List payments for the authenticated user
-// @Description Returns a list of payments associated with the user
-// @Tags subscription
-// @Accept json
-// @Produce json
-// @Success 200 {object} response.SuccessResponse{data=[]subscription.PaymentResponse}
-// @Failure 401 {object} response.ErrorResponse
-// @Failure 500 {object} response.ErrorResponse
-// @Security Bearer
-// @Router /subscription/payments [get]
+

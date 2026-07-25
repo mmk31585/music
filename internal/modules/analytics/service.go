@@ -93,6 +93,10 @@ func (s *Service) TrackEvent(
 	return s.repo.CreateEvent(ctx, params)
 }
 
+func (s *Service) GetOverview(ctx context.Context) (Overview, error) {
+	return s.repo.GetOverview(ctx)
+}
+
 func parseEventType(value string) (EventType, error) {
 	switch EventType(strings.TrimSpace(strings.ToLower(value))) {
 	case EventPlay:

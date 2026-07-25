@@ -2,29 +2,40 @@
   <Transition name="slide-right">
     <div
       v-if="visible"
-      class="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-white/8 shadow-[0_0_60px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
-      style="backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); background: rgba(8, 8, 10, 0.94);"
+      class="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-border-default shadow-floating glass-strong"
     >
-      <div class="flex items-center justify-between border-b border-white/8 px-5 py-4">
-        <h2 class="text-lg font-bold text-white">Queue</h2>
+      <div class="flex items-center justify-between border-b border-border-default px-5 py-4">
+        <h2 class="text-lg font-bold text-primary">Queue</h2>
+        <div class="flex items-center gap-1">
+          <button
+            v-if="queue.length > 0"
+            type="button"
+            class="flex h-7 items-center gap-1.5 rounded-full px-3 text-[11px] font-medium text-red-400/70 transition bg-surface-active hover:text-red-400 active:scale-90"
+            aria-label="Clear queue"
+            @click="clearQueue"
+          >
+            <Trash2 aria-hidden="true" class="text-[10px]"  />
+            Clear
+          </button>
         <button
-          type="button"
-          class="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/8 hover:text-white active:scale-90"
-          aria-label="Close queue"
-          @click="visible = false"
-        >
-          <i aria-hidden="true" class="pi pi-times" />
-        </button>
+            type="button"
+            class="flex h-9 w-9 items-center justify-center rounded-full text-secondary transition bg-surface-active hover:text-primary active:scale-90"
+            aria-label="Close queue"
+            @click="visible = false"
+          >
+            <X aria-hidden="true" class=""  />
+          </button>
+        </div>
       </div>
 
       <div class="flex-1 overflow-y-auto p-4" aria-live="polite">
         <!-- Now Playing -->
         <div v-if="currentTrack" class="mb-6">
-          <p class="mb-3 text-[10px] font-semibold tracking-wider text-white/30 uppercase">
+          <p class="mb-3 text-[10px] font-semibold tracking-wider text-muted uppercase">
             Now Playing
           </p>
-          <div class="flex items-center gap-3 rounded-xl bg-white/6 px-4 py-3 ring-1 ring-white/6">
-            <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/6">
+          <div class="flex items-center gap-3 rounded-xl bg-surface-overlay px-4 py-3 ring-1 ring-border-subtle">
+            <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-surface-active ring-1 ring-border-subtle">
               <img
                 v-if="currentTrack.coverUrl"
                 :src="currentTrack.coverUrl"
@@ -34,24 +45,24 @@
                 @error="onImgError"
               />
               <div v-else class="flex h-full items-center justify-center">
-                <i aria-hidden="true" class="pi pi-music text-slate-500" />
+                <Music aria-hidden="true" class="text-muted"  />
               </div>
             </div>
             <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-bold text-white">{{ currentTrack.title }}</p>
-              <p class="truncate text-xs text-slate-400">{{ currentTrack.artistName }}</p>
+              <p class="truncate text-sm font-bold text-primary">{{ currentTrack.title }}</p>
+              <p class="truncate text-xs text-secondary">{{ currentTrack.artistName }}</p>
             </div>
-            <i aria-hidden="true" class="pi pi-waveform text-lg text-spotify" />
+            <AudioLines aria-hidden="true" class="text-lg text-accent"  />
           </div>
         </div>
 
         <!-- Next Up -->
         <div v-if="displayQueue.length > 0" class="mb-6">
-          <div class="mb-3 flex items-center gap-2 text-[10px] font-semibold tracking-wider text-white/30 uppercase">
-            <i aria-hidden="true" class="pi pi-arrow-down text-[9px]" />
+          <div class="mb-3 flex items-center gap-2 text-[10px] font-semibold tracking-wider text-muted uppercase">
+            <ArrowDown aria-hidden="true" class="text-[9px]"  />
             Up Next
-            <span class="h-3.5 w-3.5 rounded-full bg-white/8 flex items-center justify-center text-[8px] font-bold text-white/40">{{ displayQueue.length }}</span>
-            <i v-if="shuffleMode === 'queue'" aria-hidden="true" class="pi pi-sort-alt text-[9px] text-aurora-purple ml-auto" title="Shuffle is on — showing playback order" />
+            <span class="h-3.5 w-3.5 rounded-full bg-surface-active flex items-center justify-center text-[8px] font-bold text-tertiary">{{ displayQueue.length }}</span>
+            <ArrowUpDown v-if="shuffleMode === 'queue'" aria-hidden="true" class="text-[9px] text-aurora-purple ml-auto" title="Shuffle is on — showing playback order"  />
           </div>
           <draggable
             :list="displayQueue"
@@ -64,33 +75,31 @@
             @end="onReorder"
           >
             <template #item="{ element: track, index }">
-              <div
+              <button
                 :id="'queue-item-' + index"
-                class="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200"
+                type="button"
+                class="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-200"
                 :class="canReorder ? 'cursor-pointer' : ''"
-                role="button"
-                :tabindex="canReorder ? 0 : -1"
                 :aria-label="`${track.title} by ${track.artistName}. Press Enter to play, Arrow Up or Down to reorder.`"
                 @click="$emit('playFromQueue', index)"
-                @keydown.enter.prevent="$emit('playFromQueue', index)"
-                @keydown.space.prevent="$emit('playFromQueue', index)"
+                @contextmenu.prevent="openContextMenu($event, track)"
                 @keydown.up.prevent="moveItem(index, -1)"
                 @keydown.down.prevent="moveItem(index, 1)"
               >
                 <span
                   v-if="canReorder"
-                  class="drag-handle flex w-5 items-center justify-center text-white/20 transition-colors me-3 cursor-grab active:cursor-grabbing hover:text-white/60"
+                  class="drag-handle flex w-5 items-center justify-center text-secondary transition-colors me-3 cursor-grab active:cursor-grabbing hover:text-secondary"
                   aria-label="Drag to reorder, or use Arrow Up/Down keys"
                 >
-                  <i aria-hidden="true" class="pi pi-bars text-xs" />
+                  <GripVertical class="text-xs" aria-hidden="true"  />
                 </span>
                 <span
                   v-else
-                  class="flex w-5 items-center justify-center text-white/20 me-3 opacity-30"
+                  class="flex w-5 items-center justify-center text-secondary me-3 opacity-30"
                 >
-                  <i aria-hidden="true" class="pi pi-bars text-xs" />
+                  <GripVertical class="text-xs" aria-hidden="true"  />
                 </span>
-                <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/6">
+                <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-surface-active ring-1 ring-border-subtle">
                   <img
                     v-if="track.coverUrl"
                     :src="track.coverUrl"
@@ -100,15 +109,15 @@
                     @error="onImgError"
                   />
                   <div v-else class="flex h-full items-center justify-center">
-                    <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
+                    <Music aria-hidden="true" class="text-xs text-muted"  />
                   </div>
                 </div>
                 <div class="min-w-0 flex-1">
-                  <p class="truncate text-sm font-medium text-white/90 group-hover:text-white transition-colors">{{ track.title }}</p>
-                  <p class="truncate text-xs text-white/40">{{ track.artistName }}</p>
+                  <p class="truncate text-sm font-medium text-secondary group-hover:text-primary transition-colors">{{ track.title }}</p>
+                  <p class="truncate text-xs text-tertiary">{{ track.artistName }}</p>
                 </div>
-                <span class="text-[10px] font-mono tabular-nums text-white/25 group-hover:text-white/50 transition-colors">{{ formatTime(track.durationSeconds) }}</span>
-              </div>
+                <span class="text-[10px] font-mono tabular-nums text-secondary group-hover:text-secondary transition-colors">{{ formatTime(track.durationSeconds) }}</span>
+              </button>
             </template>
           </draggable>
         </div>
@@ -118,18 +127,16 @@
           v-if="!currentTrack && queue.length === 0"
           class="flex flex-col items-center gap-3 pt-16 text-center"
         >
-          <i aria-hidden="true" class="pi pi-list text-3xl text-white/20" />
-          <p class="text-sm text-white/40">Queue is empty</p>
-          <p class="text-xs text-white/30">Start playing tracks to see them here</p>
+          <List aria-hidden="true" class="text-3xl text-secondary"  />
+          <p class="text-sm text-tertiary">Queue is empty — add some tracks to get started</p>
         </div>
 
         <div
           v-if="currentTrack && queue.length === 0"
           class="flex flex-col items-center gap-3 pt-16 text-center"
         >
-          <i aria-hidden="true" class="pi pi-list text-3xl text-white/20" />
-          <p class="text-sm text-white/40">No upcoming tracks</p>
-          <p class="text-xs text-white/30">Queue will fill as you play more music</p>
+          <List aria-hidden="true" class="text-3xl text-secondary"  />
+          <p class="text-sm text-tertiary">No upcoming tracks — queue will fill as you play more music</p>
         </div>
       </div>
     </div>
@@ -138,15 +145,27 @@
   <Transition name="fade">
     <div
       v-if="visible"
-      class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+      class="fixed inset-0 z-40 bg-bg-overlay/60 backdrop-blur-sm"
       @click="visible = false"
     />
   </Transition>
+  <ContextMenu
+    v-model:visible="menuVisible"
+    :sections="sections"
+    :header="header"
+    :accent-color="accentColor"
+    :position="{ x: menuX, y: menuY }"
+  />
 </template>
 
 <script setup lang="ts">
+import { ArrowDown, ArrowUpDown, AudioLines, GripVertical, List, Music, Trash2, X } from 'lucide-vue-next'
 import { computed, nextTick, ref, watch } from 'vue'
 import draggable from 'vuedraggable'
+import { useToast } from 'primevue/usetoast'
+import type { TrackContextItem } from '@/composables/useTrackContextMenu'
+import { useTrackContextMenu } from '@/composables/useTrackContextMenu'
+import ContextMenu from '@/components/common/ContextMenu.vue'
 import { onImgError } from '@/utils/helpers'
 import { usePlayer } from '@/composables/player'
 import { queueManager } from '@/services/player/queue-manager'
@@ -159,6 +178,14 @@ defineEmits<{
 }>()
 
 const player = usePlayer()
+
+const toast = useToast()
+
+function clearQueue() {
+  queueManager.clear()
+  player.queue.value = []
+  toast.add({ severity: 'info', summary: 'Queue cleared', life: 2000 })
+}
 const currentTrack = player.currentTrack
 const queue = player.queue
 const shuffleMode = player.shuffleMode
@@ -171,8 +198,8 @@ const localQueue = ref<PlaybackTrack[]>([])
  */
 const displayQueue = computed<PlaybackTrack[]>(() => {
   if (shuffleMode.value === 'queue') {
-    return player.remainingShuffledQueue.value.length > 0
-      ? player.remainingShuffledQueue.value
+    return player.remainingShuffledQueue.length > 0
+      ? player.remainingShuffledQueue
       : localQueue.value
   }
   return localQueue.value
@@ -196,7 +223,7 @@ watch(() => player.queue.value, (newQueue) => {
  */
 watch(() => player.shuffleMode.value, () => {
   if (player.shuffleMode.value === 'queue') {
-    localQueue.value = [...(player.remainingShuffledQueue.value || [])]
+    localQueue.value = [...(player.remainingShuffledQueue || [])]
   } else {
     localQueue.value = [...(player.queue.value || [])]
   }
@@ -237,6 +264,23 @@ function formatTime(seconds?: number | null) {
   const s = Math.floor(seconds % 60)
   return `${m}:${String(s).padStart(2, '0')}`
 }
+
+// ── Context menu ──────────────────────────────────────────────────
+const menuVisible = ref(false)
+const menuX = ref(0)
+const menuY = ref(0)
+const contextTrack = ref<TrackContextItem | null>(null)
+
+function openContextMenu(e: MouseEvent, track: PlaybackTrack) {
+  menuX.value = e.clientX
+  menuY.value = e.clientY
+  contextTrack.value = track as unknown as TrackContextItem
+  menuVisible.value = true
+}
+
+const { sections, header, accentColor } = useTrackContextMenu(
+  computed(() => contextTrack.value),
+)
 </script>
 
 <style scoped>

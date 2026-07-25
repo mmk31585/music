@@ -35,6 +35,7 @@ export type Album = {
   artist_name: string | null
   release_date: string | null
   album_type: string | null
+  genre?: string | null
   track_count: number
   created_at: string | null
   updated_at: string | null

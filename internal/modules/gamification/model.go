@@ -102,6 +102,11 @@ const XPForContribution int = 50
 const XPForTranslation int = 30
 const XPForLogin int = 15
 const XPForDailyChallenge int = 50
+const XPForUpload int = 100
+const XPForUploadPublished int = 200
+const XPForContributionAccepted int = 25
+const XPForReview int = 15
+const XPForCoUpload int = 75
 
 func CalculateLevel(xp int64) (level int, title, titlePersian string, nextXP int64) {
 	levels := []struct {

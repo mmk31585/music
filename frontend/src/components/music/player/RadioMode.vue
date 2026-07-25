@@ -11,7 +11,7 @@
       >
         <div class="pointer-events-none absolute inset-0 overflow-hidden">
           <div
-            class="aurora-spot-1 -top-40 -left-40 bg-spotify/15"
+            class="aurora-spot-1 -top-40 -left-40 bg-accent-subtle"
             style="animation-duration: 25s"
           />
           <div
@@ -23,25 +23,26 @@
         <div class="relative z-10 flex items-center justify-between px-5 pt-5 pb-3">
           <button
             type="button"
-            class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 backdrop-blur-xs transition-all hover:bg-white/10 hover:text-white"
-            aria-label="Close"
+            class="spring flex h-10 w-10 items-center justify-center rounded-full text-secondary backdrop-blur-xs transition-all hover:bg-surface-active hover:text-primary"
+            aria-label="بستن رادیو"
+            title="رادیو متوقف می‌شه"
             @click="close"
           >
-            <i aria-hidden="true" class="pi pi-chevron-down text-lg" />
+            <ChevronDown aria-hidden="true" class="text-lg"  />
           </button>
-          <div class="glass flex items-center gap-2 rounded-full px-4 py-2 text-xs text-white/50">
-            <span class="flex h-2 w-2 animate-pulse rounded-full bg-spotify" />
+          <div class="glass flex items-center gap-2 rounded-full px-4 py-2 text-xs text-secondary">
+            <span class="flex h-2 w-2 animate-pulse rounded-full bg-accent" />
             <span class="font-semibold tracking-wider uppercase">Radio</span>
-            <span v-if="displaySeedLabel" class="text-white/30">· {{ displaySeedLabel }}</span>
+            <span v-if="displaySeedLabel" class="text-muted">· {{ displaySeedLabel }}</span>
           </div>
           <button
             type="button"
-            class="spring flex h-10 w-10 items-center justify-center rounded-full text-white/60 backdrop-blur-xs transition-all hover:bg-white/10 hover:text-white"
-            :disabled="canSkip!"
-            aria-label="Skip track"
+            class="spring flex h-10 w-10 items-center justify-center rounded-full text-secondary backdrop-blur-xs transition-all hover:bg-surface-active hover:text-primary"
+            :disabled="!canSkip"
+            aria-label="آهنگ بعدی"
             @click="skipTrack"
           >
-            <i aria-hidden="true" class="pi pi-forward text-lg" />
+            <Forward aria-hidden="true" class="text-lg"  />
           </button>
         </div>
 
@@ -50,7 +51,7 @@
             <div class="flex flex-col items-center justify-center lg:w-1/2">
               <div class="relative h-48 w-48 md:h-64 md:w-64 lg:h-80 lg:w-80">
                 <div
-                  class="h-full w-full overflow-hidden rounded-3xl shadow-2xl ring-1 shadow-black/40 ring-white/10"
+                  class="h-full w-full overflow-hidden rounded-3xl shadow-2xl ring-1 shadow-bg-overlay/40 ring-border-default"
                 >
                   <img
                     v-if="coverUrl"
@@ -64,15 +65,15 @@
                     v-else
                     class="flex h-full w-full items-center justify-center bg-linear-to-br from-spotify/30 to-surface-raised"
                   >
-                    <i aria-hidden="true" class="pi pi-music text-5xl text-white/20" />
+                    <Music aria-hidden="true" class="text-5xl text-muted"  />
                   </div>
                 </div>
               </div>
 
               <div class="mt-5 text-center">
-                <p class="text-xl font-bold text-white md:text-2xl">{{ title }}</p>
+                <p class="text-xl font-bold text-primary md:text-2xl">{{ title }}</p>
                 <p
-                  class="mt-1 cursor-pointer text-sm text-white/50 transition-colors hover:text-spotify"
+                  class="mt-1 cursor-pointer text-sm text-secondary transition-colors hover:text-accent"
                 >
                   {{ artistName }}
                 </p>
@@ -81,28 +82,25 @@
               <div class="mt-5 flex items-center gap-5">
           <button
             type="button"
-            class="spring flex h-12 w-12 items-center justify-center rounded-full text-white/60 transition-all hover:bg-white/10 hover:text-white disabled:opacity-20"
+            class="spring flex h-12 w-12 items-center justify-center rounded-full text-secondary transition-all hover:bg-surface-active hover:text-primary disabled:opacity-20"
             :disabled="!hasPrevious"
             aria-label="Previous track"
             @click="playPrevious"
           >
-            <i aria-hidden="true" class="pi pi-step-backward text-xl" />
+            <SkipBack aria-hidden="true" class="text-xl"  />
           </button>
 
           <button
             type="button"
-            class="glow-green spring relative flex h-16 w-16 items-center justify-center rounded-full bg-white text-black shadow-2xl transition-all hover:scale-105 hover:bg-spotify hover:text-white disabled:opacity-40"
-            :class="{ 'bg-spotify! text-white!': isPlaying }"
+            class="glow-green spring relative flex h-16 w-16 items-center justify-center rounded-full bg-white text-black shadow-2xl transition-all hover:scale-105 hover:bg-accent hover:text-primary disabled:opacity-40"
+            :class="{ '!bg-accent !text-primary': isPlaying }"
             :disabled="!currentTrack || isLoadingTrack"
-            :aria-label="isLoadingTrack || isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'"
+            :aria-label="isLoadingTrack || isBuffering ? 'در حال بارگذاری' : isPlaying ? 'توقف' : 'پخش'"
             @click="togglePlayPause"
           >
-            <i aria-hidden="true" v-if="isLoadingTrack || isBuffering" class="pi pi-spin pi-spinner text-xl" />
-            <i
-              v-else
-              :class="isPlaying ? 'pi pi-pause-fill' : 'pi pi-play-fill'"
-              class="text-xl"
-            />
+            <Loader2 v-if="isLoadingTrack || isBuffering" aria-hidden="true" class="animate-spin text-xl" />
+            <Pause v-else-if="isPlaying" aria-hidden="true" class="text-xl" />
+            <Play v-else aria-hidden="true" class="text-xl ms-0.5" />
             <div
               v-if="isPlaying"
               class="absolute -inset-2 animate-ping rounded-full border-2 border-spotify/30"
@@ -111,11 +109,11 @@
 
           <button
             type="button"
-            class="spring flex h-12 w-12 items-center justify-center rounded-full text-white/60 transition-all hover:bg-white/10 hover:text-white"
+            class="spring flex h-12 w-12 items-center justify-center rounded-full text-secondary transition-all hover:bg-surface-active hover:text-primary"
             aria-label="Next track"
             @click="skipTrack"
           >
-                  <i aria-hidden="true" class="pi pi-step-forward text-xl" />
+                  <SkipForward aria-hidden="true" class="text-xl"  />
                 </button>
               </div>
 
@@ -131,7 +129,7 @@
                   :disabled="!currentTrack"
                   @input="onSeek"
                 />
-                <div class="mt-1 flex justify-between text-[11px] text-white/40 tabular-nums">
+                <div class="mt-1 flex justify-between text-[11px] text-tertiary tabular-nums">
                   <span>{{ currentTimeLabel }}</span>
                   <span>{{ durationLabel }}</span>
                 </div>
@@ -139,26 +137,26 @@
             </div>
 
             <div
-              class="flex flex-1 flex-col overflow-hidden lg:border-l lg:border-white/6 lg:pl-8"
+              class="flex flex-1 flex-col overflow-hidden lg:border-l lg:border-border-subtle lg:pl-8"
             >
-              <div class="flex items-center gap-4 border-b border-white/6 pb-3">
+              <div class="flex items-center gap-4 border-b border-border-subtle pb-3">
                 <button
                   type="button"
                   class="spring text-xs font-semibold tracking-wider uppercase transition-all"
                   :class="
-                    subTab === 'upcoming' ? 'text-white' : 'text-white/40 hover:text-white/70'
+                    subTab === 'upcoming' ? 'text-primary' : 'text-tertiary hover:text-primary/70'
                   "
                   @click="subTab = 'upcoming'"
                 >
-                  Up Next
+                  بعدی
                 </button>
                 <button
                   type="button"
                   class="spring text-xs font-semibold tracking-wider uppercase transition-all"
-                  :class="subTab === 'history' ? 'text-white' : 'text-white/40 hover:text-white/70'"
+                  :class="subTab === 'history' ? 'text-primary' : 'text-tertiary hover:text-primary/70'"
                   @click="subTab = 'history'"
                 >
-                  History
+                  تاریخچه
                 </button>
               </div>
 
@@ -169,12 +167,12 @@
                     :key="track.id"
                     role="button"
                     tabindex="0"
-                    class="group spring flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition-all hover:bg-white/6"
+                    class="group spring flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition-all hover:bg-surface-overlay"
                     @click="playUpcoming(idx)"
                     @keydown.enter="playUpcoming(idx)"
                     @keydown.space.prevent="playUpcoming(idx)"
                   >
-                    <span class="w-5 text-center text-xs text-white/20 tabular-nums">{{
+                    <span class="w-5 text-center text-xs text-muted tabular-nums">{{
                       idx + 1
                     }}</span>
                     <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg">
@@ -187,32 +185,39 @@
                       />
                       <div
                         v-else
-                        class="flex h-full w-full items-center justify-center bg-white/10"
+                        class="flex h-full w-full items-center justify-center bg-surface-active"
                       >
-                        <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
+                        <Music aria-hidden="true" class="text-xs text-muted"  />
                       </div>
                     </div>
                     <div class="min-w-0 flex-1">
                       <p
-                        class="truncate text-sm font-medium text-white/80 transition-colors group-hover:text-white"
+                        class="truncate text-sm font-medium text-primary/80 transition-colors group-hover:text-primary"
                       >
                         {{ track.title }}
                       </p>
-                      <p class="truncate text-xs text-white/40">{{ track.artistName }}</p>
+                      <p class="truncate text-xs text-tertiary">{{ track.artistName }}</p>
                     </div>
-                    <div class="text-spotify opacity-0 group-hover:opacity-100">
-                      <i aria-hidden="true" class="pi pi-play-fill text-sm" />
+                    <div class="text-accent opacity-0 group-hover:opacity-100">
+                      <Play aria-hidden="true" class="text-sm"  />
                     </div>
                   </div>
-                  <div v-if="isLoadingBatch" class="flex justify-center py-4">
-                    <i aria-hidden="true" class="pi pi-spin pi-spinner text-white/30" />
+                  <div v-if="upcomingList.length === 0 && isLoadingBatch" class="flex flex-col items-center gap-3 py-12 text-center">
+                    <div class="flex items-end gap-1 h-8">
+                      <div class="w-1 rounded-full bg-accent/60" style="animation: eq-bar 0.8s ease-in-out infinite; height: 8px;" />
+                      <div class="w-1 rounded-full bg-accent/80" style="animation: eq-bar 0.8s ease-in-out infinite 0.15s; height: 16px;" />
+                      <div class="w-1 rounded-full bg-accent" style="animation: eq-bar 0.8s ease-in-out infinite 0.3s; height: 12px;" />
+                      <div class="w-1 rounded-full bg-accent/80" style="animation: eq-bar 0.8s ease-in-out infinite 0.45s; height: 20px;" />
+                      <div class="w-1 rounded-full bg-accent/60" style="animation: eq-bar 0.8s ease-in-out infinite 0.6s; height: 10px;" />
+                    </div>
+                    <p class="text-xs text-muted">در حال ساخت رادیو بر اساس سلیقه شما...</p>
                   </div>
                   <div
-                    v-else-if="upcomingList.length === 0"
-                    class="flex flex-col items-center gap-2 py-8 text-white/20"
+                    v-else-if="upcomingList.length === 0 && !isLoadingBatch"
+                    class="flex flex-col items-center gap-2 py-8 text-muted"
                   >
-                    <i aria-hidden="true" class="pi pi-wave-pulse text-2xl" />
-                    <p class="text-xs">Generating your radio...</p>
+                    <Activity aria-hidden="true" class="text-2xl"  />
+                    <p class="text-xs">در حال ساخت رادیو...</p>
                   </div>
                 </div>
 
@@ -220,9 +225,9 @@
                   <div
                     v-for="(track, idx) in historyList"
                     :key="track.id + '-' + idx"
-                    class="flex items-center gap-3 rounded-xl px-3 py-2 text-white/40"
+                    class="flex items-center gap-3 rounded-xl px-3 py-2 text-tertiary"
                   >
-                    <span class="w-5 text-center text-xs text-white/15 tabular-nums">{{
+                    <span class="w-5 text-center text-xs text-muted tabular-nums">{{
                       historyList.length - idx
                     }}</span>
                     <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg opacity-60">
@@ -235,22 +240,22 @@
                       />
                       <div
                         v-else
-                        class="flex h-full w-full items-center justify-center bg-white/10"
+                        class="flex h-full w-full items-center justify-center bg-surface-active"
                       >
-                        <i aria-hidden="true" class="pi pi-music text-xs text-white/30" />
+                        <Music aria-hidden="true" class="text-xs text-muted"  />
                       </div>
                     </div>
                     <div class="min-w-0 flex-1">
-                      <p class="truncate text-sm text-white/50">{{ track.title }}</p>
-                      <p class="truncate text-xs text-white/25">{{ track.artistName }}</p>
+                      <p class="truncate text-sm text-secondary">{{ track.title }}</p>
+                      <p class="truncate text-xs text-muted">{{ track.artistName }}</p>
                     </div>
                   </div>
                   <div
                     v-if="historyList.length === 0"
-                    class="flex flex-col items-center gap-2 py-8 text-white/20"
+                    class="flex flex-col items-center gap-2 py-8 text-muted"
                   >
-                    <i aria-hidden="true" class="pi pi-history text-2xl" />
-                    <p class="text-xs">No history yet</p>
+                    <History aria-hidden="true" class="text-2xl"  />
+                    <p class="text-xs">هنوز تاریخچه‌ای نیست</p>
                   </div>
                 </div>
               </div>
@@ -263,6 +268,7 @@
 </template>
 
 <script setup lang="ts">
+import { Activity, ChevronDown, Forward, History, Loader2, Music, Pause, Play, SkipBack, SkipForward } from 'lucide-vue-next'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { usePlayerControls } from '@/composables/player'
 import { useRadio } from '@/composables/recommendation/useRadio'
@@ -302,13 +308,13 @@ const seekPercent = pc.seekPercent
 const playNext = pc.playNext
 const playPrevious = pc.playPrevious
 
-const title = computed(() => currentTrack.value?.title || 'No track')
+const title = computed(() => currentTrack.value?.title || 'آهنگی انتخاب نشده')
 const artistName = computed(() => currentTrack.value?.artistName || '')
 const coverUrl = computed(() => currentTrack.value?.coverUrl || '')
 const { palette: albumPalette } = useAlbumColors(coverUrl)
 
 const displaySeedLabel = computed(() => {
-  return radio.radioSeedLabel.value || props.seedLabel || ''
+  return radio.radioSeedLabel.value || props.seedLabel || currentTrack.value?.title || ''
 })
 
 const upcomingList = computed<PlaybackTrack[]>(() => {
@@ -337,7 +343,7 @@ const isLoadingBatch = computed(() => radio.isLoadingBatch.value)
 const bgStyle = computed(() => {
   const p = albumPalette.value
   if (!coverUrl.value) {
-    return { background: 'linear-gradient(135deg, #0a0a0a 0%, #121212 100%)' }
+    return { background: 'var(--bg-gradient)' }
   }
   return {
     background: `
@@ -393,6 +399,12 @@ function playUpcoming(index: number) {
 async function startRadioSession() {
   if (props.seedId) {
     await radio.startFromTrack(props.seedId, props.seedLabel)
+    return
+  }
+  const current = currentTrack.value
+  if (current && !radio.isRadioActive.value) {
+    await radio.startFromTrack(current.id, current.title)
+    return
   }
 }
 
@@ -447,5 +459,14 @@ onBeforeUnmount(() => {
 }
 .spring {
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes eq-bar {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [style*="eq-bar"] { animation: none !important; }
 }
 </style>

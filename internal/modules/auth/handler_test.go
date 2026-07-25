@@ -177,7 +177,7 @@ func TestLogin_InvalidCredentials(t *testing.T) {
 	}
 
 	mockSvc.On("Login", mock.Anything, reqBody, mock.Anything, mock.Anything).
-		Return(AuthResponse{}, apperrors.Unauthorized("invalid credentials", nil))
+		Return(AuthResponse{}, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid credentials", nil))
 
 	body, _ := json.Marshal(reqBody)
 	w := httptest.NewRecorder()
@@ -219,9 +219,9 @@ func TestLogin_EmptyBody_Returns400(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code, "empty login body should return 400, not 500")
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code, "empty {} login body should return 422 validation error, not 500")
 
-	// Also test completely missing body
+	// Also test completely missing body (ShouldBindJSON fails → 400)
 	w2 := httptest.NewRecorder()
 	req2, _ := http.NewRequest("POST", "/api/v1/auth/login", bytes.NewReader([]byte("")))
 	req2.Header.Set("Content-Type", "application/json")
@@ -274,7 +274,7 @@ func TestRefresh_InvalidToken(t *testing.T) {
 	reqBody := RefreshRequest{RefreshToken: "expired_token"}
 
 	mockSvc.On("Refresh", mock.Anything, RefreshRequest{RefreshToken: "expired_token"}, mock.Anything, mock.Anything).
-		Return(AuthResponse{}, apperrors.Unauthorized("invalid or expired refresh token", nil))
+		Return(AuthResponse{}, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "invalid or expired refresh token", nil))
 
 	body, _ := json.Marshal(reqBody)
 	w := httptest.NewRecorder()

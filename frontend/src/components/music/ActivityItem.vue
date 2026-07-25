@@ -1,13 +1,13 @@
 <template>
   <div
-    class="flex items-start gap-3 rounded-xl p-3 transition hover:bg-white/4 focus-within:ring-2 focus-within:ring-spotify"
+    class="flex items-start gap-3 rounded-xl p-3 transition hover:bg-surface-hover focus-within:ring-2 focus-within:ring-accent"
     role="article"
     :aria-label="`Activity: ${item.userName} ${item.action}`"
   >
     <!-- Avatar with link to profile -->
     <RouterLink
       :to="`/profile/${item.userId}`"
-      class="shrink-0 h-8 w-8 overflow-hidden rounded-full ring-1 ring-white/10 focus-visible:outline-2 focus-visible:outline-[#1db954]"
+      class="shrink-0 h-8 w-8 overflow-hidden rounded-full ring-1 ring-border-default focus-visible:outline-2 focus-visible:outline-accent"
     >
       <img
         v-if="item.avatarUrl"
@@ -18,7 +18,7 @@
       />
       <div
         v-else
-        class="flex h-full w-full items-center justify-center bg-white/10 text-[10px] font-bold text-white"
+        class="flex h-full w-full items-center justify-center bg-surface-active text-[10px] font-bold text-primary"
       >
         {{ (item.userName || '?')[0] }}
       </div>
@@ -26,10 +26,10 @@
 
     <!-- Content -->
     <div class="min-w-0 flex-1">
-      <p class="text-xs text-white/70 leading-relaxed">
+      <p class="text-xs text-secondary leading-relaxed">
         <RouterLink
           :to="`/profile/${item.userId}`"
-          class="font-semibold text-white hover:underline focus-visible:outline-2 focus-visible:outline-[#1db954]"
+          class="font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-accent"
         >
           {{ item.userName }}
         </RouterLink>
@@ -38,21 +38,21 @@
           <RouterLink
             v-if="item.targetUrl"
             :to="item.targetUrl"
-            class="font-medium text-spotify hover:underline focus-visible:outline-2 focus-visible:outline-[#1db954]"
+            class="font-medium text-accent hover:underline focus-visible:outline-2 focus-visible:outline-accent"
           >
             {{ item.targetName }}
           </RouterLink>
-          <span v-else class="font-medium text-white/80">{{ item.targetName }}</span>
+          <span v-else class="font-medium text-primary/80">{{ item.targetName }}</span>
         </template>
       </p>
-      <p class="mt-0.5 text-[10px] text-white/30">{{ displayTimeAgo }}</p>
+      <p class="mt-0.5 text-[10px] text-muted">{{ displayTimeAgo }}</p>
     </div>
 
     <!-- Contextual action button -->
     <button
       v-if="item.actionType === 'party'"
       aria-label="Join party"
-      class="shrink-0 rounded-lg bg-spotify/10 px-3 py-1.5 text-[10px] font-semibold text-spotify transition hover:bg-spotify/20 focus-visible:outline-2 focus-visible:outline-[#1db954]"
+      class="shrink-0 rounded-lg bg-accent-subtle px-3 py-1.5 text-[10px] font-semibold text-accent transition hover:bg-accent-subtle focus-visible:outline-2 focus-visible:outline-accent"
       @click="$emit('action', item)"
     >
       Join
@@ -60,7 +60,7 @@
     <button
       v-else-if="item.actionType === 'room'"
       aria-label="Listen live"
-      class="shrink-0 rounded-lg bg-red-500/10 px-3 py-1.5 text-[10px] font-semibold text-red-400 transition hover:bg-red-500/20 focus-visible:outline-2 focus-visible:outline-red-400"
+      class="shrink-0 rounded-lg bg-danger-subtle px-3 py-1.5 text-[10px] font-semibold text-danger transition hover:bg-danger-subtle focus-visible:outline-2 focus-visible:outline-danger"
       @click="$emit('action', item)"
     >
       Listen

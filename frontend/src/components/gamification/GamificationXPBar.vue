@@ -117,6 +117,6 @@ const XP_LEVELS: Array<{ level: number; xpRequired: number }> = [
 
 function xpForLevel(level: number): number {
   const found = XP_LEVELS.find((l) => l.level === level)
-  return found ? found.xpRequired : XP_LEVELS[0].xpRequired
+  return found ? found.xpRequired : (XP_LEVELS[0]?.xpRequired ?? 0)
 }
 </script>

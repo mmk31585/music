@@ -15,6 +15,14 @@
     "instructions": {
       "path": ".github/instructions",
       "description": "Use for coding standards: Go, Vue 3, localization/LTR, accessibility (WCAG 2.2 AA), Docker/containerization, and git hooks"
+    },
+    "engineering-references": {
+      "path": ".opencode/references-addyosmani",
+      "description": "Production engineering references: testing patterns, security checklists, performance checklists, definition of done, accessibility checklists, observability, and orchestration patterns"
+    },
+    "standards": {
+      "path": ".opencode/standards",
+      "description": "Quality, security, git workflow, documentation, and communication standards for consistent project deliverables"
     }
   },
   "agent": {
@@ -64,6 +72,26 @@
       "description": "Agent Team supervisor for Muse. Owns the shared task list, deploys teammates (backend: @muse-auth/@muse-catalog/@muse-creator/@muse-admin, frontend: @muse-player/@muse-social/@muse-ui, infra: @muse-infra) that communicate peer-to-peer — no isolation, no roundtrip. Supervisor monitors progress, resolves conflicts, approves goal. Use for end-to-end features, cross-domain refactoring, multi-layer debugging.",
       "mode": "primary",
       "color": "success"
+    },
+    "code-reviewer": {
+      "description": "Senior code reviewer that evaluates changes across five dimensions — correctness, readability, architecture, security, and performance. Use for thorough code review before merge. Invoke via `/review` or by asking 'review this PR'.",
+      "mode": "primary",
+      "color": "accent"
+    },
+    "security-auditor": {
+      "description": "Security engineer focused on vulnerability detection, threat modeling, and secure coding practices. Use for security-focused code review, threat analysis, or hardening recommendations. Covers OWASP Top 10, LLM Top 10, input handling, auth, data protection, infrastructure, and third-party integrations.",
+      "mode": "primary",
+      "color": "error"
+    },
+    "test-engineer": {
+      "description": "QA engineer specialized in test strategy, test writing, and coverage analysis. Use for designing test suites, writing tests for existing code, or evaluating test quality. Follows the Prove-It pattern for bug reproduction. Works at the right level: unit, integration, or E2E.",
+      "mode": "primary",
+      "color": "accent"
+    },
+    "web-performance-auditor": {
+      "description": "Web performance engineer focused on Core Web Vitals, loading, rendering, and network optimization. Use for performance-focused audits, CWV analysis, and identifying structural performance anti-patterns. Framework-aware (Vue, React, Svelte, etc.). Supports Lighthouse, CrUX, and DevTools trace analysis.",
+      "mode": "primary",
+      "color": "accent"
     }
   },
   "plugin": [

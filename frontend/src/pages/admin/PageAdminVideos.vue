@@ -34,14 +34,14 @@
       </div>
 
       <div class="flex items-center gap-2">
-        <!-- Refresh -->
+        <!-- RefreshCw -->
         <Button
           icon="pi pi-refresh"
           text
           rounded
           size="small"
           class="text-slate-400!"
-          v-tooltip.top="'Refresh'"
+          v-tooltip.top="'RefreshCw'"
           :loading="loading"
           @click="handleRefresh"
         />
@@ -133,7 +133,7 @@
                 loading="lazy"
                 @error="($event.target as HTMLImageElement).style.display='none'"
               />
-              <i v-else aria-hidden="true" class="pi pi-play-circle text-xs text-slate-500" />
+              <PlayCircle v-else aria-hidden="true" class="text-xs text-slate-500"  />
             </button>
           </div>
 
@@ -154,7 +154,7 @@
                   loading="lazy"
                   @error="($event.target as HTMLImageElement).style.display='none'"
                 />
-<i v-else aria-hidden="true" class="pi pi-play-circle text-base text-slate-500" />
+<PlayCircle v-else aria-hidden="true" class="text-base text-slate-500"  />
               </button>
               <div class="min-w-0 flex-1">
                 <p class="truncate font-semibold text-white">{{ v.title }}</p>
@@ -204,7 +204,7 @@
               :disabled="saving"
               @click="handleToggleApprove(v)"
             >
-              <i :class="v.is_approved ? 'pi pi-check-circle' : 'pi pi-clock'" class="text-[10px]" />
+              <component :is="v.is_approved ? CheckCircle : Clock" aria-hidden="true"<i  class="text-[10px]" /> />
               {{ v.is_approved ? 'Approved' : 'Approve' }}
             </button>
           </div>
@@ -297,7 +297,7 @@
               class="h-full w-full object-cover"
               loading="lazy"
             />
-            <i v-else aria-hidden="true" class="pi pi-play-circle text-base text-slate-500" />
+            <PlayCircle v-else aria-hidden="true" class="text-base text-slate-500"  />
           </div>
           <div class="min-w-0">
             <p class="truncate font-semibold text-white">{{ editingVideo.title }}</p>
@@ -411,7 +411,7 @@
         </div>
       </div>
       <div v-else-if="commentItems.length === 0" class="flex flex-col items-center py-12 text-center">
-        <i class="pi pi-comment mb-3 block text-3xl text-slate-600" />
+        <MessageCircle aria-hidden="true" class="mb-3 block text-3xl text-slate-600" />
         <p class="text-sm text-slate-500">No comments on this video.</p>
       </div>
       <div v-else class="max-h-[60vh] space-y-3 overflow-y-auto">
@@ -488,6 +488,7 @@
 </template>
 
 <script setup lang="ts">
+import { CheckCircle, Clock, MessageCircle, PlayCircle } from 'lucide-vue-next'
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'

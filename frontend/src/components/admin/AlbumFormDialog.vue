@@ -6,7 +6,7 @@
     :draggable="false"
     :style="{ width: '560px' }"
     :pt="{
-      root: { class: 'border-white/6! bg-[#141414]! rounded-2xl! shadow-2xl!' },
+      root: { class: 'border-white/6! bg-surface-raised! rounded-2xl! shadow-2xl!' },
       header: { class: 'bg-transparent! border-0! pb-2!' },
       content: { class: 'bg-transparent! px-6! pt-0! pb-2!' },
       footer: { class: 'bg-transparent! border-0!' },
@@ -16,7 +16,7 @@
     <template #header>
       <div class="flex items-center gap-3">
         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
-          <i aria-hidden="true" class="pi pi-book text-blue-400" />
+          <Book aria-hidden="true" class="text-blue-400"  />
         </div>
         <div>
           <h3 class="text-base font-semibold text-white">
@@ -49,10 +49,8 @@
       <div>
         <label class="mb-1.5 flex items-center gap-2 text-xs font-medium text-slate-400">
           Artists
-          <i
-            v-if="artistSearchLoading"
-            class="pi pi-spin pi-spinner text-[10px] text-emerald-400"
-          />
+          <Loader2 aria-hidden="true" v-if="artistSearchLoading"
+            class="text-[10px] text-emerald-400 animate-spin" />
         </label>
         <AutoComplete
           v-model="artistModels"
@@ -64,12 +62,12 @@
           placeholder="Search and select artists"
           class="w-full"
           input-class="w-full rounded-xl! border-white/8! bg-white/3! text-white! placeholder:text-slate-600!"
-          panel-class="bg-[#181818]! border-white/8!"
+          panel-class="bg-surface-overlay! border-white/8!"
           @complete="searchArtists"
         >
           <template #option="{ option }">
             <div class="flex items-center gap-2 text-sm text-white">
-              <i aria-hidden="true" class="pi pi-user text-xs text-slate-500" />
+              <User aria-hidden="true" class="text-xs text-slate-500"  />
               <span>{{ option.name }}</span>
             </div>
           </template>
@@ -92,7 +90,7 @@
           placeholder="Select type"
           class="w-full"
           input-class="rounded-xl! border-white/8! bg-white/3! text-white!"
-          panel-class="bg-[#181818]! border-white/8!"
+          panel-class="bg-surface-overlay! border-white/8!"
         />
       </div>
 
@@ -182,6 +180,7 @@
 </template>
 
 <script setup lang="ts">
+import { Book, Loader2, User } from 'lucide-vue-next'
 import { reactive, computed, watch, ref } from 'vue'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
@@ -320,8 +319,8 @@ async function searchArtistByName(name: string) {
     } else if (list.length > 0) {
       // Fall back to first result
       artistModels.value = [{
-        id: list[0].id ?? (list[0] as any).artist_id,
-        name: list[0].name ?? (list[0] as any).artist_name,
+        id: list[0]?.id ?? (list[0] as any)?.artist_id,
+        name: list[0]?.name ?? (list[0] as any)?.artist_name,
       }]
     }
   } catch {

@@ -16,7 +16,7 @@ import (
 // ServiceInterface defines the service methods needed by the HTTP handler.
 type ServiceInterface interface {
 	Upload(ctx context.Context, category UploadCategory, file multipart.File, header *multipart.FileHeader, createdBy *uuid.UUID) (*UploadResponse, error)
-	ListMedia(ctx context.Context) ([]Media, error)
+	ListMedia(ctx context.Context) ([]MediaAsset, error)
 	DeleteMedia(ctx context.Context, id uuid.UUID) error
 }
 
@@ -53,7 +53,7 @@ func (h *Handler) UploadAdminMedia(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, hardLimit)
 
 	if err := c.Request.ParseMultipartForm(hardLimit); err != nil {
-		response.Error(c, appErr.BadRequest("invalid multipart form or file too large", err))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "invalid multipart form or file too large", err))
 		return
 	}
 
@@ -61,18 +61,18 @@ func (h *Handler) UploadAdminMedia(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrNoFileProvided):
-			response.Error(c, appErr.BadRequest("no valid file field provided", err))
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "no valid file field provided", err))
 		case errors.Is(err, ErrMultipleFiles):
-			response.Error(c, appErr.BadRequest("only one upload field is allowed", err))
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "only one upload field is allowed", err))
 		default:
-			response.Error(c, appErr.BadRequest("invalid upload field", err))
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "invalid upload field", err))
 		}
 		return
 	}
 
 	file, header, err := c.Request.FormFile(fieldName)
 	if err != nil {
-		response.Error(c, appErr.BadRequest("failed to read uploaded file", err))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "failed to read uploaded file", err))
 		return
 	}
 	defer func(file multipart.File) {
@@ -85,19 +85,19 @@ func (h *Handler) UploadAdminMedia(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrFileTooLarge):
-			response.Error(c, appErr.BadRequest("file too large", err))
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "file too large", err))
 		case errors.Is(err, ErrInvalidMimeType):
-			response.Error(c, appErr.BadRequest("invalid file type", err))
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "invalid file type", err))
 		case errors.Is(err, ErrNoFileProvided):
-			response.Error(c, appErr.BadRequest("no file provided", err))
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "no file provided", err))
 		case errors.Is(err, ErrEmptyFile):
-			response.Error(c, appErr.BadRequest("uploaded file is empty", err))
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "uploaded file is empty", err))
 		case errors.Is(err, ErrInvalidFieldName):
-			response.Error(c, appErr.BadRequest("invalid upload field name", err))
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "invalid upload field name", err))
 		case errors.Is(err, ErrStorageFailed):
-			response.Error(c, appErr.Internal("failed to store file", err))
+			response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to store file", err))
 		default:
-			response.Error(c, appErr.Internal("failed to upload file", err))
+			response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to upload file", err))
 		}
 		return
 	}
@@ -118,7 +118,7 @@ func (h *Handler) UploadAdminMedia(c *gin.Context) {
 func (h *Handler) ListAdminMedia(c *gin.Context) {
 	items, err := h.service.ListMedia(c.Request.Context())
 	if err != nil {
-		response.Error(c, appErr.Internal("failed to list media", err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to list media", err))
 		return
 	}
 
@@ -143,16 +143,16 @@ func (h *Handler) DeleteAdminMedia(c *gin.Context) {
 
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		response.Error(c, appErr.BadRequest("invalid media ID", err))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "invalid media ID", err))
 		return
 	}
 
 	if err := h.service.DeleteMedia(c.Request.Context(), id); err != nil {
-		response.Error(c, appErr.Internal("failed to delete media", err))
+		response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to delete media", err))
 		return
 	}
 
-	response.SuccessNoContent(c)
+	c.Status(http.StatusNoContent)
 }
 
 func detectUploadField(r *http.Request) (UploadCategory, string, error) {

@@ -14,7 +14,7 @@
 
     <div v-else-if="items.length === 0" class="flex flex-col items-center gap-3 py-8 text-center">
       <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5">
-        <i aria-hidden="true" class="pi pi-history text-xl text-white/15" />
+        <History aria-hidden="true" class="text-xl text-white/15"  />
       </div>
       <p class="text-sm text-white/25">No version history yet</p>
     </div>
@@ -47,10 +47,8 @@
               class="text-xs text-white/30 transition-colors hover:text-white/50"
               @click="toggleExpand(idx)"
             >
-              <i
-                class="pi pi-chevron-right mr-1 text-[10px]"
-                :class="{ 'rotate-90': expanded === idx }"
-              />
+              <ChevronRight aria-hidden="true" class="mr-1 text-[10px]"
+                :class="{ 'rotate-90': expanded === idx }" />
               View data
             </button>
             <pre
@@ -66,6 +64,7 @@
 </template>
 
 <script setup lang="ts">
+import { ChevronRight, History } from 'lucide-vue-next'
 import { ref } from 'vue'
 import type { ContributionHistoryItem } from '@/services/api/contribution'
 

@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:17
-    container_name: musicapp_postgres
+    container_name: musicapp-db
     restart: unless-stopped
     mem_limit: 512m
     cpus: 1.0
@@ -11,9 +11,9 @@ services:
       POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
+    command: ["-c", "unix_socket_directories="]
     volumes:
       - musicapp_postgres_data:/var/lib/postgresql/data
-    command: ["-c", "unix_socket_directories="]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d musicapp -h localhost"]
       interval: 10s
@@ -23,7 +23,7 @@ services:
       - musicapp_network
 
   redis:
-    image: redis:7.4-alpine
+    image: redis:8.8.0
     container_name: musicapp_redis
     restart: unless-stopped
     mem_limit: 128m
@@ -95,8 +95,6 @@ services:
     cpus: 1.0
     ports:
       - "8080:8080"
-    volumes:
-      - musicapp_uploads:/app/uploads
     environment:
       APP_PORT: "8080"
       APP_ENV: development
@@ -116,6 +114,8 @@ services:
       MEDIA_MAX_IMAGE_SIZE_MB: "5"
       MEDIA_MAX_AUDIO_SIZE_MB: "30"
       LOG_LEVEL: debug
+    volumes:
+      - musicapp_uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -185,17 +185,8 @@ services:
 networks:
   musicapp_network:
     name: musicapp_network
+    external: true
 volumes:
   musicapp_minio_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /home/space/.docker-volumes/music_minio_data
   musicapp_uploads:
   musicapp_postgres_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /home/space/.docker-volumes/music_postgres_data

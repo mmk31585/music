@@ -20,9 +20,19 @@
       >
         <div class="p-4">
           <div class="flex items-start justify-between gap-4">
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-semibold text-white">{{ item.challenge.title }}</p>
-              <p class="mt-0.5 text-xs text-white/40">{{ item.challenge.description }}</p>
+            <div class="flex items-start gap-3 min-w-0 flex-1">
+              <!-- Challenge type icon -->
+              <div class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-lg">
+                {{ challengeIcon(item.challenge.challenge_type) }}
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-semibold text-white">{{ item.challenge.title }}</p>
+                <p class="mt-0.5 text-xs text-white/40">{{ item.challenge.description }}</p>
+                <!-- Time remaining -->
+                <p class="mt-1 text-[10px] text-white/20">
+                  {{ timeRemaining(item.challenge.valid_until) }}
+                </p>
+              </div>
             </div>
             <div class="shrink-0 text-right">
               <span
@@ -34,25 +44,18 @@
           </div>
 
           <!-- Progress bar -->
-          <div v-if="isActiveChallenge(item.challenge)" class="mt-3">
+          <div class="mt-3">
             <div class="flex items-center justify-between text-[11px] text-white/30">
               <span>{{ item.progress?.progress || 0 }} / {{ item.challenge.target_count }}</span>
-              <span v-if="item.progress?.is_completed" class="text-spotify">Completed!</span>
+              <span v-if="item.progress?.is_completed" class="text-spotify font-medium">Completed!</span>
             </div>
             <div class="mt-1.5 h-2 overflow-hidden rounded-full bg-white/5">
               <div
-                class="h-full rounded-full bg-linear-to-r from-amber-400 to-orange-500 transition-all duration-700"
+                class="h-full rounded-full transition-all duration-700"
+                :class="item.progress?.is_completed ? 'bg-spotify' : 'bg-linear-to-r from-amber-400 to-orange-500'"
                 :style="{ width: `${completionPercent(item)}%` }"
               />
             </div>
-          </div>
-
-          <!-- Expired / future -->
-          <div v-else class="mt-3 flex items-center gap-2 text-[11px] text-white/20">
-            <span
-              >{{ formatDate(item.challenge.valid_from) }} →
-              {{ formatDate(item.challenge.valid_until) }}</span
-            >
           </div>
         </div>
       </div>
@@ -82,8 +85,17 @@ const combined = computed<ChallengeItem[]>(() => {
   }))
 })
 
-function isActiveChallenge(challenge: DailyChallenge): boolean {
-  return challenge.is_active
+const CHALLENGE_ICONS: Record<string, string> = {
+  streams: '🎵',
+  likes: '❤️',
+  shares: '🔗',
+  upload: '📤',
+  publish: '📢',
+  contribute: '✏️',
+}
+
+function challengeIcon(type: string): string {
+  return CHALLENGE_ICONS[type] ?? '🎯'
 }
 
 function completionPercent(item: ChallengeItem): number {
@@ -92,8 +104,14 @@ function completionPercent(item: ChallengeItem): number {
   return Math.min(100, (progress / item.challenge.target_count) * 100)
 }
 
-function formatDate(dateStr: string): string {
+function timeRemaining(dateStr: string): string {
   if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const diff = new Date(dateStr).getTime() - Date.now()
+  if (diff <= 0) return 'Expired'
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  if (hours < 1) return 'Ending soon'
+  if (hours < 24) return `${hours}h remaining`
+  const days = Math.floor(hours / 24)
+  return `${days}d remaining`
 }
 </script>

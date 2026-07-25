@@ -77,12 +77,12 @@ services:
 
   # ── Redis (broker + result backend for Celery, general-purpose cache) ──
   redis:
-    image: redis:7-alpine
+    image: redis:8.8.0
     restart: unless-stopped
 
   # ── Postgres (this service's own database) ───────────────────────────
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17
     environment:
       POSTGRES_DB: moja_ml
       POSTGRES_USER: moja_ml

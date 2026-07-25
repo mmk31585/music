@@ -1,15 +1,15 @@
 <template>
   <div
-    class="relative hidden min-h-screen overflow-hidden bg-[#060608] p-10 text-white lg:flex lg:flex-col lg:justify-between"
+    class="relative hidden min-h-screen overflow-hidden bg-surface-900 p-10 text-primary lg:flex lg:flex-col lg:justify-between"
   >
     <!-- Aurora orbs -->
-    <div class="aurora-orb absolute -top-32 -right-20 h-96 w-96 rounded-full bg-spotify opacity-20 blur-[100px]" />
-    <div class="aurora-orb absolute top-1/2 -left-16 h-72 w-72 rounded-full bg-purple-600 opacity-15 blur-[80px]" style="animation-delay: 2.5s" />
-    <div class="aurora-orb absolute -bottom-20 right-1/3 h-80 w-80 rounded-full bg-blue-600 opacity-15 blur-[90px]" style="animation-delay: 5s" />
+    <div class="aurora-orb absolute -top-32 -right-20 h-96 w-96 rounded-full bg-accent opacity-20 blur-[100px]" />
+    <div class="aurora-orb absolute top-1/2 -left-16 h-72 w-72 rounded-full bg-accent opacity-15 blur-[80px]" style="animation-delay: 2.5s" />
+    <div class="aurora-orb absolute -bottom-20 right-1/3 h-80 w-80 rounded-full bg-accent opacity-15 blur-[90px]" style="animation-delay: 5s" />
 
     <!-- Equalizer bars -->
     <div class="absolute right-12 top-1/3 z-10 flex items-end gap-0.75 opacity-40">
-      <div v-for="i in 24" :key="i" class="equalizer-bar w-0.75 rounded-full bg-spotify" />
+      <div v-for="i in 24" :key="i" class="equalizer-bar w-0.75 rounded-full bg-accent" />
     </div>
 
     <!-- Main content -->
@@ -17,10 +17,10 @@
 
       <!-- Brand -->
       <div class="flex items-center gap-3">
-        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-spotify text-lg font-extrabold text-black shadow-lg shadow-spotify/30">
+        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-lg font-extrabold text-accent-text shadow-lg" :style="{ boxShadow: '0 8px 32px var(--accent-glow)' }">
           M
         </div>
-        <h1 class="text-xl font-bold tracking-tight">Musicify</h1>
+        <h1 class="text-xl font-bold tracking-tight">{{ $t('app.name') }}</h1>
       </div>
 
       <!-- Hero text -->
@@ -28,17 +28,17 @@
         <h2 class="font-display max-w-md text-5xl leading-[1.1] font-extrabold tracking-tight">
           <span class="text-gradient">Feel every beat</span>
         </h2>
-        <p class="mt-4 max-w-sm text-base text-white/50 leading-relaxed">
+        <p class="mt-4 max-w-sm text-base text-secondary leading-relaxed">
           Discover tracks, artists, albums, and genres in a smooth streaming experience.
         </p>
-        <p class="mt-2 text-sm text-white/30">
+        <p class="mt-2 text-sm text-tertiary">
           هر نت یک داستان، هر آهنگ یک خاطره
         </p>
       </div>
 
       <!-- Footer -->
-      <div class="flex items-center gap-2 text-xs text-white/30">
-        <span class="inline-block h-1 w-1 rounded-full bg-spotify" />
+      <div class="flex items-center gap-2 text-xs text-tertiary">
+        <span class="inline-block h-1 w-1 rounded-full bg-accent" />
         <span>© 2026 Musicify — Music streaming reimagined</span>
       </div>
     </div>
@@ -47,7 +47,7 @@
 
 <style scoped>
 .text-gradient {
-  background: linear-gradient(135deg, #1db954 0%, #60a5fa 50%, #a855f7 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--info) 50%, var(--accent-hover) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

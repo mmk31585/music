@@ -64,14 +64,14 @@
           >
             <div class="flex items-center justify-between gap-3">
               <div class="flex items-center gap-2 text-sm text-red-400">
-                <i aria-hidden="true" class="pi pi-exclamation-circle text-xs" />
+                <AlertCircle aria-hidden="true" class="text-xs"  />
                 <span>{{ playerStore.error }}</span>
               </div>
               <button
                 class="inline-flex items-center gap-1 rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/30 active:scale-95"
                 @click="retryPlayback"
               >
-                <i aria-hidden="true" class="pi pi-refresh text-xs" />
+                <RefreshCw aria-hidden="true" class="text-xs"  />
                 Retry
               </button>
             </div>
@@ -84,7 +84,7 @@
               :disabled="!currentTrack || isTrackTransitioning"
               @click="skipTrack"
             >
-              <i aria-hidden="true" class="pi pi-forward text-xs" />
+              <Forward aria-hidden="true" class="text-xs"  />
               Skip
             </button>
           </div>
@@ -107,7 +107,7 @@
                 :value="playerStore.volume"
                 aria-label="Volume"
                 @input="playerStore.setVolume(Number(($event.target as HTMLInputElement).value))"
-                class="h-1 w-20 cursor-pointer appearance-none rounded-full bg-white/10 accent-[#1db954] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+                class="h-1 w-20 cursor-pointer appearance-none rounded-full bg-white/10 accent-accent [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
               />
               <span class="text-xs text-white/30">Volume</span>
             </div>
@@ -120,7 +120,7 @@
                 :value="playerStore.currentTime"
                 aria-label="Seek"
                 @input="playerStore.seek(Number(($event.target as HTMLInputElement).value))"
-                class="h-1 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-[#1db954] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+                class="h-1 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-accent [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
               />
               <div class="mt-1 flex justify-between text-[10px] text-white/30">
                 <span>{{ formatTime(playerStore.currentTime) }}</span>
@@ -244,6 +244,7 @@
 </template>
 
 <script setup lang="ts">
+import { AlertCircle, Forward, RefreshCw } from 'lucide-vue-next'
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { SkeletonLoader } from '@/components/common'

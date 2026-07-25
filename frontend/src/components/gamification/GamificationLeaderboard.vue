@@ -18,9 +18,35 @@
       </div>
     </div>
 
-    <div v-if="!props.entries.length" class="py-8 text-center text-sm text-white/30">
-      No rankings available yet.
+    <!-- User rank (shown when user is not in top entries) -->
+    <div
+      v-if="userRank && !userInEntries"
+      class="mb-6 rounded-2xl border border-spotify/20 bg-spotify/5 px-5 py-4"
+    >
+      <p class="text-sm text-white/60">Your Rank</p>
+      <p class="text-3xl font-black text-white">#{{ userRank }}</p>
     </div>
+
+    <!-- Friends empty state guidance -->
+    <AppEmptyState
+      v-if="activeTab === 'friends' && !props.entries.length"
+      icon="pi pi-users"
+      title="No friends yet"
+      description="Follow creators and friends to see their rankings here"
+    >
+      <RouterLink
+        to="/search"
+        class="mt-3 inline-block rounded-full bg-spotify px-5 py-2 text-sm font-bold text-black transition hover:bg-spotify-hover"
+      >
+        Discover Artists
+      </RouterLink>
+    </AppEmptyState>
+
+    <template v-else-if="!props.entries.length">
+      <div class="py-8 text-center text-sm text-white/30">
+        No rankings available yet.
+      </div>
+    </template>
 
     <div v-else class="space-y-2">
       <div
@@ -71,13 +97,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { onImgError } from '@/utils/helpers'
 import type { LeaderboardEntry } from '@/services/api/gamification'
 
 const props = defineProps<{
   entries: LeaderboardEntry[]
   type?: string
+  userRank?: number | null
+  userId?: string | null
   onTypeChange?: (type: string) => void
 }>()
 
@@ -85,10 +113,16 @@ const tabs = [
   { key: 'all', label: 'All Time' },
   { key: 'monthly', label: 'Monthly' },
   { key: 'weekly', label: 'Weekly' },
-  { key: 'daily', label: 'Daily' },
+  { key: 'streams', label: 'Streams' },
+  { key: 'friends', label: 'Friends' },
 ]
 
 const activeTab = ref(props.type ?? 'all')
+
+const userInEntries = computed(() => {
+  if (!props.userId) return false
+  return props.entries.some((e) => e.user_id === props.userId)
+})
 
 watch(() => props.type, (val) => {
   if (val) activeTab.value = val

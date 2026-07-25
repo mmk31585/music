@@ -1,16 +1,13 @@
 <template>
-  <div
-    role="button"
-    tabindex="0"
-    class="group w-44 shrink-0 cursor-pointer space-y-2"
+  <button
+    type="button"
+    class="group w-44 shrink-0 space-y-2 text-left"
     :style="{ transitionDelay: `${delay}ms` }"
     @click="$emit('play', item)"
-    @keydown.enter="$emit('play', item)"
-    @keydown.space.prevent="$emit('play', item)"
-    @contextmenu.prevent="ctxRef?.show($event)"
+    @contextmenu.prevent="openMenu"
   >
     <div
-      class="relative aspect-square overflow-hidden rounded-xl bg-white/6 ring-1 ring-white/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:ring-spotify/40"
+      class="relative aspect-square overflow-hidden rounded-xl bg-surface-overlay ring-1 ring-border-default transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:ring-accent/40"
       :style="{ borderRadius: radius + 'px' }"
     >
       <img
@@ -21,55 +18,62 @@
         loading="lazy"
       />
       <div v-else class="flex h-full items-center justify-center">
-        <i aria-hidden="true" class="pi pi-music text-2xl text-white/30" />
+        <Music aria-hidden="true" class="text-2xl text-muted"  />
       </div>
       <div
-        class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
+        class="absolute inset-0 flex items-center justify-center bg-bg-overlay/40 opacity-0 transition group-hover:opacity-100"
       >
         <div
-          class="flex h-10 w-10 items-center justify-center rounded-full bg-spotify text-black shadow-xl transition-transform group-hover:scale-110"
+          class="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-black shadow-xl transition-transform group-hover:scale-110"
         >
-          <i aria-hidden="true" class="pi pi-play-fill text-sm" />
+          <Play aria-hidden="true" class="text-sm"  />
         </div>
       </div>
       <div
         v-if="isPlaying"
-        class="absolute right-2 bottom-2 flex h-5 items-end gap-0.5 rounded-full bg-black/60 px-1.5 py-1"
+        class="absolute right-2 bottom-2 flex h-5 items-end gap-0.5 rounded-full bg-bg-overlay/60 px-1.5 py-1"
       >
-        <span class="equalizer-bar-small h-2 w-0.5 rounded-full bg-spotify" />
-        <span class="equalizer-bar-small animation-delay-150 h-3 w-0.5 rounded-full bg-spotify" />
-        <span class="equalizer-bar-small animation-delay-300 h-2.5 w-0.5 rounded-full bg-spotify" />
+        <span class="equalizer-bar-small h-2 w-0.5 rounded-full bg-accent" />
+        <span class="equalizer-bar-small animation-delay-150 h-3 w-0.5 rounded-full bg-accent" />
+        <span class="equalizer-bar-small animation-delay-300 h-2.5 w-0.5 rounded-full bg-accent" />
       </div>
       <div
         v-if="badge"
-        class="absolute top-2 left-2 rounded-full bg-spotify/90 px-2 py-0.5 text-[10px] font-bold text-black"
+        class="absolute top-2 left-2 rounded-full bg-accent/90 px-2 py-0.5 text-[10px] font-bold text-black"
       >
         {{ badge }}
       </div>
       <div
         v-if="reason"
-        class="absolute top-2 left-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-xs"
+        class="absolute top-2 left-2 rounded-full bg-surface-active px-2 py-0.5 text-[10px] font-medium text-primary backdrop-blur-xs"
       >
         {{ reason }}
       </div>
     </div>
     <div class="space-y-0.5 px-0.5">
-      <p class="truncate text-sm font-semibold text-white">
+      <p class="truncate text-sm font-semibold text-primary">
         {{ item.title || item.track_title || 'بدون عنوان' }}
       </p>
-      <p class="truncate text-xs text-white/60">
+      <p class="truncate text-xs text-secondary">
         {{ artistName }}
       </p>
     </div>
-  </div>
+  </button>
 
-  <ContextMenu :model="model" ref="ctxRef" />
+  <ContextMenu
+    v-model:visible="menuVisible"
+    :sections="sections"
+    :header="header"
+    :accent-color="accentColor"
+    :position="menuPosition"
+  />
 </template>
 
 <script setup lang="ts">
+import { Music, Play } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import ContextMenu from 'primevue/contextmenu'
 import { useTrackContextMenu, type TrackContextItem } from '@/composables/useTrackContextMenu'
+import ContextMenu from '@/components/common/ContextMenu.vue'
 
 interface TrackCardItem extends TrackContextItem {
   [key: string]: unknown
@@ -111,8 +115,15 @@ const altText = computed(() => {
 
 // ── Context menu ──────────────────────────────────────────────────
 const trackRef = computed(() => props.item)
-const { model } = useTrackContextMenu(trackRef)
-const ctxRef = ref<InstanceType<typeof ContextMenu> | null>(null)
+const { sections, header, accentColor } = useTrackContextMenu(trackRef)
+
+const menuVisible = ref(false)
+const menuPosition = ref<{ x: number; y: number }>({ x: 0, y: 0 })
+
+function openMenu(e: MouseEvent) {
+  menuPosition.value = { x: e.clientX, y: e.clientY }
+  menuVisible.value = true
+}
 </script>
 
 <style scoped>

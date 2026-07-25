@@ -34,11 +34,11 @@ func normalizeMetadata(v string) string {
 	return v
 }
 
-func (r *Repository) Create(ctx context.Context, req CreateMediaRequest) (*Media, error) {
-	var item Media
+func (r *Repository) Create(ctx context.Context, req CreateMediaRequest) (*MediaAsset, error) {
+	var item MediaAsset
 
 	err := r.db.GetContext(ctx, &item, `
-		INSERT INTO media (
+		INSERT INTO media_assets (
 			media_type,
 			storage_provider,
 			bucket,
@@ -85,6 +85,7 @@ func (r *Repository) Create(ctx context.Context, req CreateMediaRequest) (*Media
 			height,
 			original_filename,
 			metadata::text AS metadata,
+			track_id,
 			created_by,
 			created_at,
 			updated_at
@@ -111,8 +112,8 @@ func (r *Repository) Create(ctx context.Context, req CreateMediaRequest) (*Media
 	return &item, nil
 }
 
-func (r *Repository) FindByChecksum(ctx context.Context, checksum string) (*Media, error) {
-	var item Media
+func (r *Repository) FindByChecksum(ctx context.Context, checksum string) (*MediaAsset, error) {
+	var item MediaAsset
 
 	err := r.db.GetContext(ctx, &item, `
 		SELECT
@@ -130,10 +131,11 @@ func (r *Repository) FindByChecksum(ctx context.Context, checksum string) (*Medi
 			height,
 			original_filename,
 			metadata::text AS metadata,
+			track_id,
 			created_by,
 			created_at,
 			updated_at
-		FROM media
+		FROM media_assets
 		WHERE checksum_sha256 = $1
 		ORDER BY created_at DESC
 		LIMIT 1
@@ -150,8 +152,8 @@ func (r *Repository) FindByChecksum(ctx context.Context, checksum string) (*Medi
 	return &item, nil
 }
 
-func (r *Repository) List(ctx context.Context) ([]Media, error) {
-	var items []Media
+func (r *Repository) List(ctx context.Context) ([]MediaAsset, error) {
+	var items []MediaAsset
 
 	err := r.db.SelectContext(ctx, &items, `
 		SELECT
@@ -169,10 +171,11 @@ func (r *Repository) List(ctx context.Context) ([]Media, error) {
 			height,
 			original_filename,
 			metadata::text AS metadata,
+			track_id,
 			created_by,
 			created_at,
 			updated_at
-		FROM media
+		FROM media_assets
 		ORDER BY created_at DESC
 	`)
 	if err != nil {
@@ -183,7 +186,7 @@ func (r *Repository) List(ctx context.Context) ([]Media, error) {
 }
 
 func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
-	result, err := r.db.ExecContext(ctx, `DELETE FROM media WHERE id = $1`, id)
+	result, err := r.db.ExecContext(ctx, `DELETE FROM media_assets WHERE id = $1`, id)
 	if err != nil {
 		return err
 	}
@@ -200,8 +203,8 @@ func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*Media, error) {
-	var item Media
+func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*MediaAsset, error) {
+	var item MediaAsset
 
 	err := r.db.GetContext(ctx, &item, `
 		SELECT
@@ -219,10 +222,11 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*Media, error) 
 			height,
 			original_filename,
 			metadata::text AS metadata,
+			track_id,
 			created_by,
 			created_at,
 			updated_at
-		FROM media
+		FROM media_assets
 		WHERE id = $1
 	`, id)
 

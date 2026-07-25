@@ -16,7 +16,7 @@
             <span
               class="inline-flex items-center gap-1.5 rounded-full border border-spotify/20 bg-spotify/10 px-3 py-1 text-[10px] font-bold tracking-[0.2em] text-spotify uppercase"
             >
-              <i aria-hidden="true" class="pi pi-sparkles text-[10px]" />
+              <Sparkles class="text-[10px]"<i aria-hidden="true"  /> />
               AI-Powered
             </span>
           </div>
@@ -126,7 +126,7 @@
               class="rounded-2xl border border-white/6 bg-white/2 p-6 backdrop-blur-xs"
             >
               <h3 class="mb-3 flex items-center gap-2 text-[10px] font-bold tracking-[0.2em] text-white/40 uppercase">
-                <i aria-hidden="true" class="pi pi-history" />
+                <History aria-hidden="true" class=""  />
                 Recent Generations
               </h3>
               <div class="space-y-2">
@@ -140,7 +140,7 @@
                   <div
                     class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-spotify/20 to-aurora-purple/20"
                   >
-                    <i aria-hidden="true" class="pi pi-sparkles text-[10px] text-spotify" />
+                    <Sparkles aria-hidden="true" class="text-[10px] text-spotify"  />
                   </div>
                   <div class="min-w-0 flex-1">
                     <div class="truncate text-sm font-medium text-white group-hover:text-spotify">
@@ -166,7 +166,7 @@
                 <div
                   class="flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-spotify/20 to-aurora-purple/20"
                 >
-                  <i aria-hidden="true" class="pi pi-spin pi-spinner text-3xl text-spotify" />
+                  <Loader2 aria-hidden="true" class="text-3xl text-spotify animate-spin"  />
                 </div>
                 <div
                   class="absolute -inset-2 animate-ping rounded-full border border-spotify/20"
@@ -207,14 +207,14 @@
                     class="h-40 w-40 shrink-0 overflow-hidden rounded-2xl bg-white/5 shadow-2xl ring-1 ring-white/6"
                   >
                     <img
-                      v-if="result.tracks[0]?.cover_url"
-                      :src="result.tracks[0].cover_url"
+                      v-if="result.tracks?.[0]?.cover_url"
+                      :src="result.tracks?.[0]?.cover_url"
                       :alt="result.name"
                       class="h-full w-full object-cover"
                       @error="onImgError"
                     />
                     <div v-else class="flex h-full items-center justify-center bg-linear-to-br from-spotify/20 to-aurora-purple/20">
-                      <i aria-hidden="true" class="pi pi-sparkles text-4xl text-white/40" />
+                      <Sparkles aria-hidden="true" class="text-4xl text-white/40"  />
                     </div>
                   </div>
 
@@ -223,7 +223,7 @@
                       <span
                         class="inline-flex items-center gap-1 rounded-full border border-spotify/20 bg-spotify/10 px-2.5 py-0.5 text-[9px] font-bold tracking-[0.15em] text-spotify uppercase"
                       >
-                        <i aria-hidden="true" class="pi pi-sparkles text-[8px]" />
+                        <Sparkles class="text-[8px]"<i aria-hidden="true"  /> />
                         AI Generated
                       </span>
                     </div>
@@ -231,15 +231,15 @@
                     <p class="mt-2 text-sm text-white/50">{{ result.description }}</p>
                     <div class="mt-4 flex flex-wrap items-center gap-4">
                       <div class="flex items-center gap-1.5 text-xs text-white/40">
-                        <i aria-hidden="true" class="pi pi-music" />
-                        {{ result.tracks.length }} tracks
+                        <Music aria-hidden="true" class=""  />
+                        {{ (result.tracks ?? []).length }} tracks
                       </div>
                       <div class="flex items-center gap-1.5 text-xs text-white/40">
-                        <i aria-hidden="true" class="pi pi-calendar" />
+                        <Calendar aria-hidden="true" class=""  />
                         {{ new Date(result.generated_at).toLocaleDateString() }}
                       </div>
                       <div class="flex items-center gap-1.5 text-xs text-white/40">
-                        <i aria-hidden="true" class="pi pi-clock" />
+                        <Clock aria-hidden="true" class=""  />
                         {{ totalDuration }}
                       </div>
                     </div>
@@ -249,7 +249,7 @@
                         icon="pi pi-play"
                         severity="success"
                         size="small"
-                        :disabled="!result.tracks.length"
+                        :disabled="!result.tracks?.length"
                         @click="playAll"
                       />
                       <Button
@@ -267,20 +267,19 @@
 
               <!-- Track List -->
               <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2 backdrop-blur-xs">
-                <template v-if="result.tracks.length">
-                  <div
+                <template v-if="result.tracks?.length">
+                  <button
                     v-for="(track, index) in result.tracks"
                     :key="track.id"
-                    role="button"
-                    tabindex="0"
-                    class="group flex items-center gap-3 px-4 py-2.5 transition hover:bg-white/4"
+                    type="button"
+                    class="group flex w-full items-center gap-3 px-4 py-2.5 transition hover:bg-white/4"
                     :style="{ animationDelay: `${index * 40}ms` }"
                     @click="playTrack(index)"
-                    @keydown.enter="playTrack(index)"
+                    @contextmenu.prevent="openContextMenu($event, track)"
                   >
                     <span class="flex w-6 items-center justify-center">
                       <span class="text-xs font-bold text-white/20 group-hover:hidden">{{ index + 1 }}</span>
-                      <i aria-hidden="true" class="pi pi-play-fill hidden text-xs text-white group-hover:block" />
+                      <Play aria-hidden="true" class="hidden text-xs text-white group-hover:block"  />
                     </span>
 
                     <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/6">
@@ -293,14 +292,14 @@
                         @error="onImgError"
                       />
                       <div v-else class="flex h-full items-center justify-center">
-                        <i aria-hidden="true" class="pi pi-music text-xs text-white/20" />
+                        <Music aria-hidden="true" class="text-xs text-white/20"  />
                       </div>
                       <button
                         type="button"
                         aria-label="Play track"
                         class="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100"
                       >
-                        <i aria-hidden="true" class="pi pi-play-fill text-xs text-white" />
+                        <Play aria-hidden="true" class="text-xs text-white"  />
                       </button>
                     </div>
 
@@ -314,10 +313,10 @@
                     <span class="shrink-0 text-xs text-white/30 tabular-nums">
                       {{ formatTime(track.duration) }}
                     </span>
-                  </div>
+                  </button>
                 </template>
                 <div v-else class="flex flex-col items-center gap-3 py-16 text-center">
-                  <i aria-hidden="true" class="pi pi-inbox text-4xl text-white/20" />
+                  <Inbox aria-hidden="true" class="text-4xl text-white/20"  />
                   <p class="text-sm text-white/40">No tracks in generated playlist</p>
                 </div>
               </div>
@@ -331,7 +330,7 @@
               <div
                 class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br from-spotify/20 to-aurora-purple/20"
               >
-                <i aria-hidden="true" class="pi pi-sparkles text-3xl text-spotify" />
+                <Sparkles aria-hidden="true" class="text-3xl text-spotify"  />
               </div>
               <h3 class="text-xl font-bold text-white">Ready when you are</h3>
               <p class="mt-2 max-w-md text-sm leading-relaxed text-white/40">
@@ -353,14 +352,25 @@
         </div>
       </div>
     </div>
+    <ContextMenu
+      v-model:visible="menuVisible"
+      :sections="sections"
+      :header="header"
+      :accent-color="accentColor"
+      :position="{ x: menuX, y: menuY }"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import { Calendar, Clock, History, Inbox, Loader2, Music, Play, Sparkles } from 'lucide-vue-next'
 import { ref, computed } from 'vue'
 import { useAIApi } from '@/services/api/ai'
 import { MOOD_OPTIONS, ACTIVITY_OPTIONS } from '@/services/api/ai/types'
 import type { AIPlaylistResponse } from '@/services/api/ai/types'
+import type { TrackContextItem } from '@/composables/useTrackContextMenu'
+import { useTrackContextMenu } from '@/composables/useTrackContextMenu'
+import ContextMenu from '@/components/common/ContextMenu.vue'
 import { usePlayer } from '@/composables/player'
 import { onImgError } from '@/utils/helpers'
 import { mapToPlaybackTracks } from '@/factories/playbackTrack'
@@ -391,7 +401,7 @@ const quickSuggestions = [
 ]
 
 const totalDuration = computed(() => {
-  if (!result.value?.tracks.length) return '0 min'
+  if (!result.value?.tracks?.length) return '0 min'
   const total = result.value.tracks.reduce((acc, t) => acc + (t.duration || 0), 0)
   const mins = Math.floor(total / 60)
   return `${mins} min`
@@ -418,7 +428,7 @@ async function handleGenerate() {
       result.value = response
       history.value.unshift({
         name: response.name,
-        tracks: response.tracks.length,
+        tracks: (response.tracks ?? []).length,
         date: new Date().toLocaleDateString(),
         data: { ...response },
       })
@@ -438,12 +448,12 @@ async function handleGenerate() {
 
 function playTrack(index: number) {
   if (!result.value) return
-  const queue = mapToPlaybackTracks(result.value.tracks)
+  const queue = mapToPlaybackTracks(result.value.tracks ?? [])
   player.setQueueAndPlay(queue, index)
 }
 
 function playAll() {
-  if (result.value?.tracks.length) playTrack(0)
+  if (result.value?.tracks?.length) playTrack(0)
 }
 
 function restoreHistory(item: { data: AIPlaylistResponse }) {
@@ -458,4 +468,21 @@ function reset() {
   genre.value = ''
   limit.value = 20
 }
+
+// ── Context menu ──────────────────────────────────────────────────
+const menuVisible = ref(false)
+const menuX = ref(0)
+const menuY = ref(0)
+const contextTrack = ref<TrackContextItem | null>(null)
+
+function openContextMenu(e: MouseEvent, track: Record<string, unknown>) {
+  menuX.value = e.clientX
+  menuY.value = e.clientY
+  contextTrack.value = track as unknown as TrackContextItem
+  menuVisible.value = true
+}
+
+const { sections, header, accentColor } = useTrackContextMenu(
+  computed(() => contextTrack.value),
+)
 </script>

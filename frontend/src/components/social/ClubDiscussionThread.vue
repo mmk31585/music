@@ -29,14 +29,14 @@
                 @click="toggleLike(d.id)"
                 aria-label="Like"
               >
-                <i aria-hidden="true" class="pi pi-heart text-sm" :class="likedDiscussions[d.id] ? 'text-red-400' : ''" />
+                <Heart aria-hidden="true" class="text-sm" :class="likedDiscussions[d.id] ? 'text-red-400' : ''"  />
                 {{ likeCounts[d.id] || 0 }}
               </button>
               <button
                 class="inline-flex items-center gap-1 text-white/40 transition hover:text-blue-400"
                 @click="toggleReplies(d.id)"
               >
-                <i aria-hidden="true" class="pi pi-comment text-sm" />
+                <MessageCircle aria-hidden="true" class="text-sm"  />
                 {{ d.reply_count }} پاسخ
               </button>
               <button
@@ -45,14 +45,14 @@
                 @click="emit('delete', d.id)"
                 aria-label="Delete"
               >
-                <i aria-hidden="true" class="pi pi-trash text-xs" />
+                <Trash2 aria-hidden="true" class="text-xs"  />
               </button>
             </div>
 
             <!-- Replies -->
             <div v-if="openReplies[d.id]" class="mt-4 space-y-3 border-t border-white/5 pt-4">
               <div v-if="repliesLoading[d.id]" class="flex items-center justify-center py-3">
-                <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-[#1db954]" />
+                <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-accent" />
               </div>
               <div
                 v-for="reply in loadedReplies[d.id] || []"
@@ -106,6 +106,7 @@
 </template>
 
 <script setup lang="ts">
+import { Heart, MessageCircle, Trash2 } from 'lucide-vue-next'
 import { reactive, watch } from 'vue'
 import { useSocialApi } from '@/services/api/social'
 import { useReactionsApi } from '@/services/api/reactions'

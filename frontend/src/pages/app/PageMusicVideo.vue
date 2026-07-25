@@ -25,7 +25,7 @@
     <!-- ═══ ERROR ═══ -->
     <div v-else-if="error" class="flex flex-col items-center justify-center px-4 py-32 text-center">
       <div class="mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-amber-500/20 bg-amber-500/5">
-        <i class="pi pi-play-circle text-3xl text-amber-400/60" />
+        <PlayCircle aria-hidden="true" class="text-3xl text-amber-400/60" />
       </div>
       <h2 class="mb-2 text-2xl font-black text-white/60">Video not found</h2>
       <p class="mb-8 text-sm text-white/30">This music video doesn't exist or is still being processed.</p>
@@ -34,14 +34,14 @@
           class="rounded-xl border border-white/8 bg-white/4 px-5 py-2.5 text-sm font-semibold text-white/60 transition hover:bg-white/8 hover:text-white"
           @click="goBack"
         >
-          <i class="pi pi-arrow-right ml-2" />
+          <ArrowRight aria-hidden="true" class="ml-2" />
           Go Back
         </button>
         <button
           class="rounded-xl bg-amber-500/10 px-5 py-2.5 text-sm font-semibold text-amber-400 transition hover:bg-amber-500/20"
           @click="router.push('/music-videos')"
         >
-          <i class="pi pi-th-large ml-2" />
+          <LayoutGrid aria-hidden="true" class="ml-2" />
           Browse Videos
         </button>
       </div>
@@ -86,7 +86,7 @@
             @click="togglePlay"
           >
             <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white/5 text-white shadow-2xl backdrop-blur-2xl transition-all hover:scale-110 hover:bg-white/10 md:h-24 md:w-24">
-              <i class="pi pi-play ml-1 text-4xl md:text-5xl" />
+              <Play aria-hidden="true" class="ml-1 text-4xl md:text-5xl" />
             </div>
           </div>
         </Transition>
@@ -98,7 +98,7 @@
             class="absolute inset-0 flex items-center justify-center bg-black/40"
           >
             <div class="flex flex-col items-center gap-3">
-              <i class="pi pi-spin pi-spinner text-2xl text-white/40" />
+              <Loader2 aria-hidden="true" class="text-2xl text-white/40 animate-spin" />
               <span class="text-xs tracking-widest text-white/30 uppercase">Buffering</span>
             </div>
           </div>
@@ -111,14 +111,14 @@
             class="absolute inset-0 flex flex-col items-center justify-center bg-black/70 gap-4"
           >
             <div class="flex h-16 w-16 items-center justify-center rounded-full border border-red-500/20 bg-red-500/5">
-              <i class="pi pi-exclamation-triangle text-xl text-red-400/50" />
+              <AlertTriangle aria-hidden="true" class="text-xl text-red-400/50" />
             </div>
             <p class="text-sm text-white/40 text-center max-w-xs">This video can't be played right now.</p>
             <button
               class="rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white/70 hover:bg-white/20"
               @click="retryVideo"
             >
-              <i class="pi pi-refresh ml-1.5" /> Retry
+              <RefreshCw aria-hidden="true" class="ml-1.5" /> Retry
             </button>
           </div>
         </Transition>
@@ -145,7 +145,7 @@
                 @click="togglePlay"
                 aria-label="Play / Pause"
               >
-                <i :class="isPlaying ? 'pi pi-pause' : 'pi pi-play'" class="text-lg" />
+                <component :is="isPlaying ? Pause : Play" aria-hidden="true"<i  class="text-lg" /> />
               </button>
               <span class="min-w-18 text-xs font-medium text-white/60 tabular-nums">
                 {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
@@ -156,7 +156,7 @@
                   @click="toggleMute"
                   :aria-label="isMuted ? 'Unmute' : 'Mute'"
                 >
-                  <i :class="isMuted ? 'pi pi-volume-off' : 'pi pi-volume-up'" class="text-sm" />
+                  <component :is="isMuted ? VolumeOff : Volume2" aria-hidden="true"<i  class="text-sm" /> />
                 </button>
                 <div class="relative h-1 w-20 cursor-pointer overflow-hidden rounded-full bg-white/10" @click="seekVolume">
                   <div class="h-full rounded-full bg-white/50 transition-all" :style="{ width: volumePercent + '%' }" />
@@ -169,14 +169,14 @@
                 @click="toggleLike"
                 :aria-label="isLiked ? 'Unlike video' : 'Like video'"
               >
-                <i :class="isLiked ? 'pi pi-heart-fill' : 'pi pi-heart'" class="text-sm" />
+                <component :is="isLiked ? Heart : Heart" aria-hidden="true"<i  class="text-sm" /> />
               </button>
               <button
                 class="flex h-8 w-8 items-center justify-center rounded-full text-white/40 hover:bg-white/10 hover:text-white"
                 @click="toggleFullscreen"
                 :aria-label="isFullscreen ? 'Exit fullscreen' : 'Fullscreen'"
               >
-                <i :class="isFullscreen ? 'pi pi-arrow-down' : 'pi pi-expand'" class="text-sm" />
+                <component :is="isFullscreen ? ArrowDown : Expand" aria-hidden="true"<i  class="text-sm" /> />
               </button>
             </div>
           </div>
@@ -215,14 +215,14 @@
                   class="flex items-center gap-2 rounded-lg border border-white/6 bg-white/3 px-3 py-1.5 text-xs font-semibold text-white/40 hover:border-white/10 hover:bg-white/6 hover:text-white/70 transition"
                   @click="shareVideo"
                 >
-                  <i class="pi pi-share-alt" /> Share
+                  <Share2 aria-hidden="true" class="" /> Share
                 </button>
                 <RouterLink
                   v-if="video.track_id"
                   :to="`/track/${video.track_id}`"
                   class="flex items-center gap-2 rounded-lg border border-white/6 bg-white/3 px-3 py-1.5 text-xs font-semibold text-white/40 hover:border-white/10 hover:bg-white/6 hover:text-white/70 transition"
                 >
-                  <i class="pi pi-headphones" /> View Track
+                  <Headphones aria-hidden="true" class="" /> View Track
                 </RouterLink>
               </div>
             </div>
@@ -231,7 +231,7 @@
             <div v-if="trackInfo" class="flex items-center gap-4 rounded-2xl border border-white/6 bg-white/2 p-4">
               <div class="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-white/10 shadow-lg">
                 <img v-if="trackInfo.cover_url" :src="trackInfo.cover_url" :alt="trackInfo.title" class="h-full w-full object-cover" />
-                <div v-else class="flex h-full items-center justify-center"><i class="pi pi-headphones text-lg text-slate-500" /></div>
+                <div v-else class="flex h-full items-center justify-center"><Headphones aria-hidden="true" class="text-lg text-slate-500" /></div>
               </div>
               <div class="min-w-0 flex-1">
                 <p class="text-[10px] font-bold tracking-wider text-white/30 uppercase">Track</p>
@@ -244,7 +244,7 @@
                 :title="isTrackPlaying ? 'Now Playing' : 'Play Track'"
                 @click="playTrack"
               >
-                <i :class="isTrackPlaying ? 'pi pi-check' : 'pi pi-play'" class="ml-0.5 text-sm" />
+                <component :is="isTrackPlaying ? Check : Play" aria-hidden="true"<i  class="ml-0.5 text-sm" /> />
               </button>
             </div>
 
@@ -286,7 +286,7 @@
                   </div>
                 </div>
               </div>
-              <div v-else class="py-8 text-center text-sm text-white/20"><i class="pi pi-comment mb-2 block text-xl text-white/10" />No comments yet.</div>
+              <div v-else class="py-8 text-center text-sm text-white/20"><MessageCircle aria-hidden="true" class="mb-2 block text-xl text-white/10" />No comments yet.</div>
             </div>
           </div>
 
@@ -310,7 +310,7 @@
                     class="h-full w-full object-cover transition-transform group-hover:scale-[1.03]"
                     loading="lazy"
                   />
-                  <div v-else class="flex h-full items-center justify-center"><i class="pi pi-play-circle text-slate-500" /></div>
+                  <div v-else class="flex h-full items-center justify-center"><PlayCircle aria-hidden="true" class="text-slate-500" /></div>
                 </div>
                 <div class="min-w-0 flex-1">
                   <p class="line-clamp-2 text-sm font-medium leading-snug text-white/90">{{ rel.title }}</p>
@@ -319,7 +319,7 @@
               </div>
             </div>
             <div v-if="!relatedVideos.length" class="py-8 text-center text-sm text-white/20">
-              <i class="pi pi-play-circle mb-2 block text-xl text-white/10" />No related videos
+              <PlayCircle aria-hidden="true" class="mb-2 block text-xl text-white/10" />No related videos
             </div>
           </div>
         </div>
@@ -336,6 +336,7 @@
 </template>
 
 <script setup lang="ts">
+import { AlertTriangle, ArrowDown, ArrowRight, Check, Expand, Headphones, Heart, LayoutGrid, Loader2, MessageCircle, Pause, Play, PlayCircle, RefreshCw, Share2, Volume2, VolumeOff } from 'lucide-vue-next'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'

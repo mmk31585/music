@@ -3,14 +3,14 @@
     <!-- Toolbar -->
     <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div class="flex items-center gap-3">
-        <span class="text-sm tabular-nums text-slate-500">
+        <span class="text-sm tabular-nums text-tertiary">
           {{ filteredAlbums.length }} album{{ filteredAlbums.length !== 1 ? 's' : '' }}
         </span>
-        <div class="h-4 w-px bg-white/10" />
+        <div class="h-4 w-px bg-border-default" />
         <InputText
           v-model="searchQuery"
           placeholder="Search albums..."
-          class="h-9! w-56! rounded-lg! border-white/8! bg-white/3! text-sm! text-white! placeholder:text-slate-600!"
+          class="h-9! w-56! rounded-lg! border-border-default! bg-surface-hover! text-sm! text-primary! placeholder:text-muted!"
         />
       </div>
 
@@ -18,19 +18,19 @@
         label="Add album"
         icon="pi pi-plus"
         size="small"
-        class="rounded-xl! bg-emerald-500! px-4! text-black! hover:bg-emerald-400!"
+        class="rounded-xl! bg-accent! px-4! text-accent-text! hover:bg-accent-hover!"
         @click="openCreate"
       />
     </div>
 
     <!-- Content -->
-    <div class="overflow-hidden rounded-2xl border border-white/6 bg-white/2">
+    <div class="overflow-hidden rounded-2xl border border-border-default bg-surface-raised">
       <!-- Loading -->
       <div v-if="loading" class="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3 lg:grid-cols-4">
         <div v-for="i in 8" :key="i" class="space-y-3">
-          <div class="aspect-square animate-pulse rounded-xl bg-white/6" />
-          <div class="h-4 w-3/4 animate-pulse rounded bg-white/6" />
-          <div class="h-3 w-1/2 animate-pulse rounded bg-white/4" />
+          <div class="aspect-square animate-pulse rounded-xl bg-surface-overlay" />
+          <div class="h-4 w-3/4 animate-pulse rounded bg-surface-overlay" />
+          <div class="h-3 w-1/2 animate-pulse rounded bg-surface-active" />
         </div>
       </div>
 
@@ -46,7 +46,7 @@
             label="Add album"
             icon="pi pi-plus"
             size="small"
-            class="rounded-xl! bg-emerald-500! px-4! text-black! hover:bg-emerald-400!"
+            class="rounded-xl! bg-accent! px-4! text-accent-text! hover:bg-accent-hover!"
             @click="openCreate"
           />
         </template>
@@ -68,7 +68,7 @@
         >
           <!-- Cover -->
           <div
-            class="relative aspect-square overflow-hidden rounded-xl border border-white/6 bg-white/4"
+            class="relative aspect-square overflow-hidden rounded-xl border border-border-default bg-surface-overlay"
           >
             <img
               v-if="album.cover_url"
@@ -81,18 +81,18 @@
               v-else
               class="flex h-full w-full items-center justify-center"
             >
-              <i aria-hidden="true" class="pi pi-image text-3xl text-slate-700" />
+              <Image aria-hidden="true" class="text-3xl text-muted"  />
             </div>
 
             <!-- Overlay actions -->
             <div
-              class="absolute inset-0 flex items-end justify-end gap-1 bg-linear-to-t from-black/60 via-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100"
+              class="absolute inset-0 flex items-end justify-end gap-1 bg-linear-to-t from-bg-overlay via-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100"
             >
               <Button
                 icon="pi pi-eye"
                 rounded
                 size="small"
-                class="h-8! w-8! bg-white/20! text-white! backdrop-blur-xs! hover:bg-white/30!"
+                class="h-8! w-8! bg-surface-active! text-primary! backdrop-blur-xs! hover:bg-surface-hover!"
                 @click="router.push({ name: 'admin.album.detail', params: { id: album.id } })"
               />
               <Button
@@ -100,7 +100,7 @@
                 rounded
                 size="small"
                 :loading="enrichingId === album.id"
-                class="h-8! w-8! bg-white/20! text-white! backdrop-blur-xs! hover:bg-amber-500/60!"
+                class="h-8! w-8! bg-surface-active! text-warning! backdrop-blur-xs! hover:bg-warning-subtle!"
                 v-tooltip.top="'Fetch cover'"
                 @click="handleEnrich(album)"
               />
@@ -108,14 +108,14 @@
                 icon="pi pi-pencil"
                 rounded
                 size="small"
-                class="h-8! w-8! bg-white/20! text-white! backdrop-blur-xs! hover:bg-white/30!"
+                class="h-8! w-8! bg-surface-active! text-primary! backdrop-blur-xs! hover:bg-surface-hover!"
                 @click="openEdit(album)"
               />
               <Button
                 icon="pi pi-trash"
                 rounded
                 size="small"
-                class="h-8! w-8! bg-white/20! text-white! backdrop-blur-xs! hover:bg-red-500/60!"
+                class="h-8! w-8! bg-surface-active! text-danger! backdrop-blur-xs! hover:bg-danger-subtle!"
                 @click="openDeleteConfirm(album)"
               />
             </div>
@@ -123,8 +123,8 @@
 
           <!-- Info -->
           <div class="mt-2.5 min-w-0">
-            <p class="truncate text-sm font-medium text-white">{{ album.title }}</p>
-            <p class="mt-0.5 truncate text-xs text-slate-500">
+            <p class="truncate text-sm font-medium text-primary">{{ album.title }}</p>
+            <p class="mt-0.5 truncate text-xs text-tertiary">
               {{ album.artist_name || 'Unknown artist' }}
             </p>
           </div>
@@ -152,6 +152,7 @@
 </template>
 
 <script setup lang="ts">
+import { Image } from 'lucide-vue-next'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'

@@ -8,7 +8,7 @@
         </span>
         <div class="h-4 w-px bg-white/10" />
         <IconField class="w-56!">
-          <InputIcon><i aria-hidden="true" class="pi pi-search text-xs text-slate-500" /></InputIcon>
+          <InputIcon><Search aria-hidden="true" class="text-xs text-slate-500"  /></InputIcon>
           <InputText
             v-model="searchQuery"
             placeholder="Search artists..."
@@ -93,11 +93,9 @@
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
               <p class="truncate text-sm font-medium text-white">{{ artist.name }}</p>
-              <i
-                v-if="artist.is_verified"
-                class="pi pi-verified text-xs text-emerald-400"
-                v-tooltip.top="'Verified'"
-              />
+              <BadgeCheck aria-hidden="true" v-if="artist.is_verified"
+                class="text-xs text-emerald-400"
+                v-tooltip.top="'Verified'" />
             </div>
             <p class="mt-0.5 truncate text-xs text-slate-500">
               <template v-if="artist.bio">{{ artist.bio }}</template>
@@ -175,6 +173,7 @@
 </template>
 
 <script setup lang="ts">
+import { BadgeCheck, Search } from 'lucide-vue-next'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'

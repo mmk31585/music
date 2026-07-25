@@ -32,7 +32,7 @@
         class="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-white/10 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-spotify hover:text-black"
         @click="$emit('play', track)"
       >
-        <i aria-hidden="true" class="pi pi-play-fill text-sm" />
+        <Play aria-hidden="true" class="text-sm"  />
         <span>پخش آهنگ</span>
       </button>
     </div>
@@ -40,6 +40,7 @@
 </template>
 
 <script setup lang="ts">
+import { Play } from 'lucide-vue-next'
 import type { TrackSummary } from '@/services/api/video/types'
 import AppImage from '@/components/common/AppImage.vue'
 

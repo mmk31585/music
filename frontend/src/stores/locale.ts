@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Locale } from '@/locales'
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@/locales'
@@ -19,8 +19,8 @@ export const useLocaleStore = defineStore('locale', () => {
   const locale = ref<Locale>(loadSavedLocale())
 
   // ── Computed ──────────────────────────────────────────────────────────
-  const isRTL = () => locale.value === 'fa'
-  const dir = () => (locale.value === 'fa' ? 'rtl' : 'ltr')
+  const isRTL = computed(() => locale.value === 'fa')
+  const dir = computed(() => (locale.value === 'fa' ? 'rtl' : 'ltr'))
 
   // ── Actions ───────────────────────────────────────────────────────────
   function setLocale(newLocale: Locale) {
