@@ -32,6 +32,9 @@ func loadAppConfig() AppConfig {
 	}
 	port := os.Getenv("APP_PORT")
 	if port == "" {
+		port = os.Getenv("PORT")
+	}
+	if port == "" {
 		port = "8080"
 	}
 	readTimeout := 30
