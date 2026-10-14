@@ -1,0 +1,3853 @@
+basePath: /api/v1
+definitions:
+  album.Album:
+    properties:
+      albumType:
+        type: string
+      artistId:
+        type: string
+      coverUrl:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      releaseDate:
+        type: string
+      slug:
+        type: string
+      title:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  album.CreateRequest:
+    properties:
+      album_type:
+        enum:
+        - album
+        - single
+        - ep
+        - compilation
+        type: string
+      artist_id:
+        type: string
+      cover_url:
+        type: string
+      release_date:
+        type: string
+      title:
+        maxLength: 250
+        minLength: 1
+        type: string
+    required:
+    - artist_id
+    - title
+    type: object
+  album.UpdateRequest:
+    properties:
+      album_type:
+        enum:
+        - album
+        - single
+        - ep
+        - compilation
+        type: string
+      cover_url:
+        type: string
+      release_date:
+        type: string
+      title:
+        maxLength: 250
+        minLength: 1
+        type: string
+    type: object
+  analytics.TrackEventRequest:
+    properties:
+      album_id:
+        type: string
+      artist_id:
+        type: string
+      event_type:
+        type: string
+      metadata:
+        additionalProperties: {}
+        type: object
+      playlist_id:
+        type: string
+      query:
+        type: string
+      track_id:
+        type: string
+    required:
+    - event_type
+    type: object
+  analytics.TrackEventResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  artist.Artist:
+    properties:
+      bio:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      imageUrl:
+        type: string
+      isVerified:
+        type: boolean
+      monthlyListeners:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  artist.CreateRequest:
+    properties:
+      bio:
+        maxLength: 5000
+        type: string
+      image_url:
+        type: string
+      is_verified:
+        type: boolean
+      monthly_listeners:
+        minimum: 0
+        type: integer
+      name:
+        maxLength: 200
+        minLength: 1
+        type: string
+    required:
+    - name
+    type: object
+  artist.UpdateRequest:
+    properties:
+      bio:
+        maxLength: 5000
+        type: string
+      image_url:
+        type: string
+      is_verified:
+        type: boolean
+      monthly_listeners:
+        minimum: 0
+        type: integer
+      name:
+        maxLength: 200
+        minLength: 1
+        type: string
+    type: object
+  auth.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.LogoutRequest:
+    properties:
+      refreshToken:
+        type: string
+    required:
+    - refreshToken
+    type: object
+  auth.RefreshRequest:
+    properties:
+      refreshToken:
+        type: string
+    required:
+    - refreshToken
+    type: object
+  auth.RegisterRequest:
+    properties:
+      displayName:
+        maxLength: 100
+        minLength: 2
+        type: string
+      email:
+        maxLength: 255
+        type: string
+      password:
+        maxLength: 72
+        minLength: 8
+        type: string
+      username:
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - displayName
+    - email
+    - password
+    - username
+    type: object
+  follow.FollowResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  genre.CreateRequest:
+    properties:
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+    required:
+    - name
+    type: object
+  genre.Genre:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
+  genre.UpdateRequest:
+    properties:
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+    type: object
+  history.HistoryResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/history.ListeningHistoryItem'
+        type: array
+      pagination:
+        $ref: '#/definitions/history.PaginationResponse'
+    type: object
+  history.ListeningHistoryItem:
+    properties:
+      completed:
+        type: boolean
+      duration:
+        type: integer
+      id:
+        type: string
+      played_at:
+        type: string
+      track_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  history.PaginationResponse:
+    properties:
+      count:
+        type: integer
+      has_more:
+        type: boolean
+      limit:
+        type: integer
+      offset:
+        type: integer
+    type: object
+  library.AddPlayHistoryRequest:
+    properties:
+      track_id:
+        type: integer
+    required:
+    - track_id
+    type: object
+  library.FollowArtistRequest:
+    properties:
+      artist_id:
+        type: integer
+    required:
+    - artist_id
+    type: object
+  library.LikeAlbumRequest:
+    properties:
+      album_id:
+        type: integer
+    required:
+    - album_id
+    type: object
+  library.LikeTrackRequest:
+    properties:
+      track_id:
+        type: integer
+    required:
+    - track_id
+    type: object
+  lyrics.CreateLyricsRequest:
+    properties:
+      content:
+        type: string
+      language:
+        maxLength: 10
+        minLength: 2
+        type: string
+      track_id:
+        type: string
+      type:
+        enum:
+        - plain
+        - lrc
+        type: string
+    required:
+    - content
+    - language
+    - track_id
+    - type
+    type: object
+  lyrics.UpdateLyricsRequest:
+    properties:
+      content:
+        type: string
+      language:
+        type: string
+      type:
+        type: string
+    type: object
+  notification.ListNotificationsResponse:
+    properties:
+      notifications:
+        items:
+          $ref: '#/definitions/notification.NotificationResponse'
+        type: array
+      unreadCount:
+        type: integer
+    type: object
+  notification.MarkReadResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  notification.NotificationResponse:
+    properties:
+      body:
+        type: string
+      createdAt:
+        type: string
+      entityId:
+        type: string
+      entityType:
+        type: string
+      id:
+        type: string
+      isRead:
+        type: boolean
+      payload:
+        additionalProperties: {}
+        type: object
+      readAt:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+    type: object
+  playlist.AddTrackRequest:
+    properties:
+      track_id:
+        type: integer
+    required:
+    - track_id
+    type: object
+  playlist.CreatePlaylistRequest:
+    properties:
+      cover_url:
+        type: string
+      description:
+        type: string
+      is_public:
+        type: boolean
+      name:
+        maxLength: 255
+        minLength: 1
+        type: string
+    required:
+    - name
+    type: object
+  playlist.ReorderTrackRequest:
+    properties:
+      new_position:
+        type: integer
+      track_id:
+        type: integer
+    required:
+    - new_position
+    - track_id
+    type: object
+  playlist.UpdatePlaylistRequest:
+    properties:
+      cover_url:
+        type: string
+      description:
+        type: string
+      is_public:
+        type: boolean
+      name:
+        maxLength: 255
+        minLength: 1
+        type: string
+    required:
+    - name
+    type: object
+  queue.AddTrackRequest:
+    properties:
+      mode:
+        description: |-
+          mode:
+          "next"  = play next, insert at position 1
+          "later" = play later, insert at end
+
+          Default: "later"
+        type: string
+      track_id:
+        type: string
+    required:
+    - track_id
+    type: object
+  queue.AddTrackResponse:
+    properties:
+      item:
+        $ref: '#/definitions/queue.QueueItem'
+    type: object
+  queue.MessageResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  queue.QueueItem:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      position:
+        type: integer
+      track_id:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  queue.QueueResponse:
+    properties:
+      count:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/queue.QueueItem'
+        type: array
+    type: object
+  queue.ReorderQueueItemRequest:
+    properties:
+      id:
+        type: string
+      position:
+        minimum: 1
+        type: integer
+    required:
+    - id
+    - position
+    type: object
+  queue.ReorderQueueRequest:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/queue.ReorderQueueItemRequest'
+        minItems: 1
+        type: array
+    required:
+    - items
+    type: object
+  response.ErrorResponse:
+    properties:
+      code:
+        type: string
+      details: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  response.SuccessResponse:
+    properties:
+      data: {}
+      message:
+        example: request completed successfully
+        type: string
+      meta: {}
+      success:
+        example: true
+        type: boolean
+    type: object
+  subscription.CancelSubscriptionResponse:
+    properties:
+      message:
+        type: string
+      subscription:
+        $ref: '#/definitions/subscription.SubscriptionResponse'
+    type: object
+  subscription.CheckoutRequest:
+    properties:
+      planId:
+        type: string
+    required:
+    - planId
+    type: object
+  subscription.CheckoutResponse:
+    properties:
+      available:
+        type: boolean
+      message:
+        type: string
+      payment:
+        $ref: '#/definitions/subscription.PaymentResponse'
+      subscription:
+        $ref: '#/definitions/subscription.SubscriptionResponse'
+    type: object
+  subscription.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  subscription.PaymentResponse:
+    properties:
+      amountCents:
+        type: integer
+      createdAt:
+        type: string
+      currency:
+        type: string
+      failureReason:
+        type: string
+      id:
+        type: string
+      paidAt:
+        type: string
+      planId:
+        type: string
+      provider:
+        type: string
+      status:
+        type: string
+      subscriptionId:
+        type: string
+      userId:
+        type: string
+    type: object
+  subscription.PlanResponse:
+    properties:
+      available:
+        type: boolean
+      code:
+        type: string
+      currency:
+        type: string
+      description:
+        type: string
+      features:
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      interval:
+        type: string
+      isActive:
+        type: boolean
+      isPremium:
+        type: boolean
+      name:
+        type: string
+      priceCents:
+        type: integer
+    type: object
+  subscription.SubscriptionResponse:
+    properties:
+      cancelAtPeriodEnd:
+        type: boolean
+      canceledAt:
+        type: string
+      createdAt:
+        type: string
+      currentPeriodEnd:
+        type: string
+      currentPeriodStart:
+        type: string
+      id:
+        type: string
+      plan:
+        $ref: '#/definitions/subscription.PlanResponse'
+      planId:
+        type: string
+      status:
+        type: string
+      userId:
+        type: string
+    type: object
+  track.CreateRequest:
+    properties:
+      album_id:
+        type: string
+      artist_id:
+        type: string
+      audio_url:
+        type: string
+      cover_url:
+        type: string
+      duration_seconds:
+        minimum: 0
+        type: integer
+      explicit:
+        type: boolean
+      genre_ids:
+        items:
+          type: string
+        type: array
+      is_public:
+        type: boolean
+      title:
+        maxLength: 250
+        minLength: 1
+        type: string
+      track_number:
+        minimum: 1
+        type: integer
+    required:
+    - artist_id
+    - duration_seconds
+    - title
+    type: object
+  track.Genre:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
+  track.Track:
+    properties:
+      albumId:
+        type: string
+      artistId:
+        type: string
+      audioUrl:
+        type: string
+      coverUrl:
+        type: string
+      createdAt:
+        type: string
+      durationSeconds:
+        type: integer
+      explicit:
+        type: boolean
+      genres:
+        items:
+          $ref: '#/definitions/track.Genre'
+        type: array
+      id:
+        type: string
+      isPublic:
+        type: boolean
+      playCount:
+        type: integer
+      slug:
+        type: string
+      title:
+        type: string
+      trackNumber:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  track.UpdateRequest:
+    properties:
+      album_id:
+        type: string
+      audio_url:
+        type: string
+      cover_url:
+        type: string
+      duration_seconds:
+        minimum: 0
+        type: integer
+      explicit:
+        type: boolean
+      genre_ids:
+        items:
+          type: string
+        type: array
+      is_public:
+        type: boolean
+      title:
+        maxLength: 250
+        minLength: 1
+        type: string
+      track_number:
+        minimum: 1
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is the API server for the Music Streaming Application.
+  title: Music Application API
+  version: "1.0"
+paths:
+  /admin/media/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads a single media file for artist images, album covers, track
+        covers, or track audio.
+      parameters:
+      - description: Artist image file
+        in: formData
+        name: artistImage
+        type: file
+      - description: Album cover file
+        in: formData
+        name: albumCover
+        type: file
+      - description: Track cover file
+        in: formData
+        name: trackCover
+        type: file
+      - description: Track audio file
+        in: formData
+        name: trackAudio
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Upload media file
+      tags:
+      - media
+  /admin/tracks:
+    get:
+      description: Returns a paginated list of tracks including non-public entries
+        for administrative access.
+      parameters:
+      - description: Maximum number of items to return
+        in: query
+        name: limit
+        type: integer
+      - description: Number of items to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/track.Track'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: List all tracks
+      tags:
+      - tracks
+  /albums:
+    get:
+      description: Returns a paginated list of albums.
+      parameters:
+      - description: Maximum number of items to return
+        in: query
+        name: limit
+        type: integer
+      - description: Number of items to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/album.Album'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List albums
+      tags:
+      - albums
+    post:
+      consumes:
+      - application/json
+      description: Creates a new album.
+      parameters:
+      - description: Album creation payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/album.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/album.Album'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create album
+      tags:
+      - albums
+  /albums/{albumID}:
+    delete:
+      description: Deletes an album by ID.
+      parameters:
+      - description: Album ID
+        in: path
+        name: albumID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete album
+      tags:
+      - albums
+    get:
+      description: Returns a single album by its ID.
+      parameters:
+      - description: Album ID
+        in: path
+        name: albumID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/album.Album'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get album by ID
+      tags:
+      - albums
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing album by ID.
+      parameters:
+      - description: Album ID
+        in: path
+        name: albumID
+        required: true
+        type: string
+      - description: Album update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/album.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/album.Album'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update album
+      tags:
+      - albums
+  /analytics/events:
+    post:
+      consumes:
+      - application/json
+      description: Records an analytics event for an authenticated or anonymous user.
+      parameters:
+      - description: Analytics event payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/analytics.TrackEventRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/analytics.TrackEventResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Track analytics event
+      tags:
+      - analytics
+  /api/v1/admin/lyrics:
+    post:
+      consumes:
+      - application/json
+      description: Creates new lyrics for a track.
+      parameters:
+      - description: Create lyrics request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/lyrics.CreateLyricsRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Create lyrics
+      tags:
+      - lyrics
+  /api/v1/admin/lyrics/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes existing lyrics.
+      parameters:
+      - description: Lyrics ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Delete lyrics
+      tags:
+      - lyrics
+    put:
+      consumes:
+      - application/json
+      description: Updates existing lyrics.
+      parameters:
+      - description: Lyrics ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update lyrics request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/lyrics.UpdateLyricsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Update lyrics
+      tags:
+      - lyrics
+  /api/v1/tracks/{trackId}/lyrics:
+    get:
+      consumes:
+      - application/json
+      description: Returns lyrics for a specific track.
+      parameters:
+      - description: Track ID
+        in: path
+        name: trackId
+        required: true
+        type: string
+      - description: Language code (e.g., en, es)
+        in: query
+        name: lang
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get track lyrics
+      tags:
+      - lyrics
+  /api/v1/tracks/{trackId}/lyrics/all:
+    get:
+      consumes:
+      - application/json
+      description: Returns all lyrics for a specific track.
+      parameters:
+      - description: Track ID
+        in: path
+        name: trackId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get lyrics by track ID
+      tags:
+      - lyrics
+  /artists:
+    get:
+      description: Returns a paginated list of artists.
+      parameters:
+      - description: Maximum number of items to return
+        in: query
+        name: limit
+        type: integer
+      - description: Number of items to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/artist.Artist'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List artists
+      tags:
+      - artists
+    post:
+      consumes:
+      - application/json
+      description: Creates a new artist.
+      parameters:
+      - description: Artist creation payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/artist.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/artist.Artist'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create artist
+      tags:
+      - artists
+  /artists/{artistID}:
+    delete:
+      description: Deletes an artist by ID.
+      parameters:
+      - description: Artist ID
+        in: path
+        name: artistID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete artist
+      tags:
+      - artists
+    get:
+      description: Returns a single artist by its ID.
+      parameters:
+      - description: Artist ID
+        in: path
+        name: artistID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/artist.Artist'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get artist by ID
+      tags:
+      - artists
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing artist by ID.
+      parameters:
+      - description: Artist ID
+        in: path
+        name: artistID
+        required: true
+        type: string
+      - description: Artist update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/artist.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/artist.Artist'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update artist
+      tags:
+      - artists
+  /artists/{id}/follow:
+    delete:
+      consumes:
+      - application/json
+      description: Unfollows the artist specified by id for the authenticated user.
+      parameters:
+      - description: Artist ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/follow.FollowResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Unfollow an artist
+      tags:
+      - follow
+    post:
+      consumes:
+      - application/json
+      description: Follows the artist specified by id for the authenticated user.
+      parameters:
+      - description: Artist ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/follow.FollowResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Follow an artist
+      tags:
+      - follow
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and returns access and refresh token information.
+      parameters:
+      - description: Login payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Log in user
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Invalidates the provided session or refresh token and logs the
+        user out.
+      parameters:
+      - description: Logout payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Log out user
+      tags:
+      - auth
+  /auth/me:
+    get:
+      description: Returns the currently authenticated user's profile.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get current user
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refreshes authentication tokens using a valid refresh token.
+      parameters:
+      - description: Refresh token payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Refresh access token
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account and returns authentication/session information.
+      parameters:
+      - description: Registration payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - auth
+  /genres:
+    get:
+      description: Returns a paginated list of genres.
+      parameters:
+      - description: Maximum number of items to return
+        in: query
+        name: limit
+        type: integer
+      - description: Number of items to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/genre.Genre'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List genres
+      tags:
+      - genres
+    post:
+      consumes:
+      - application/json
+      description: Creates a new genre.
+      parameters:
+      - description: Genre creation payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/genre.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/genre.Genre'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create genre
+      tags:
+      - genres
+  /genres/{genreID}:
+    delete:
+      description: Deletes a genre by ID.
+      parameters:
+      - description: Genre ID
+        in: path
+        name: genreID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete genre
+      tags:
+      - genres
+    get:
+      description: Returns a single genre by its ID.
+      parameters:
+      - description: Genre ID
+        in: path
+        name: genreID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/genre.Genre'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get genre by ID
+      tags:
+      - genres
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing genre by ID.
+      parameters:
+      - description: Genre ID
+        in: path
+        name: genreID
+        required: true
+        type: string
+      - description: Genre update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/genre.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/genre.Genre'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update genre
+      tags:
+      - genres
+  /health:
+    get:
+      description: Returns basic service health status.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+      summary: Health check
+      tags:
+      - health
+  /health/live:
+    get:
+      description: Returns service liveness status.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+      summary: Liveness check
+      tags:
+      - health
+  /health/ready:
+    get:
+      description: Returns service readiness status after checking dependencies such
+        as database and Redis.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Readiness check
+      tags:
+      - health
+  /history:
+    get:
+      description: Returns paginated listening history for the current user.
+      parameters:
+      - description: Maximum number of items to return
+        in: query
+        name: limit
+        type: integer
+      - description: Number of items to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/history.HistoryResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get listening history
+      tags:
+      - history
+  /library/albums/{albumId}/like:
+    delete:
+      consumes:
+      - application/json
+      description: Removes an album from the authenticated user's liked albums.
+      parameters:
+      - description: Album ID
+        in: path
+        name: albumId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Unlike an album
+      tags:
+      - library
+  /library/albums/like:
+    post:
+      consumes:
+      - application/json
+      description: Adds an album to the authenticated user's liked albums.
+      parameters:
+      - description: Like album request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/library.LikeAlbumRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Like an album
+      tags:
+      - library
+  /library/albums/liked:
+    get:
+      description: Returns all liked albums for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: List liked albums
+      tags:
+      - library
+  /library/artists/{artistId}/follow:
+    delete:
+      consumes:
+      - application/json
+      description: Removes an artist from the authenticated user's followed artists.
+      parameters:
+      - description: Artist ID
+        in: path
+        name: artistId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Unfollow an artist from library
+      tags:
+      - library
+  /library/artists/follow:
+    post:
+      consumes:
+      - application/json
+      description: Adds an artist to the authenticated user's followed artists.
+      parameters:
+      - description: Follow artist request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/library.FollowArtistRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Follow an artist from library
+      tags:
+      - library
+  /library/artists/followed:
+    get:
+      description: Returns all followed artists for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: List followed artists
+      tags:
+      - library
+  /library/history:
+    get:
+      description: Returns the authenticated user's play history.
+      parameters:
+      - default: 50
+        description: Maximum number of items to return
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: List play history
+      tags:
+      - library
+    post:
+      consumes:
+      - application/json
+      description: Adds a track to the authenticated user's play history.
+      parameters:
+      - description: Add play history request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/library.AddPlayHistoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Add play history entry
+      tags:
+      - library
+  /library/history/recent:
+    get:
+      description: Returns recently played tracks for the authenticated user.
+      parameters:
+      - default: 20
+        description: Maximum number of items to return
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: List recently played tracks
+      tags:
+      - library
+  /library/tracks/{trackId}/like:
+    delete:
+      consumes:
+      - application/json
+      description: Removes a track from the authenticated user's liked tracks.
+      parameters:
+      - description: Track ID
+        in: path
+        name: trackId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Unlike a track
+      tags:
+      - library
+  /library/tracks/like:
+    post:
+      consumes:
+      - application/json
+      description: Adds a track to the authenticated user's liked tracks.
+      parameters:
+      - description: Like track request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/library.LikeTrackRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Like a track
+      tags:
+      - library
+  /library/tracks/liked:
+    get:
+      description: Returns all liked tracks for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: List liked tracks
+      tags:
+      - library
+  /notifications:
+    get:
+      description: Returns paginated notifications for the authenticated user.
+      parameters:
+      - default: 20
+        description: Maximum number of items to return
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of items to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/notification.ListNotificationsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: List notifications
+      tags:
+      - notifications
+  /notifications/{id}/read:
+    patch:
+      description: Marks a specific notification as read for the authenticated user.
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/notification.MarkReadResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Mark notification as read
+      tags:
+      - notifications
+  /notifications/read-all:
+    patch:
+      description: Marks all notifications as read for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/notification.MarkReadResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Mark all notifications as read
+      tags:
+      - notifications
+  /player/tracks/{id}:
+    get:
+      description: Returns track info and a streaming URL.
+      parameters:
+      - description: Track ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Get track playback details
+      tags:
+      - player
+  /player/tracks/{id}/stream:
+    get:
+      description: Serves the actual audio file.
+      parameters:
+      - description: Track ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - audio/mpeg
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Stream track audio
+      tags:
+      - player
+  /playlists:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new playlist for the authenticated user.
+      parameters:
+      - description: Create playlist request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/playlist.CreatePlaylistRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Create playlist
+      tags:
+      - playlists
+  /playlists/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes an existing playlist owned by the authenticated user.
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Delete playlist
+      tags:
+      - playlists
+    get:
+      consumes:
+      - application/json
+      description: Returns playlist details and tracks. Private playlists require
+        owner access.
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get playlist
+      tags:
+      - playlists
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing playlist owned by the authenticated user.
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update playlist request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/playlist.UpdatePlaylistRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Update playlist
+      tags:
+      - playlists
+  /playlists/{id}/tracks:
+    post:
+      consumes:
+      - application/json
+      description: Adds a track to an authenticated user's playlist.
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Add track request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/playlist.AddTrackRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Add track to playlist
+      tags:
+      - playlists
+  /playlists/{id}/tracks/{trackId}:
+    delete:
+      consumes:
+      - application/json
+      description: Removes a track from an authenticated user's playlist.
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Track ID
+        in: path
+        name: trackId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Remove track from playlist
+      tags:
+      - playlists
+  /playlists/{id}/tracks/reorder:
+    put:
+      consumes:
+      - application/json
+      description: Updates the position of a track inside an authenticated user's
+        playlist.
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Reorder track request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/playlist.ReorderTrackRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Reorder playlist track
+      tags:
+      - playlists
+  /playlists/me:
+    get:
+      consumes:
+      - application/json
+      description: Returns playlists owned by the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: List my playlists
+      tags:
+      - playlists
+  /playlists/public:
+    get:
+      consumes:
+      - application/json
+      description: Returns all public playlists.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List public playlists
+      tags:
+      - playlists
+  /queue:
+    delete:
+      consumes:
+      - application/json
+      description: Removes all items from the authenticated user's queue.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/queue.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Clear queue
+      tags:
+      - queue
+    get:
+      consumes:
+      - application/json
+      description: Returns the current playback queue for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/queue.QueueResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get current user's queue
+      tags:
+      - queue
+  /queue/reorder:
+    put:
+      consumes:
+      - application/json
+      description: Reorders items in the authenticated user's queue.
+      parameters:
+      - description: Reorder queue request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/queue.ReorderQueueRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/queue.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Reorder queue items
+      tags:
+      - queue
+  /queue/tracks:
+    post:
+      consumes:
+      - application/json
+      description: Adds a track to the authenticated user's queue.
+      parameters:
+      - description: Add track request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/queue.AddTrackRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/queue.AddTrackResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Add a track to the queue
+      tags:
+      - queue
+  /queue/tracks/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Removes the queue item specified by id for the authenticated user.
+      parameters:
+      - description: Queue item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/queue.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Remove a track from the queue
+      tags:
+      - queue
+  /recommendations/{trackId}/similar:
+    get:
+      consumes:
+      - application/json
+      description: Returns tracks similar to the provided track ID.
+      parameters:
+      - description: Track ID
+        in: path
+        name: trackId
+        required: true
+        type: string
+      - default: 20
+        description: Maximum number of items
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get similar tracks
+      tags:
+      - recommendation
+  /recommendations/artist/{artistId}:
+    get:
+      consumes:
+      - application/json
+      description: Returns recommended tracks for the given artist.
+      parameters:
+      - description: Artist ID
+        in: path
+        name: artistId
+        required: true
+        type: string
+      - default: 20
+        description: Maximum number of items
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get tracks by artist
+      tags:
+      - recommendation
+  /recommendations/best:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of best tracks.
+      parameters:
+      - default: 20
+        description: Maximum number of items
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get best tracks
+      tags:
+      - recommendation
+  /recommendations/for-you:
+    get:
+      consumes:
+      - application/json
+      description: Returns personalized recommendations for the authenticated user.
+      parameters:
+      - default: 20
+        description: Maximum number of items
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get personalized recommendations
+      tags:
+      - recommendation
+  /recommendations/genre/{genre}:
+    get:
+      consumes:
+      - application/json
+      description: Returns recommended tracks for the given genre.
+      parameters:
+      - description: Genre
+        in: path
+        name: genre
+        required: true
+        type: string
+      - default: 20
+        description: Maximum number of items
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get tracks by genre
+      tags:
+      - recommendation
+  /recommendations/popular:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of popular tracks.
+      parameters:
+      - default: 20
+        description: Maximum number of items
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get popular tracks
+      tags:
+      - recommendation
+  /recommendations/recent:
+    get:
+      consumes:
+      - application/json
+      description: Returns recently played tracks for the authenticated user.
+      parameters:
+      - default: 20
+        description: Maximum number of items
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get recent tracks for current user
+      tags:
+      - recommendation
+  /search:
+    get:
+      consumes:
+      - application/json
+      description: Searches across tracks, albums, artists, and playlists using a
+        query string.
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: 10
+        description: Maximum number of results
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Search catalog
+      tags:
+      - search
+  /subscription/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancels the authenticated user's active subscription.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscription.CancelSubscriptionResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/subscription.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/subscription.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/subscription.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Cancel current subscription
+      tags:
+      - subscription
+  /subscription/checkout:
+    post:
+      consumes:
+      - application/json
+      description: Creates a checkout session or subscription payment for the authenticated
+        user.
+      parameters:
+      - description: Checkout request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/subscription.CheckoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscription.CheckoutResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/subscription.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/subscription.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/subscription.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/subscription.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create subscription checkout
+      tags:
+      - subscription
+  /subscription/history:
+    get:
+      consumes:
+      - application/json
+      description: Returns subscription history for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/subscription.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/subscription.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: List subscription history
+      tags:
+      - subscription
+  /subscription/me:
+    get:
+      consumes:
+      - application/json
+      description: Returns the current subscription for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/subscription.SubscriptionResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/subscription.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/subscription.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get current subscription
+      tags:
+      - subscription
+  /subscription/payments:
+    get:
+      consumes:
+      - application/json
+      description: Returns payments for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/subscription.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/subscription.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: List payments
+      tags:
+      - subscription
+  /subscription/plans:
+    get:
+      consumes:
+      - application/json
+      description: Returns available subscription plans.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/subscription.ErrorResponse'
+      summary: List subscription plans
+      tags:
+      - subscription
+  /tracks:
+    get:
+      description: Returns a paginated list of publicly visible tracks.
+      parameters:
+      - description: Maximum number of items to return
+        in: query
+        name: limit
+        type: integer
+      - description: Number of items to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/track.Track'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List public tracks
+      tags:
+      - tracks
+    post:
+      consumes:
+      - application/json
+      description: Creates a new track.
+      parameters:
+      - description: Track creation payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/track.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/track.Track'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create track
+      tags:
+      - tracks
+  /tracks/{trackID}:
+    delete:
+      description: Deletes a track by ID.
+      parameters:
+      - description: Track ID
+        in: path
+        name: trackID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete track
+      tags:
+      - tracks
+    get:
+      description: Returns a single track by its ID.
+      parameters:
+      - description: Track ID
+        in: path
+        name: trackID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/track.Track'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get track by ID
+      tags:
+      - tracks
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing track by ID.
+      parameters:
+      - description: Track ID
+        in: path
+        name: trackID
+        required: true
+        type: string
+      - description: Track update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/track.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/track.Track'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update track
+      tags:
+      - tracks
+  /users/{id}/follow:
+    delete:
+      consumes:
+      - application/json
+      description: Unfollows the user specified by id for the authenticated user.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/follow.FollowResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Unfollow a user
+      tags:
+      - follow
+    post:
+      consumes:
+      - application/json
+      description: Follows the user specified by id for the authenticated user.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/follow.FollowResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Follow a user
+      tags:
+      - follow
+securityDefinitions:
+  Bearer:
+    description: Type "Bearer " followed by your token
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
