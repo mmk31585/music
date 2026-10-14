@@ -6,9 +6,11 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
+
+	"music/migrations"
 )
 
-func RunMigrations(databaseURL string, migrationsDir string) error {
+func RunMigrations(databaseURL string) error {
 	db, err := sql.Open("pgx", databaseURL)
 	if err != nil {
 		return fmt.Errorf("open migration db: %w", err)
@@ -19,7 +21,10 @@ func RunMigrations(databaseURL string, migrationsDir string) error {
 		return fmt.Errorf("set goose dialect: %w", err)
 	}
 
-	if err := goose.Up(db, migrationsDir); err != nil {
+	// Use embedded migrations so the binary does not depend on the
+	// migrations/ directory existing in the deployment artifact.
+	goose.SetBaseFS(migrations.FS)
+	if err := goose.Up(db, "."); err != nil {
 		return fmt.Errorf("run migrations: %w", err)
 	}
 

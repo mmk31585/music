@@ -35,7 +35,7 @@ func Bootstrap(ctx context.Context) (*App, error) {
 	_ = zap.ReplaceGlobals(log)
 
 	log.Info("running database migrations")
-	if err := database.RunMigrations(cfg.Postgres.URL, "migrations"); err != nil {
+	if err := database.RunMigrations(cfg.Postgres.URL); err != nil {
 		return nil, fmt.Errorf("migrations failed: %w", err)
 	}
 
