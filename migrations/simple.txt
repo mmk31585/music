@@ -1,0 +1,3549 @@
+-- +goose Up
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- +goose Down
+DROP EXTENSION IF EXISTS pg_trgm;
+DROP EXTENSION IF EXISTS pgcrypto;
+DROP EXTENSION IF EXISTS "uuid-ossp";-- +goose Up
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TABLE users (
+                       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                       email VARCHAR(255) NOT NULL UNIQUE,
+                       username VARCHAR(50) NOT NULL UNIQUE,
+                       display_name VARCHAR(100) NOT NULL,
+                       password_hash TEXT NOT NULL,
+                       avatar_url TEXT,
+                       role VARCHAR(30) NOT NULL DEFAULT 'user',
+                       is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                       email_verified_at TIMESTAMPTZ,
+                       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_created_at ON users(created_at);
+
+CREATE TABLE auth_sessions (
+                               id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                               user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                               refresh_token_hash TEXT NOT NULL UNIQUE,
+                               user_agent TEXT,
+                               ip_address TEXT,
+                               expires_at TIMESTAMPTZ NOT NULL,
+                               revoked_at TIMESTAMPTZ,
+                               created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_auth_sessions_user_id ON auth_sessions(user_id);
+CREATE INDEX idx_auth_sessions_refresh_token_hash ON auth_sessions(refresh_token_hash);
+CREATE INDEX idx_auth_sessions_expires_at ON auth_sessions(expires_at);
+
+-- +goose Down
+
+DROP TABLE IF EXISTS auth_sessions;
+DROP TABLE IF EXISTS users;
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS artists (
+                                       id UUID PRIMARY KEY,
+                                       name VARCHAR(200) NOT NULL,
+    slug VARCHAR(220) NOT NULL UNIQUE,
+    bio TEXT,
+    image_url TEXT,
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    monthly_listeners BIGINT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ
+    );
+
+CREATE INDEX IF NOT EXISTS idx_artists_name ON artists (name);
+CREATE INDEX IF NOT EXISTS idx_artists_monthly_listeners ON artists (monthly_listeners DESC);
+
+CREATE TABLE IF NOT EXISTS albums (
+                                      id UUID PRIMARY KEY,
+                                      artist_id UUID NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+    title VARCHAR(250) NOT NULL,
+    slug VARCHAR(270) NOT NULL,
+    cover_url TEXT,
+    release_date DATE,
+    album_type VARCHAR(50) NOT NULL DEFAULT 'album',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ,
+
+    CONSTRAINT albums_artist_id_slug_key UNIQUE (artist_id, slug)
+    );
+
+CREATE INDEX IF NOT EXISTS idx_albums_artist_id ON albums (artist_id);
+CREATE INDEX IF NOT EXISTS idx_albums_release_date ON albums (release_date DESC);
+
+CREATE TABLE IF NOT EXISTS tracks (
+                                      id UUID PRIMARY KEY,
+                                      artist_id UUID NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+    album_id UUID REFERENCES albums(id) ON DELETE SET NULL,
+    title VARCHAR(250) NOT NULL,
+    slug VARCHAR(270) NOT NULL,
+    duration_seconds INT NOT NULL DEFAULT 0,
+    track_number INT,
+    explicit BOOLEAN NOT NULL DEFAULT FALSE,
+    audio_url TEXT,
+    cover_url TEXT,
+    play_count BIGINT NOT NULL DEFAULT 0,
+    is_public BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ,
+
+    CONSTRAINT tracks_artist_id_slug_key UNIQUE (artist_id, slug)
+    );
+
+CREATE INDEX IF NOT EXISTS idx_tracks_artist_id ON tracks (artist_id);
+CREATE INDEX IF NOT EXISTS idx_tracks_album_id ON tracks (album_id);
+CREATE INDEX IF NOT EXISTS idx_tracks_is_public ON tracks (is_public);
+CREATE INDEX IF NOT EXISTS idx_tracks_play_count ON tracks (play_count DESC);
+
+CREATE TABLE IF NOT EXISTS genres (
+                                      id UUID PRIMARY KEY,
+                                      name VARCHAR(100) NOT NULL UNIQUE,
+    slug VARCHAR(120) NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+CREATE INDEX IF NOT EXISTS idx_genres_name ON genres (name);
+
+CREATE TABLE IF NOT EXISTS track_genres (
+                                            track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    genre_id UUID NOT NULL REFERENCES genres(id) ON DELETE CASCADE,
+    PRIMARY KEY (track_id, genre_id)
+    );
+
+CREATE INDEX IF NOT EXISTS idx_track_genres_track_id ON track_genres (track_id);
+CREATE INDEX IF NOT EXISTS idx_track_genres_genre_id ON track_genres (genre_id);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS track_genres;
+DROP TABLE IF EXISTS genres;
+DROP TABLE IF EXISTS tracks;
+DROP TABLE IF EXISTS albums;
+DROP TABLE IF EXISTS artists;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+CREATE TABLE IF NOT EXISTS playlists (
+                                         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT NULL,
+    cover_url TEXT NULL,
+    is_public BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+CREATE TABLE IF NOT EXISTS playlist_tracks (
+                                               id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    playlist_id UUID NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    position INT NOT NULL CHECK (position > 0),
+    added_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_playlist_track UNIQUE (playlist_id, track_id),
+    CONSTRAINT uq_playlist_position UNIQUE (playlist_id, position)
+    );
+
+CREATE INDEX IF NOT EXISTS idx_playlists_user_id
+    ON playlists(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_playlists_is_public
+    ON playlists(is_public);
+
+CREATE INDEX IF NOT EXISTS idx_playlist_tracks_playlist_id
+    ON playlist_tracks(playlist_id);
+
+CREATE INDEX IF NOT EXISTS idx_playlist_tracks_track_id
+    ON playlist_tracks(track_id);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS playlist_tracks;
+DROP TABLE IF EXISTS playlists;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS liked_tracks (
+                                            id BIGSERIAL PRIMARY KEY,
+                                            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_liked_tracks_user_track UNIQUE (user_id, track_id)
+    );
+
+CREATE TABLE IF NOT EXISTS liked_albums (
+                                            id BIGSERIAL PRIMARY KEY,
+                                            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    album_id UUID NOT NULL REFERENCES albums(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_liked_albums_user_album UNIQUE (user_id, album_id)
+    );
+
+CREATE TABLE IF NOT EXISTS followed_artists (
+                                                id BIGSERIAL PRIMARY KEY,
+                                                user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    artist_id UUID NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_followed_artists_user_artist UNIQUE (user_id, artist_id)
+    );
+
+CREATE TABLE IF NOT EXISTS play_history (
+                                            id BIGSERIAL PRIMARY KEY,
+                                            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    played_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+CREATE INDEX IF NOT EXISTS idx_liked_tracks_user_id
+    ON liked_tracks(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_liked_tracks_track_id
+    ON liked_tracks(track_id);
+
+CREATE INDEX IF NOT EXISTS idx_liked_albums_user_id
+    ON liked_albums(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_liked_albums_album_id
+    ON liked_albums(album_id);
+
+CREATE INDEX IF NOT EXISTS idx_followed_artists_user_id
+    ON followed_artists(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_followed_artists_artist_id
+    ON followed_artists(artist_id);
+
+CREATE INDEX IF NOT EXISTS idx_play_history_user_id
+    ON play_history(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_play_history_track_id
+    ON play_history(track_id);
+
+CREATE INDEX IF NOT EXISTS idx_play_history_user_played_at
+    ON play_history(user_id, played_at DESC);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS play_history;
+DROP TABLE IF EXISTS followed_artists;
+DROP TABLE IF EXISTS liked_albums;
+DROP TABLE IF EXISTS liked_tracks;
+
+-- +goose StatementEnd
+-- +goose Up
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE TABLE IF NOT EXISTS plans (
+                                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+
+    price_cents BIGINT NOT NULL DEFAULT 0,
+    currency VARCHAR(10) NOT NULL DEFAULT 'USD',
+
+    interval VARCHAR(20) NOT NULL DEFAULT 'month',
+    is_premium BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+
+    features JSONB NOT NULL DEFAULT '[]'::jsonb,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+CREATE TABLE IF NOT EXISTS subscriptions (
+                                             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    user_id UUID NOT NULL,
+    plan_id UUID NOT NULL REFERENCES plans(id),
+
+    status VARCHAR(30) NOT NULL DEFAULT 'active',
+    current_period_start TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    current_period_end TIMESTAMPTZ,
+    cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
+    canceled_at TIMESTAMPTZ,
+
+    provider VARCHAR(50),
+    provider_subscription_id VARCHAR(255),
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT subscriptions_status_check CHECK (
+                                                    status IN ('active', 'trialing', 'pending', 'past_due', 'canceled', 'expired')
+    )
+    );
+
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_plan_id ON subscriptions(plan_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+
+CREATE TABLE IF NOT EXISTS payments (
+                                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    user_id UUID NOT NULL,
+    subscription_id UUID REFERENCES subscriptions(id),
+    plan_id UUID REFERENCES plans(id),
+
+    amount_cents BIGINT NOT NULL DEFAULT 0,
+    currency VARCHAR(10) NOT NULL DEFAULT 'USD',
+
+    status VARCHAR(30) NOT NULL DEFAULT 'pending',
+    provider VARCHAR(50),
+    provider_payment_id VARCHAR(255),
+
+    failure_reason TEXT,
+    paid_at TIMESTAMPTZ,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT payments_status_check CHECK (
+                                               status IN ('pending', 'paid', 'failed', 'refunded', 'canceled')
+    )
+    );
+
+CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_payments_subscription_id ON payments(subscription_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+
+INSERT INTO plans (
+    code,
+    name,
+    description,
+    price_cents,
+    currency,
+    interval,
+    is_premium,
+    is_active,
+    features
+)
+VALUES
+    (
+        'free',
+        'Free',
+        'Free music account',
+        0,
+        'USD',
+        'month',
+        FALSE,
+        TRUE,
+        '[
+            "Listen to music",
+            "Create playlists",
+            "Like tracks",
+            "Follow artist"
+        ]'::jsonb
+    ),
+    (
+        'premium_monthly',
+        'Premium Monthly',
+        'Future premium monthly subscription. Not available yet.',
+        999,
+        'USD',
+        'month',
+        TRUE,
+        FALSE,
+        '[
+            "Ad-free listening",
+            "High quality audio",
+            "Offline downloads",
+            "Unlimited skips"
+        ]'::jsonb
+    )
+    ON CONFLICT (code) DO NOTHING;
+
+-- +goose Down
+DROP TABLE IF EXISTS payments;
+DROP TABLE IF EXISTS subscriptions;
+DROP TABLE IF EXISTS plans;
+-- +goose Up
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE TABLE IF NOT EXISTS notifications (
+                                             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    user_id UUID NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
+
+    entity_type VARCHAR(50),
+    entity_id UUID,
+
+    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    read_at TIMESTAMPTZ,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id_created_at
+    ON notifications(user_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id_is_read
+    ON notifications(user_id, is_read);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_type
+    ON notifications(type);
+
+-- +goose Down
+DROP TABLE IF EXISTS notifications;
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS queue_items (
+                                           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+
+    position INTEGER NOT NULL CHECK (position > 0),
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+CREATE INDEX IF NOT EXISTS idx_queue_items_user_position
+    ON queue_items(user_id, position);
+
+CREATE INDEX IF NOT EXISTS idx_queue_items_user_id
+    ON queue_items(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_queue_items_track_id
+    ON queue_items(track_id);
+
+-- +goose StatementEnd
+
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS queue_items;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS user_follows (
+                                            follower_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    followee_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    PRIMARY KEY (follower_id, followee_id),
+    CONSTRAINT user_follows_no_self_follow CHECK (follower_id <> followee_id)
+    );
+
+CREATE INDEX IF NOT EXISTS idx_user_follows_follower_id
+    ON user_follows(follower_id);
+
+CREATE INDEX IF NOT EXISTS idx_user_follows_followee_id
+    ON user_follows(followee_id);
+
+CREATE TABLE IF NOT EXISTS artist_follows (
+                                              user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    artist_id UUID NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    PRIMARY KEY (user_id, artist_id)
+    );
+
+CREATE INDEX IF NOT EXISTS idx_artist_follows_user_id
+    ON artist_follows(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_artist_follows_artist_id
+    ON artist_follows(artist_id);
+
+-- +goose StatementEnd
+
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS artist_follows;
+DROP TABLE IF EXISTS user_follows;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS listening_history (
+                                                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+
+    played_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    -- duration listened in seconds
+    duration INTEGER NOT NULL DEFAULT 0 CHECK (duration >= 0),
+
+    completed BOOLEAN NOT NULL DEFAULT FALSE
+    );
+
+CREATE INDEX IF NOT EXISTS idx_listening_history_user_played_at
+    ON listening_history(user_id, played_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_listening_history_user_track_played_at
+    ON listening_history(user_id, track_id, played_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_listening_history_track_id
+    ON listening_history(track_id);
+
+CREATE INDEX IF NOT EXISTS idx_listening_history_completed
+    ON listening_history(completed);
+
+-- Useful later for recommendation queries:
+-- "tracks completed by user recently"
+CREATE INDEX IF NOT EXISTS idx_listening_history_user_completed_played_at
+    ON listening_history(user_id, completed, played_at DESC);
+
+-- +goose StatementEnd
+
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS listening_history;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS analytics_events (
+                                                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    user_id UUID NULL REFERENCES users(id) ON DELETE SET NULL,
+
+    event_type TEXT NOT NULL CHECK (
+                                       event_type IN (
+                                       'play',
+                                       'pause',
+                                       'skip',
+                                       'completion',
+                                       'search',
+                                       'playlist_open'
+                                                     )
+    ),
+
+    track_id UUID NULL REFERENCES tracks(id) ON DELETE SET NULL,
+    artist_id UUID NULL REFERENCES artists(id) ON DELETE SET NULL,
+    album_id UUID NULL REFERENCES albums(id) ON DELETE SET NULL,
+    playlist_id UUID NULL REFERENCES playlists(id) ON DELETE SET NULL,
+
+    query TEXT NULL,
+
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+CREATE INDEX IF NOT EXISTS idx_analytics_events_event_type
+    ON analytics_events(event_type);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_events_user_id
+    ON analytics_events(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_events_track_id
+    ON analytics_events(track_id);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_events_artist_id
+    ON analytics_events(artist_id);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_events_album_id
+    ON analytics_events(album_id);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_events_playlist_id
+    ON analytics_events(playlist_id);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_events_created_at
+    ON analytics_events(created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_events_query
+    ON analytics_events USING GIN (to_tsvector('simple', COALESCE(query, '')));
+
+CREATE TABLE IF NOT EXISTS track_analytics (
+                                               track_id UUID PRIMARY KEY REFERENCES tracks(id) ON DELETE CASCADE,
+
+    play_count BIGINT NOT NULL DEFAULT 0,
+    pause_count BIGINT NOT NULL DEFAULT 0,
+    skip_count BIGINT NOT NULL DEFAULT 0,
+    completion_count BIGINT NOT NULL DEFAULT 0,
+
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+CREATE TABLE IF NOT EXISTS artist_analytics (
+                                                artist_id UUID PRIMARY KEY REFERENCES artists(id) ON DELETE CASCADE,
+
+    play_count BIGINT NOT NULL DEFAULT 0,
+    pause_count BIGINT NOT NULL DEFAULT 0,
+    skip_count BIGINT NOT NULL DEFAULT 0,
+    completion_count BIGINT NOT NULL DEFAULT 0,
+
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+CREATE TABLE IF NOT EXISTS album_analytics (
+                                               album_id UUID PRIMARY KEY REFERENCES albums(id) ON DELETE CASCADE,
+
+    play_count BIGINT NOT NULL DEFAULT 0,
+    pause_count BIGINT NOT NULL DEFAULT 0,
+    skip_count BIGINT NOT NULL DEFAULT 0,
+    completion_count BIGINT NOT NULL DEFAULT 0,
+
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+CREATE INDEX IF NOT EXISTS idx_track_analytics_play_count
+    ON track_analytics(play_count DESC);
+
+CREATE INDEX IF NOT EXISTS idx_artist_analytics_play_count
+    ON artist_analytics(play_count DESC);
+
+CREATE INDEX IF NOT EXISTS idx_album_analytics_play_count
+    ON album_analytics(play_count DESC);
+
+-- +goose StatementEnd
+
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS album_analytics;
+DROP TABLE IF EXISTS artist_analytics;
+DROP TABLE IF EXISTS track_analytics;
+DROP TABLE IF EXISTS analytics_events;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS lyrics (
+                                      id UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- Default added
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    language VARCHAR(10) NOT NULL,
+    type VARCHAR(20) NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(), -- Default added for consistency
+
+    CONSTRAINT lyrics_track_id_language_key UNIQUE (track_id, language)
+    );
+
+-- Index for track_id is good for finding all languages for a track
+CREATE INDEX IF NOT EXISTS idx_lyrics_track_id ON lyrics (track_id);
+
+-- Note: No need for idx_lyrics_track_id_language because the UNIQUE constraint
+-- creates an index for us automatically.
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS lyrics;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Fix existing UUID defaults if missing.
+ALTER TABLE artists
+    ALTER COLUMN id SET DEFAULT gen_random_uuid();
+
+ALTER TABLE albums
+    ALTER COLUMN id SET DEFAULT gen_random_uuid();
+
+ALTER TABLE tracks
+    ALTER COLUMN id SET DEFAULT gen_random_uuid();
+
+ALTER TABLE genres
+    ALTER COLUMN id SET DEFAULT gen_random_uuid();
+
+-- Central media table.
+CREATE TABLE IF NOT EXISTS media (
+                                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    kind VARCHAR(50) NOT NULL,
+    url TEXT NOT NULL,
+
+    mime_type VARCHAR(120),
+    size_bytes BIGINT,
+
+    width INT,
+    height INT,
+
+    duration_seconds INT,
+    bitrate INT,
+    sample_rate INT,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ
+    );
+
+CREATE INDEX IF NOT EXISTS idx_media_kind ON media (kind);
+CREATE INDEX IF NOT EXISTS idx_media_created_at ON media (created_at DESC);
+
+-- Artist media/profile expansion.
+ALTER TABLE artists
+    ADD COLUMN IF NOT EXISTS avatar_media_id UUID REFERENCES media(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS banner_media_id UUID REFERENCES media(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS country VARCHAR(2);
+
+CREATE INDEX IF NOT EXISTS idx_artists_slug ON artists (slug);
+CREATE INDEX IF NOT EXISTS idx_artists_avatar_media_id ON artists (avatar_media_id);
+CREATE INDEX IF NOT EXISTS idx_artists_banner_media_id ON artists (banner_media_id);
+
+-- Album media expansion.
+ALTER TABLE albums
+    ADD COLUMN IF NOT EXISTS cover_media_id UUID REFERENCES media(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_albums_cover_media_id ON albums (cover_media_id);
+
+-- Track media expansion.
+ALTER TABLE tracks
+    ADD COLUMN IF NOT EXISTS audio_media_id UUID REFERENCES media(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS cover_media_id UUID REFERENCES media(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_tracks_audio_media_id ON tracks (audio_media_id);
+CREATE INDEX IF NOT EXISTS idx_tracks_cover_media_id ON tracks (cover_media_id);
+
+-- Many-to-many track artists.
+CREATE TABLE IF NOT EXISTS track_artists (
+                                             track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    artist_id UUID NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+
+    role VARCHAR(50) NOT NULL DEFAULT 'primary',
+    position INT NOT NULL DEFAULT 1,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    PRIMARY KEY (track_id, artist_id, role)
+    );
+
+CREATE INDEX IF NOT EXISTS idx_track_artists_track_id ON track_artists (track_id);
+CREATE INDEX IF NOT EXISTS idx_track_artists_artist_id ON track_artists (artist_id);
+CREATE INDEX IF NOT EXISTS idx_track_artists_role ON track_artists (role);
+CREATE INDEX IF NOT EXISTS idx_track_artists_position ON track_artists (position);
+
+-- Many-to-many album artists.
+CREATE TABLE IF NOT EXISTS album_artists (
+                                             album_id UUID NOT NULL REFERENCES albums(id) ON DELETE CASCADE,
+    artist_id UUID NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+
+    role VARCHAR(50) NOT NULL DEFAULT 'primary',
+    position INT NOT NULL DEFAULT 1,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    PRIMARY KEY (album_id, artist_id, role)
+    );
+
+CREATE INDEX IF NOT EXISTS idx_album_artists_album_id ON album_artists (album_id);
+CREATE INDEX IF NOT EXISTS idx_album_artists_artist_id ON album_artists (artist_id);
+CREATE INDEX IF NOT EXISTS idx_album_artists_role ON album_artists (role);
+CREATE INDEX IF NOT EXISTS idx_album_artists_position ON album_artists (position);
+
+-- Optional structured credits beyond display artists.
+CREATE TABLE IF NOT EXISTS track_credits (
+                                             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    artist_id UUID REFERENCES artists(id) ON DELETE SET NULL,
+
+    name VARCHAR(200),
+    role VARCHAR(80) NOT NULL,
+
+    position INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT track_credits_artist_or_name_check
+    CHECK (artist_id IS NOT NULL OR name IS NOT NULL)
+    );
+
+CREATE INDEX IF NOT EXISTS idx_track_credits_track_id ON track_credits (track_id);
+CREATE INDEX IF NOT EXISTS idx_track_credits_artist_id ON track_credits (artist_id);
+CREATE INDEX IF NOT EXISTS idx_track_credits_role ON track_credits (role);
+
+-- Backfill current one-artist design into new join tables.
+INSERT INTO track_artists (track_id, artist_id, role, position)
+SELECT id, artist_id, 'primary', 1
+FROM tracks
+    ON CONFLICT DO NOTHING;
+
+INSERT INTO album_artists (album_id, artist_id, role, position)
+SELECT id, artist_id, 'primary', 1
+FROM albums
+    ON CONFLICT DO NOTHING;
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS track_credits;
+DROP TABLE IF EXISTS album_artists;
+DROP TABLE IF EXISTS track_artists;
+
+ALTER TABLE tracks
+DROP COLUMN IF EXISTS audio_media_id,
+    DROP COLUMN IF EXISTS cover_media_id;
+
+ALTER TABLE albums
+DROP COLUMN IF EXISTS cover_media_id;
+
+ALTER TABLE artists
+DROP COLUMN IF EXISTS avatar_media_id,
+    DROP COLUMN IF EXISTS banner_media_id,
+    DROP COLUMN IF EXISTS country;
+
+DROP TABLE IF EXISTS media;
+
+-- Keep UUID defaults on rollback intentionally.
+-- They fix the original insert behavior and are safe to preserve.
+
+-- +goose StatementEnd
+-- +goose Up
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- track_credits was created in 000013 with columns: id, track_id, artist_id, name, role, position, created_at.
+-- This migration adds the credit_type column (a structured role) and ensures constraints exist.
+ALTER TABLE track_credits
+    ADD COLUMN IF NOT EXISTS credit_type TEXT;
+
+UPDATE track_credits
+SET credit_type = COALESCE(role, 'unknown')
+WHERE credit_type IS NULL;
+
+ALTER TABLE track_credits
+    ALTER COLUMN credit_type SET NOT NULL;
+
+-- +goose StatementBegin
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'track_credits_track_id_fkey'
+    ) THEN
+ALTER TABLE track_credits
+    ADD CONSTRAINT track_credits_track_id_fkey
+        FOREIGN KEY (track_id)
+            REFERENCES tracks(id)
+            ON DELETE CASCADE;
+END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'track_credits_artist_id_fkey'
+    ) THEN
+ALTER TABLE track_credits
+    ADD CONSTRAINT track_credits_artist_id_fkey
+        FOREIGN KEY (artist_id)
+            REFERENCES artists(id)
+            ON DELETE CASCADE;
+END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'track_credits_credit_type_not_empty'
+    ) THEN
+ALTER TABLE track_credits
+    ADD CONSTRAINT track_credits_credit_type_not_empty
+        CHECK (length(trim(credit_type)) > 0);
+END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'track_credits_position_positive'
+    ) THEN
+ALTER TABLE track_credits
+    ADD CONSTRAINT track_credits_position_positive
+        CHECK (position > 0);
+END IF;
+END $$;
+-- +goose StatementEnd
+
+CREATE INDEX IF NOT EXISTS idx_track_credits_track_id
+    ON track_credits(track_id);
+
+CREATE INDEX IF NOT EXISTS idx_track_credits_artist_id
+    ON track_credits(artist_id);
+
+CREATE INDEX IF NOT EXISTS idx_track_credits_credit_type
+    ON track_credits(credit_type);
+
+
+CREATE TABLE IF NOT EXISTS related_artists (
+                                               artist_id UUID NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+    related_artist_id UUID NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+
+    score NUMERIC(8, 3) NOT NULL DEFAULT 0,
+    source TEXT NOT NULL DEFAULT 'manual',
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    PRIMARY KEY (artist_id, related_artist_id),
+
+    CONSTRAINT related_artists_not_self
+    CHECK (artist_id <> related_artist_id)
+    );
+
+CREATE INDEX IF NOT EXISTS idx_related_artists_artist_id
+    ON related_artists(artist_id);
+
+CREATE INDEX IF NOT EXISTS idx_related_artists_related_artist_id
+    ON related_artists(related_artist_id);
+
+CREATE INDEX IF NOT EXISTS idx_related_artists_score
+    ON related_artists(score DESC);
+
+
+-- +goose Down
+DROP INDEX IF EXISTS idx_related_artists_score;
+DROP INDEX IF EXISTS idx_related_artists_related_artist_id;
+DROP INDEX IF EXISTS idx_related_artists_artist_id;
+DROP TABLE IF EXISTS related_artists;
+
+DROP INDEX IF EXISTS idx_track_credits_credit_type;
+DROP INDEX IF EXISTS idx_track_credits_artist_id;
+DROP INDEX IF EXISTS idx_track_credits_track_id;
+DROP TABLE IF EXISTS track_credits;
+-- +goose Up
+BEGIN;
+
+ALTER TABLE media
+    ADD COLUMN IF NOT EXISTS media_type varchar(50),
+    ADD COLUMN IF NOT EXISTS storage_provider varchar(50) DEFAULT 'local',
+    ADD COLUMN IF NOT EXISTS bucket varchar(255),
+    ADD COLUMN IF NOT EXISTS object_key text,
+    ADD COLUMN IF NOT EXISTS public_url text,
+    ADD COLUMN IF NOT EXISTS file_size bigint,
+    ADD COLUMN IF NOT EXISTS checksum_sha256 varchar(64),
+    ADD COLUMN IF NOT EXISTS original_filename text,
+    ADD COLUMN IF NOT EXISTS metadata jsonb DEFAULT '{}'::jsonb,
+    ADD COLUMN IF NOT EXISTS created_by uuid;
+
+UPDATE media
+SET media_type = kind
+WHERE media_type IS NULL;
+
+UPDATE media
+SET public_url = url
+WHERE public_url IS NULL;
+
+UPDATE media
+SET object_key = url
+WHERE object_key IS NULL;
+
+UPDATE media
+SET file_size = size_bytes
+WHERE file_size IS NULL;
+
+UPDATE media
+SET storage_provider = 'local'
+WHERE storage_provider IS NULL;
+
+UPDATE media
+SET metadata = '{}'::jsonb
+WHERE metadata IS NULL;
+
+ALTER TABLE media
+    ALTER COLUMN media_type SET NOT NULL,
+ALTER COLUMN storage_provider SET NOT NULL,
+    ALTER COLUMN metadata SET NOT NULL;
+
+-- New repository inserts do not populate old legacy columns.
+ALTER TABLE media
+    ALTER COLUMN kind DROP NOT NULL,
+ALTER COLUMN url DROP NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_media_media_type
+    ON media (media_type);
+
+CREATE INDEX IF NOT EXISTS idx_media_checksum_sha256
+    ON media (checksum_sha256);
+
+CREATE INDEX IF NOT EXISTS idx_media_created_by
+    ON media (created_by);
+
+COMMIT;
+
+-- +goose Down
+BEGIN;
+
+DROP INDEX IF EXISTS idx_media_created_by;
+DROP INDEX IF EXISTS idx_media_checksum_sha256;
+DROP INDEX IF EXISTS idx_media_media_type;
+
+ALTER TABLE media
+    ALTER COLUMN kind SET NOT NULL,
+ALTER COLUMN url SET NOT NULL;
+
+ALTER TABLE media
+DROP COLUMN IF EXISTS created_by,
+    DROP COLUMN IF EXISTS metadata,
+    DROP COLUMN IF EXISTS original_filename,
+    DROP COLUMN IF EXISTS checksum_sha256,
+    DROP COLUMN IF EXISTS file_size,
+    DROP COLUMN IF EXISTS public_url,
+    DROP COLUMN IF EXISTS object_key,
+    DROP COLUMN IF EXISTS bucket,
+    DROP COLUMN IF EXISTS storage_provider,
+    DROP COLUMN IF EXISTS media_type;
+
+COMMIT;
+-- +goose Up
+
+-- Event outbox for reliable event publishing
+CREATE TABLE event_outbox (
+    id UUID PRIMARY KEY,
+    event_type VARCHAR(100) NOT NULL,
+    payload JSONB NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    processed_at TIMESTAMPTZ,
+    retry_count INT NOT NULL DEFAULT 0,
+    last_error TEXT,
+    trace_id VARCHAR(64)
+);
+
+CREATE INDEX idx_event_outbox_status ON event_outbox(status, created_at);
+CREATE INDEX idx_event_outbox_type ON event_outbox(event_type);
+CREATE INDEX idx_event_outbox_created ON event_outbox(created_at);
+
+-- Social: unified follow system (table created in 000009 with followee_id)
+CREATE INDEX IF NOT EXISTS idx_user_follows_follower ON user_follows(follower_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_follows_followed ON user_follows(followee_id, created_at DESC);
+
+-- Social: activity feed
+CREATE TABLE activities (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL,
+    target_id VARCHAR(255) NOT NULL,
+    target_type VARCHAR(50) NOT NULL,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_activities_user ON activities(user_id, created_at DESC);
+CREATE INDEX idx_activities_type ON activities(type, created_at DESC);
+CREATE INDEX idx_activities_target ON activities(target_id, target_type);
+CREATE INDEX idx_activities_created ON activities(created_at DESC);
+
+-- Reactions: unified like/reaction system (replaces old liked_tracks, liked_albums)
+CREATE TABLE reactions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_id VARCHAR(255) NOT NULL,
+    target_type VARCHAR(50) NOT NULL,
+    type VARCHAR(20) NOT NULL DEFAULT 'like',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, target_id, target_type)
+);
+
+CREATE INDEX idx_reactions_target ON reactions(target_id, target_type);
+CREATE INDEX idx_reactions_user ON reactions(user_id, target_type);
+CREATE INDEX idx_reactions_count ON reactions(target_id, target_type, type);
+
+-- Content moderation
+CREATE TABLE content_reports (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    reporter_id UUID NOT NULL REFERENCES users(id),
+    target_id VARCHAR(255) NOT NULL,
+    target_type VARCHAR(50) NOT NULL,
+    reason VARCHAR(255) NOT NULL,
+    description TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    moderator_id UUID REFERENCES users(id),
+    resolved_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_reports_status ON content_reports(status);
+CREATE INDEX idx_reports_target ON content_reports(target_id, target_type);
+
+CREATE TABLE content_flags (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    target_id VARCHAR(255) NOT NULL,
+    target_type VARCHAR(50) NOT NULL,
+    flag_type VARCHAR(50) NOT NULL,
+    flagged_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_flags_target ON content_flags(target_id, target_type);
+
+-- Creator dashboard
+CREATE TABLE creator_stats (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    total_plays BIGINT NOT NULL DEFAULT 0,
+    unique_listeners BIGINT NOT NULL DEFAULT 0,
+    total_followers INT NOT NULL DEFAULT 0,
+    total_tracks INT NOT NULL DEFAULT 0,
+    total_albums INT NOT NULL DEFAULT 0,
+    total_playlists INT NOT NULL DEFAULT 0,
+    estimated_revenue BIGINT NOT NULL DEFAULT 0,
+    last_calculated TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE creator_daily_stats (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    plays INT NOT NULL DEFAULT 0,
+    listeners INT NOT NULL DEFAULT 0,
+    likes INT NOT NULL DEFAULT 0,
+    follows INT NOT NULL DEFAULT 0,
+    shares INT NOT NULL DEFAULT 0,
+    revenue_cents INT NOT NULL DEFAULT 0,
+    UNIQUE (user_id, date)
+);
+
+CREATE INDEX idx_creator_daily_user ON creator_daily_stats(user_id, date DESC);
+
+-- User profiles (extensible)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(255) DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS website VARCHAR(500) DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS social_links JSONB DEFAULT '{}';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences JSONB DEFAULT '{}';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS header_image_url TEXT DEFAULT '';
+
+-- HLS streaming
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS hls_path TEXT DEFAULT '';
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS has_hls BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS hls_qualities TEXT[] DEFAULT '{}';
+
+CREATE TABLE transcode_jobs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    source_path TEXT NOT NULL,
+    output_path TEXT NOT NULL,
+    qualities TEXT[] NOT NULL DEFAULT '{ "128k", "192k", "320k" }',
+    error_message TEXT,
+    started_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_transcode_jobs_status ON transcode_jobs(status);
+CREATE INDEX idx_transcode_jobs_track ON transcode_jobs(track_id);
+
+-- AI features
+CREATE TABLE track_embeddings (
+    track_id UUID PRIMARY KEY REFERENCES tracks(id) ON DELETE CASCADE,
+    embedding FLOAT[] NOT NULL,
+    model_version VARCHAR(50) NOT NULL DEFAULT 'v1',
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE track_moods (
+    track_id UUID PRIMARY KEY REFERENCES tracks(id) ON DELETE CASCADE,
+    mood_tags JSONB NOT NULL DEFAULT '[]',
+    energy FLOAT NOT NULL DEFAULT 0.5,
+    valence FLOAT NOT NULL DEFAULT 0.5,
+    tempo FLOAT NOT NULL DEFAULT 120,
+    danceability FLOAT NOT NULL DEFAULT 0.5,
+    acousticness FLOAT NOT NULL DEFAULT 0.5,
+    instrumentalness FLOAT NOT NULL DEFAULT 0,
+    liveness FLOAT NOT NULL DEFAULT 0.5,
+    speechiness FLOAT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Recommendation v2
+CREATE TABLE user_affinities (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_id VARCHAR(255) NOT NULL,
+    target_type VARCHAR(20) NOT NULL,
+    score FLOAT NOT NULL DEFAULT 0,
+    decay FLOAT NOT NULL DEFAULT 1.0,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, target_id, target_type)
+);
+
+CREATE TABLE user_similarities (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    similar_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    similarity FLOAT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, similar_user_id)
+);
+
+CREATE TABLE track_similarities (
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    similar_track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    similarity FLOAT NOT NULL,
+    method VARCHAR(20) NOT NULL DEFAULT 'content',
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (track_id, similar_track_id)
+);
+
+CREATE TABLE user_sessions (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    session_vector FLOAT[] NOT NULL DEFAULT '{}',
+    recent_tracks UUID[] NOT NULL DEFAULT '{}',
+    current_affinity JSONB DEFAULT '{}',
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Collaborative playlists
+ALTER TABLE playlists ADD COLUMN IF NOT EXISTS is_collaborative BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE playlists ADD COLUMN IF NOT EXISTS snapshot_id VARCHAR(32) DEFAULT '';
+
+CREATE TABLE playlist_collaborators (
+    playlist_id UUID NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    permission VARCHAR(20) NOT NULL DEFAULT 'edit',
+    added_by UUID REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (playlist_id, user_id)
+);
+
+CREATE INDEX idx_playlist_collab_user ON playlist_collaborators(user_id);
+
+-- WebSocket sessions
+CREATE TABLE ws_sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    connected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    disconnected_at TIMESTAMPTZ,
+    ip_address VARCHAR(45),
+    user_agent TEXT
+);
+
+CREATE INDEX idx_ws_sessions_user ON ws_sessions(user_id);
+CREATE INDEX idx_ws_sessions_active
+    ON ws_sessions(user_id)
+    WHERE disconnected_at IS NULL;
+
+-- OpenSearch sync tracking
+CREATE TABLE search_sync (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id UUID NOT NULL,
+    action VARCHAR(20) NOT NULL,
+    synced BOOLEAN NOT NULL DEFAULT false,
+    synced_at TIMESTAMPTZ,
+    error_message TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_search_sync_pending ON search_sync(synced, created_at);
+
+-- Audio quality versions for HLS
+CREATE TABLE audio_qualities (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    quality VARCHAR(20) NOT NULL,
+    bitrate INT NOT NULL,
+    file_path TEXT NOT NULL,
+    file_size BIGINT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (track_id, quality)
+);
+
+CREATE INDEX idx_audio_qualities_track ON audio_qualities(track_id);
+
+-- +goose Down
+
+DROP TABLE IF EXISTS audio_qualities CASCADE;
+DROP TABLE IF EXISTS search_sync CASCADE;
+DROP TABLE IF EXISTS ws_sessions CASCADE;
+DROP TABLE IF EXISTS playlist_collaborators CASCADE;
+DROP TABLE IF EXISTS user_sessions CASCADE;
+DROP TABLE IF EXISTS track_similarities CASCADE;
+DROP TABLE IF EXISTS user_similarities CASCADE;
+DROP TABLE IF EXISTS user_affinities CASCADE;
+DROP TABLE IF EXISTS track_moods CASCADE;
+DROP TABLE IF EXISTS track_embeddings CASCADE;
+DROP TABLE IF EXISTS transcode_jobs CASCADE;
+DROP TABLE IF EXISTS creator_daily_stats CASCADE;
+DROP TABLE IF EXISTS creator_stats CASCADE;
+DROP TABLE IF EXISTS content_flags CASCADE;
+DROP TABLE IF EXISTS content_reports CASCADE;
+DROP TABLE IF EXISTS reactions CASCADE;
+DROP TABLE IF EXISTS activities CASCADE;
+DROP TABLE IF EXISTS user_follows CASCADE;
+DROP TABLE IF EXISTS event_outbox CASCADE;
+
+ALTER TABLE users DROP COLUMN IF EXISTS bio;
+ALTER TABLE users DROP COLUMN IF EXISTS location;
+ALTER TABLE users DROP COLUMN IF EXISTS website;
+ALTER TABLE users DROP COLUMN IF EXISTS social_links;
+ALTER TABLE users DROP COLUMN IF EXISTS preferences;
+ALTER TABLE users DROP COLUMN IF EXISTS header_image_url;
+ALTER TABLE tracks DROP COLUMN IF EXISTS hls_path;
+ALTER TABLE tracks DROP COLUMN IF EXISTS has_hls;
+ALTER TABLE tracks DROP COLUMN IF EXISTS hls_qualities;
+ALTER TABLE playlists DROP COLUMN IF EXISTS is_collaborative;
+ALTER TABLE playlists DROP COLUMN IF EXISTS snapshot_id;
+
+-- +goose Up
+-- +goose StatementBegin
+
+-- AI generation log for tracking playlist generation requests
+CREATE TABLE IF NOT EXISTS ai_generation_log (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    playlist_id UUID REFERENCES playlists(id) ON DELETE SET NULL,
+    prompt TEXT NOT NULL DEFAULT '',
+    track_count INT NOT NULL DEFAULT 0,
+    model_used VARCHAR(100) NOT NULL DEFAULT 'v1',
+    latency_ms INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_generation_log_user_id ON ai_generation_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_generation_log_created_at ON ai_generation_log(created_at);
+
+-- Smart playlists for saved AI playlist configurations
+CREATE TABLE IF NOT EXISTS smart_playlists (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    query_config TEXT NOT NULL DEFAULT '{}',
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_smart_playlists_user_id ON smart_playlists(user_id);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP TABLE IF EXISTS smart_playlists CASCADE;
+DROP TABLE IF EXISTS ai_generation_log CASCADE;
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS contributions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    contributor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    contribution_type VARCHAR(50) NOT NULL,
+    target_type VARCHAR(20) NOT NULL,
+    target_id UUID NOT NULL,
+    locale VARCHAR(10),
+    data JSONB NOT NULL,
+    summary TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    ai_verdict VARCHAR(20),
+    ai_confidence DOUBLE PRECISION,
+    ai_reason TEXT,
+    moderator_id UUID REFERENCES users(id),
+    moderator_note TEXT,
+    version INT NOT NULL DEFAULT 1,
+    is_minor BOOLEAN NOT NULL DEFAULT false,
+    xp_awarded INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    decided_at TIMESTAMPTZ,
+    applied_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_contributions_status ON contributions (status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_contributions_type ON contributions (contribution_type, status);
+CREATE INDEX IF NOT EXISTS idx_contributions_target ON contributions (target_type, target_id);
+CREATE INDEX IF NOT EXISTS idx_contributions_contributor ON contributions (contributor_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_contributions_moderator ON contributions (moderator_id) WHERE moderator_id IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS contribution_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    contribution_id UUID NOT NULL REFERENCES contributions(id) ON DELETE CASCADE,
+    data JSONB NOT NULL,
+    previous_data JSONB,
+    changed_by UUID NOT NULL REFERENCES users(id),
+    change_type VARCHAR(20) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_contribution_history_contribution ON contribution_history (contribution_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_contribution_history_changed_by ON contribution_history (changed_by, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS content_versions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    target_type VARCHAR(20) NOT NULL,
+    target_id UUID NOT NULL,
+    version INT NOT NULL,
+    data JSONB NOT NULL,
+    applied_by UUID NOT NULL REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (target_type, target_id, version)
+);
+
+CREATE INDEX IF NOT EXISTS idx_content_versions_target ON content_versions (target_type, target_id, version DESC);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS content_versions;
+DROP TABLE IF EXISTS contribution_history;
+DROP TABLE IF EXISTS contributions;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS xp_transactions (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount INT NOT NULL,
+    balance_after INT NOT NULL,
+    source VARCHAR(50) NOT NULL,
+    metadata JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_xp_user ON xp_transactions (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_xp_source ON xp_transactions (source, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_xp_created ON xp_transactions (created_at DESC);
+
+CREATE TABLE IF NOT EXISTS level_definitions (
+    level INT PRIMARY KEY,
+    xp_required BIGINT NOT NULL,
+    title VARCHAR(100) NOT NULL,
+    title_persian VARCHAR(100),
+    privileges JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS badges (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    icon_url TEXT,
+    category VARCHAR(20) NOT NULL,
+    rarity VARCHAR(20) NOT NULL DEFAULT 'common',
+    criteria JSONB NOT NULL DEFAULT '{}',
+    xp_reward INT NOT NULL DEFAULT 0,
+    is_hidden BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_badges (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    badge_id UUID NOT NULL REFERENCES badges(id) ON DELETE CASCADE,
+    earned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    is_displayed BOOLEAN NOT NULL DEFAULT true,
+    PRIMARY KEY (user_id, badge_id)
+);
+
+CREATE TABLE IF NOT EXISTS daily_challenges (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    challenge_type VARCHAR(50) NOT NULL,
+    target_count INT NOT NULL,
+    xp_reward INT NOT NULL,
+    badge_reward_id UUID REFERENCES badges(id),
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    valid_from DATE NOT NULL,
+    valid_until DATE NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_challenges_active ON daily_challenges (is_active, valid_from, valid_until);
+
+CREATE TABLE IF NOT EXISTS user_challenges (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    challenge_id UUID NOT NULL REFERENCES daily_challenges(id) ON DELETE CASCADE,
+    progress INT NOT NULL DEFAULT 0,
+    is_completed BOOLEAN NOT NULL DEFAULT false,
+    completed_at TIMESTAMPTZ,
+    PRIMARY KEY (user_id, challenge_id)
+);
+
+CREATE TABLE IF NOT EXISTS leaderboard_snapshots (
+    id BIGSERIAL,
+    leaderboard_type VARCHAR(30) NOT NULL,
+    rank INT NOT NULL,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    score BIGINT NOT NULL,
+    snapshot_date DATE NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (leaderboard_type, snapshot_date, rank)
+);
+
+CREATE INDEX IF NOT EXISTS idx_leaderboard_snapshot ON leaderboard_snapshots (leaderboard_type, snapshot_date, rank);
+
+-- Seed level definitions
+INSERT INTO level_definitions (level, xp_required, title, title_persian, privileges) VALUES
+    (1, 0, 'Novice Listener', 'شنونده تازه‌کار', '{"create_playlist": true}'::jsonb),
+    (2, 100, 'Curious Ear', 'گوش کنجکاو', '{"create_playlist": true}'::jsonb),
+    (3, 520, 'Melody Seeker', 'جوینده ملودی', '{"create_playlist": true, "upload_avatar": true}'::jsonb),
+    (4, 1600, 'Rhythm Catcher', 'ریتم‌گیر', '{"create_playlist": true, "upload_avatar": true}'::jsonb),
+    (5, 3900, 'Harmony Lover', 'عاشق هارمونی', '{"create_playlist": true, "upload_avatar": true, "collaborative_playlist": true}'::jsonb),
+    (6, 8000, 'Tone Explorer', 'کاوشگر نغمه', '{}'::jsonb),
+    (7, 14000, 'Music Wanderer', 'سرگردان موسیقی', '{}'::jsonb),
+    (8, 22000, 'Note Collector', 'جمع‌آورنده نت', '{}'::jsonb),
+    (9, 33000, 'Groove Master', 'استاد گروو', '{"contribute_lyrics": true}'::jsonb),
+    (10, 48000, 'Beat Connoisseur', 'خبره ضرب‌آهنگ', '{"contribute_lyrics": true}'::jsonb),
+    (11, 66000, 'Vocal Virtuoso', 'استاد آواز', '{"moderate_content": true}'::jsonb),
+    (12, 88000, 'Lyric Sage', 'فرزانه شعر', '{"moderate_content": true}'::jsonb),
+    (13, 115000, 'Dastgah Navigator', 'راهبر دستگاه', '{"moderate_content": true, "direct_publish": true}'::jsonb),
+    (14, 147000, 'Genre Weaver', 'بافنده سبک', '{"direct_publish": true}'::jsonb),
+    (15, 185000, 'Orchestra Commander', 'فرمانده ارکستر', '{"direct_publish": true}'::jsonb),
+    (16, 230000, 'Melody Architect', 'معمار ملودی', '{"create_club": true}'::jsonb),
+    (17, 283000, 'Music Scholar', 'دانشور موسیقی', '{"create_club": true}'::jsonb),
+    (18, 345000, 'Sound Alchemist', 'کیمیاگر صدا', '{"create_club": true, "veto_moderation": true}'::jsonb),
+    (19, 417000, 'Legendary Listener', 'شنونده افسانه‌ای', '{"veto_moderation": true}'::jsonb),
+    (20, 500000, 'Persian Gem', 'گوهر پارسی', '{"veto_moderation": true, "all": true}'::jsonb);
+
+-- Seed badges
+INSERT INTO badges (id, name, description, category, rarity, criteria, xp_reward) VALUES
+    (gen_random_uuid(), 'First Stream', 'Stream your first track', 'listener', 'common', '{"type": "stream_count", "target": 1}', 10),
+    (gen_random_uuid(), 'Night Owl', 'Stream 100 tracks between midnight and 5am', 'listener', 'rare', '{"type": "night_streams", "target": 100}', 100),
+    (gen_random_uuid(), 'Explorer', 'Listen to tracks from 20 different genres', 'listener', 'epic', '{"type": "genre_count", "target": 20}', 250),
+    (gen_random_uuid(), 'Marathon', 'Stream 1000 tracks in a single week', 'listener', 'legendary', '{"type": "weekly_streams", "target": 1000}', 500),
+    (gen_random_uuid(), 'Wordsmith', 'Submit 10 approved lyrics contributions', 'contributor', 'rare', '{"type": "lyrics_approved", "target": 10}', 150),
+    (gen_random_uuid(), 'Polyglot', 'Submit 5 approved translations', 'contributor', 'epic', '{"type": "translations_approved", "target": 5}', 200),
+    (gen_random_uuid(), 'Curator', 'Create 10 playlists', 'contributor', 'common', '{"type": "playlists_created", "target": 10}', 50),
+    (gen_random_uuid(), 'Networker', 'Gain 100 followers', 'social', 'rare', '{"type": "followers", "target": 100}', 150),
+    (gen_random_uuid(), 'Party Host', 'Host 10 listening parties', 'social', 'epic', '{"type": "parties_hosted", "target": 10}', 300),
+    (gen_random_uuid(), 'Club President', 'Create a club with 100+ members', 'social', 'legendary', '{"type": "club_members", "target": 100}', 500),
+    (gen_random_uuid(), 'Chart Climber', 'Reach top 10 on the weekly leaderboard', 'special', 'epic', '{"type": "leaderboard_rank", "target": 10}', 200),
+    (gen_random_uuid(), 'Community Hero', 'Complete 50 moderation reviews', 'special', 'legendary', '{"type": "moderation_reviews", "target": 50}', 1000);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS leaderboard_snapshots;
+DROP TABLE IF EXISTS user_challenges;
+DROP TABLE IF EXISTS daily_challenges;
+DROP TABLE IF EXISTS user_badges;
+DROP TABLE IF EXISTS badges;
+DROP TABLE IF EXISTS level_definitions;
+DROP TABLE IF EXISTS xp_transactions;
+
+-- +goose StatementEnd
+-- +goose Up
+-- Social features: Listening Parties, Live Rooms, Music Clubs, Discussions
+-- Migration 000020
+
+-- ============================================================
+-- LISTENING PARTIES
+-- ============================================================
+CREATE TABLE IF NOT EXISTS listening_parties (
+                                                 id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    host_id        UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title          VARCHAR(255) NOT NULL,
+    description    TEXT,
+    cover_url      TEXT,
+    is_public      BOOLEAN NOT NULL DEFAULT true,
+    status         VARCHAR(20) NOT NULL DEFAULT 'active'
+    CHECK (status IN ('active', 'paused', 'ended')),
+    current_track_id   UUID REFERENCES tracks(id) ON DELETE SET NULL,
+    current_position_ms BIGINT DEFAULT 0,
+    started_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    ended_at       TIMESTAMPTZ,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+CREATE TABLE IF NOT EXISTS listening_party_participants (
+                                                            id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    party_id   UUID NOT NULL REFERENCES listening_parties(id) ON DELETE CASCADE,
+    user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    joined_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    left_at    TIMESTAMPTZ,
+    is_active  BOOLEAN NOT NULL DEFAULT true,
+    UNIQUE(party_id, user_id)
+    );
+
+CREATE INDEX idx_listening_parties_host ON listening_parties(host_id);
+CREATE INDEX idx_listening_parties_status ON listening_parties(status);
+CREATE INDEX idx_lpp_party ON listening_party_participants(party_id);
+CREATE INDEX idx_lpp_user ON listening_party_participants(user_id);
+CREATE INDEX idx_lpp_active ON listening_party_participants(party_id, is_active) WHERE is_active = true;
+
+-- ============================================================
+-- LIVE ROOMS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS live_rooms (
+                                          id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    host_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title           VARCHAR(255) NOT NULL,
+    description     TEXT,
+    cover_url       TEXT,
+    is_public       BOOLEAN NOT NULL DEFAULT true,
+    status          VARCHAR(20) NOT NULL DEFAULT 'live'
+    CHECK (status IN ('live', 'ended')),
+    current_track_id    UUID REFERENCES tracks(id) ON DELETE SET NULL,
+    listener_count  INT NOT NULL DEFAULT 0,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    ended_at        TIMESTAMPTZ
+    );
+
+CREATE TABLE IF NOT EXISTS live_room_participants (
+                                                      id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id   UUID NOT NULL REFERENCES live_rooms(id) ON DELETE CASCADE,
+    user_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role      VARCHAR(20) NOT NULL DEFAULT 'listener'
+    CHECK (role IN ('host', 'co_host', 'speaker', 'listener')),
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    left_at   TIMESTAMPTZ,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    UNIQUE(room_id, user_id)
+    );
+
+CREATE TABLE IF NOT EXISTS live_room_queue (
+                                               id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id    UUID NOT NULL REFERENCES live_rooms(id) ON DELETE CASCADE,
+    track_id   UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    added_by   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    position   INT NOT NULL DEFAULT 0,
+    status     VARCHAR(20) NOT NULL DEFAULT 'queued'
+    CHECK (status IN ('queued', 'playing', 'played', 'skipped')),
+    played_at  TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+CREATE INDEX idx_live_rooms_host ON live_rooms(host_id);
+CREATE INDEX idx_live_rooms_status ON live_rooms(status);
+CREATE INDEX idx_lrp_room ON live_room_participants(room_id);
+CREATE INDEX idx_lrp_user ON live_room_participants(user_id);
+CREATE INDEX idx_lrq_room ON live_room_queue(room_id, position);
+
+-- ============================================================
+-- MUSIC CLUBS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS music_clubs (
+                                           id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name        VARCHAR(255) NOT NULL,
+    description TEXT,
+    cover_url   TEXT,
+    created_by  UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    is_public   BOOLEAN NOT NULL DEFAULT true,
+    max_members INT NOT NULL DEFAULT 1000,
+    member_count INT NOT NULL DEFAULT 0,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+CREATE TABLE IF NOT EXISTS music_club_members (
+                                                  id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    club_id   UUID NOT NULL REFERENCES music_clubs(id) ON DELETE CASCADE,
+    user_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role      VARCHAR(20) NOT NULL DEFAULT 'member'
+    CHECK (role IN ('admin', 'moderator', 'member')),
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(club_id, user_id)
+    );
+
+CREATE TABLE IF NOT EXISTS music_club_posts (
+                                                id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    club_id    UUID NOT NULL REFERENCES music_clubs(id) ON DELETE CASCADE,
+    user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content    TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+CREATE INDEX idx_music_clubs_creator ON music_clubs(created_by);
+CREATE INDEX idx_mcm_club ON music_club_members(club_id);
+CREATE INDEX idx_mcm_user ON music_club_members(user_id);
+CREATE INDEX idx_mcp_club ON music_club_posts(club_id);
+
+-- ============================================================
+-- DISCUSSIONS (track/album/playlist comments)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS discussions (
+                                           id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_type VARCHAR(50) NOT NULL
+    CHECK (target_type IN ('track', 'album', 'playlist', 'artist')),
+    target_id   UUID NOT NULL,
+    content     TEXT NOT NULL,
+    parent_id   UUID REFERENCES discussions(id) ON DELETE CASCADE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+CREATE INDEX idx_discussions_target ON discussions(target_type, target_id);
+CREATE INDEX idx_discussions_user ON discussions(user_id);
+CREATE INDEX idx_discussions_parent ON discussions(parent_id);
+
+-- ============================================================
+-- TRACK RATINGS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS track_ratings (
+                                             id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    track_id   UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    rating     INT NOT NULL CHECK (rating >= 1 AND rating <= 10),
+    review     TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(user_id, track_id)
+    );
+
+CREATE INDEX idx_track_ratings_track ON track_ratings(track_id);
+CREATE INDEX idx_track_ratings_user ON track_ratings(user_id);
+
+-- +goose Down
+DROP TABLE IF EXISTS track_ratings;
+DROP TABLE IF EXISTS discussions;
+DROP TABLE IF EXISTS music_club_posts;
+DROP TABLE IF EXISTS music_club_members;
+DROP TABLE IF EXISTS music_clubs;
+DROP TABLE IF EXISTS live_room_queue;
+DROP TABLE IF EXISTS live_room_participants;
+DROP TABLE IF EXISTS live_rooms;
+DROP TABLE IF EXISTS listening_party_participants;
+DROP TABLE IF EXISTS listening_parties;-- +goose Up
+-- Moderation enhancements: audit log, resolution notes, moderation queue metadata
+-- Migration 000021
+
+-- ============================================================
+-- MODERATION ACTIONS (audit log for all moderation activity)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS moderation_actions (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    report_id       UUID REFERENCES content_reports(id) ON DELETE SET NULL,
+    moderator_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    action          VARCHAR(50) NOT NULL,
+    target_id       VARCHAR(255) NOT NULL,
+    target_type     VARCHAR(50) NOT NULL,
+    previous_status VARCHAR(20),
+    new_status      VARCHAR(20),
+    note            TEXT,
+    metadata        JSONB DEFAULT '{}',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_mod_actions_report    ON moderation_actions(report_id);
+CREATE INDEX idx_mod_actions_moderator ON moderation_actions(moderator_id);
+CREATE INDEX idx_mod_actions_target    ON moderation_actions(target_id, target_type);
+CREATE INDEX idx_mod_actions_created   ON moderation_actions(created_at DESC);
+
+-- ============================================================
+-- Add resolution_note to content_reports
+-- ============================================================
+ALTER TABLE content_reports ADD COLUMN IF NOT EXISTS resolution_note TEXT;
+
+-- Populate initial resolution notes for existing resolved reports
+UPDATE content_reports SET resolution_note = 'Migrated from legacy moderation' WHERE status != 'pending' AND resolution_note IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_reports_status_created ON content_reports(status, created_at DESC);
+
+-- +goose Down
+DROP TABLE IF EXISTS moderation_actions CASCADE;
+ALTER TABLE content_reports DROP COLUMN IF EXISTS resolution_note;
+DROP INDEX IF EXISTS idx_reports_status_created;
+-- +goose Up
+-- Payment gateways, tips, and invoice support
+-- Migration 000022
+
+-- ============================================================
+-- TIPS (creator tipping / donations)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS tips (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sender_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    artist_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    track_id        UUID REFERENCES tracks(id) ON DELETE SET NULL,
+    amount_cents    BIGINT NOT NULL CHECK (amount_cents > 0),
+    currency        VARCHAR(10) NOT NULL DEFAULT 'IRR',
+    message         TEXT,
+    status          VARCHAR(20) NOT NULL DEFAULT 'pending',
+    provider        VARCHAR(50),
+    provider_pay_id VARCHAR(255),
+    paid_at         TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_tips_sender   ON tips(sender_id);
+CREATE INDEX idx_tips_artist   ON tips(artist_id);
+CREATE INDEX idx_tips_status   ON tips(status);
+
+-- ============================================================
+-- PAYMENT ATTEMPTS (gateway transaction log)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS payment_attempts (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount_cents    BIGINT NOT NULL,
+    currency        VARCHAR(10) NOT NULL DEFAULT 'IRR',
+    provider        VARCHAR(50) NOT NULL,
+    provider_pay_id VARCHAR(255),
+    authority       VARCHAR(255),
+    status          VARCHAR(20) NOT NULL DEFAULT 'pending',
+    purpose         VARCHAR(50) NOT NULL,
+    target_id       UUID,
+    target_type     VARCHAR(50),
+    description     TEXT,
+    failure_reason  TEXT,
+    redirect_url    TEXT,
+    paid_at         TIMESTAMPTZ,
+    expires_at      TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_pay_attempts_user   ON payment_attempts(user_id);
+CREATE INDEX idx_pay_attempts_status ON payment_attempts(status);
+CREATE INDEX idx_pay_attempts_provider ON payment_attempts(provider);
+
+-- ============================================================
+-- Seed payment gateway config (loaded as reference data)
+-- ============================================================
+INSERT INTO plans (code, name, description, price_cents, currency, interval, is_premium, is_active, features)
+VALUES
+    ('premium_monthly', 'Premium Monthly', 'Ad-free, high quality audio, offline downloads, unlimited skips',
+     99900, 'IRR', 'monthly', TRUE, TRUE,
+     '["ad_free","high_quality_audio","offline_downloads","unlimited_skips","early_access"]'::jsonb)
+ON CONFLICT (code) DO UPDATE SET
+    is_active = TRUE,
+    price_cents = 99900,
+    description = 'Ad-free, high quality audio, offline downloads, unlimited skips',
+    features = '["ad_free","high_quality_audio","offline_downloads","unlimited_skips","early_access"]'::jsonb,
+    updated_at = NOW();
+
+INSERT INTO plans (code, name, description, price_cents, currency, interval, is_premium, is_active, features)
+VALUES
+    ('premium_yearly', 'Premium Yearly', 'All premium features at a discounted annual rate',
+     599000, 'IRR', 'yearly', TRUE, TRUE,
+     '["ad_free","high_quality_audio","offline_downloads","unlimited_skips","early_access","yearly_discount"]'::jsonb)
+ON CONFLICT (code) DO UPDATE SET
+    is_active = TRUE,
+    price_cents = 599000,
+    description = 'All premium features at a discounted annual rate',
+    features = '["ad_free","high_quality_audio","offline_downloads","unlimited_skips","early_access","yearly_discount"]'::jsonb,
+    updated_at = NOW();
+
+-- +goose Down
+DROP TABLE IF EXISTS tips CASCADE;
+DROP TABLE IF EXISTS payment_attempts CASCADE;
+-- +goose Up
+-- +goose StatementBegin
+
+-- Add is_collaborative column to playlists if not exists
+ALTER TABLE playlists ADD COLUMN IF NOT EXISTS is_collaborative BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Create playlist_collaborators table
+CREATE TABLE IF NOT EXISTS playlist_collaborators (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    playlist_id UUID NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    added_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(playlist_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_playlist_collaborators_playlist_id
+    ON playlist_collaborators(playlist_id);
+
+CREATE INDEX IF NOT EXISTS idx_playlist_collaborators_user_id
+    ON playlist_collaborators(user_id);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS playlist_collaborators;
+ALTER TABLE playlists DROP COLUMN IF EXISTS is_collaborative;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE ingestion_drafts (
+    id TEXT PRIMARY KEY,
+    uploaded_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    original_filename TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    file_size BIGINT NOT NULL DEFAULT 0,
+    duration_seconds DOUBLE PRECISION,
+    bitrate INTEGER,
+    format TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'enriching', 'review', 'accepted', 'rejected')),
+    extracted_metadata JSONB NOT NULL DEFAULT '{}',
+    enriched_metadata JSONB,
+    final_metadata JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_ingestion_drafts_uploaded_by ON ingestion_drafts(uploaded_by);
+CREATE INDEX idx_ingestion_drafts_status ON ingestion_drafts(status);
+CREATE INDEX idx_ingestion_drafts_created_at ON ingestion_drafts(created_at DESC);
+
+CREATE TABLE ingestion_draft_assets (
+    id TEXT PRIMARY KEY,
+    draft_id TEXT NOT NULL REFERENCES ingestion_drafts(id) ON DELETE CASCADE,
+    asset_type TEXT NOT NULL CHECK (asset_type IN ('cover', 'audio')),
+    url TEXT NOT NULL,
+    source TEXT NOT NULL CHECK (source IN ('embedded', 'uploaded', 'fetched')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_ingestion_draft_assets_draft_id ON ingestion_draft_assets(draft_id);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS ingestion_draft_assets;
+DROP TABLE IF EXISTS ingestion_drafts;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+ALTER TABLE ingestion_drafts
+    ADD COLUMN IF NOT EXISTS artist_id UUID REFERENCES artists(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS album_id  UUID REFERENCES albums(id)  ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS track_id  UUID REFERENCES tracks(id)  ON DELETE SET NULL;
+
+ALTER TABLE ingestion_drafts
+    DROP CONSTRAINT IF EXISTS ingestion_drafts_status_check;
+
+ALTER TABLE ingestion_drafts
+    ADD CONSTRAINT ingestion_drafts_status_check
+        CHECK (status IN ('pending', 'enriching', 'review', 'accepted', 'rejected', 'published'));
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+ALTER TABLE ingestion_drafts
+    DROP COLUMN IF EXISTS track_id,
+    DROP COLUMN IF EXISTS album_id,
+    DROP COLUMN IF EXISTS artist_id;
+
+ALTER TABLE ingestion_drafts
+    DROP CONSTRAINT IF EXISTS ingestion_drafts_status_check;
+
+ALTER TABLE ingestion_drafts
+    ADD CONSTRAINT ingestion_drafts_status_check
+        CHECK (status IN ('pending', 'enriching', 'review', 'accepted', 'rejected'));
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+ALTER TABLE ingestion_drafts
+    ADD COLUMN IF NOT EXISTS file_hash TEXT;
+
+ALTER TABLE ingestion_drafts
+    ADD COLUMN IF NOT EXISTS stale BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE ingestion_drafts
+    DROP CONSTRAINT IF EXISTS ingestion_drafts_status_check;
+
+ALTER TABLE ingestion_drafts
+    ADD CONSTRAINT ingestion_drafts_status_check
+        CHECK (status IN ('pending', 'enriching', 'review', 'accepted', 'rejected', 'published', 'enrichment_failed'));
+
+CREATE INDEX IF NOT EXISTS idx_ingestion_drafts_file_hash ON ingestion_drafts(file_hash);
+CREATE INDEX IF NOT EXISTS idx_ingestion_drafts_stale ON ingestion_drafts(stale) WHERE stale = TRUE;
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+ALTER TABLE ingestion_drafts
+    DROP COLUMN IF EXISTS file_hash,
+    DROP COLUMN IF EXISTS stale;
+
+ALTER TABLE ingestion_drafts
+    DROP CONSTRAINT IF EXISTS ingestion_drafts_status_check;
+
+ALTER TABLE ingestion_drafts
+    ADD CONSTRAINT ingestion_drafts_status_check
+        CHECK (status IN ('pending', 'enriching', 'review', 'accepted', 'rejected', 'published'));
+
+-- +goose StatementEnd
+-- +goose Up
+ALTER TABLE creator_daily_stats ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+-- +goose Down
+ALTER TABLE creator_daily_stats DROP COLUMN IF EXISTS updated_at;
+-- +goose Up
+-- +goose StatementBegin
+
+ALTER TABLE ingestion_draft_assets
+DROP CONSTRAINT IF EXISTS ingestion_draft_assets_asset_type_check;
+
+ALTER TABLE ingestion_draft_assets
+ADD CONSTRAINT ingestion_draft_assets_asset_type_check
+CHECK (asset_type IN ('cover', 'track_cover', 'album_cover', 'artist_image', 'audio'));
+
+ALTER TABLE ingestion_draft_assets
+DROP CONSTRAINT IF EXISTS ingestion_draft_assets_source_check;
+
+ALTER TABLE ingestion_draft_assets
+ADD CONSTRAINT ingestion_draft_assets_source_check
+CHECK (source IN ('embedded', 'uploaded', 'fetched', 'enrichment'));
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+ALTER TABLE ingestion_draft_assets
+DROP CONSTRAINT IF EXISTS ingestion_draft_assets_asset_type_check;
+
+ALTER TABLE ingestion_draft_assets
+ADD CONSTRAINT ingestion_draft_assets_asset_type_check
+CHECK (asset_type IN ('cover', 'audio'));
+
+ALTER TABLE ingestion_draft_assets
+DROP CONSTRAINT IF EXISTS ingestion_draft_assets_source_check;
+
+ALTER TABLE ingestion_draft_assets
+ADD CONSTRAINT ingestion_draft_assets_source_check
+CHECK (source IN ('embedded', 'uploaded', 'fetched'));
+
+-- +goose StatementEnd
+-- +goose Up
+-- Democratic voting queue for live rooms and listening parties
+-- Migration 000029
+
+CREATE TABLE IF NOT EXISTS room_queue_candidates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES live_rooms(id) ON DELETE CASCADE,
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    suggested_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    vote_count INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(room_id, track_id)
+);
+CREATE INDEX idx_room_queue_candidates_room_votes ON room_queue_candidates(room_id, vote_count DESC, created_at ASC);
+
+CREATE TABLE IF NOT EXISTS room_queue_votes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    candidate_id UUID NOT NULL REFERENCES room_queue_candidates(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(candidate_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS room_now_playing (
+    room_id UUID PRIMARY KEY REFERENCES live_rooms(id) ON DELETE CASCADE,
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    suggested_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    source TEXT NOT NULL CHECK (source IN ('vote', 'autofill'))
+);
+
+-- +goose Down
+DROP TABLE IF EXISTS room_now_playing;
+DROP TABLE IF EXISTS room_queue_votes;
+DROP TABLE IF EXISTS room_queue_candidates;
+-- +goose Up
+-- Live Room Stage & Raise-Hand system
+-- Migration 000030
+
+CREATE TABLE IF NOT EXISTS room_hand_raises (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES live_rooms(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','denied')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(room_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS room_stage_members (
+    room_id UUID NOT NULL REFERENCES live_rooms(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK (role IN ('host','speaker','listener')),
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    muted BOOLEAN NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (room_id, user_id)
+);
+
+CREATE INDEX idx_room_hand_raises_room ON room_hand_raises(room_id, status);
+CREATE INDEX idx_room_stage_members_room ON room_stage_members(room_id);
+
+-- +goose Down
+DROP TABLE IF EXISTS room_stage_members;
+DROP TABLE IF EXISTS room_hand_raises;
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE import_jobs (
+    id              TEXT PRIMARY KEY,
+    url             TEXT NOT NULL,
+    source          TEXT NOT NULL DEFAULT '',
+    query           TEXT NOT NULL DEFAULT '',
+    uploaded_by     UUID NOT NULL REFERENCES users(id),
+    status          TEXT NOT NULL DEFAULT 'queued'
+                    CHECK (status IN ('queued','resolving','downloading','extracting','uploading','complete','failed')),
+    progress        INTEGER DEFAULT 0,
+    stage           TEXT DEFAULT '',
+    draft_id        TEXT REFERENCES ingestion_drafts(id),
+    error_message   TEXT DEFAULT '',
+    created_at      TIMESTAMPTZ DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_import_jobs_status ON import_jobs(status);
+CREATE INDEX idx_import_jobs_user ON import_jobs(uploaded_by);
+CREATE INDEX idx_import_jobs_created ON import_jobs(created_at DESC);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS import_jobs;
+
+-- +goose StatementEnd
+-- +goose Up
+-- Add slug, genre, playlist_id to music_clubs
+ALTER TABLE music_clubs ADD COLUMN IF NOT EXISTS slug TEXT NOT NULL DEFAULT '';
+ALTER TABLE music_clubs ADD COLUMN IF NOT EXISTS genre TEXT;
+ALTER TABLE music_clubs ADD COLUMN IF NOT EXISTS playlist_id UUID REFERENCES playlists(id) ON DELETE SET NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_music_clubs_slug ON music_clubs(slug) WHERE slug != '';
+CREATE INDEX IF NOT EXISTS idx_music_clubs_genre ON music_clubs(genre);
+
+-- +goose Down
+DROP INDEX IF EXISTS idx_music_clubs_genre;
+DROP INDEX IF EXISTS idx_music_clubs_slug;
+ALTER TABLE music_clubs DROP COLUMN IF EXISTS playlist_id;
+ALTER TABLE music_clubs DROP COLUMN IF EXISTS genre;
+ALTER TABLE music_clubs DROP COLUMN IF EXISTS slug;
+-- +goose Up
+CREATE TABLE IF NOT EXISTS club_discussions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    club_id UUID NOT NULL REFERENCES music_clubs(id) ON DELETE CASCADE,
+    author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    reply_count INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_club_discussions_club ON club_discussions(club_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS club_discussion_replies (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    discussion_id UUID NOT NULL REFERENCES club_discussions(id) ON DELETE CASCADE,
+    author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    body TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_club_discussion_replies_discussion ON club_discussion_replies(discussion_id, created_at ASC);
+
+-- +goose Down
+DROP TABLE IF EXISTS club_discussion_replies;
+DROP TABLE IF EXISTS club_discussions;
+-- +goose Up
+-- +goose StatementBegin
+
+ALTER TABLE lyrics
+    ADD COLUMN IF NOT EXISTS source VARCHAR(20) NOT NULL DEFAULT 'manual',
+    ADD COLUMN IF NOT EXISTS confidence_score REAL;
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+ALTER TABLE lyrics
+    DROP COLUMN IF EXISTS source,
+    DROP COLUMN IF EXISTS confidence_score;
+
+-- +goose StatementEnd
+-- +goose Up
+CREATE TABLE IF NOT EXISTS radio_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    seed_track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    seed_type TEXT NOT NULL DEFAULT 'track' CHECK (seed_type IN ('track', 'artist')),
+    played_track_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_active_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_radio_sessions_user ON radio_sessions(user_id, last_active_at DESC);
+
+-- +goose Down
+DROP TABLE IF EXISTS radio_sessions;
+-- +goose Up
+-- Enrich listening_history with signal classification columns
+ALTER TABLE listening_history ADD COLUMN IF NOT EXISTS session_id UUID;
+ALTER TABLE listening_history ADD COLUMN IF NOT EXISTS played_duration_ms BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE listening_history ADD COLUMN IF NOT EXISTS track_duration_ms BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE listening_history ADD COLUMN IF NOT EXISTS completion_percent NUMERIC(5,4) NOT NULL DEFAULT 0;
+ALTER TABLE listening_history ADD COLUMN IF NOT EXISTS signal_type TEXT NOT NULL DEFAULT '';
+ALTER TABLE listening_history ADD COLUMN IF NOT EXISTS is_explicit_like BOOLEAN NOT NULL DEFAULT false;
+
+CREATE INDEX IF NOT EXISTS idx_listening_history_signal_type
+    ON listening_history(signal_type);
+CREATE INDEX IF NOT EXISTS idx_listening_history_session
+    ON listening_history(session_id);
+
+-- Taste profiles table for aggregated user preference data
+CREATE TABLE IF NOT EXISTS taste_profiles (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    top_genre_ids UUID[] NOT NULL DEFAULT '{}',
+    top_artist_ids UUID[] NOT NULL DEFAULT '{}',
+    seed_track_ids UUID[] NOT NULL DEFAULT '{}',
+    avg_tempo_preference NUMERIC(6,2),
+    onboarding_genre_ids UUID[] NOT NULL DEFAULT '{}',
+    last_computed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- +goose Down
+DROP TABLE IF EXISTS taste_profiles;
+ALTER TABLE listening_history DROP COLUMN IF EXISTS is_explicit_like;
+ALTER TABLE listening_history DROP COLUMN IF EXISTS signal_type;
+ALTER TABLE listening_history DROP COLUMN IF EXISTS completion_percent;
+ALTER TABLE listening_history DROP COLUMN IF EXISTS track_duration_ms;
+ALTER TABLE listening_history DROP COLUMN IF EXISTS played_duration_ms;
+ALTER TABLE listening_history DROP COLUMN IF EXISTS session_id;
+-- +goose Up
+CREATE TABLE IF NOT EXISTS discover_weekly_playlists (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    track_ids UUID[] NOT NULL DEFAULT '{}',
+    generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    week_of DATE NOT NULL,
+    PRIMARY KEY (user_id, week_of)
+);
+
+CREATE INDEX IF NOT EXISTS idx_discover_weekly_user_week ON discover_weekly_playlists(user_id, week_of);
+
+-- +goose Down
+DROP TABLE IF EXISTS discover_weekly_playlists;
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS videos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    uploader_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type TEXT NOT NULL CHECK (type IN ('official_mv', 'user_edit')),
+    status TEXT NOT NULL DEFAULT 'processing' CHECK (status IN ('processing','ready','failed')),
+    title TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    raw_video_path TEXT,
+    final_video_path TEXT,
+    thumbnail_path TEXT,
+    duration_ms BIGINT NOT NULL DEFAULT 0,
+    aspect_ratio TEXT NOT NULL DEFAULT '',
+    file_size_bytes BIGINT NOT NULL DEFAULT 0,
+    track_start_ms BIGINT NOT NULL DEFAULT 0,
+    track_end_ms BIGINT NOT NULL DEFAULT 0,
+    view_count BIGINT NOT NULL DEFAULT 0,
+    like_count BIGINT NOT NULL DEFAULT 0,
+    is_public BOOLEAN NOT NULL DEFAULT TRUE,
+    is_approved BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_videos_track_type ON videos(track_id, type, is_approved, is_public);
+CREATE INDEX IF NOT EXISTS idx_videos_uploader ON videos(uploader_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_videos_explore ON videos(is_approved, is_public, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS video_likes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    video_id UUID NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(video_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS track_like_visibility (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    visibility TEXT NOT NULL DEFAULT 'private' CHECK (visibility IN ('public','private')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, track_id)
+);
+
+CREATE TABLE IF NOT EXISTS user_music_status (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    current_track_id UUID REFERENCES tracks(id) ON DELETE SET NULL,
+    visibility TEXT NOT NULL DEFAULT 'private' CHECK (visibility IN ('public','followers','private')),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS user_music_status;
+DROP TABLE IF EXISTS track_like_visibility;
+DROP TABLE IF EXISTS video_likes;
+DROP TABLE IF EXISTS videos;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS media_assets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    media_type       VARCHAR(50) NOT NULL DEFAULT 'audio',
+    storage_provider VARCHAR(50) NOT NULL DEFAULT 'local',
+    bucket           VARCHAR(255),
+    object_key       TEXT NOT NULL,
+    public_url       TEXT,
+
+    original_filename VARCHAR(512),
+    mime_type         VARCHAR(127),
+    file_size         BIGINT,
+    checksum_sha256   CHAR(64),
+
+    duration_seconds INTEGER,
+    width            INTEGER,
+    height           INTEGER,
+
+    metadata         JSONB NOT NULL DEFAULT '{}',
+
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ,
+    deleted_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_media_assets_media_type ON media_assets(media_type);
+CREATE INDEX idx_media_assets_created_by ON media_assets(created_by);
+CREATE INDEX idx_media_assets_deleted_at ON media_assets(deleted_at);
+CREATE INDEX idx_media_assets_storage_provider ON media_assets(storage_provider);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS media_assets;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS playlist_tracks (
+    id          BIGSERIAL PRIMARY KEY,
+    playlist_id UUID NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
+    track_id    UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    position    INTEGER NOT NULL DEFAULT 0,
+    added_by    UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT uq_playlist_tracks_position UNIQUE (playlist_id, position),
+    CONSTRAINT uq_playlist_tracks_track UNIQUE (playlist_id, track_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_playlist_tracks_playlist_id ON playlist_tracks(playlist_id);
+CREATE INDEX IF NOT EXISTS idx_playlist_tracks_track_id ON playlist_tracks(track_id);
+CREATE INDEX IF NOT EXISTS idx_playlist_tracks_position ON playlist_tracks(playlist_id, position);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS playlist_tracks;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS playback_sessions (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    track_id        UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+
+    device_id       VARCHAR(255),
+    device_type     VARCHAR(50),
+    ip_address      INET,
+    user_agent      TEXT,
+
+    started_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    ended_at        TIMESTAMPTZ,
+    duration_played INTEGER NOT NULL DEFAULT 0,
+    completion_rate REAL NOT NULL DEFAULT 0,
+
+    source          VARCHAR(50) DEFAULT 'direct',
+    session_data    JSONB NOT NULL DEFAULT '{}',
+
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_playback_sessions_user_id ON playback_sessions(user_id);
+CREATE INDEX idx_playback_sessions_track_id ON playback_sessions(track_id);
+CREATE INDEX idx_playback_sessions_started_at ON playback_sessions(started_at);
+CREATE INDEX idx_playback_sessions_user_track ON playback_sessions(user_id, track_id);
+CREATE INDEX idx_playback_sessions_source ON playback_sessions(source);
+
+-- Partition by month for performance
+-- Requires pg_partman or manual partition management for production
+-- CREATE TABLE playback_sessions_y2026m01 PARTITION OF playback_sessions
+--     FOR VALUES FROM ('2026-01-01') TO ('2026-02-01');
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS playback_sessions;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+-- Enable pg_trgm extension for fuzzy text search
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- GIN indexes for full-text search on catalog tables
+CREATE INDEX IF NOT EXISTS idx_tracks_title_trgm ON tracks USING GIN (title gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_artists_name_trgm ON artists USING GIN (name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_albums_title_trgm ON albums USING GIN (title gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_playlists_name_trgm ON playlists USING GIN (name gin_trgm_ops);
+
+-- Full-text search vector columns (PostgreSQL tsvector)
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS search_vector tsvector
+    GENERATED ALWAYS AS (
+        to_tsvector('simple', coalesce(title, ''))
+    ) STORED;
+
+ALTER TABLE artists ADD COLUMN IF NOT EXISTS search_vector tsvector
+    GENERATED ALWAYS AS (
+        to_tsvector('simple', coalesce(name, '')) ||
+        to_tsvector('simple', coalesce(bio, ''))
+    ) STORED;
+
+ALTER TABLE albums ADD COLUMN IF NOT EXISTS search_vector tsvector
+    GENERATED ALWAYS AS (
+        to_tsvector('simple', coalesce(title, ''))
+    ) STORED;
+
+-- GIN indexes on search vectors
+CREATE INDEX IF NOT EXISTS idx_tracks_search_vector ON tracks USING GIN (search_vector);
+CREATE INDEX IF NOT EXISTS idx_artists_search_vector ON artists USING GIN (search_vector);
+CREATE INDEX IF NOT EXISTS idx_albums_search_vector ON albums USING GIN (search_vector);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP INDEX IF EXISTS idx_tracks_title_trgm;
+DROP INDEX IF EXISTS idx_artists_name_trgm;
+DROP INDEX IF EXISTS idx_albums_title_trgm;
+DROP INDEX IF EXISTS idx_playlists_name_trgm;
+
+ALTER TABLE tracks DROP COLUMN IF EXISTS search_vector;
+ALTER TABLE artists DROP COLUMN IF EXISTS search_vector;
+ALTER TABLE albums DROP COLUMN IF EXISTS search_vector;
+
+DROP EXTENSION IF EXISTS pg_trgm;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+-- Convert listening_history to a partitioned table by month
+-- First, rename existing table
+ALTER TABLE listening_history RENAME TO listening_history_old;
+
+-- Create partitioned table
+CREATE TABLE listening_history (
+    id          UUID NOT NULL DEFAULT gen_random_uuid(),
+    user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    track_id    UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    played_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    duration    INTEGER NOT NULL DEFAULT 0,
+    source      VARCHAR(50) DEFAULT 'direct',
+    device_id   VARCHAR(255),
+
+    PRIMARY KEY (id, played_at)
+) PARTITION BY RANGE (played_at);
+
+-- Create monthly partitions
+CREATE TABLE listening_history_2026_01 PARTITION OF listening_history
+    FOR VALUES FROM ('2026-01-01') TO ('2026-02-01');
+CREATE TABLE listening_history_2026_02 PARTITION OF listening_history
+    FOR VALUES FROM ('2026-02-01') TO ('2026-03-01');
+CREATE TABLE listening_history_2026_03 PARTITION OF listening_history
+    FOR VALUES FROM ('2026-03-01') TO ('2026-04-01');
+CREATE TABLE listening_history_2026_04 PARTITION OF listening_history
+    FOR VALUES FROM ('2026-04-01') TO ('2026-05-01');
+CREATE TABLE listening_history_2026_05 PARTITION OF listening_history
+    FOR VALUES FROM ('2026-05-01') TO ('2026-06-01');
+CREATE TABLE listening_history_2026_06 PARTITION OF listening_history
+    FOR VALUES FROM ('2026-06-01') TO ('2026-07-01');
+CREATE TABLE listening_history_2026_07 PARTITION OF listening_history
+    FOR VALUES FROM ('2026-07-01') TO ('2026-08-01');
+CREATE TABLE listening_history_2026_08 PARTITION OF listening_history
+    FOR VALUES FROM ('2026-08-01') TO ('2026-09-01');
+CREATE TABLE listening_history_2026_09 PARTITION OF listening_history
+    FOR VALUES FROM ('2026-09-01') TO ('2026-10-01');
+CREATE TABLE listening_history_2026_10 PARTITION OF listening_history
+    FOR VALUES FROM ('2026-10-01') TO ('2026-11-01');
+CREATE TABLE listening_history_2026_11 PARTITION OF listening_history
+    FOR VALUES FROM ('2026-11-01') TO ('2026-12-01');
+CREATE TABLE listening_history_2026_12 PARTITION OF listening_history
+    FOR VALUES FROM ('2026-12-01') TO ('2027-01-01');
+
+-- Default partition for future dates
+CREATE TABLE listening_history_future PARTITION OF listening_history
+    FOR VALUES FROM ('2027-01-01') TO ('2030-01-01');
+
+-- Migrate old data
+INSERT INTO listening_history (id, user_id, track_id, played_at, duration)
+SELECT id, user_id, track_id, played_at, 0 FROM listening_history_old
+ON CONFLICT DO NOTHING;
+
+-- Drop old table
+DROP TABLE IF EXISTS listening_history_old;
+
+-- Create indexes on the partitioned table
+CREATE INDEX idx_listening_history_user_id ON listening_history(user_id);
+CREATE INDEX idx_listening_history_track_id ON listening_history(track_id);
+CREATE INDEX idx_listening_history_played_at ON listening_history(played_at);
+CREATE INDEX idx_listening_history_user_played_at ON listening_history(user_id, played_at DESC);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+-- Rollback: convert back to regular table
+CREATE TABLE listening_history_new (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    track_id    UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    played_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    duration    INTEGER NOT NULL DEFAULT 0,
+    source      VARCHAR(50) DEFAULT 'direct',
+    device_id   VARCHAR(255)
+);
+
+INSERT INTO listening_history_new (id, user_id, track_id, played_at, duration)
+SELECT id, user_id, track_id, played_at, duration FROM listening_history;
+
+DROP TABLE IF EXISTS listening_history CASCADE;
+ALTER TABLE listening_history_new RENAME TO listening_history;
+
+CREATE INDEX idx_listening_history_user_id ON listening_history(user_id);
+CREATE INDEX idx_listening_history_track_id ON listening_history(track_id);
+CREATE INDEX idx_listening_history_played_at ON listening_history(played_at);
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS event_outbox (
+    id            TEXT        PRIMARY KEY,
+    event_type    TEXT        NOT NULL,
+    payload       JSONB       NOT NULL DEFAULT '{}',
+    status        TEXT        NOT NULL DEFAULT 'pending'
+                              CHECK (status IN ('pending', 'processed', 'failed')),
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    processed_at  TIMESTAMPTZ,
+    retry_count   INTEGER     NOT NULL DEFAULT 0,
+    last_error    TEXT,
+    trace_id      TEXT
+);
+
+-- Index for the relay's FetchPending query
+CREATE INDEX IF NOT EXISTS idx_event_outbox_status_created
+    ON event_outbox (status, created_at ASC)
+    WHERE status = 'pending';
+
+-- Periodic cleanup: remove processed events older than 7 days
+CREATE INDEX IF NOT EXISTS idx_event_outbox_cleanup
+    ON event_outbox (processed_at)
+    WHERE status = 'processed';
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS event_outbox;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+-- Step 1: Create track_embeddings_text for OpenAI text embeddings (Go module)
+CREATE TABLE IF NOT EXISTS track_embeddings_text (
+    track_id UUID PRIMARY KEY REFERENCES tracks(id) ON DELETE CASCADE,
+    embedding double precision[] NOT NULL,
+    model_version VARCHAR(100) NOT NULL DEFAULT 'v1',
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_track_embeddings_text_track_id ON track_embeddings_text(track_id);
+
+-- Step 2: Rename existing track_embeddings to track_embeddings_audio (for openl3)
+ALTER TABLE IF EXISTS track_embeddings RENAME TO track_embeddings_audio;
+
+-- Step 3: Add audio-specific columns if missing (they exist in Python model)
+ALTER TABLE IF EXISTS track_embeddings_audio ADD COLUMN IF NOT EXISTS embedding_model VARCHAR(100);
+ALTER TABLE IF EXISTS track_embeddings_audio ADD COLUMN IF NOT EXISTS tempo_bpm double precision;
+ALTER TABLE IF EXISTS track_embeddings_audio ADD COLUMN IF NOT EXISTS genre_ids TEXT[] DEFAULT '{}';
+ALTER TABLE IF EXISTS track_embeddings_audio ADD COLUMN IF NOT EXISTS release_year INT;
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+ALTER TABLE IF EXISTS track_embeddings_audio RENAME TO track_embeddings;
+DROP TABLE IF EXISTS track_embeddings_text CASCADE;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Pop') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Pop', 'pop');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Traditional') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Traditional', 'traditional');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Classical') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Classical', 'classical');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Rock') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Rock', 'rock');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Hip Hop') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Hip Hop', 'hip-hop');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Rap') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Rap', 'rap');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Electronic') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Electronic', 'electronic');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Folk') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Folk', 'folk');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Jazz') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Jazz', 'jazz');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Blues') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Blues', 'blues');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'R&B') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'R&B', 'rnb');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Soul') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Soul', 'soul');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Metal') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Metal', 'metal');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Fusion') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Fusion', 'fusion');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Reggae') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Reggae', 'reggae');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Latin') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Latin', 'latin');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Country') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Country', 'country');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Instrumental') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Instrumental', 'instrumental');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Lo-Fi') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Lo-Fi', 'lofi');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Ambient') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Ambient', 'ambient');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Pop Rock') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Pop Rock', 'pop-rock');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Indie') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Indie', 'indie');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Funk') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Funk', 'funk');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Dance') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'Dance', 'dance');
+END IF;
+    IF NOT EXISTS (SELECT 1 FROM genres WHERE name = 'New Age') THEN
+        INSERT INTO genres (id, name, slug) VALUES (gen_random_uuid(), 'New Age', 'new-age');
+END IF;
+END $$;
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DELETE FROM track_genres WHERE genre_id IN (SELECT id FROM genres);
+DELETE FROM genres;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS video_comments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    video_id UUID NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_video_comments_video_id ON video_comments(video_id, created_at DESC);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS video_comments;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@example.com') THEN
+        INSERT INTO users (email, username, display_name, password_hash, role, is_active, email_verified_at)
+        VALUES ('admin@example.com', 'admin', 'Admin', '$2a$10$cXbSheUUueeN1Csk87JSjeSA.N.qZkz2a4Pc3PzAhDYJ2a7LroG6O', 'admin', TRUE, NOW());
+    END IF;
+END $$;
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DELETE FROM users WHERE email = 'admin@example.com';
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+ALTER TABLE play_history
+    ADD COLUMN IF NOT EXISTS duration INTEGER,
+    ADD COLUMN IF NOT EXISTS completed BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+ALTER TABLE play_history
+    DROP COLUMN IF EXISTS duration,
+    DROP COLUMN IF EXISTS completed;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+-- The liked_tracks table was already created in 000005 with `created_at`
+-- instead of `liked_at`. Add the column if missing, then create indexes.
+ALTER TABLE liked_tracks
+    ADD COLUMN IF NOT EXISTS liked_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+-- Sync liked_at from created_at for existing rows.
+UPDATE liked_tracks SET liked_at = created_at WHERE liked_at IS DISTINCT FROM created_at;
+
+CREATE INDEX IF NOT EXISTS idx_liked_tracks_user_id ON liked_tracks(user_id);
+CREATE INDEX IF NOT EXISTS idx_liked_tracks_track_id ON liked_tracks(track_id);
+CREATE INDEX IF NOT EXISTS idx_liked_tracks_liked_at ON liked_tracks(liked_at DESC);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP INDEX IF EXISTS idx_liked_tracks_liked_at;
+DROP INDEX IF EXISTS idx_liked_tracks_track_id;
+DROP INDEX IF EXISTS idx_liked_tracks_user_id;
+ALTER TABLE liked_tracks DROP COLUMN IF EXISTS liked_at;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+-- The playlists table was already created in 000004 with `user_id`
+-- instead of `owner_id`. Add the column if missing and sync existing rows.
+ALTER TABLE playlists
+    ADD COLUMN IF NOT EXISTS owner_id UUID REFERENCES users(id);
+
+UPDATE playlists SET owner_id = user_id WHERE owner_id IS NULL AND user_id IS NOT NULL;
+ALTER TABLE playlists ALTER COLUMN owner_id SET NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_playlists_owner_id ON playlists(owner_id);
+CREATE INDEX IF NOT EXISTS idx_playlists_is_public ON playlists(is_public);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP INDEX IF EXISTS idx_playlists_is_public;
+DROP INDEX IF EXISTS idx_playlists_owner_id;
+ALTER TABLE playlists DROP COLUMN IF EXISTS owner_id;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS playlist_tracks (
+    id BIGSERIAL,
+    playlist_id UUID NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    position INT NOT NULL DEFAULT 0,
+    added_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    added_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (id),
+    UNIQUE (playlist_id, track_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_playlist_tracks_playlist_id ON playlist_tracks(playlist_id);
+CREATE INDEX IF NOT EXISTS idx_playlist_tracks_track_id ON playlist_tracks(track_id);
+CREATE INDEX IF NOT EXISTS idx_playlist_tracks_position ON playlist_tracks(position);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS playlist_tracks;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS listening_history (
+    id UUID NOT NULL DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    played_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    ms_played INT NOT NULL DEFAULT 0,
+    source VARCHAR(50) NOT NULL DEFAULT 'direct',
+    PRIMARY KEY (id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_listening_history_user_played ON listening_history(user_id, played_at DESC);
+CREATE INDEX IF NOT EXISTS idx_listening_history_track_id ON listening_history(track_id);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS listening_history;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+CREATE TABLE IF NOT EXISTS playback_sessions (
+    id UUID NOT NULL DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    device VARCHAR(255),
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    ended_at TIMESTAMPTZ,
+    last_position_ms INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_playback_sessions_user_started ON playback_sessions(user_id, started_at);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TABLE IF EXISTS playback_sessions;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+-- The media_assets table was already created in 000039 with a different
+-- schema (object_key, file_size, etc. instead of storage_key, bytes, ...).
+-- Add the track_id column if missing and create the index.
+ALTER TABLE media_assets
+    ADD COLUMN IF NOT EXISTS track_id UUID REFERENCES tracks(id) ON DELETE CASCADE;
+
+CREATE INDEX IF NOT EXISTS idx_media_assets_track_id ON media_assets(track_id);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP INDEX IF EXISTS idx_media_assets_track_id;
+ALTER TABLE media_assets DROP COLUMN IF EXISTS track_id;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+-- Seed daily challenges that auto-track streaming and likes.
+-- valid_from/valid_until use CURRENT_DATE so they are always current when the migration runs.
+
+INSERT INTO daily_challenges (title, description, challenge_type, target_count, xp_reward, valid_from, valid_until)
+VALUES
+    ('Daily Streamer',     'Listen to 10 tracks today',   'streams', 10,  50,  CURRENT_DATE, CURRENT_DATE + INTERVAL '1 day'),
+    ('Music Explorer',     'Listen to 30 tracks today',   'streams', 30,  100, CURRENT_DATE, CURRENT_DATE + INTERVAL '1 day'),
+    ('Weekly Listener',    'Listen to 100 tracks this week', 'streams', 100, 300, CURRENT_DATE, CURRENT_DATE + INTERVAL '7 days'),
+    ('Fan Favorite',       'Like 5 tracks',               'likes',   5,   50,  CURRENT_DATE, CURRENT_DATE + INTERVAL '1 day'),
+    ('Super Fan',          'Like 15 tracks',              'likes',   15,  150, CURRENT_DATE, CURRENT_DATE + INTERVAL '7 days');
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DELETE FROM daily_challenges WHERE title IN (
+    'Daily Streamer',
+    'Music Explorer',
+    'Weekly Listener',
+    'Fan Favorite',
+    'Super Fan'
+);
+
+-- +goose StatementEnd
+-- +goose Up
+-- listening_history lost columns during migration 000043 (partitioning rewrite)
+-- and migration 000053 (conflicting schema). Re-add the missing columns.
+-- +goose StatementBegin
+
+ALTER TABLE listening_history ADD COLUMN IF NOT EXISTS completed BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE listening_history ADD COLUMN IF NOT EXISTS session_id UUID;
+ALTER TABLE listening_history ADD COLUMN IF NOT EXISTS played_duration_ms BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE listening_history ADD COLUMN IF NOT EXISTS track_duration_ms BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE listening_history ADD COLUMN IF NOT EXISTS completion_percent NUMERIC(5,4) NOT NULL DEFAULT 0;
+ALTER TABLE listening_history ADD COLUMN IF NOT EXISTS signal_type TEXT NOT NULL DEFAULT '';
+ALTER TABLE listening_history ADD COLUMN IF NOT EXISTS is_explicit_like BOOLEAN NOT NULL DEFAULT false;
+
+CREATE INDEX IF NOT EXISTS idx_listening_history_signal_type ON listening_history(signal_type);
+CREATE INDEX IF NOT EXISTS idx_listening_history_session ON listening_history(session_id);
+CREATE INDEX IF NOT EXISTS idx_listening_history_completed ON listening_history(completed);
+CREATE INDEX IF NOT EXISTS idx_listening_history_user_completed_played_at ON listening_history(user_id, completed, played_at DESC);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP INDEX IF EXISTS idx_listening_history_user_completed_played_at;
+DROP INDEX IF EXISTS idx_listening_history_completed;
+DROP INDEX IF EXISTS idx_listening_history_session;
+DROP INDEX IF EXISTS idx_listening_history_signal_type;
+
+ALTER TABLE listening_history DROP COLUMN IF EXISTS is_explicit_like;
+ALTER TABLE listening_history DROP COLUMN IF EXISTS signal_type;
+ALTER TABLE listening_history DROP COLUMN IF EXISTS completion_percent;
+ALTER TABLE listening_history DROP COLUMN IF EXISTS track_duration_ms;
+ALTER TABLE listening_history DROP COLUMN IF EXISTS played_duration_ms;
+ALTER TABLE listening_history DROP COLUMN IF EXISTS session_id;
+ALTER TABLE listening_history DROP COLUMN IF EXISTS completed;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+-- ── Missing FK: subscriptions.user_id → users(id) ──────────────────────
+-- Migration 000006 created subscriptions.user_id as UUID NOT NULL but
+-- omitted the FK reference to users(id). Add it with NOT VALID so we
+-- can validate existing data separately (zero-downtime approach).
+ALTER TABLE subscriptions
+    ADD CONSTRAINT fk_subscriptions_user_id
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        NOT VALID;
+
+-- Throws if any existing rows reference non-existent users.
+-- Run this during a maintenance window if the table has orphaned rows.
+ALTER TABLE subscriptions VALIDATE CONSTRAINT fk_subscriptions_user_id;
+
+-- ── Missing FK: payments.user_id → users(id) ───────────────────────────
+ALTER TABLE payments
+    ADD CONSTRAINT fk_payments_user_id
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        NOT VALID;
+
+ALTER TABLE payments VALIDATE CONSTRAINT fk_payments_user_id;
+
+-- ── Missing FK: notifications.user_id → users(id) ──────────────────────
+ALTER TABLE notifications
+    ADD CONSTRAINT fk_notifications_user_id
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        NOT VALID;
+
+ALTER TABLE notifications VALIDATE CONSTRAINT fk_notifications_user_id;
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS fk_subscriptions_user_id;
+ALTER TABLE payments DROP CONSTRAINT IF EXISTS fk_payments_user_id;
+ALTER TABLE notifications DROP CONSTRAINT IF EXISTS fk_notifications_user_id;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+-- Add audio_asset_id and cover_asset_id to tracks, linking to media_assets.
+-- This is the new FK reference replacing the old audio_media_id/cover_media_id
+-- columns (from migration 000013) that pointed to the legacy `media` table.
+-- Using NOT VALID so existing data isn't rechecked (zero-downtime pattern).
+
+ALTER TABLE tracks
+    ADD COLUMN IF NOT EXISTS audio_asset_id UUID REFERENCES media_assets(id) ON DELETE SET NULL;
+
+ALTER TABLE tracks
+    ADD COLUMN IF NOT EXISTS cover_asset_id UUID REFERENCES media_assets(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_tracks_audio_asset_id ON tracks(audio_asset_id);
+CREATE INDEX IF NOT EXISTS idx_tracks_cover_asset_id ON tracks(cover_asset_id);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP INDEX IF EXISTS idx_tracks_cover_asset_id;
+DROP INDEX IF EXISTS idx_tracks_audio_asset_id;
+
+ALTER TABLE tracks DROP COLUMN IF EXISTS cover_asset_id;
+ALTER TABLE tracks DROP COLUMN IF EXISTS audio_asset_id;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+-- 1. Permissions table — atomic capability flags
+CREATE TABLE IF NOT EXISTS permissions (
+    id BIGSERIAL PRIMARY KEY,
+    slug VARCHAR(100) NOT NULL UNIQUE,
+    category VARCHAR(50) NOT NULL,
+    label VARCHAR(100) NOT NULL,
+    description TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_permissions_category ON permissions(category);
+COMMENT ON TABLE permissions IS 'Atomic capability flags; roles are templates of permissions';
+
+-- 2. Roles table
+CREATE TABLE IF NOT EXISTS roles (
+    id BIGSERIAL PRIMARY KEY,
+    slug VARCHAR(50) NOT NULL UNIQUE,
+    label VARCHAR(100) NOT NULL,
+    description TEXT,
+    hierarchy_level INT NOT NULL DEFAULT 0,
+    is_system_role BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE roles IS 'Identity templates; each role maps to a set of permissions';
+
+-- 3. Role ↔ Permission mapping
+CREATE TABLE IF NOT EXISTS role_permissions (
+    role_id BIGINT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    permission_id BIGINT NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+    granted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (role_id, permission_id)
+);
+
+CREATE INDEX idx_role_permissions_role ON role_permissions(role_id);
+CREATE INDEX idx_role_permissions_permission ON role_permissions(permission_id);
+COMMENT ON TABLE role_permissions IS 'Many-to-many: which permissions each role grants';
+
+-- 4. User ↔ Role assignments
+CREATE TABLE IF NOT EXISTS user_roles (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role_id BIGINT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    assigned_by UUID REFERENCES users(id),
+    assigned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMPTZ,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    UNIQUE(user_id, role_id)
+);
+
+CREATE INDEX idx_user_roles_user ON user_roles(user_id);
+CREATE INDEX idx_user_roles_role ON user_roles(role_id);
+COMMENT ON TABLE user_roles IS 'Per-user role assignments; supports temporary roles with expiry';
+
+-- 5. User permission overrides
+CREATE TABLE IF NOT EXISTS user_permission_overrides (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    permission_id BIGINT NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+    granted BOOLEAN NOT NULL DEFAULT TRUE,
+    reason TEXT,
+    granted_by UUID REFERENCES users(id),
+    granted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMPTZ,
+    UNIQUE(user_id, permission_id)
+);
+
+CREATE INDEX idx_user_permission_overrides_user ON user_permission_overrides(user_id);
+COMMENT ON TABLE user_permission_overrides IS 'Per-user permission overrides; can grant or revoke beyond role';
+
+-- 6. Seed default roles
+INSERT INTO roles (slug, label, description, hierarchy_level, is_system_role) VALUES
+    ('listener',   'Listener',   'Default role for registered users', 10, TRUE),
+    ('creator',    'Creator',    'Artists and uploaders with creation privileges', 30, TRUE),
+    ('curator',    'Curator',    'Playlist curators and tastemakers', 50, TRUE),
+    ('moderator',  'Moderator',  'Content and community moderation', 80, TRUE),
+    ('admin',      'Admin',      'Full platform access', 100, TRUE)
+ON CONFLICT (slug) DO NOTHING;
+
+-- 7. Seed default permissions
+INSERT INTO permissions (slug, category, label, description) VALUES
+    ('upload_track',            'upload',       'Upload Tracks',            'Submit new tracks for review'),
+    ('upload_album',            'upload',       'Upload Albums',            'Submit complete albums'),
+    ('upload_artwork',          'upload',       'Upload Artwork',           'Upload cover art and images'),
+    ('publish_immediately',     'upload',       'Publish Immediately',      'Skip review queue (trusted creators)'),
+    ('edit_metadata',           'contribution', 'Edit Metadata',            'Suggest or apply metadata edits'),
+    ('edit_lyrics',             'contribution', 'Edit Lyrics',              'Contribute or correct lyrics'),
+    ('submit_to_club',          'contribution', 'Submit to Club',           'Submit tracks to music clubs'),
+    ('review_uploads',          'moderation',   'Review Uploads',           'Review and approve/reject uploads'),
+    ('review_metadata',         'moderation',   'Review Metadata',          'Review and approve metadata edits'),
+    ('moderate_comments',       'moderation',   'Moderate Comments',        'Remove or flag comments'),
+    ('moderate_users',          'moderation',   'Moderate Users',           'Warn, mute, or ban users'),
+    ('moderate_clubs',          'moderation',   'Moderate Clubs',           'Manage and moderate music clubs'),
+    ('create_club',             'social',       'Create Club',              'Create and manage music clubs'),
+    ('create_playlist',         'social',       'Create Playlist',          'Create public playlists'),
+    ('send_invitations',        'social',       'Send Invitations',         'Invite users to clubs or events'),
+    ('access_creator_dashboard','creator',      'Creator Dashboard',        'Access creator analytics and tools'),
+    ('manage_releases',         'creator',      'Manage Releases',          'Manage published releases'),
+    ('enable_monetization',     'creator',      'Enable Monetization',      'Access monetization features'),
+    ('manage_users',            'admin',        'Manage Users',             'Full user management'),
+    ('manage_roles',            'admin',        'Manage Roles',             'Create and assign roles'),
+    ('manage_system',           'admin',        'Manage System',            'System configuration and maintenance'),
+    ('view_audit_log',          'admin',        'View Audit Log',           'Access audit trail')
+ON CONFLICT (slug) DO NOTHING;
+
+-- 8. Assign permissions to roles
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.slug = 'listener' AND p.slug IN ('create_playlist', 'submit_to_club')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.slug = 'creator' AND p.slug IN (
+    'upload_track', 'upload_album', 'upload_artwork',
+    'edit_metadata', 'edit_lyrics',
+    'access_creator_dashboard', 'manage_releases', 'create_playlist', 'submit_to_club'
+)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.slug = 'curator' AND p.slug IN (
+    'upload_track', 'upload_album', 'upload_artwork',
+    'edit_metadata', 'edit_lyrics', 'publish_immediately',
+    'access_creator_dashboard', 'manage_releases', 'create_playlist', 'submit_to_club',
+    'create_club', 'send_invitations'
+)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.slug = 'moderator' AND p.slug IN (
+    'upload_track', 'upload_album', 'upload_artwork',
+    'edit_metadata', 'edit_lyrics', 'publish_immediately',
+    'access_creator_dashboard', 'manage_releases', 'create_playlist', 'submit_to_club',
+    'create_club', 'send_invitations',
+    'review_uploads', 'review_metadata',
+    'moderate_comments', 'moderate_users', 'moderate_clubs'
+)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.slug = 'admin'
+ON CONFLICT DO NOTHING;
+
+-- 9. Backfill user_roles from existing users.role column
+INSERT INTO user_roles (user_id, role_id, assigned_at)
+SELECT u.id, r.id, u.created_at
+FROM users u JOIN roles r ON r.slug = u.role
+ON CONFLICT (user_id, role_id) DO NOTHING;
+
+-- 10. Updated_at trigger
+CREATE OR REPLACE FUNCTION update_rbac_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_permissions_updated_at
+    BEFORE UPDATE ON permissions
+    FOR EACH ROW EXECUTE FUNCTION update_rbac_updated_at();
+
+CREATE TRIGGER trigger_roles_updated_at
+    BEFORE UPDATE ON roles
+    FOR EACH ROW EXECUTE FUNCTION update_rbac_updated_at();
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TRIGGER IF EXISTS trigger_roles_updated_at ON roles;
+DROP TRIGGER IF EXISTS trigger_permissions_updated_at ON permissions;
+DROP FUNCTION IF EXISTS update_rbac_updated_at();
+DROP TABLE IF EXISTS user_permission_overrides;
+DROP TABLE IF EXISTS user_roles;
+DROP TABLE IF EXISTS role_permissions;
+DROP TABLE IF EXISTS roles;
+DROP TABLE IF EXISTS permissions;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+-- 1. User reputation profile
+CREATE TABLE IF NOT EXISTS user_reputation (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+    total_contributions INT NOT NULL DEFAULT 0,
+    accepted_contributions INT NOT NULL DEFAULT 0,
+    rejected_contributions INT NOT NULL DEFAULT 0,
+    pending_contributions INT NOT NULL DEFAULT 0,
+    trust_score NUMERIC(5,2) NOT NULL DEFAULT 0.0,
+    tier VARCHAR(20) NOT NULL DEFAULT 'newcomer',
+    upload_slots INT NOT NULL DEFAULT 0,
+    auto_publish BOOLEAN NOT NULL DEFAULT FALSE,
+    can_review BOOLEAN NOT NULL DEFAULT FALSE,
+    last_contribution_at TIMESTAMPTZ,
+    contribution_streak_days INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_user_reputation_user ON user_reputation(user_id);
+CREATE INDEX idx_user_reputation_tier ON user_reputation(tier);
+CREATE INDEX idx_user_reputation_score ON user_reputation(trust_score DESC);
+COMMENT ON TABLE user_reputation IS 'Contributor reputation profile with trust tiers and scoring';
+
+-- 2. Trust tier definitions
+CREATE TABLE IF NOT EXISTS trust_tiers (
+    id BIGSERIAL PRIMARY KEY,
+    slug VARCHAR(20) NOT NULL UNIQUE,
+    label VARCHAR(50) NOT NULL,
+    description TEXT,
+    min_score NUMERIC(5,2) NOT NULL DEFAULT 0,
+    min_accepted INT NOT NULL DEFAULT 0,
+    upload_slots INT NOT NULL DEFAULT 1,
+    auto_publish BOOLEAN NOT NULL DEFAULT FALSE,
+    can_review BOOLEAN NOT NULL DEFAULT FALSE,
+    hierarchy_level INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE trust_tiers IS 'Configurable trust tier thresholds';
+
+-- 3. Contribution score history
+CREATE TABLE IF NOT EXISTS contribution_scores (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    contribution_type VARCHAR(50) NOT NULL,
+    contribution_id BIGINT,
+    score_delta NUMERIC(5,2) NOT NULL DEFAULT 0,
+    reason TEXT,
+    reviewed_by UUID REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_contribution_scores_user ON contribution_scores(user_id);
+CREATE INDEX idx_contribution_scores_type ON contribution_scores(contribution_type);
+CREATE INDEX idx_contribution_scores_created ON contribution_scores(created_at DESC);
+COMMENT ON TABLE contribution_scores IS 'Audit trail for trust score changes';
+
+-- 4. Seed trust tier definitions
+INSERT INTO trust_tiers (slug, label, description, min_score, min_accepted, upload_slots, auto_publish, can_review, hierarchy_level) VALUES
+    ('newcomer',    'Newcomer',    'Just joined the community',                0,    0, 1, FALSE, FALSE, 0),
+    ('contributor', 'Contributor', 'Active contributor with accepted work',    10,   3, 2, FALSE, FALSE, 1),
+    ('trusted',     'Trusted',     'Consistently high-quality contributions',  30,  10, 5, FALSE, TRUE,  2),
+    ('verified',    'Verified',    'Verified creator with proven track record', 50,  25, 10, TRUE,  TRUE,  3),
+    ('elite',       'Elite',       'Elite contributor, top of the community',  75,  50, 20, TRUE,  TRUE,  4),
+    ('legend',      'Legend',      'Legendary contributor, community pillar',  90, 100, 50, TRUE,  TRUE,  5)
+ON CONFLICT (slug) DO NOTHING;
+
+-- 5. Initialize user_reputation for existing users
+INSERT INTO user_reputation (user_id, tier, upload_slots, auto_publish, can_review)
+SELECT u.id, 'newcomer', 1, FALSE, FALSE
+FROM users u
+ON CONFLICT (user_id) DO NOTHING;
+
+-- 6. Updated_at trigger
+CREATE OR REPLACE FUNCTION update_reputation_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_user_reputation_updated_at
+    BEFORE UPDATE ON user_reputation
+    FOR EACH ROW EXECUTE FUNCTION update_reputation_updated_at();
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TRIGGER IF EXISTS trigger_user_reputation_updated_at ON user_reputation;
+DROP FUNCTION IF EXISTS update_reputation_updated_at();
+DROP TABLE IF EXISTS contribution_scores;
+DROP TABLE IF EXISTS trust_tiers;
+DROP TABLE IF EXISTS user_reputation;
+
+-- +goose StatementEnd
+-- +goose Up
+-- +goose StatementBegin
+
+ALTER TABLE ingestion_drafts
+    ADD COLUMN IF NOT EXISTS upload_source TEXT NOT NULL DEFAULT 'admin'
+        CHECK (upload_source IN ('admin', 'listener', 'club')),
+    ADD COLUMN IF NOT EXISTS club_id UUID,
+    ADD COLUMN IF NOT EXISTS needs_review BOOLEAN NOT NULL DEFAULT TRUE,
+    ADD COLUMN IF NOT EXISTS review_notes TEXT,
+    ADD COLUMN IF NOT EXISTS reviewed_by UUID REFERENCES users(id),
+    ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;
+
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'music_clubs') THEN
+        ALTER TABLE ingestion_drafts
+            ADD CONSTRAINT fk_ingestion_drafts_club
+            FOREIGN KEY (club_id) REFERENCES music_clubs(id) ON DELETE SET NULL;
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_ingestion_drafts_source ON ingestion_drafts(upload_source);
+CREATE INDEX IF NOT EXISTS idx_ingestion_drafts_needs_review ON ingestion_drafts(needs_review) WHERE needs_review = TRUE;
+CREATE INDEX IF NOT EXISTS idx_ingestion_drafts_club ON ingestion_drafts(club_id) WHERE club_id IS NOT NULL;
+
+COMMENT ON COLUMN ingestion_drafts.upload_source IS 'Origin: admin (direct), listener (community), club (club submission)';
+COMMENT ON COLUMN ingestion_drafts.club_id IS 'If upload_source=club, the club this was submitted to';
+COMMENT ON COLUMN ingestion_drafts.needs_review IS 'Whether this draft requires manual review before publishing';
+COMMENT ON COLUMN ingestion_drafts.review_notes IS 'Notes from the reviewer on accept/reject';
+
+CREATE TABLE IF NOT EXISTS co_uploaders (
+    id BIGSERIAL PRIMARY KEY,
+    track_id UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL DEFAULT 'contributor'
+        CHECK (role IN ('uploader', 'contributor', 'featured')),
+    xp_share_percent NUMERIC(5,2) NOT NULL DEFAULT 100.0,
+    contribution_type TEXT,
+    added_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(track_id, user_id)
+);
+
+CREATE INDEX idx_co_uploaders_track ON co_uploaders(track_id);
+CREATE INDEX idx_co_uploaders_user ON co_uploaders(user_id);
+COMMENT ON TABLE co_uploaders IS 'Tracks can have multiple uploaders; XP is split by xp_share_percent';
+
+CREATE TABLE IF NOT EXISTS upload_slots (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+    used_slots INT NOT NULL DEFAULT 0,
+    max_slots INT NOT NULL DEFAULT 1,
+    last_upload_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_upload_slots_user ON upload_slots(user_id);
+COMMENT ON TABLE upload_slots IS 'Tracks concurrent upload slots per user based on trust tier';
+
+INSERT INTO upload_slots (user_id, used_slots, max_slots)
+SELECT u.id, 0, 1
+FROM users u
+ON CONFLICT (user_id) DO NOTHING;
+
+CREATE OR REPLACE FUNCTION update_upload_slots_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_upload_slots_updated_at
+    BEFORE UPDATE ON upload_slots
+    FOR EACH ROW EXECUTE FUNCTION update_upload_slots_updated_at();
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP TRIGGER IF EXISTS trigger_upload_slots_updated_at ON upload_slots;
+DROP FUNCTION IF EXISTS update_upload_slots_updated_at();
+DROP TABLE IF EXISTS upload_slots;
+DROP TABLE IF EXISTS co_uploaders;
+
+ALTER TABLE ingestion_drafts DROP CONSTRAINT IF EXISTS fk_ingestion_drafts_club;
+ALTER TABLE ingestion_drafts
+    DROP COLUMN IF EXISTS reviewed_at,
+    DROP COLUMN IF EXISTS reviewed_by,
+    DROP COLUMN IF EXISTS review_notes,
+    DROP COLUMN IF EXISTS needs_review,
+    DROP COLUMN IF EXISTS club_id,
+    DROP COLUMN IF EXISTS upload_source;
+
+-- +goose StatementEnd-- +goose Up
+-- +goose StatementBegin
+
+ALTER TABLE level_definitions
+    ADD COLUMN IF NOT EXISTS can_upload BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS can_auto_publish BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS upload_slots INT NOT NULL DEFAULT 0;
+
+COMMENT ON COLUMN level_definitions.can_upload IS 'Whether users at this level can upload tracks';
+COMMENT ON COLUMN level_definitions.can_auto_publish IS 'Whether uploads skip review queue';
+COMMENT ON COLUMN level_definitions.upload_slots IS 'Number of concurrent upload slots at this level';
+
+UPDATE level_definitions SET can_upload = FALSE, can_auto_publish = FALSE, upload_slots = 0;
+UPDATE level_definitions SET can_upload = TRUE, upload_slots = 1 WHERE level >= 5;
+UPDATE level_definitions SET upload_slots = 2 WHERE level >= 7;
+UPDATE level_definitions SET upload_slots = 5 WHERE level >= 8;
+UPDATE level_definitions SET can_auto_publish = TRUE, upload_slots = 10 WHERE level >= 9;
+UPDATE level_definitions SET upload_slots = 20 WHERE level >= 12;
+UPDATE level_definitions SET upload_slots = 50 WHERE level >= 15;
+
+INSERT INTO badges (name, description, icon_url, category, rarity, criteria, xp_reward, is_hidden) VALUES
+    ('First Upload',        'Upload your first track',              '/badges/first-upload.svg',        'upload', 'common',   '{"type":"upload_count","count":1}',          100, FALSE),
+    ('Prolific Uploader',   'Upload 5 tracks',                      '/badges/upload-5.svg',            'upload', 'uncommon', '{"type":"upload_count","count":5}',          250, FALSE),
+    ('Upload Master',        'Upload 25 tracks',                     '/badges/upload-25.svg',           'upload', 'rare',     '{"type":"upload_count","count":25}',         500, FALSE),
+    ('Upload Legend',        'Upload 100 tracks',                    '/badges/upload-100.svg',          'upload', 'epic',     '{"type":"upload_count","count":100}',       1000, FALSE),
+    ('First Contribution',  'Make your first metadata contribution', '/badges/first-contribution.svg',  'community', 'common', '{"type":"contribution_count","count":1}',  50, FALSE),
+    ('Community Helper',     'Make 10 accepted contributions',       '/badges/contribution-10.svg',     'community', 'uncommon','{"type":"contribution_count","count":10}', 200, FALSE),
+    ('Community Pillar',     'Make 50 accepted contributions',       '/badges/contribution-50.svg',     'community', 'rare',   '{"type":"contribution_count","count":50}', 500, FALSE),
+    ('Trusted Reviewer',     'Review 25 uploads',                    '/badges/trusted-reviewer.svg',    'moderation', 'rare',  '{"type":"review_count","count":25}',       300, FALSE),
+    ('Track Published',     'Your first upload was published',      '/badges/first-published.svg',     'upload', 'common',  '{"type":"track_published","count":1}',     150, FALSE),
+    ('7-Day Streak',         'Contribute 7 days in a row',           '/badges/streak-7.svg',            'activity', 'uncommon','{"type":"streak_days","count":7}',        200, FALSE),
+    ('30-Day Streak',        'Contribute 30 days in a row',          '/badges/streak-30.svg',           'activity', 'rare',   '{"type":"streak_days","count":30}',        500, FALSE),
+    ('Rising Star',          'Reach level 5',                        '/badges/level-5.svg',             'milestone', 'uncommon','{"type":"level_reached","level":5}',     200, FALSE),
+    ('Music Expert',         'Reach level 10',                       '/badges/level-10.svg',            'milestone', 'rare',   '{"type":"level_reached","level":10}',      500, FALSE),
+    ('Music Master',         'Reach level 15',                       '/badges/level-15.svg',            'milestone', 'epic',   '{"type":"level_reached","level":15}',     1000, FALSE),
+    ('Trusted Creator',      'Earn auto-publish privilege',          '/badges/auto-publish.svg',        'upload', 'rare',     '{"type":"auto_publish_earned"}',           300, FALSE)
+;
+
+INSERT INTO daily_challenges (title, description, challenge_type, target_count, xp_reward, badge_reward_id, is_active, valid_from, valid_until) VALUES
+    ('Upload Today',      'Upload at least 1 track today',     'upload', 1, 50, NULL, TRUE, NOW(), NOW() + INTERVAL '1 day'),
+    ('Help the Community', 'Make 3 metadata contributions today', 'contribute', 3, 75, NULL, TRUE, NOW(), NOW() + INTERVAL '1 day'),
+    ('Review Queue',      'Review 5 pending uploads today',    'review', 5, 100, NULL, TRUE, NOW(), NOW() + INTERVAL '1 day');
+
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'xp_transactions_source_check') THEN
+        ALTER TABLE xp_transactions DROP CONSTRAINT xp_transactions_source_check;
+    END IF;
+END $$;
+
+ALTER TABLE xp_transactions
+    ADD CONSTRAINT xp_transactions_source_check
+    CHECK (source IN (
+        'stream', 'like', 'share', 'contribution', 'translation', 'login',
+        'challenge_stream', 'challenge_like', 'challenge_share',
+        'upload', 'upload_published', 'contribution_accepted',
+        'review', 'streak', 'badge', 'level_up',
+        'co_upload', 'club_submit'
+    ));
+
+CREATE INDEX IF NOT EXISTS idx_xp_transactions_source ON xp_transactions(source);
+CREATE INDEX IF NOT EXISTS idx_xp_transactions_created ON xp_transactions(created_at DESC);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+DROP INDEX IF EXISTS idx_xp_transactions_created;
+DROP INDEX IF EXISTS idx_xp_transactions_source;
+
+ALTER TABLE xp_transactions DROP CONSTRAINT IF EXISTS xp_transactions_source_check;
+
+ALTER TABLE xp_transactions
+    ADD CONSTRAINT xp_transactions_source_check
+    CHECK (source IN (
+        'stream', 'like', 'share', 'contribution', 'translation', 'login',
+        'challenge_stream', 'challenge_like', 'challenge_share'
+    ));
+
+DELETE FROM daily_challenges WHERE id IN ('upload_1_daily', 'contribute_3_daily', 'review_5_daily');
+DELETE FROM badges WHERE id IN (
+    'first_upload', 'upload_5', 'upload_25', 'upload_100',
+    'first_contribution', 'contribution_10', 'contribution_50',
+    'trusted_reviewer', 'first_track_published',
+    'streak_7', 'streak_30', 'level_5', 'level_10', 'level_15', 'auto_publish'
+);
+
+-- +goose StatementEnd
