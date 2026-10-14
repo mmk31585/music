@@ -1,0 +1,50 @@
+{
+  "version": 2,
+  "framework": "go",
+  "buildCommand": "go build -o bin/api ./cmd/api",
+  "outputDirectory": "bin",
+  "functions": {
+    "cmd/api/main.go": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/bin/api"
+    },
+    {
+      "src": "/swagger/(.*)",
+      "dest": "/bin/api"
+    },
+    {
+      "src": "/uploads/(.*)",
+      "dest": "/bin/api"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/bin/api"
+    }
+  ],
+  "env": {
+    "APP_ENV": "production",
+    "APP_HOST": "0.0.0.0",
+    "APP_PORT": "3000",
+    "APP_READ_TIMEOUT": "15",
+    "APP_WRITE_TIMEOUT": "15",
+    "APP_IDLE_TIMEOUT": "60",
+    "APP_SHUTDOWN_TIMEOUT": "10",
+    "LOG_LEVEL": "info",
+    "STORAGE_DRIVER": "vercel",
+    "CORS_ALLOWED_ORIGINS": "https://your-frontend.vercel.app,https://localhost:3000",
+    "DATABASE_SOURCE": "${POSTGRES_URL_NON_POOLING}",
+    "REDIS_ADDR": "redis:6379"
+  },
+  "crons": [
+    {
+      "path": "/api/v1/cron/sync",
+      "schedule": "0 2 * * *"
+    }
+  ]
+}

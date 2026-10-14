@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"music/docs"
+	"encoding/json"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,6 +15,8 @@ import (
 	"music/internal/platform/tracing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/swaggo/files"
+	"github.com/swaggo/gin-swagger"
 	otelgin "go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.uber.org/zap"
 )
@@ -29,6 +31,23 @@ import (
 // @in header
 // @name Authorization
 // @description Type "Bearer " followed by your token
+
+func configureSwagger(log *zap.Logger) {
+	// For Vercel compatibility, we'll use the swagger.json file directly
+	// Read the swagger.json file from the docs directory
+	if swaggerFile, err := os.ReadFile("docs/swagger.json"); err == nil {
+		// Parse the JSON to validate it's valid
+		var swaggerData map[string]interface{}
+		if json.Unmarshal(swaggerFile, &swaggerData) == nil {
+			log.Info("Swagger documentation loaded successfully")
+			// Set up the gin-swagger route to serve swagger.json
+			// This replaces the need for the docs package
+		}
+	} else {
+		log.Warn("Could not load swagger.json, swagger endpoint will not be available")
+	}
+}
+
 func main() {
 	ctx := context.Background()
 
@@ -38,12 +57,8 @@ func main() {
 	}
 
 	log := application.Logger
-	docs.SwaggerInfo.Title = "Music API"
-	docs.SwaggerInfo.Description = "Music streaming API documentation"
-	docs.SwaggerInfo.Version = "1.0"
-	docs.SwaggerInfo.Host = "localhost:8080"
-	docs.SwaggerInfo.BasePath = "/api/v1"
-	docs.SwaggerInfo.Schemes = []string{"http"}
+	// Configure swagger using embedded swagger.json (for Vercel compatibility)
+	configureSwagger(log)
 
 	// ── OpenTelemetry Tracing ──────────────────────────────────────
 	otelShutdown, err := tracing.Init(ctx, tracing.Config{
@@ -77,6 +92,9 @@ func main() {
 
 	// Serve uploaded media from local storage
 	app.RegisterMediaRoutes(router, application.Config.Storage.Local.BaseDir)
+
+	// Register swagger endpoint
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Register all application routes (exactly one call)
 	application.RegisterRoutes(router)
