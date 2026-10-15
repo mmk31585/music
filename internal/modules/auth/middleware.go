@@ -6,16 +6,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"net/http"
 	apperrors "music/internal/common/errors"
 	"music/internal/common/response"
+	"net/http"
 )
 
 // Context keys for Gin
 const (
-	UserIDContextKey         = "auth_user_id"
-	UserRoleKey              = "auth_user_role"
-	UserHierarchyLevelKey    = "auth_user_hierarchy_level"
+	UserIDContextKey      = "auth_user_id"
+	UserRoleKey           = "auth_user_role"
+	UserHierarchyLevelKey = "auth_user_hierarchy_level"
 )
 
 // RoleHierarchyFetcher is a function type for fetching role hierarchy level
@@ -23,7 +23,7 @@ type RoleHierarchyFetcher func(ctx context.Context, roleSlug string) (int, error
 
 // AuthMiddleware returns a Gin middleware that validates JWT tokens
 // and stores user ID and role in the Gin context.
-func AuthMiddleware(tokens *TokenManager, fetchHierarchy RoleHierarchyFetcher) gin.HandlerFunc {
+func AuthMiddleware(tokens *TokenManager, fetchHierarchy ...RoleHierarchyFetcher) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 		if header == "" {
@@ -52,8 +52,8 @@ func AuthMiddleware(tokens *TokenManager, fetchHierarchy RoleHierarchyFetcher) g
 
 		// Fetch and store role hierarchy level
 		var roleLevel int
-		if claims.Role != "" && fetchHierarchy != nil {
-			if level, err := fetchHierarchy(c.Request.Context(), claims.Role); err == nil {
+		if claims.Role != "" && len(fetchHierarchy) > 0 && fetchHierarchy[0] != nil {
+			if level, err := fetchHierarchy[0](c.Request.Context(), claims.Role); err == nil {
 				roleLevel = level
 			}
 		}
@@ -65,7 +65,7 @@ func AuthMiddleware(tokens *TokenManager, fetchHierarchy RoleHierarchyFetcher) g
 
 // RequireRole returns a Gin middleware that ensures the authenticated user
 // has a role with sufficient hierarchy level (greater than or equal to any of the required roles).
-func RequireRole(fetchHierarchy RoleHierarchyFetcher, roles ...string) gin.HandlerFunc {
+func requireRoleWithHierarchy(fetchHierarchy RoleHierarchyFetcher, roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get current role hierarchy level from context
 		currentLevel, _ := c.Get(UserHierarchyLevelKey)
@@ -174,22 +174,58 @@ func OptionalAuthMiddleware(tokens *TokenManager, hierarchyFetcher RoleHierarchy
 		c.Set(UserIDContextKey, claims.UserID)
 		c.Set(UserRoleKey, claims.Role)
 
-	// Fetch and store role hierarchy level
-	var roleLevel int
-	if claims.Role != "" {
-		if level, err := hierarchyFetcher(c.Request.Context(), claims.Role); err == nil {
-			roleLevel = level
+		// Fetch and store role hierarchy level
+		var roleLevel int
+		if claims.Role != "" {
+			if level, err := hierarchyFetcher(c.Request.Context(), claims.Role); err == nil {
+				roleLevel = level
+			}
 		}
-	}
-	c.Set(UserHierarchyLevelKey, roleLevel)
-
-	c.Next()
+		c.Set(UserHierarchyLevelKey, roleLevel)
 
 		c.Next()
+
 	}
 }
 
 // ErrUnauthorized returns a standard unauthorized error.
 func ErrUnauthorized() error {
 	return apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil)
+}
+
+// RequireRole provides a flexible role guard: accepts either a hierarchy fetcher
+// followed by role slugs (RequireRoleHierarchical usage) or just role slugs.
+func RequireRole(args ...interface{}) gin.HandlerFunc {
+	var fetchHierarchy RoleHierarchyFetcher
+	roles := []string{}
+	if len(args) > 0 {
+		if fh, ok := args[0].(RoleHierarchyFetcher); ok {
+			fetchHierarchy = fh
+			for _, a := range args[1:] {
+				if s, ok := a.(string); ok {
+					roles = append(roles, s)
+				}
+			}
+		} else {
+			for _, a := range args {
+				if s, ok := a.(string); ok {
+					roles = append(roles, s)
+				}
+			}
+		}
+	}
+	if fetchHierarchy == nil {
+		return func(c *gin.Context) {
+			current := UserRoleFromContext(c)
+			for _, r := range roles {
+				if r == current || current == "admin" {
+					c.Next()
+					return
+				}
+			}
+			response.Error(c, apperrors.New(http.StatusForbidden, apperrors.CodeForbidden, "insufficient permissions", nil))
+			c.Abort()
+		}
+	}
+	return requireRoleWithHierarchy(fetchHierarchy, roles...)
 }
