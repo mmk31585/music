@@ -1,23 +1,25 @@
 package app
 
 import (
-	"context"
+	"net/http"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	"github.com/swaggo/gin-swagger/swaggerFiles"
+
 	"music/internal/common/middleware"
-	ai 	"music/internal/modules/ai"
 	"music/internal/modules/analytics"
-	"music/internal/modules/cacheadmin"
 	"music/internal/modules/auth"
+	"music/internal/modules/cacheadmin"
 	"music/internal/modules/catalog"
-	"music/internal/modules/contribution"
-	"music/internal/modules/covers"
-	"music/internal/modules/creator"
+	"music/internal/modules/cover"
 	"music/internal/modules/dashboard"
 	"music/internal/modules/features"
 	"music/internal/modules/follow"
-	"music/internal/modules/gamification"
 	"music/internal/modules/health"
 	"music/internal/modules/history"
-	"music/internal/modules/importcmd"
 	"music/internal/modules/ingestion"
 	"music/internal/modules/library"
 	"music/internal/modules/lyrics"
@@ -25,28 +27,20 @@ import (
 	"music/internal/modules/moderation"
 	"music/internal/modules/notification"
 	"music/internal/modules/permissions"
-	"music/internal/modules/player"
-	"music/internal/modules/reputation"
-	"music/internal/modules/upload"
 	"music/internal/modules/playlist"
+	"music/internal/modules/player"
 	"music/internal/modules/queue"
 	"music/internal/modules/reactions"
 	"music/internal/modules/recommendation"
-	"music/internal/modules/search"
+	"music/internal/modules/reputation"
 	"music/internal/modules/social"
 	"music/internal/modules/subscription"
+	"music/internal/modules/upload"
 	"music/internal/modules/video"
-	"net/http"
-	"time"
-
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func (a *App) RegisterRoutes(r *gin.Engine) {
+// RegisterRoutes registers all API routes on the given router group.
+func RegisterRoutes(r *gin.RouterGroup, a *App) {
 	api := r.Group("/api/v1")
 	api.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	api.GET("/metrics", gin.WrapH(promhttp.Handler()))
@@ -60,10 +54,9 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	features.RegisterRoutes(api, c.FeaturesHandler)
 	dashboard.RegisterRoutes(api, c.DashboardHandler)
 	auth.RegisterRoutes(api, c.AuthHandler, c.AuthMW, c.AdminMW, c.RDB)
-	permissions.RegisterRoutes(api, c.PermissionHandler, c.AuthMW, c.AdminMW, c.PermissionService)
-	reputation.RegisterRoutes(api, c.ReputationHandler, c.AuthMW)
+	permissions.RegisterRoutes(api, c.PermissionHandler, c.AuthMW, c.AdminMW, c.PermissionService, a.DB)
+	reputation.RegisterRoutes(api, c.ReputationHandler, c.AuthMW, c.TokenManager)
 	upload.RegisterRoutes(api, c.UploadHandler, c.AuthMW, c.PermissionService)
-
 	media.RegisterAdminRoutes(api, c.MediaHandler, c.AuthMW, c.AdminMW)
 
 	ingestion.RegisterAdminRoutes(api, c.IngestionHandler, c.AuthMW, c.AdminMW)
@@ -71,8 +64,8 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	catalogHandlers := catalog.Handlers{
 		Artist: c.ArtistHandler,
 		Album:  c.AlbumHandler,
-		Genre:  c.GenreHandler,
 		Track:  c.TrackHandler,
+		Genre:  c.GenreHandler,
 		Stats:  c.StatsHandler,
 		Enrich: c.EnrichHandler,
 	}
@@ -85,15 +78,14 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 
 	covers.RegisterInternalRoutes(api, c.CoverHandler, c.MLServiceHMACMW)
 
-	playlist.RegisterRoutes(api, c.PlaylistHandler, c.AuthMW, c.OptionalAuthMW)
+	playlist.RegisterRoutes(api, c.PlaylistHandler, c.OptionalAuthMW)
 	library.RegisterRoutes(api, c.LibraryHandler, c.AuthMW)
 	queue.RegisterRoutes(api, c.QueueHandler, c.AuthMW)
 	follow.RegisterRoutes(api, c.FollowHandler, c.AuthMW)
 	recommendation.RegisterRoutes(api, c.RecommendationHandler, c.OnboardingHandler, c.AuthMW)
 	history.RegisterRoutes(api, c.HistoryHandler, c.AuthMW)
 
-	analytics.RegisterRoutes(api, c.AnalyticsHandler)
-	analytics.RegisterAdminRoutes(api, c.AnalyticsHandler, c.AuthMW, c.AdminMW)
+	analytics.RegisterRoutes(api, c.AnalyticsHandler, c.AuthMW, c.AdminMW)
 	notification.RegisterRoutes(api, c.NotificationHandler, c.AuthMW)
 	moderation.RegisterRoutes(api, c.ModerationHandler, c.AuthMW, c.ModeratorMW)
 	dashboard.RegisterAdminRoutes(api, c.DashboardHandler, c.AuthMW, c.AdminMW)
@@ -161,23 +153,5 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 			defer c.enrichDone()
 			c.startPeriodicEnrichment(enrichCtx)
 		}()
-	}
-}
-
-// startPeriodicEnrichment runs enrichment on a 6-hour loop until the context is cancelled.
-func (c *Container) startPeriodicEnrichment(ctx context.Context) {
-	ticker := time.NewTicker(6 * time.Hour)
-	defer ticker.Stop()
-
-	// Run once at startup (non-blocking)
-	c.EnrichHandler.EnrichAllBackground(ctx)
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			c.EnrichHandler.EnrichAllBackground(ctx)
-		}
 	}
 }
