@@ -4,13 +4,12 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"music/internal/common/response"
-	"music/internal/modules/auth"
 	"music/internal/modules/permissions"
 )
 
-func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, tokenManager *auth.TokenManager, permSvc permissions.ServiceInterface) {
+func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, authMW gin.HandlerFunc, permSvc permissions.ServiceInterface) {
 	api := rg.Group("")
-	api.Use(auth.AuthMiddleware(tokenManager))
+	api.Use(authMW)
 
 	// Listener uploads — mine must come before :draftId to avoid matching "mine" as a draft ID
 	api.POST("/uploads/drafts", response.Wrap(handler.CreateDraft))

@@ -2,8 +2,6 @@ package analytics
 
 import (
 	"github.com/gin-gonic/gin"
-
-	"music/internal/modules/auth"
 )
 
 func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, optionalAuthMW ...gin.HandlerFunc) {
@@ -19,9 +17,9 @@ func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, optionalAuthMW ...gin
 }
 
 // RegisterAdminRoutes mounts the analytics admin endpoints under the admin group.
-func RegisterAdminRoutes(rg *gin.RouterGroup, handler *Handler, authMW gin.HandlerFunc) {
+func RegisterAdminRoutes(rg *gin.RouterGroup, handler *Handler, authMW gin.HandlerFunc, adminMW gin.HandlerFunc) {
 	admin := rg.Group("/admin")
-	admin.Use(authMW, auth.RequireRole("admin"))
+	admin.Use(authMW, adminMW)
 	{
 		admin.GET("/analytics/overview", handler.GetOverview)
 	}

@@ -4,12 +4,11 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"music/internal/common/response"
-	"music/internal/modules/auth"
 )
 
-func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, tokenManager *auth.TokenManager) {
+func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, authMW gin.HandlerFunc) {
 	api := rg.Group("")
-	api.Use(auth.AuthMiddleware(tokenManager))
+	api.Use(authMW)
 
 	// Public reputation queries (any authenticated user)
 	api.GET("/reputation/tiers", response.Wrap(handler.GetTrustTiers))
