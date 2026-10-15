@@ -80,7 +80,7 @@ func setupAuthTest() (*Handler, *mockAuthService, *gin.Engine) {
 
 	r := gin.New()
 	rg := r.Group("/api/v1") // match production: RegisterRoutes is called with /api/v1 group
-	RegisterRoutes(rg, h, func(c *gin.Context) { c.Next() }, nil)
+	RegisterRoutes(rg, h, func(c *gin.Context) { c.Next() }, nil, nil)
 	return h, mockSvc, r
 }
 

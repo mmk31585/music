@@ -8,7 +8,7 @@ import (
 	"music/internal/common/middleware"
 )
 
-func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, authMW gin.HandlerFunc, rdb *redis.Client) {
+func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, authMW gin.HandlerFunc, adminMW gin.HandlerFunc, rdb *redis.Client) {
 	rg.GET("/users/:id/profile", handler.GetPublicProfile)
 
 	auth := rg.Group("/auth")
@@ -35,7 +35,7 @@ func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, authMW gin.HandlerFun
 
 	// Admin user management
 	admin := rg.Group("/admin/users")
-	admin.Use(authMW, RequireRole("admin"))
+	admin.Use(authMW, adminMW)
 	{
 		admin.GET("", handler.AdminListUsers)
 		admin.GET("/:id", handler.AdminGetUser)

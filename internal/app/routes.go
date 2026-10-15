@@ -59,14 +59,14 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	health.RegisterRoutes(api, c.HealthHandler)
 	features.RegisterRoutes(api, c.FeaturesHandler)
 	dashboard.RegisterRoutes(api, c.DashboardHandler)
-	auth.RegisterRoutes(api, c.AuthHandler, c.AuthMW, c.RDB)
-	permissions.RegisterRoutes(api, c.PermissionHandler, c.TokenManager, c.PermissionService)
-	reputation.RegisterRoutes(api, c.ReputationHandler, c.TokenManager)
-	upload.RegisterRoutes(api, c.UploadHandler, c.TokenManager, c.PermissionService)
+	auth.RegisterRoutes(api, c.AuthHandler, c.AuthMW, c.AdminMW, c.RDB)
+	permissions.RegisterRoutes(api, c.PermissionHandler, c.AuthMW, c.AdminMW, c.PermissionService)
+	reputation.RegisterRoutes(api, c.ReputationHandler, c.AuthMW)
+	upload.RegisterRoutes(api, c.UploadHandler, c.AuthMW, c.PermissionService)
 
-	media.RegisterAdminRoutes(api, c.MediaHandler, c.AuthMW)
+	media.RegisterAdminRoutes(api, c.MediaHandler, c.AuthMW, c.AdminMW)
 
-	ingestion.RegisterAdminRoutes(api, c.IngestionHandler, c.AuthMW)
+	ingestion.RegisterAdminRoutes(api, c.IngestionHandler, c.AuthMW, c.AdminMW)
 
 	catalogHandlers := catalog.Handlers{
 		Artist: c.ArtistHandler,
@@ -78,9 +78,9 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	}
 
 	catalog.RegisterPublicRoutes(api, catalogHandlers, c.OptionalAuthMW, middleware.RateLimitOptional(c.RDB, 60))
-	catalog.RegisterAdminRoutes(api, catalogHandlers, c.AuthMW)
+	catalog.RegisterAdminRoutes(api, catalogHandlers, c.AuthMW, c.AdminMW)
 
-	lyrics.RegisterRoutes(api, c.LyricsHandler, c.AuthMW)
+	lyrics.RegisterRoutes(api, c.LyricsHandler, c.AuthMW, c.AdminMW)
 	lyrics.RegisterInternalRoutes(api, c.LyricsHandler, c.MLServiceHMACMW)
 
 	covers.RegisterInternalRoutes(api, c.CoverHandler, c.MLServiceHMACMW)
@@ -93,16 +93,17 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	history.RegisterRoutes(api, c.HistoryHandler, c.AuthMW)
 
 	analytics.RegisterRoutes(api, c.AnalyticsHandler)
-	analytics.RegisterAdminRoutes(api, c.AnalyticsHandler, c.AuthMW)
+	analytics.RegisterAdminRoutes(api, c.AnalyticsHandler, c.AuthMW, c.AdminMW)
 	notification.RegisterRoutes(api, c.NotificationHandler, c.AuthMW)
-	moderation.RegisterRoutes(api, c.ModerationHandler, c.AuthMW)
-	dashboard.RegisterAdminRoutes(api, c.DashboardHandler, c.AuthMW)
-	contribution.RegisterRoutes(api, c.ContributionHandler, c.AuthMW)
-	importcmd.RegisterAdminRoutes(api, c.ImportHandler, c.AuthMW)
+	moderation.RegisterRoutes(api, c.ModerationHandler, c.AuthMW, c.ModeratorMW)
+	dashboard.RegisterAdminRoutes(api, c.DashboardHandler, c.AuthMW, c.AdminMW)
+	contribution.RegisterRoutes(api, c.ContributionHandler, c.AuthMW, c.ModeratorMW, c.AdminMW)
+	importcmd.RegisterAdminRoutes(api, c.ImportHandler, c.AuthMW, c.AdminMW)
 	subscription.RegisterRoutes(api, c.SubscriptionHandler, c.AuthMW)
 
 	player.RegisterPublicRoutes(api, c.PlayerHandler)
 	player.RegisterPrivateRoutes(api, c.PlayerHandler, c.AuthMW)
+	player.RegisterAdminRoutes(api, c.PlayerHandler, c.AuthMW, c.AdminMW)
 
 	if c.SearchHandler != nil {
 		search.RegisterRoutes(api, c.SearchHandler, c.OptionalAuthMW, middleware.RateLimitOptional(c.RDB, 60))
@@ -143,14 +144,14 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	})
 
 	reactions.RegisterRoutes(api, c.ReactionsHandler, c.AuthMW)
-	gamification.RegisterRoutes(api, c.GamificationHandler, c.AuthMW)
+	gamification.RegisterRoutes(api, c.GamificationHandler, c.AuthMW, c.AdminMW)
 	creator.RegisterRoutes(api, c.CreatorHandler, c.AuthMW)
 	social.RegisterRoutes(api, c.SocialHandler, c.AuthMW)
 	ai.RegisterRoutes(api, c.AIHandler, c.AuthMW)
 
-	cacheadmin.RegisterAdminRoutes(api, c.CacheAdminHandler, c.AuthMW)
+	cacheadmin.RegisterAdminRoutes(api, c.CacheAdminHandler, c.AuthMW, c.AdminMW)
 
-	video.RegisterRoutes(api, c.VideoHandler, c.AuthMW)
+	video.RegisterRoutes(api, c.VideoHandler, c.AuthMW, c.AdminMW)
 	video.RegisterInternalRoutes(api, c.VideoHandler, c.MLServiceHMACMW)
 
 	// Start periodic enrichment for all tracks (runs every 6 hours)
