@@ -20,6 +20,7 @@ type RepositoryInterface interface {
 	// Roles
 	ListRoles(ctx context.Context) ([]Role, error)
 	GetRoleBySlug(ctx context.Context, slug string) (Role, error)
+	GetRoleHierarchyLevel(ctx context.Context, slug string) (int, error)
 	GetRoleByID(ctx context.Context, id int64) (Role, error)
 	CreateRole(ctx context.Context, role Role) (Role, error)
 	UpdateRole(ctx context.Context, id int64, updates map[string]any) error
@@ -139,6 +140,24 @@ func (r *Repository) GetRoleBySlug(ctx context.Context, slug string) (Role, erro
 		return Role{}, err
 	}
 	return role, nil
+}
+
+func (r *Repository) GetRoleHierarchyLevel(ctx context.Context, slug string) (int, error) {
+	query := `
+		SELECT hierarchy_level
+		FROM roles
+		WHERE slug = $1
+	`
+
+	var level int
+	err := r.db.QueryRow(ctx, query, slug).Scan(&level)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return 0, apperrors.New(http.StatusNotFound, apperrors.CodeNotFound, "role not found", nil)
+		}
+		return 0, err
+	}
+	return level, nil
 }
 
 func (r *Repository) GetRoleByID(ctx context.Context, id int64) (Role, error) {

@@ -4,22 +4,21 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"music/internal/common/response"
-	"music/internal/modules/auth"
 )
 
-func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, authSvc *auth.TokenManager, permSvc ServiceInterface) {
+func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, authMW gin.HandlerFunc, adminMW gin.HandlerFunc, permSvc ServiceInterface) {
 	// Public: none (all endpoints require auth)
 
 	// Authenticated group
 	api := rg.Group("")
-	api.Use(auth.AuthMiddleware(authSvc))
+	api.Use(authMW)
 
 	// --- Current user's access ---
 	api.GET("/permissions/me", response.Wrap(handler.GetMyAccess))
 
 	// --- Permissions catalog (admin) ---
 	admin := api.Group("/permissions")
-	admin.Use(auth.RequireRole("admin"))
+	admin.Use(adminMW)
 	{
 		admin.GET("", response.Wrap(handler.ListPermissions))
 	}
@@ -27,7 +26,7 @@ func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, authSvc *auth.TokenMa
 	// --- Roles (admin) ---
 	roles := api.Group("/roles")
 	adminRoles := roles
-	adminRoles.Use(auth.RequireRole("admin"))
+	adminRoles.Use(adminMW)
 	{
 		adminRoles.GET("", response.Wrap(handler.ListRoles))
 		adminRoles.POST("", response.Wrap(handler.CreateRole))
@@ -40,7 +39,7 @@ func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, authSvc *auth.TokenMa
 	// --- User role management (admin) ---
 	users := api.Group("/users")
 	adminUsers := users
-	adminUsers.Use(auth.RequireRole("admin"))
+	adminUsers.Use(adminMW)
 	{
 		adminUsers.GET("/:id/access", response.Wrap(handler.GetUserAccess))
 		adminUsers.POST("/:id/access/check", response.Wrap(handler.CheckPermission))

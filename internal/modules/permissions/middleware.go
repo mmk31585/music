@@ -7,14 +7,14 @@ import (
 
 	apperrors "music/internal/common/errors"
 	"music/internal/common/response"
-	"music/internal/modules/auth"
 )
 
 // RequirePermission returns a middleware that checks if the authenticated user
 // has the specified permission via their role + overrides.
 func RequirePermission(svc ServiceInterface, permSlug string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := auth.UserIDFromContext(c)
+		userIDValue, _ := c.Get("auth_user_id")
+	userID := userIDValue.(string)
 		if userID == "" {
 			response.Error(c, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil))
 			c.Abort()
@@ -44,7 +44,8 @@ func RequirePermission(svc ServiceInterface, permSlug string) gin.HandlerFunc {
 // has at least one of the specified permissions.
 func RequireAnyPermission(svc ServiceInterface, permSlugs ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := auth.UserIDFromContext(c)
+		userIDValue, _ := c.Get("auth_user_id")
+	userID := userIDValue.(string)
 		if userID == "" {
 			response.Error(c, apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil))
 			c.Abort()
@@ -74,7 +75,8 @@ func RequireAnyPermission(svc ServiceInterface, permSlugs ...string) gin.Handler
 // record in the Gin context for downstream handlers.
 func InjectUserAccess(svc ServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := auth.UserIDFromContext(c)
+		userIDValue, _ := c.Get("auth_user_id")
+	userID := userIDValue.(string)
 		if userID == "" {
 			c.Next()
 			return
