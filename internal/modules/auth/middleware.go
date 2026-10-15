@@ -193,7 +193,6 @@ func ErrUnauthorized() error {
 	return apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil)
 }
 
-
 // RequireRole provides a simpler role (slug-based, equality) guard for module routes
 // when a hierarchy fetcher is not available.
 func RequireRole(roles ...string) gin.HandlerFunc {
