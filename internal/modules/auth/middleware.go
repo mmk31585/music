@@ -147,6 +147,7 @@ func UserRoleFromContext(c *gin.Context) string {
 
 	}
 	return role
+
 // OptionalAuthMiddleware returns a Gin middleware that validates JWT tokens
 // but does NOT return 401 on missing/invalid token. Instead it sets a nil user
 // in context and calls next(), allowing unauthenticated access.

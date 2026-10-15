@@ -102,7 +102,6 @@ func (a *App) RegisterRoutes(r *gin.Engine) {
 	subscription.RegisterRoutes(api, c.SubscriptionHandler, c.AuthMW)
 
 	player.RegisterPublicRoutes(api, c.PlayerHandler)
-	player.RegisterPrivateRoutes(api, c.PlayerHandler, c.AuthMW)
 	player.RegisterAdminRoutes(api, c.PlayerHandler, c.AuthMW, c.AdminMW)
 
 	if c.SearchHandler != nil {
