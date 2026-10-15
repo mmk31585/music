@@ -77,6 +77,8 @@ type Container struct {
 
 	AuthMW         gin.HandlerFunc
 	OptionalAuthMW  gin.HandlerFunc
+	AdminMW         gin.HandlerFunc
+	ModeratorMW     gin.HandlerFunc
 	TokenManager   *auth.TokenManager
 
 	HealthHandler   *health.Handler
@@ -319,8 +321,12 @@ func (c *Container) buildAuth(a *App) {
 	authRepo := auth.NewRepository(a.DB)
 	c.AuthService = auth.NewService(authRepo, tokenManager)
 	c.AuthHandler = auth.NewHandler(c.AuthService, a.Validator)
-	c.AuthMW = auth.AuthMiddleware(tokenManager)
-	c.OptionalAuthMW = auth.OptionalAuthMiddleware(tokenManager)
+
+	permRepo := permissions.NewRepository(a.DB)
+	c.AuthMW = auth.AuthMiddleware(tokenManager, permRepo.GetRoleHierarchyLevel)
+	c.OptionalAuthMW = auth.OptionalAuthMiddleware(tokenManager, permRepo.GetRoleHierarchyLevel)
+	c.AdminMW = auth.RequireRole(permRepo.GetRoleHierarchyLevel, "admin")
+	c.ModeratorMW = auth.RequireRole(permRepo.GetRoleHierarchyLevel, "moderator", "admin")
 	c.TokenManager = tokenManager
 }
 
