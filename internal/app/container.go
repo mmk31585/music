@@ -325,8 +325,8 @@ func (c *Container) buildAuth(a *App) {
 	permRepo := permissions.NewRepository(a.DB)
 	c.AuthMW = auth.AuthMiddleware(tokenManager, permRepo.GetRoleHierarchyLevel)
 	c.OptionalAuthMW = auth.OptionalAuthMiddleware(tokenManager, permRepo.GetRoleHierarchyLevel)
-	c.AdminMW = auth.RequireRole(permRepo.GetRoleHierarchyLevel, "admin")
-	c.ModeratorMW = auth.RequireRole(permRepo.GetRoleHierarchyLevel, "moderator", "admin")
+	c.AdminMW = auth.RequireRoleHierarchical(permRepo.GetRoleHierarchyLevel, "admin")
+	c.ModeratorMW = auth.RequireRoleHierarchical(permRepo.GetRoleHierarchyLevel, "moderator", "admin")
 	c.TokenManager = tokenManager
 }
 
