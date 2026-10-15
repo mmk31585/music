@@ -2,10 +2,9 @@ package gamification
 
 import (
 	"github.com/gin-gonic/gin"
-	"music/internal/modules/auth"
 )
 
-func RegisterRoutes(api *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
+func RegisterRoutes(api *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc, adminMW gin.HandlerFunc) {
 	gamification := api.Group("/gamification")
 	gamification.Use(authMW)
 	{
@@ -18,7 +17,7 @@ func RegisterRoutes(api *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
 
 	// XP management (admin only)
 	admin := api.Group("/admin/gamification")
-	admin.Use(authMW, auth.RequireRole("admin"))
+	admin.Use(authMW, adminMW)
 	{
 		admin.POST("/xp", h.AddXP)
 	}

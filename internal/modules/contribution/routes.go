@@ -2,10 +2,9 @@ package contribution
 
 import (
 	"github.com/gin-gonic/gin"
-	"music/internal/modules/auth"
 )
 
-func RegisterRoutes(api *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
+func RegisterRoutes(api *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc, modMW gin.HandlerFunc, adminMW gin.HandlerFunc) {
 	contributions := api.Group("/contributions")
 	{
 		contributions.GET("/leaderboard", h.GetLeaderboard)
@@ -21,7 +20,7 @@ func RegisterRoutes(api *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
 
 		// Moderator/admin review routes
 		modProtected := contributions.Group("")
-		modProtected.Use(authMW, auth.RequireRole("moderator", "admin"))
+		modProtected.Use(authMW, modMW)
 		{
 			modProtected.GET("/pending", h.ListPending)
 			modProtected.POST("/:id/review", h.Review)
@@ -37,7 +36,7 @@ func RegisterRoutes(api *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
 
 	// Admin contribution routes
 	adminContributions := api.Group("/admin/contributions")
-	adminContributions.Use(authMW, auth.RequireRole("admin"))
+	adminContributions.Use(authMW, adminMW)
 	{
 		adminContributions.GET("", h.ListByStatus)
 		adminContributions.POST("/:id/apply", h.Apply)

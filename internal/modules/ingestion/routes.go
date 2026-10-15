@@ -2,14 +2,11 @@ package ingestion
 
 import (
 	"github.com/gin-gonic/gin"
-
-	"music/internal/modules/auth"
 )
 
-func RegisterAdminRoutes(rg *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
+func RegisterAdminRoutes(rg *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc, adminMW gin.HandlerFunc) {
 	admin := rg.Group("/admin/ingestion")
-	admin.Use(authMW)
-	admin.Use(auth.RequireRole("admin"))
+	admin.Use(authMW, adminMW)
 	{
 		admin.POST("/upload", h.Upload)
 		admin.GET("/drafts", h.ListDrafts)
@@ -28,8 +25,7 @@ func RegisterAdminRoutes(rg *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc
 	}
 
 	search := rg.Group("/admin/catalog")
-	search.Use(authMW)
-	search.Use(auth.RequireRole("admin"))
+	search.Use(authMW, adminMW)
 	{
 		search.GET("/artists/search", h.SearchArtists)
 		search.GET("/albums/search", h.SearchAlbums)
