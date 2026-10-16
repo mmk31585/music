@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/redis/go-redis/v9"
+
 	"music/internal/common/validator"
 	"music/internal/config"
 	"music/internal/platform/cache"
@@ -34,19 +36,19 @@ func Bootstrap(ctx context.Context) (*App, error) {
 	// (enrichment, import, etc.) get the configured logger instead of the nop default.
 	_ = zap.ReplaceGlobals(log)
 
-	log.Info("running database migrations")
-	if err := database.RunMigrations(cfg.Postgres.URL); err != nil {
-		return nil, fmt.Errorf("migrations failed: %w", err)
-	}
+	// NOTE: Migrations must NOT run at server startup in serverless environments.
+	// Run them separately via `make migrate-up` before deploying, or as a CI step.
+	// Running them here would crash the entire function on any DB connectivity issue.
 
 	db, err := database.NewPostgres(ctx, cfg.Postgres.URL)
 	if err != nil {
 		return nil, fmt.Errorf("init postgres: %w", err)
 	}
 
-	redisClient, err := cache.NewRedis(ctx, cfg.Redis.Addr, cfg.Redis.Password, cfg.Redis.DB)
+	var redisClient *redis.Client
+	redisClient, err = cache.NewRedis(ctx, cfg.Redis.Addr, cfg.Redis.Password, cfg.Redis.DB)
 	if err != nil {
-		return nil, fmt.Errorf("init redis: %w", err)
+		log.Warn("redis unavailable, continuing without cache", zap.Error(err))
 	}
 
 	v := validator.New()
