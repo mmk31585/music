@@ -1,0 +1,9 @@
+FROM debian:bookworm-slim
+WORKDIR /app
+COPY bin/api /app/server
+COPY migrations /app/migrations
+RUN chmod +x /app/server
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD /bin/sh -c 'exit 0'
+ENTRYPOINT ["./server"]

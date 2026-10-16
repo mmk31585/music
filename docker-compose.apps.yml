@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: musicapp_postgres
+    environment:
+      POSTGRES_DB: musicapp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports: ["5432:5432"]
+    volumes:
+      - musicapp_postgres_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7
+    container_name: musicapp_redis
+    ports: ["6379:6379"]
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend.local
+    container_name: musicapp_backend
+    environment:
+      APP_PORT: 8080
+      POSTGRES_URL: postgres://postgres:postgres@postgres:5432/musicapp?sslmode=disable
+      REDIS_ADDR: redis:6379
+      JWT_ACCESS_SECRET: dev_access_secret
+      JWT_REFRESH_SECRET: dev_refresh_secret
+    ports: ["8080:8080"]
+    depends_on:
+      postgres: {condition: service_started}
+      redis: {condition: service_started}
+  frontend:
+    image: music-frontend:latest
+    container_name: musicapp_frontend
+    ports: ["3000:80"]
+    depends_on:
+      - backend
+volumes:
+  musicapp_postgres_data:
