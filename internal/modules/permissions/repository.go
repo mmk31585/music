@@ -489,12 +489,3 @@ func (r *Repository) ResolveUserAccess(ctx context.Context, userID string) (User
 
 	return access, nil
 }
-
-// GetRoleHierarchyLevel returns the hierarchy level for a given role slug.
-func (r *Repository) GetRoleHierarchyLevel(ctx context.Context, slug string) (int, error) {
-	role, err := r.GetRoleBySlug(ctx, slug)
-	if err != nil {
-		return 0, err
-	}
-	return role.HierarchyLevel, nil
-}

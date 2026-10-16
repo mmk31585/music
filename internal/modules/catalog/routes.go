@@ -54,9 +54,7 @@ func RegisterPublicRoutes(rg *gin.RouterGroup, h Handlers, mw ...gin.HandlerFunc
 }
 
 func RegisterAdminRoutes(rg *gin.RouterGroup, h Handlers, authMW gin.HandlerFunc, adminMW gin.HandlerFunc) {
-func RegisterAdminRoutes(rg *gin.RouterGroup, h Handlers, authMW gin.HandlerFunc, adminMW gin.HandlerFunc) {
 	adminCatalog := rg.Group("/admin/catalog")
-	adminCatalog.Use(authMW, adminMW)
 	adminCatalog.Use(authMW, adminMW)
 
 	artists := adminCatalog.Group("/artist")
@@ -100,12 +98,6 @@ func RegisterAdminRoutes(rg *gin.RouterGroup, h Handlers, authMW gin.HandlerFunc
 		genres.PATCH("/:genreID", h.Genre.Update)
 		genres.DELETE("/:genreID", h.Genre.Delete)
 	}
-
-	statsGroup := adminCatalog.Group("/stats")
-	{
-		statsGroup.GET("", h.Stats.Get)
-	}
-}
 
 	statsGroup := adminCatalog.Group("/stats")
 	{
