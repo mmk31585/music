@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -45,6 +46,9 @@ func loadStorageConfig() StorageConfig {
 	}
 	region := os.Getenv("S3_REGION")
 	if region == "" {
+		region = os.Getenv("AWS_REGION")
+	}
+	if region == "" {
 		region = "us-east-1"
 	}
 
@@ -77,8 +81,21 @@ func loadStorageConfig() StorageConfig {
 			BaseURL: localBaseURL,
 		},
 
-		S3: S3StorageConfig{
-			Bucket:          os.Getenv("S3_BUCKET"),
+		bucket := os.Getenv("S3_BUCKET")
+	if bucket == "" {
+		bucket = os.Getenv("S3_BUCKET_NAME")
+	}
+	if bucket == "" {
+		if arn := os.Getenv("AWS_RESOURCE_ARN"); arn != "" {
+			parts := strings.Split(arn, ":::")
+			if len(parts) == 2 {
+				bucket = parts[1]
+			}
+		}
+	}
+
+	S3: S3StorageConfig{
+			Bucket:          bucket,
 			Region:          region,
 			Endpoint:        os.Getenv("S3_ENDPOINT"),
 			AccessKeyID:     os.Getenv("S3_ACCESS_KEY_ID"),
