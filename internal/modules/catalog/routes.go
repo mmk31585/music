@@ -35,7 +35,6 @@ func RegisterPublicRoutes(rg *gin.RouterGroup, h Handlers, mw ...gin.HandlerFunc
 		cg.GET("/artists/:artistID/related", h.Artist.Related)
 
 		cg.GET("/artists/:artistID/top-tracks", h.Artist.TopTracks)
-		cg.GET("/artists/:artistID/related", h.Artist.Related)
 
 		cg.GET("/albums", h.Album.List)
 		cg.GET("/albums/:albumID", h.Album.Get)
