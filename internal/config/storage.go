@@ -52,6 +52,19 @@ func loadStorageConfig() StorageConfig {
 		region = "us-east-1"
 	}
 
+	bucket := os.Getenv("S3_BUCKET")
+	if bucket == "" {
+		bucket = os.Getenv("S3_BUCKET_NAME")
+	}
+	if bucket == "" {
+		if arn := os.Getenv("AWS_RESOURCE_ARN"); arn != "" {
+			parts := strings.Split(arn, ":::")
+			if len(parts) == 2 {
+				bucket = parts[1]
+			}
+		}
+	}
+
 	usePathStyle := false
 	if v := os.Getenv("S3_USE_PATH_STYLE"); v != "" {
 		switch v {
@@ -81,20 +94,7 @@ func loadStorageConfig() StorageConfig {
 			BaseURL: localBaseURL,
 		},
 
-		bucket := os.Getenv("S3_BUCKET")
-	if bucket == "" {
-		bucket = os.Getenv("S3_BUCKET_NAME")
-	}
-	if bucket == "" {
-		if arn := os.Getenv("AWS_RESOURCE_ARN"); arn != "" {
-			parts := strings.Split(arn, ":::")
-			if len(parts) == 2 {
-				bucket = parts[1]
-			}
-		}
-	}
-
-	S3: S3StorageConfig{
+		S3: S3StorageConfig{
 			Bucket:          bucket,
 			Region:          region,
 			Endpoint:        os.Getenv("S3_ENDPOINT"),
