@@ -38,7 +38,7 @@ func Bootstrap(ctx context.Context) (*App, error) {
 
 	// NOTE: Migrations must NOT run at server startup in serverless environments.
 	// Run them separately via `make migrate-up` before deploying, or as a CI step.
-	// Running them here would crash the entire function on any DB connectivity issue.
+	// Use POSTGRES_URL_NON_POOLING (direct connection, no pgbouncer) for migrations.
 
 	db, err := database.NewPostgres(ctx, cfg.Postgres.URL)
 	if err != nil {

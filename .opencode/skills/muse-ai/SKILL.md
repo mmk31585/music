@@ -219,7 +219,7 @@ All via `.env` in the `moja-ml-service/` directory:
 
 ```
 DATABASE_URL=postgresql+asyncpg://moja_ml:password@localhost:5433/moja_ml
-REDIS_URL=redis://localhost:6379/0
+music_REDIS_URL=redis://localhost:6379/0
 CELERY_BROKER_URL=redis://localhost:6379/1
 STORAGE_MODE=shared_volume  # or presigned_url
 AUDIO_SHARED_PATH=/mnt/audio-uploads

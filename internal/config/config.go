@@ -73,6 +73,7 @@ func Load() (*Config, error) {
 	// Resolve ${VAR} references in all connection URLs so platforms like Vercel
 	// that inject variable references instead of resolved values work correctly.
 	cfg.Postgres.URL = resolveURL(cfg.Postgres.URL)
+	cfg.Postgres.UnpooledURL = resolveURL(cfg.Postgres.UnpooledURL)
 	cfg.Redis.Addr = resolveURL(cfg.Redis.Addr)
 	cfg.OpenSearch.URL = resolveURL(cfg.OpenSearch.URL)
 	cfg.MLService.BaseURL = resolveURL(cfg.MLService.BaseURL)
@@ -84,8 +85,8 @@ func Load() (*Config, error) {
 
 	cfg.applyLegacyUploadCompatibility()
 
-	if cfg.Postgres.URL == "" {
-		return nil, fmt.Errorf("POSTGRES_URL is required")
+	if cfg.Postgres.URL == "" && cfg.Postgres.UnpooledURL == "" {
+		return nil, fmt.Errorf("POSTGRES_URL or DATABASE_URL is required")
 	}
 
 	// Validate critical configuration — panics in production if secrets are weak

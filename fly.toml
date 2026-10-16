@@ -29,7 +29,7 @@ primary_region = "iad"
 
 # Required secrets (set via `fly secrets set`):
 # DATABASE_URL
-# REDIS_URL
+# music_REDIS_URL
 # JWT_SECRET
 # SENTRY_DSN
 # CORS_ALLOWED_ORIGINS
