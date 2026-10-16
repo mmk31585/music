@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterRoutes mounts public maintenance status endpoint.
 func RegisterRoutes(rg *gin.RouterGroup, h *Handler) {
 	status := rg.Group("/status")
 	{
@@ -12,9 +11,11 @@ func RegisterRoutes(rg *gin.RouterGroup, h *Handler) {
 	}
 }
 
+func RegisterAdminRoutes(rg *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc, adminMW gin.HandlerFunc) {
 // RegisterAdminRoutes mounts admin-only dashboard endpoints.
 func RegisterAdminRoutes(rg *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc, adminMW gin.HandlerFunc) {
 	admin := rg.Group("/admin")
+	admin.Use(authMW, adminMW)
 	admin.Use(authMW, adminMW)
 	{
 		admin.GET("/dashboard/stats", h.GetStats)
