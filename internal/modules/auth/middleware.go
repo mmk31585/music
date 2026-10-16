@@ -2,13 +2,13 @@ package auth
 
 import (
 	"context"
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 
 	apperrors "music/internal/common/errors"
 	"music/internal/common/response"
-	"net/http"
 )
 
 // Context keys for Gin
@@ -23,7 +23,7 @@ type RoleHierarchyFetcher func(ctx context.Context, roleSlug string) (int, error
 
 // AuthMiddleware returns a Gin middleware that validates JWT tokens
 // and stores user ID and role in the Gin context.
-func AuthMiddleware(tokens *TokenManager, fetchHierarchy ...RoleHierarchyFetcher) gin.HandlerFunc {
+func AuthMiddleware(tokens *TokenManager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 		if header == "" {
@@ -50,73 +50,21 @@ func AuthMiddleware(tokens *TokenManager, fetchHierarchy ...RoleHierarchyFetcher
 		c.Set(UserIDContextKey, claims.UserID)
 		c.Set(UserRoleKey, claims.Role)
 
-		// Fetch and store role hierarchy level
-		var roleLevel int
-		if claims.Role != "" && len(fetchHierarchy) > 0 && fetchHierarchy[0] != nil {
-			if level, err := fetchHierarchy[0](c.Request.Context(), claims.Role); err == nil {
-				roleLevel = level
-			}
-		}
-		c.Set(UserHierarchyLevelKey, roleLevel)
-
 		c.Next()
 	}
 }
 
 // RequireRole returns a Gin middleware that ensures the authenticated user
-// has a role with sufficient hierarchy level (greater than or equal to any of the required roles).
-func requireRoleWithHierarchy(fetchHierarchy RoleHierarchyFetcher, roles ...string) gin.HandlerFunc {
+// has one of the required roles.
+func RequireRole(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Get current role hierarchy level from context
-		currentLevel, _ := c.Get(UserHierarchyLevelKey)
-		currentLevelInt, ok := currentLevel.(int)
-		if !ok {
-			response.Error(c, apperrors.New(http.StatusForbidden, apperrors.CodeForbidden, "insufficient permissions", nil))
-			c.Abort()
-			return
-		}
-
-		// If no roles are required, allow access
-		if len(roles) == 0 {
-			c.Next()
-			return
-		}
-
-		// Find the minimum hierarchy level among the required roles
-		var minRequiredLevel int
-		first := true
-
-		for _, roleSlug := range roles {
-			if roleSlug == "" {
-				continue
-			}
-			if level, err := fetchHierarchy(c.Request.Context(), roleSlug); err == nil {
-				if first || level < minRequiredLevel {
-					minRequiredLevel = level
-					first = false
-				}
-			}
-			// If we can't find a role, treat it as requiring the highest level (secure by default)
-			if first {
-				// If this is the first role and we couldn't find it, we can't determine a minimum
-				// For security, we'll deny access unless we can validate at least one role
-				continue
+		currentRole := UserRoleFromContext(c)
+		for _, role := range roles {
+			if currentRole == role {
+				c.Next()
+				return
 			}
 		}
-
-		// If we couldn't validate any roles, deny access for security
-		if first {
-			response.Error(c, apperrors.New(http.StatusForbidden, apperrors.CodeForbidden, "insufficient permissions", nil))
-			c.Abort()
-			return
-		}
-
-		// Check if current role level meets or exceeds the minimum required level
-		if currentLevelInt >= minRequiredLevel {
-			c.Next()
-			return
-		}
-
 		response.Error(c, apperrors.New(http.StatusForbidden, apperrors.CodeForbidden, "insufficient permissions", nil))
 		c.Abort()
 	}
@@ -151,7 +99,7 @@ func UserRoleFromContext(c *gin.Context) string {
 // OptionalAuthMiddleware returns a Gin middleware that validates JWT tokens
 // but does NOT return 401 on missing/invalid token. Instead it sets a nil user
 // in context and calls next(), allowing unauthenticated access.
-func OptionalAuthMiddleware(tokens *TokenManager, hierarchyFetcher RoleHierarchyFetcher) gin.HandlerFunc {
+func OptionalAuthMiddleware(tokens *TokenManager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 		if header == "" {
@@ -174,58 +122,11 @@ func OptionalAuthMiddleware(tokens *TokenManager, hierarchyFetcher RoleHierarchy
 		c.Set(UserIDContextKey, claims.UserID)
 		c.Set(UserRoleKey, claims.Role)
 
-		// Fetch and store role hierarchy level
-		var roleLevel int
-		if claims.Role != "" {
-			if level, err := hierarchyFetcher(c.Request.Context(), claims.Role); err == nil {
-				roleLevel = level
-			}
-		}
-		c.Set(UserHierarchyLevelKey, roleLevel)
-
 		c.Next()
-
 	}
 }
 
 // ErrUnauthorized returns a standard unauthorized error.
 func ErrUnauthorized() error {
 	return apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil)
-}
-
-// RequireRole provides a flexible role guard: accepts either a hierarchy fetcher
-// followed by role slugs (RequireRoleHierarchical usage) or just role slugs.
-func RequireRole(args ...interface{}) gin.HandlerFunc {
-	var fetchHierarchy RoleHierarchyFetcher
-	roles := []string{}
-	if len(args) > 0 {
-		if fh, ok := args[0].(RoleHierarchyFetcher); ok {
-			fetchHierarchy = fh
-			for _, a := range args[1:] {
-				if s, ok := a.(string); ok {
-					roles = append(roles, s)
-				}
-			}
-		} else {
-			for _, a := range args {
-				if s, ok := a.(string); ok {
-					roles = append(roles, s)
-				}
-			}
-		}
-	}
-	if fetchHierarchy == nil {
-		return func(c *gin.Context) {
-			current := UserRoleFromContext(c)
-			for _, r := range roles {
-				if r == current || current == "admin" {
-					c.Next()
-					return
-				}
-			}
-			response.Error(c, apperrors.New(http.StatusForbidden, apperrors.CodeForbidden, "insufficient permissions", nil))
-			c.Abort()
-		}
-	}
-	return requireRoleWithHierarchy(fetchHierarchy, roles...)
 }
