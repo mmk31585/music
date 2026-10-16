@@ -106,13 +106,6 @@ func RegisterRoutes(r *gin.RouterGroup, a *App) {
 		catalogSearch.GET("/search", c.SearchHandler.Search)
 	}
 
-	tokenManager := auth.NewTokenManager(
-		a.Config.Auth.JWTAccessSecret,
-		a.Config.Auth.JWTRefreshSecret,
-		a.Config.Auth.AccessTTL,
-		a.Config.Auth.RefreshTTL,
-	)
-
 	api.GET("/ws", func(ctx *gin.Context) {
 		tokenStr := ctx.Query("token")
 		if tokenStr == "" {
@@ -120,7 +113,7 @@ func RegisterRoutes(r *gin.RouterGroup, a *App) {
 			return
 		}
 
-		claims, err := tokenManager.ParseAccessToken(tokenStr)
+		claims, err := c.TokenManager.ParseAccessToken(tokenStr)
 		if err != nil {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
 			return
