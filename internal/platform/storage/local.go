@@ -24,10 +24,9 @@ func NewLocalStorage(cfg LocalConfig) (*LocalStorage, error) {
 		return nil, errors.New("local storage base dir is required")
 	}
 
-	if err := os.MkdirAll(cfg.BaseDir, 0755); err != nil {
-		return nil, err
-	}
-
+	// NOTE: Do NOT create the directory here. Serverless environments (Vercel)
+	// have a read-only filesystem; MkdirAll would crash at startup. Directories
+	// are created lazily on first write (Upload/Copy) via os.MkdirAll.
 	return &LocalStorage{
 		baseDir: cfg.BaseDir,
 		baseURL: strings.TrimRight(cfg.BaseURL, "/"),
