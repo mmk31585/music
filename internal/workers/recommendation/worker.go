@@ -81,7 +81,7 @@ func (w *Worker) computeContentSimilarity(ctx context.Context) error {
 		WHERE (t1.artist_id IS NOT NULL AND t1.artist_id = t2.artist_id)
 		   OR (t1.album_id IS NOT NULL AND t1.album_id = t2.album_id)
 		   OR tg1.genre_id = tg2.genre_id
-		GROUP BY t1.id, t2.id, t1.artist_id, t2.artist_id, t1.album_id, t2.album_id
+		GROUP BY t1.id, t2.id, t1.artist_id, t2.artist_id, t1.album_id, t2.album_id, tg1.genre_id, tg2.genre_id
 		HAVING CASE
 			WHEN t1.artist_id IS NOT NULL AND t1.artist_id = t2.artist_id THEN 0.8
 			WHEN t1.album_id IS NOT NULL AND t1.album_id = t2.album_id THEN 0.6
