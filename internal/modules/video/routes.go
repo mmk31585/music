@@ -2,8 +2,6 @@ package video
 
 import (
 	"github.com/gin-gonic/gin"
-
-	"music/internal/modules/auth"
 )
 
 // RegisterInternalRoutes registers internal service-to-service endpoints
@@ -18,10 +16,10 @@ func RegisterInternalRoutes(api *gin.RouterGroup, handler *Handler, hmacMW gin.H
 	}
 }
 
-func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, authMW gin.HandlerFunc) {
+func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, authMW gin.HandlerFunc, adminMW gin.HandlerFunc) {
 	// --- Admin routes (auth + admin role required) ---
 	admin := rg.Group("/admin")
-	admin.Use(authMW, auth.RequireRole("admin"))
+	admin.Use(authMW, adminMW)
 	{
 		admin.GET("/videos", handler.AdminListVideos)
 		admin.POST("/tracks/:trackId/mv", handler.UploadOfficialMV)
@@ -38,29 +36,13 @@ func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, authMW gin.HandlerFun
 	authGroup.Use(authMW)
 	{
 		authGroup.POST("", handler.CreateUserEdit)
+		authGroup.GET("", handler.GetUserVideos)
 		authGroup.DELETE("/:id", handler.DeleteOwnVideo)
-		authGroup.POST("/:id/comments", handler.CreateComment)
-		authGroup.POST("/:id/like", handler.LikeVideo)
-		authGroup.DELETE("/:id/like", handler.UnlikeVideo)
-		authGroup.POST("/:id/view", handler.ViewVideo)
 	}
 
-	// --- Public video routes ---
-	rg.GET("/videos/:id", handler.GetVideo)
-	rg.GET("/videos/:id/stream", handler.StreamVideo)
-	rg.GET("/videos/:id/comments", handler.ListComments)
-	rg.GET("/tracks/:trackId/videos", handler.ListByTrack)
-	rg.GET("/explore/videos", handler.ListExplore)
-
-	// --- User videos ---
-	rg.GET("/users/:id/videos", handler.GetUserVideos)
-
-	// --- Track like visibility (authenticated) ---
-	rg.PUT("/tracks/:trackId/like/visibility", authMW, handler.SetTrackLikeVisibility)
-	rg.GET("/users/:id/liked-tracks", handler.GetPublicLikedTracks)
-
-	// --- Music status ---
-	rg.PUT("/users/me/music-status", authMW, handler.SetMusicStatus)
-	rg.DELETE("/users/me/music-status", authMW, handler.ClearMusicStatus)
-	rg.GET("/users/:id/music-status", handler.GetMusicStatus)
+	// --- Public routes ---
+	rg.GET("/music-video/:id", handler.GetVideo)
+	rg.GET("/music-video/:id/comments", handler.ListComments)
+	rg.GET("/music-videos/explore", handler.ListExplore)
+	rg.GET("/music-videos/by-track/:trackId", handler.ListByTrack)
 }

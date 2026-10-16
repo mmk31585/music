@@ -2,13 +2,11 @@ package importcmd
 
 import (
 	"github.com/gin-gonic/gin"
-
-	"music/internal/modules/auth"
 )
 
-func RegisterAdminRoutes(rg *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
+func RegisterAdminRoutes(rg *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc, adminMW gin.HandlerFunc) {
 	admin := rg.Group("/admin/import")
-	admin.Use(authMW, auth.RequireRole("admin"))
+	admin.Use(authMW, adminMW)
 	{
 		admin.GET("/search", h.Search)
 		admin.POST("/import", h.Import)

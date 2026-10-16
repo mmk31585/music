@@ -3,7 +3,6 @@ package catalog
 import (
 	"github.com/gin-gonic/gin"
 
-	"music/internal/modules/auth"
 	"music/internal/modules/catalog/album"
 	"music/internal/modules/catalog/artist"
 	"music/internal/modules/catalog/genre"
@@ -30,9 +29,11 @@ func RegisterPublicRoutes(rg *gin.RouterGroup, h Handlers, mw ...gin.HandlerFunc
 		cg.GET("/artists/:artistID", h.Artist.Get)
 		cg.GET("/artists/:artistID/overview", h.Artist.Overview)
 		cg.GET("/artists/:artistID/tracks", h.Artist.Tracks)
-		cg.GET("/artists/:artistID/albums", h.Artist.Albums)
+		cg.GET("/artists/:artistID/albums", h.Album.Artists)
 		cg.GET("/artists/:artistID/singles", h.Artist.Singles)
 		cg.GET("/artists/:artistID/appears-on", h.Artist.AppearsOn)
+		cg.GET("/artists/:artistID/related", h.Artist.Related)
+
 		cg.GET("/artists/:artistID/top-tracks", h.Artist.TopTracks)
 		cg.GET("/artists/:artistID/related", h.Artist.Related)
 
@@ -52,10 +53,9 @@ func RegisterPublicRoutes(rg *gin.RouterGroup, h Handlers, mw ...gin.HandlerFunc
 	}
 }
 
-func RegisterAdminRoutes(rg *gin.RouterGroup, h Handlers, authMW gin.HandlerFunc) {
+func RegisterAdminRoutes(rg *gin.RouterGroup, h Handlers, authMW gin.HandlerFunc, adminMW gin.HandlerFunc) {
 	adminCatalog := rg.Group("/admin/catalog")
-	adminCatalog.Use(authMW)
-	adminCatalog.Use(auth.RequireRole("admin"))
+	adminCatalog.Use(authMW, adminMW)
 
 	artists := adminCatalog.Group("/artist")
 	{
@@ -99,6 +99,8 @@ func RegisterAdminRoutes(rg *gin.RouterGroup, h Handlers, authMW gin.HandlerFunc
 		genres.DELETE("/:genreID", h.Genre.Delete)
 	}
 
-	// Lightweight aggregate stats for the admin dashboard
-	adminCatalog.GET("/stats", h.Stats.Get)
+	statsGroup := adminCatalog.Group("/stats")
+	{
+		statsGroup.GET("", h.Stats.Get)
+	}
 }

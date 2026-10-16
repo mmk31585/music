@@ -2,9 +2,25 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
+
+// resolveURL resolves ${VAR} references in a connection string.
+// If the entire value is ${VAR_NAME}, it is replaced with os.Getenv(VAR_NAME).
+// This handles platforms (e.g. Vercel) that inject a variable reference
+// instead of the resolved value.
+func resolveURL(value string) string {
+	if strings.HasPrefix(value, "${") && strings.HasSuffix(value, "}") {
+		name := value[2 : len(value)-1]
+		if v := os.Getenv(name); v != "" {
+			return v
+		}
+	}
+	return value
+}
 
 type Config struct {
 	App        AppConfig
@@ -53,6 +69,18 @@ func Load() (*Config, error) {
 		OpenRouter: loadOpenRouterConfig(),
 		Sentry:     loadSentryConfig(),
 	}
+
+	// Resolve ${VAR} references in all connection URLs so platforms like Vercel
+	// that inject variable references instead of resolved values work correctly.
+	cfg.Postgres.URL = resolveURL(cfg.Postgres.URL)
+	cfg.Redis.Addr = resolveURL(cfg.Redis.Addr)
+	cfg.OpenSearch.URL = resolveURL(cfg.OpenSearch.URL)
+	cfg.MLService.BaseURL = resolveURL(cfg.MLService.BaseURL)
+	cfg.OpenRouter.BaseURL = resolveURL(cfg.OpenRouter.BaseURL)
+	cfg.Storage.S3.Endpoint = resolveURL(cfg.Storage.S3.Endpoint)
+	cfg.Storage.S3.PublicBaseURL = resolveURL(cfg.Storage.S3.PublicBaseURL)
+	cfg.Media.BasePath = resolveURL(cfg.Media.BasePath)
+	cfg.Media.PublicBase = resolveURL(cfg.Media.PublicBase)
 
 	cfg.applyLegacyUploadCompatibility()
 

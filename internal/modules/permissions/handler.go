@@ -8,7 +8,6 @@ import (
 
 	apperrors "music/internal/common/errors"
 	"music/internal/common/response"
-	"music/internal/modules/auth"
 )
 
 type Handler struct {
@@ -167,7 +166,8 @@ func (h *Handler) AssignUserRole(c *gin.Context) error {
 		return apperrors.New(http.StatusBadRequest, apperrors.CodeValidation, "invalid request", err.Error())
 	}
 
-	assignedBy := auth.UserIDFromContext(c)
+	assignedByValue, _ := c.Get("auth_user_id")
+	assignedBy := assignedByValue.(string)
 	if err := h.svc.AssignUserRole(c.Request.Context(), userID, req.RoleSlug, &assignedBy); err != nil {
 		return err
 	}
@@ -215,7 +215,8 @@ func (h *Handler) GrantUserPermission(c *gin.Context) error {
 		return apperrors.New(http.StatusBadRequest, apperrors.CodeValidation, "invalid request", err.Error())
 	}
 
-	grantedBy := auth.UserIDFromContext(c)
+	grantedByValue, _ := c.Get("auth_user_id")
+	grantedBy := grantedByValue.(string)
 	if err := h.svc.GrantUserPermission(c.Request.Context(), userID, req.PermSlug, req.Reason, &grantedBy); err != nil {
 		return err
 	}
@@ -233,7 +234,8 @@ func (h *Handler) RevokeUserPermission(c *gin.Context) error {
 		return apperrors.New(http.StatusBadRequest, apperrors.CodeValidation, "invalid request", err.Error())
 	}
 
-	grantedBy := auth.UserIDFromContext(c)
+	grantedByValue, _ := c.Get("auth_user_id")
+	grantedBy := grantedByValue.(string)
 	if err := h.svc.RevokeUserPermission(c.Request.Context(), userID, req.PermSlug, &grantedBy); err != nil {
 		return err
 	}
@@ -276,7 +278,8 @@ func (h *Handler) CheckPermission(c *gin.Context) error {
 }
 
 func (h *Handler) GetMyAccess(c *gin.Context) error {
-	userID := auth.UserIDFromContext(c)
+	userIDValue, _ := c.Get("auth_user_id")
+	userID := userIDValue.(string)
 	if userID == "" {
 		return apperrors.New(http.StatusUnauthorized, apperrors.CodeUnauthorized, "authentication required", nil)
 	}

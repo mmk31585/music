@@ -2,13 +2,11 @@ package media
 
 import (
 	"github.com/gin-gonic/gin"
-
-	"music/internal/modules/auth"
 )
 
-func RegisterAdminRoutes(rg *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc) {
+func RegisterAdminRoutes(rg *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc, adminMW gin.HandlerFunc) {
 	admin := rg.Group("/admin/media")
-	admin.Use(authMW, auth.RequireRole("admin"))
+	admin.Use(authMW, adminMW)
 	{
 		admin.GET("", h.ListAdminMedia)
 		admin.POST("/upload", h.UploadAdminMedia)
