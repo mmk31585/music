@@ -51,9 +51,7 @@ type mbRecording struct {
 			Front bool `json:"front"`
 		} `json:"cover-art-archive"`
 	} `json:"releases"`
-	ISRCs []struct {
-		ISRC string `json:"isrc"`
-	} `json:"isrcs"`
+	ISRCs []string `json:"isrcs"`
 }
 
 type mbSearchResponse struct {
@@ -163,7 +161,7 @@ func (p *MusicBrainzProvider) Search(ctx context.Context, q SearchQuery) ([]Resu
 
 		isrc := ""
 		if len(rec.ISRCs) > 0 {
-			isrc = rec.ISRCs[0].ISRC
+			isrc = rec.ISRCs[0]
 		}
 
 		results = append(results, Result{

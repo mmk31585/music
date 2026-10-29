@@ -7,18 +7,32 @@ import (
 
 	"net/http"
 	apperrors "music/internal/common/errors"
+	"music/internal/platform/events"
+
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
 type Service struct {
-	repo   RepositoryInterface
-	tokens *TokenManager
+	repo      RepositoryInterface
+	tokens    *TokenManager
+	publisher events.Publisher
 }
 
 func NewService(repo RepositoryInterface, tokens *TokenManager) *Service {
 	return &Service{
 		repo:   repo,
 		tokens: tokens,
+	}
+}
+
+// NewServiceWithPublisher wires an event publisher so domain events (e.g.
+// user.registered) are emitted to the bus/outbox after a successful action.
+func NewServiceWithPublisher(repo RepositoryInterface, tokens *TokenManager, publisher events.Publisher) *Service {
+	return &Service{
+		repo:      repo,
+		tokens:    tokens,
+		publisher: publisher,
 	}
 }
 
@@ -40,6 +54,22 @@ func (s *Service) Register(ctx context.Context, req RegisterRequest, userAgent, 
 	})
 	if err != nil {
 		return AuthResponse{}, err
+	}
+
+	// Emit user.registered so downstream consumers (welcome notification,
+	// analytics) run. Best-effort: registration must not fail if the bus does.
+	if s.publisher != nil {
+		userID, perr := uuid.Parse(user.ID)
+		if perr == nil {
+			if err := s.publisher.Publish(ctx, events.UserRegisteredEvent{
+				BaseEvent: events.NewBaseEvent(),
+				UserID:    userID,
+				Email:     user.Email,
+				Name:      user.DisplayName,
+			}); err != nil {
+				zap.L().Warn("failed to publish user.registered event", zap.Error(err))
+			}
+		}
 	}
 
 	return s.createAuthResponse(ctx, user, userAgent, ipAddress)

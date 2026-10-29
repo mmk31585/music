@@ -31,6 +31,7 @@ func NewService(logger *zap.Logger, proxy string) *Service {
 
 func (s *Service) Resolve(ctx context.Context, q ResolveQuery) (*Candidate, error) {
 	start := time.Now()
+	var failures []string
 
 	for _, r := range sortByPriority(s.resolvers) {
 		select {
@@ -55,6 +56,7 @@ func (s *Service) Resolve(ctx context.Context, q ResolveQuery) (*Candidate, erro
 
 		if err != nil {
 			metrics.IncImportAcquisition(r.Name(), "fail", rStart)
+			failures = append(failures, fmt.Sprintf("%s: %v", r.Name(), err))
 			s.logger.Debug("resolver failed, trying next",
 				zap.String("resolver", r.Name()),
 				zap.Error(err),
@@ -76,6 +78,12 @@ func (s *Service) Resolve(ctx context.Context, q ResolveQuery) (*Candidate, erro
 		)
 		return candidate, nil
 	}
+
+	s.logger.Warn("resolve failed for all sources",
+		zap.String("query", q.Artist+" - "+q.Title),
+		zap.Strings("failures", failures),
+		zap.Duration("elapsed", time.Since(start)),
+	)
 
 	return nil, fmt.Errorf("Could not find a downloadable copy of '%s - %s'. Try a different search term or use a direct YouTube/SoundCloud URL.", q.Artist, q.Title)
 }

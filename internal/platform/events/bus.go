@@ -2,9 +2,12 @@ package events
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -82,11 +85,11 @@ func (b *Bus) SetAsync(async bool) {
 func (b *Bus) Publish(ctx context.Context, event Event) error {
 	b.mu.RLock()
 	handlers := append([]Handler(nil), b.subscribers[event.EventName()]...)
-	async := b.async
 	outboxStore := b.outboxStore
 	b.mu.RUnlock()
 
 	// ── Step 1: Persist to outbox (durable storage before dispatch) ──
+	var outboxID string
 	if outboxStore != nil {
 		outboxEvent := NewOutboxEvent(event)
 		if err := outboxStore.Insert(ctx, outboxEvent); err != nil {
@@ -96,23 +99,52 @@ func (b *Bus) Publish(ctx context.Context, event Event) error {
 			)
 			return err
 		}
+		outboxID = outboxEvent.ID
 		b.logger.Debug("event persisted to outbox",
 			zap.String("event", event.EventName()),
 			zap.String("outbox_id", outboxEvent.ID),
 		)
 	}
 
-	if len(handlers) == 0 {
-		return nil
+	// ── Step 2: Dispatch to handlers ──
+	b.dispatch(ctx, handlers, event)
+
+	// ── Step 3: Mark the row processed ──
+	// The event has been dispatched (handlers may still be running async). We
+	// mark it processed so the relay / DB-polling workers do not re-deliver the
+	// same side effect. Rows left pending (e.g. a crash between insert and this
+	// update) are recovered by the relay.
+	if outboxStore != nil && outboxID != "" {
+		if err := outboxStore.MarkProcessed(ctx, outboxID); err != nil {
+			b.logger.Error("failed to mark outbox event processed",
+				zap.String("event", event.EventName()),
+				zap.String("outbox_id", outboxID),
+				zap.Error(err),
+			)
+		}
 	}
 
-	// ── Step 2: Dispatch to handlers ──
-	if async || outboxStore != nil {
-		// Always dispatch async when outbox is enabled (handlers must not block the publisher)
+	return nil
+}
+
+// dispatch invokes handlers according to the bus's sync/async mode. It never
+// persists the event; callers are responsible for outbox bookkeeping.
+func (b *Bus) dispatch(ctx context.Context, handlers []Handler, event Event) {
+	b.mu.RLock()
+	async := b.async
+	hasOutbox := b.outboxStore != nil
+	b.mu.RUnlock()
+
+	if async || hasOutbox {
+		// Always dispatch async when outbox is enabled (handlers must not block
+		// the publisher). Detach from the caller's context: the HTTP request
+		// context is cancelled as soon as the response is written, which would
+		// abort in-flight handlers (e.g. creating a welcome notification).
+		dctx := context.WithoutCancel(ctx)
 		for _, handler := range handlers {
 			h := handler
 			go func() {
-				if err := h(ctx, event); err != nil {
+				if err := h(dctx, event); err != nil {
 					b.logger.Error("event handler failed",
 						zap.String("event", event.EventName()),
 						zap.Error(err),
@@ -120,7 +152,7 @@ func (b *Bus) Publish(ctx context.Context, event Event) error {
 				}
 			}()
 		}
-		return nil
+		return
 	}
 
 	for _, handler := range handlers {
@@ -131,8 +163,17 @@ func (b *Bus) Publish(ctx context.Context, event Event) error {
 			)
 		}
 	}
+}
 
-	return nil
+// Dispatch delivers an already-persisted event to in-memory subscribers
+// WITHOUT writing it back to the outbox. Used by the outbox relay for
+// re-delivery of events that were persisted but never dispatched.
+func (b *Bus) Dispatch(ctx context.Context, event Event) {
+	b.mu.RLock()
+	handlers := append([]Handler(nil), b.subscribers[event.EventName()]...)
+	b.mu.RUnlock()
+
+	b.dispatch(ctx, handlers, event)
 }
 
 func (b *Bus) Subscribe(eventName string, handler Handler) {
@@ -166,9 +207,11 @@ type OutboxRelay struct {
 	stopped chan struct{}
 }
 
-// EventDispatcher is the subset of Bus that the relay needs to republish events.
+// EventDispatcher is the subset of Bus that the relay needs to re-deliver events.
+// It must dispatch WITHOUT persisting, otherwise every relay pass would insert a
+// new outbox row (unbounded growth) and re-deliver the event forever.
 type EventDispatcher interface {
-	Publish(ctx context.Context, event Event) error
+	Dispatch(ctx context.Context, event Event)
 }
 
 func NewOutboxRelay(store OutboxStore, bus EventDispatcher, logger *zap.Logger) *OutboxRelay {
@@ -212,7 +255,7 @@ func (r *OutboxRelay) processPending() {
 	}
 
 	for _, oe := range events {
-		// Reconstruct event from persisted payload and republish
+		// Reconstruct event from persisted payload and re-dispatch.
 		event, err := eventFromOutbox(oe)
 		if err != nil {
 			r.logger.Error("outbox relay: failed to reconstruct event",
@@ -223,12 +266,16 @@ func (r *OutboxRelay) processPending() {
 			continue
 		}
 
-		if err := r.bus.Publish(ctx, event); err != nil {
-			_ = r.store.MarkFailed(ctx, oe.ID, err.Error())
-			continue
-		}
+		// Dispatch only — never persist again (that would insert a new row and
+		// loop forever).
+		r.bus.Dispatch(ctx, event)
 
-		_ = r.store.MarkProcessed(ctx, oe.ID)
+		if err := r.store.MarkProcessed(ctx, oe.ID); err != nil {
+			r.logger.Error("outbox relay: failed to mark processed",
+				zap.String("outbox_id", oe.ID),
+				zap.Error(err),
+			)
+		}
 	}
 }
 
@@ -242,29 +289,81 @@ func (r *OutboxRelay) Stop(ctx context.Context) error {
 	}
 }
 
-// eventFromOutbox reconstructs an Event from a persisted OutboxEvent.
-// Currently a stub — the production implementation would use a registry of
-// event constructors keyed by event type.
+// eventFromOutbox reconstructs a typed Event from its persisted outbox payload.
+// Subscribers type-assert the concrete event type, so a generic ReplayedEvent
+// would be silently ignored and recovery would be a no-op.
 func eventFromOutbox(oe OutboxEvent) (Event, error) {
-	// In the current implementation, the relay relies on the fact that the
-	// handlers themselves are registered in the bus. The outbox event was
-	// already dispatched once; the relay re-dispatches it to the same bus,
-	// so any handler can safely ignore events they've already seen via
-	// idempotency keys (trace_id).
-	//
-	// For a full reconstruction, register typed constructors:
-	//   var registry = map[string]func(json.RawMessage) (Event, error)
-	return &ReplayedEvent{
-		Name: oe.EventType,
-		At:   oe.CreatedAt,
-	}, nil
-}
+	var p struct {
+		OccurredAt     time.Time  `json:"occurred_at"`
+		UserID         *uuid.UUID `json:"user_id"`
+		TrackID        *uuid.UUID `json:"track_id"`
+		ArtistID       *uuid.UUID `json:"artist_id"`
+		AlbumID        *uuid.UUID `json:"album_id"`
+		PlaylistID     *uuid.UUID `json:"playlist_id"`
+		SubscriptionID *uuid.UUID `json:"subscription_id"`
+		Duration       int        `json:"duration"`
+		Completed      bool       `json:"completed"`
+		Source         string     `json:"source"`
+		Name           string     `json:"name"`
+		Email          string     `json:"email"`
+		IsPublic       bool       `json:"is_public"`
+		Plan           string     `json:"plan"`
+		Amount         int64      `json:"amount"`
+		Currency       string     `json:"currency"`
+	}
+	if err := json.Unmarshal(oe.Payload, &p); err != nil {
+		return nil, fmt.Errorf("unmarshal outbox payload: %w", err)
+	}
 
-// ReplayedEvent is a lightweight event wrapper for outbox relay re-delivery.
-type ReplayedEvent struct {
-	Name string
-	At   time.Time
-}
+	at := oe.CreatedAt
+	if !p.OccurredAt.IsZero() {
+		at = p.OccurredAt
+	}
+	base := BaseEvent{At: at}
+	uuidOrZero := func(v *uuid.UUID) uuid.UUID {
+		if v == nil {
+			return uuid.Nil
+		}
+		return *v
+	}
 
-func (e *ReplayedEvent) EventName() string     { return e.Name }
-func (e *ReplayedEvent) OccurredAt() time.Time { return e.At }
+	switch oe.EventType {
+	case EventTrackPlayed:
+		return TrackPlayedEvent{
+			BaseEvent: base,
+			UserID:    uuidOrZero(p.UserID),
+			TrackID:   uuidOrZero(p.TrackID),
+			ArtistID:  uuidOrZero(p.ArtistID),
+			AlbumID:   uuidOrZero(p.AlbumID),
+			Duration:  p.Duration,
+			Completed: p.Completed,
+			Source:    p.Source,
+		}, nil
+	case EventPlaylistCreated:
+		return PlaylistCreatedEvent{
+			BaseEvent:  base,
+			UserID:     uuidOrZero(p.UserID),
+			PlaylistID: uuidOrZero(p.PlaylistID),
+			Name:       p.Name,
+			IsPublic:   p.IsPublic,
+		}, nil
+	case EventSubscriptionPurchased:
+		return SubscriptionPurchasedEvent{
+			BaseEvent:      base,
+			UserID:         uuidOrZero(p.UserID),
+			SubscriptionID: uuidOrZero(p.SubscriptionID),
+			Plan:           p.Plan,
+			Amount:         p.Amount,
+			Currency:       p.Currency,
+		}, nil
+	case EventUserRegistered:
+		return UserRegisteredEvent{
+			BaseEvent: base,
+			UserID:    uuidOrZero(p.UserID),
+			Email:     p.Email,
+			Name:      p.Name,
+		}, nil
+	}
+
+	return nil, fmt.Errorf("unknown outbox event type %q", oe.EventType)
+}

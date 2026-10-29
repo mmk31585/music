@@ -125,30 +125,6 @@ func fullLRCLibResult() *LRCLibResult {
 	}
 }
 
-type mockMLClient struct {
-	mu     sync.Mutex
-	result *MLResult
-	err    error
-}
-
-func (m *mockMLClient) FetchLyrics(ctx context.Context, query TrackQuery) (*MLResult, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.err != nil {
-		return nil, m.err
-	}
-	return m.result, nil
-}
-
-func (m *mockMLClient) FetchCover(ctx context.Context, query TrackQuery) (*MLResult, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.err != nil {
-		return nil, m.err
-	}
-	return m.result, nil
-}
-
 func fullSpotifyResult() *SpotifyResult {
 	return &SpotifyResult{
 		SpotifyID:      "spotify-id-abc",

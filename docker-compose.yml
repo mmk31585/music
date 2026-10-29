@@ -1,0 +1,262 @@
+name: musicapp
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Muse — production-style full stack (core)
+#
+#   Postgres 17 + Redis 8 + one-shot migrations + API + Worker + SPA (nginx)
+#
+# The SPA (nginx) is the single public entry point: it serves the built Vue app
+# and reverse-proxies /api/ and /uploads/ to the Go API, so the browser is
+# same-origin and no CORS is required.
+#
+#   Build & run:      docker compose up -d --build
+#   Watch logs:       docker compose logs -f api
+#   Health check:     curl http://localhost:8080/api/v1/health
+#   App in browser:   http://localhost:3000
+#   Tear down:        docker compose down   (add -v to drop volumes)
+#
+# Conventions:
+#   - Connection strings here use the Compose service names (`postgres`, `redis`,
+#     `api`) and override the localhost defaults in `.env`.
+#   - The `migrate` service runs once and must succeed before api/worker start.
+# ──────────────────────────────────────────────────────────────────────────────
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:17-alpine
+    container_name: musicapp_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-musicapp}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Loopback only — not exposed off the host in a real deployment.
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-musicapp}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # ── Redis (cache + pub/sub + rate limiting + session storage) ───────────────
+  redis:
+    image: redis:8-alpine
+    container_name: musicapp_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # ── Migrations (one-shot; must succeed before api/worker start) ────────────
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CMD_DIR: migrate
+    image: musicapp-migrate:local
+    container_name: musicapp_migrate
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Direct (non-pooled) connection is safest for DDL migrations.
+      POSTGRES_URL_NON_POOLING: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-musicapp}?sslmode=disable
+    # It is not a long-running service, so its image healthcheck is meaningless.
+    healthcheck:
+      disable: true
+
+  # ── Moja ML Service ────────────────────────────────────────────────────────
+  ml-service:
+    build:
+      context: ./moja-ml-service
+      dockerfile: Dockerfile
+    image: musicapp-ml:local
+    container_name: musicapp_ml
+    restart: unless-stopped
+    env_file:
+      - moja-ml-service/.env
+    environment:
+      # moja-ml-service/.env is host-oriented; inside the network use service names.
+      DATABASE_URL: postgresql+asyncpg://moja_ml:${MOJA_ML_PGPASSWORD:-changeme_in_production}@ml-postgres:5432/moja_ml
+      music_REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      GO_BACKEND_CALLBACK_URL: http://api:8080/api/v1
+    volumes:
+      # Same uploads the Go API writes to, so the ML service can read the audio.
+      - uploads_data:/mnt/audio-uploads:ro
+    depends_on:
+      redis:
+        condition: service_started
+      ml-postgres:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  # ── Celery worker for ML service ───────────────────────────────────────────
+  ml-worker:
+    build:
+      context: ./moja-ml-service
+      dockerfile: Dockerfile
+    image: musicapp-ml-worker:local
+    container_name: musicapp_ml_worker
+    restart: unless-stopped
+    command: >
+      uv run celery
+      -A app.workers.celery_app worker
+      --loglevel=info
+      --queues=lyrics_queue,covers_queue,embedding_queue
+      --concurrency=1
+    env_file:
+      - moja-ml-service/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://moja_ml:${MOJA_ML_PGPASSWORD:-changeme_in_production}@ml-postgres:5432/moja_ml
+      music_REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      GO_BACKEND_CALLBACK_URL: http://api:8080/api/v1
+      # "medium" does not fit alongside the rest of the stack on a small host.
+      WHISPER_MODEL_SIZE: ${WHISPER_MODEL_SIZE:-small}
+    volumes:
+      - uploads_data:/mnt/audio-uploads:ro
+    depends_on:
+      redis:
+        condition: service_started
+      ml-postgres:
+        condition: service_started
+    # Celery worker: the image healthcheck probes the HTTP API, which this
+    # container does not run.
+    healthcheck:
+      disable: true
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  # ── ML Service Postgres ────────────────────────────────────────────────────
+  ml-postgres:
+    image: postgres:17
+    container_name: musicapp_ml_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: moja_ml
+      POSTGRES_USER: moja_ml
+      POSTGRES_PASSWORD: ${MOJA_ML_PGPASSWORD:-changeme_in_production}
+    volumes:
+      - moja_ml_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U moja_ml -d moja_ml"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CMD_DIR: api
+    image: musicapp-api:local
+    container_name: musicapp_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      POSTGRES_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-musicapp}?sslmode=disable
+      POSTGRES_URL_NON_POOLING: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-musicapp}?sslmode=disable
+      REDIS_ADDR: redis:6379
+      # The API serves HTTP only; the dedicated `worker` service owns the
+      # background job pool. Without this, every job would run twice.
+      RUN_BACKGROUND_WORKERS: "false"
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    ports:
+      - "8080:8080"
+    volumes:
+      - uploads_data:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── Go background worker ────────────────────────────────────────────────────
+  # Owns the background job pool (analytics, recommendation, notification,
+  # cleanup, import). The API runs with RUN_BACKGROUND_WORKERS=false so jobs run
+  # exactly once. The API keeps its own in-process event subscribers and outbox
+  # relay; this process only polls.
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    image: musicapp-worker:local
+    container_name: musicapp_worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      POSTGRES_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-musicapp}?sslmode=disable
+      REDIS_ADDR: redis:6379
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    volumes:
+      - uploads_data:/app/uploads
+
+  # ── SPA (nginx) — public entry point ────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Relative base so the SPA calls /api/v1 same-origin (nginx proxies it).
+        VITE_API_BASE_URL: /api/v1
+    image: musicapp-frontend:local
+    container_name: musicapp_frontend
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    ports:
+      - "3000:80"
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads_data:
+  moja_ml_pgdata:

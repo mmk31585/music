@@ -13,9 +13,8 @@ func TestEnricher_AllAPIsReturnData(t *testing.T) {
 	lfm := &mockLastFM{result: fullLastFMResult()}
 	spot := &mockSpotify{result: fullSpotifyResult()}
 	lrc := &mockLRCLib{result: fullLRCLibResult()}
-	ml := &mockMLClient{}
 
-	enricher := NewEnricher(mb, lfm, spot, lrc, ml, zap.NewNop())
+	enricher := NewEnricher(mb, lfm, spot, lrc, zap.NewNop())
 	result, err := enricher.Enrich(context.Background(), "Test Song", "Test Artist", "Test Album", 240)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
@@ -63,8 +62,7 @@ func TestEnricher_PartialAPIFailure(t *testing.T) {
 	spot := &mockSpotify{result: fullSpotifyResult()}
 	lrc := &mockLRCLib{result: fullLRCLibResult()}
 
-	ml := &mockMLClient{}
-	enricher := NewEnricher(mb, lfm, spot, lrc, ml, zap.NewNop())
+	enricher := NewEnricher(mb, lfm, spot, lrc, zap.NewNop())
 	result, err := enricher.Enrich(context.Background(), "Test Song", "Test Artist", "", 0)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
@@ -90,9 +88,8 @@ func TestEnricher_AllAPIsFail(t *testing.T) {
 	lfm := &mockLastFM{err: errors.New("not found")}
 	spot := &mockSpotify{err: errors.New("unauthorized")}
 	lrc := &mockLRCLib{result: nil}
-	ml := &mockMLClient{}
 
-	enricher := NewEnricher(mb, lfm, spot, lrc, ml, zap.NewNop())
+	enricher := NewEnricher(mb, lfm, spot, lrc, zap.NewNop())
 	result, err := enricher.Enrich(context.Background(), "Test Song", "Test Artist", "", 0)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
@@ -111,9 +108,8 @@ func TestEnricher_NoMatch(t *testing.T) {
 	lfm := &mockLastFM{result: nil}
 	spot := &mockSpotify{result: nil}
 	lrc := &mockLRCLib{result: nil}
-	ml := &mockMLClient{}
 
-	enricher := NewEnricher(mb, lfm, spot, lrc, ml, zap.NewNop())
+	enricher := NewEnricher(mb, lfm, spot, lrc, zap.NewNop())
 	result, err := enricher.Enrich(context.Background(), "Unknown Song", "Unknown Artist", "", 0)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
@@ -138,9 +134,8 @@ func TestEnricher_EmptyQuery(t *testing.T) {
 	lfm := &mockLastFM{result: fullLastFMResult()}
 	spot := &mockSpotify{result: fullSpotifyResult()}
 	lrc := &mockLRCLib{result: nil}
-	ml := &mockMLClient{}
 
-	enricher := NewEnricher(mb, lfm, spot, lrc, ml, zap.NewNop())
+	enricher := NewEnricher(mb, lfm, spot, lrc, zap.NewNop())
 	result, err := enricher.Enrich(context.Background(), "", "", "", 0)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)

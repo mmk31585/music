@@ -107,7 +107,10 @@ func (h *EnrichHandler) EnrichTrack(c *gin.Context) {
 
 // EnrichAllTracks starts background enrichment for ALL catalog tracks.
 func (h *EnrichHandler) EnrichAllTracks(c *gin.Context) {
-	go h.EnrichAllBackground(c.Request.Context())
+	// Detach from the request context: it is cancelled as soon as this handler
+	// writes its 202 response, which would abort the background work on its
+	// first query. WithoutCancel keeps the job running for its full duration.
+	go h.EnrichAllBackground(context.WithoutCancel(c.Request.Context()))
 
 	c.JSON(http.StatusAccepted, gin.H{
 		"success": true,

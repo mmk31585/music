@@ -100,7 +100,7 @@ func (w *Worker) refreshUserAffinities(ctx context.Context) error {
 			lh.user_id,
 			lh.track_id::text,
 			'track',
-			COUNT(*) * CASE WHEN lh.completed THEN 1.0 ELSE 0.3 END,
+			SUM(CASE WHEN lh.completed THEN 1.0 ELSE 0.3 END),
 			POW(0.95, EXTRACT(EPOCH FROM (NOW() - MAX(lh.played_at))) / 86400.0),
 			NOW()
 		FROM listening_history lh
