@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -14,8 +15,13 @@ func NewPostgres(ctx context.Context, databaseURL string) (*pgxpool.Pool, error)
 		return nil, fmt.Errorf("parse postgres config: %w", err)
 	}
 
-	cfg.MaxConns = 20
-	cfg.MinConns = 2
+	// Small pool for serverless cold starts; larger for long-running executables.
+	maxConns := 10
+	if os.Getenv("VERCEL") == "1" {
+		maxConns = 4
+	}
+	cfg.MaxConns = int32(maxConns)
+	cfg.MinConns = 1
 	cfg.MaxConnLifetime = time.Hour
 	cfg.MaxConnIdleTime = 30 * time.Minute
 	cfg.HealthCheckPeriod = 1 * time.Minute

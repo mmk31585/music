@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 	"time"
 
@@ -37,6 +39,15 @@ import (
 // @description Type "Bearer " followed by your token
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			// Log the panic to stderr so Vercel capture the stack trace
+			// even when structured logging is not yet configured.
+			_, _ = fmt.Fprintf(os.Stderr, "[PANIC] %v\n%s\n", r, debug.Stack())
+			os.Exit(2)
+		}
+	}()
+
 	ctx := context.Background()
 
 	application, err := app.Bootstrap(ctx)
@@ -66,6 +77,8 @@ func main() {
 	}
 
 	// ── Router setup (exactly once, all middleware explicit) ──
+	// Release mode on serverless: disables debug info in error responses.
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(
 		middleware.SecurityHeaders(),
@@ -75,6 +88,12 @@ func main() {
 		middleware.GinZapRecovery(log),
 		middleware.Sentry(),
 	)
+
+	// Lightweight health check that touches neither Redis nor the DB,
+	// so startup and cold starts are never blocked by network checks.
+	router.GET("/healthz", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
 
 	// Serve uploaded media from local storage
 	app.RegisterMediaRoutes(router, application.Config.Storage.Local.BaseDir)
@@ -100,14 +119,16 @@ func main() {
 	}()
 
 	// ── Background workers (import, notifications, etc.) ──
-	// Only started when this process owns them. When a dedicated worker
-	// container is deployed, RUN_BACKGROUND_WORKERS=false keeps the API from
-	// running every job a second time.
+	// On serverless (VERCEL=1) never start in-process workers — the API should
+	// only serve requests. Otherwise honor RUN_BACKGROUND_WORKERS so a dedicated
+	// worker container doesn't run every job twice.
+	runWorkers := application.Config.App.RunBackgroundWorkers && os.Getenv("VERCEL") != "1"
+
 	workerCtx, cancelWorkers := context.WithCancel(context.Background())
 	defer cancelWorkers()
 
 	var workerContainer *app.WorkerContainer
-	if application.Config.App.RunBackgroundWorkers {
+	if runWorkers {
 		workerContainer = app.NewWorkerContainer(application)
 		go func() {
 			log.Info("starting background workers",
