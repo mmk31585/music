@@ -309,6 +309,11 @@ func (w *ImportWorker) processMessage(ctx context.Context, msg redis.XMessage) {
 }
 
 func (w *ImportWorker) Enqueue(ctx context.Context, job *Job) error {
+	if w.rdb == nil {
+		w.logger.Warn("import enqueue skipped: redis unavailable")
+		return nil
+	}
+
 	payload, err := json.Marshal(map[string]any{"payload": job})
 	if err != nil {
 		return err

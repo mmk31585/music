@@ -24,6 +24,9 @@ func (s *ProgressStore) key(jobID string) string {
 }
 
 func (s *ProgressStore) Set(ctx context.Context, jobID string, status Status, progress int, stage string, draftID string, errMsg string) error {
+	if s.rdb == nil {
+		return nil
+	}
 	data, _ := json.Marshal(ProgressUpdate{
 		JobID:    jobID,
 		Status:   status,
@@ -36,6 +39,9 @@ func (s *ProgressStore) Set(ctx context.Context, jobID string, status Status, pr
 }
 
 func (s *ProgressStore) Get(ctx context.Context, jobID string) (*ProgressUpdate, error) {
+	if s.rdb == nil {
+		return nil, nil
+	}
 	data, err := s.rdb.Get(ctx, s.key(jobID)).Bytes()
 	if err == redis.Nil {
 		return nil, nil
@@ -51,5 +57,8 @@ func (s *ProgressStore) Get(ctx context.Context, jobID string) (*ProgressUpdate,
 }
 
 func (s *ProgressStore) Delete(ctx context.Context, jobID string) error {
+	if s.rdb == nil {
+		return nil
+	}
 	return s.rdb.Del(ctx, s.key(jobID)).Err()
 }
