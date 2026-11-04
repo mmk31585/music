@@ -9,6 +9,7 @@ type CORSConfig struct {
 	AllowedOrigins []string
 }
 
+//nolint:unused // called by config.Load()
 func loadCORSConfig() CORSConfig {
 	var origins []string
 	if v := os.Getenv("CORS_ALLOWED_ORIGINS"); v != "" {
