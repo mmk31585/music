@@ -3,6 +3,7 @@ package enrichment
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -15,17 +16,15 @@ type Enricher struct {
 	lastFM      LastFMClient
 	spotify     SpotifyClient
 	lrclib      LRCLibClient
-	ml          MLClient
 	logger      *zap.Logger
 }
 
-func NewEnricher(mb MusicBrainzClient, lfm LastFMClient, spot SpotifyClient, lrc LRCLibClient, ml MLClient, logger *zap.Logger) *Enricher {
+func NewEnricher(mb MusicBrainzClient, lfm LastFMClient, spot SpotifyClient, lrc LRCLibClient, logger *zap.Logger) *Enricher {
 	return &Enricher{
 		musicBrainz: mb,
 		lastFM:      lfm,
 		spotify:     spot,
 		lrclib:      lrc,
-		ml:          ml,
 		logger:      logger,
 	}
 }
@@ -63,7 +62,6 @@ func (e *Enricher) Enrich(ctx context.Context, title, artist, album string, dura
 		lfmResult  *LastFMResult
 		spotResult *SpotifyResult
 		lrcResult  *LRCLibResult
-		mlResult   *MLResult
 	)
 
 	var wg sync.WaitGroup
@@ -87,7 +85,11 @@ func (e *Enricher) Enrich(ctx context.Context, title, artist, album string, dura
 			var err error
 			lfmResult, err = e.lastFM.SearchTrack(ctx, query)
 			if err != nil {
-				e.logger.Warn("last.fm enrichment failed", zap.Error(err))
+				if errors.Is(err, ErrLastFMNotConfigured) {
+					e.logger.Debug("last.fm enrichment skipped: not configured")
+				} else {
+					e.logger.Warn("last.fm enrichment failed", zap.Error(err))
+				}
 			}
 		}()
 	}
@@ -99,7 +101,11 @@ func (e *Enricher) Enrich(ctx context.Context, title, artist, album string, dura
 			var err error
 			spotResult, err = e.spotify.SearchTrack(ctx, query)
 			if err != nil {
-				e.logger.Warn("spotify enrichment failed", zap.Error(err))
+				if errors.Is(err, ErrSpotifyNotConfigured) {
+					e.logger.Debug("spotify enrichment skipped: not configured")
+				} else {
+					e.logger.Warn("spotify enrichment failed", zap.Error(err))
+				}
 			}
 		}()
 	}
@@ -116,36 +122,9 @@ func (e *Enricher) Enrich(ctx context.Context, title, artist, album string, dura
 		}()
 	}
 
-	if runSource(SourceML) {
-		wg.Add(2)
-		go func() {
-			defer wg.Done()
-			var err error
-			mlResult, err = e.ml.FetchLyrics(ctx, query)
-			if err != nil {
-				e.logger.Warn("ml lyrics enrichment failed", zap.Error(err))
-			}
-		}()
-		go func() {
-			defer wg.Done()
-			if result, err := e.ml.FetchCover(ctx, query); err != nil {
-				e.logger.Warn("ml cover enrichment failed", zap.Error(err))
-			} else if result != nil {
-				if result.AlbumCoverURL != "" {
-					if mlResult == nil {
-						mlResult = result
-					} else {
-						mlResult.AlbumCoverURL = result.AlbumCoverURL
-					}
-				}
-			}
-		}()
-	}
-
 	wg.Wait()
 
 	result := MergeResults(mbResult, lfmResult, spotResult, lrcResult)
-	result.ML = mlResult
 	return &result, nil
 }
 

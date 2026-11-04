@@ -1,5 +1,5 @@
 APP_NAME=musicapp
-DOCKER_COMPOSE=docker compose --env-file .env -f deployments/docker-compose.yml
+DOCKER_COMPOSE=docker compose --env-file .env -f docker-compose.yml
 
 run:
 	@air -c .air.toml
@@ -42,7 +42,7 @@ fmt:
 	go fmt ./...
 
 infra-up:
-	$(DOCKER_COMPOSE) up -d postgres redis minio
+	$(DOCKER_COMPOSE) up -d postgres redis
 
 infra-down:
 	$(DOCKER_COMPOSE) down

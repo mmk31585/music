@@ -72,9 +72,8 @@ func (s *DownloadService) Download(ctx context.Context, url, dir string) (*Downl
 	infoArgs = append(infoArgs, s.proxyArgs()...)
 	infoArgs = append(infoArgs, url)
 
-	// Use explicit path to yt-dlp
-	ytdlpPath := "/home/space/.local/bin/yt-dlp"
-	infoCmd := exec.CommandContext(ctx, ytdlpPath, infoArgs...)
+	// Resolve yt-dlp from PATH (installed in the image as /usr/bin/yt-dlp).
+	infoCmd := exec.CommandContext(ctx, "yt-dlp", infoArgs...)
 	var infoOut, infoErr bytes.Buffer
 	infoCmd.Stdout = &infoOut
 	infoCmd.Stderr = &infoErr

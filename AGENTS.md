@@ -17,6 +17,7 @@ Muse is a full-stack Persian music streaming platform. This repository is the **
 music/
 ├── cmd/api/                 # API server entrypoint (main.go)
 ├── cmd/worker/              # Background worker entrypoint
+├── cmd/migrate/             # One-shot embedded-migration runner (compose `migrate` svc)
 ├── internal/                # All business logic (not importable outside module)
 │   ├── app/                 # bootstrap, DI container, routes, lifecycle
 │   ├── common/              # middleware, errors, pagination, response, validation
@@ -24,14 +25,16 @@ music/
 │   ├── modules/             # ~30 domain modules (catalog, auth, playlist, ...)
 │   ├── pkg/audioinfo/       # audio metadata helpers
 │   ├── platform/            # db, redis, opensearch, storage, ws, events, etc.
-│   └── workers/             # async workers (ai, indexer, notification, ...)
+│   └── workers/             # async workers (analytics, cleanup, recommendation); import worker lives in modules/importcmd/worker
 ├── migrations/              # Goose SQL migrations
 ├── frontend/                # Vue 3 SPA (git submodule; separate AGENTS.md)
 ├── moja-ml-service/         # FastAPI + Celery + Whisper
 ├── scripts/                 # migrate.sh, dev helpers
 ├── docs/                    # architecture, ADRs-ish notes, agent state
 ├── Makefile                 # canonical commands
-├── Dockerfile               # multi-stage API build
+├── Dockerfile               # multi-stage API build (ARG CMD_DIR=api|worker|migrate)
+├── Dockerfile.worker        # multi-stage worker build (used by CI/deploy)
+├── docker-compose.yml       # production-style full stack (pg+redis+migrate+api+worker+frontend)
 ├── fly.toml / railway.json / vercel.json  # deploy targets
 └── AGENTS.md                # this file
 ```
@@ -64,6 +67,7 @@ Do not swap a stack choice without a decision note in `docs/`.
 
 - `cmd/api/main.go`: signal-aware server bootstrap (config, tracing, Sentry, routes, workers, graceful shutdown). Also contains Swagger glue.
 - `cmd/worker/main.go`: standalone worker binary.
+- `cmd/migrate/main.go`: one-shot Goose migration runner (uses the embedded `migrations` FS). Run by the compose `migrate` service before api/worker start.
 - `internal/app/bootstrap.go`: assembles `App` (config, DB, Redis, logger, etc.).
 - `internal/app/container.go`: manual DI (no framework); ~25 `build*` methods + `subscribeEvents()`.
 - `internal/app/routes.go`: all route registration grouped by auth level.
@@ -126,7 +130,7 @@ CI gate: `go test ./... -race -count=1` + lint + build; coverage threshold curre
 ## 7. Database and migrations
 
 - Goose SQL migrations in `migrations/`.
-- Run via `scripts/migrate.sh {up|down|status}` (uses `DATABASE_URL`/unpooled URL).
+- Run via `scripts/migrate.sh {up|down|status}` (uses `DATABASE_URL`/unpooled URL), or via the self-contained `cmd/migrate` binary which embeds the migrations (the compose `migrate` service runs it once before api/worker start).
 - Never run migrations inside an HTTP request.
 - Never edit a migration that has already shipped; add a new one.
 

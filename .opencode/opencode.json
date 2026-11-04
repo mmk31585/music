@@ -139,10 +139,8 @@
       "hidden": false
     }
   },
-  "plugin": [
-    "opencode-copilot-plugin@latest",
-    "ai",
-    "./.opencode/plugins/ponytail.mjs"
+  "plugins": [
+    "./plugins/ponytail"
   ],
   "permission": {
     "external_directory": "ask",

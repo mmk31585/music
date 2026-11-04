@@ -7,14 +7,15 @@ import (
 )
 
 type AppConfig struct {
-	Name            string
-	Env             string
-	Host            string
-	Port            string
-	ReadTimeout     time.Duration
-	WriteTimeout    time.Duration
-	IdleTimeout     time.Duration
-	ShutdownTimeout time.Duration
+	Name                 string
+	Env                  string
+	Host                 string
+	Port                 string
+	ReadTimeout          time.Duration
+	WriteTimeout         time.Duration
+	IdleTimeout          time.Duration
+	ShutdownTimeout      time.Duration
+	RunBackgroundWorkers bool
 }
 
 func loadAppConfig() AppConfig {
@@ -61,14 +62,25 @@ func loadAppConfig() AppConfig {
 			shutdownTimeout = parsed
 		}
 	}
+	// In-process background workers run by default so single-binary deployments
+	// (make dev, Vercel) keep working. Deployments that run a dedicated worker
+	// container (docker-compose) set RUN_BACKGROUND_WORKERS=false on the API to
+	// avoid running every job twice.
+	runBackgroundWorkers := true
+	if v := os.Getenv("RUN_BACKGROUND_WORKERS"); v != "" {
+		if parsed, err := strconv.ParseBool(v); err == nil {
+			runBackgroundWorkers = parsed
+		}
+	}
 	return AppConfig{
-		Name:            name,
-		Env:             env,
-		Host:            host,
-		Port:            port,
-		ReadTimeout:     time.Duration(readTimeout) * time.Second,
-		WriteTimeout:    time.Duration(writeTimeout) * time.Second,
-		IdleTimeout:     time.Duration(idleTimeout) * time.Second,
-		ShutdownTimeout: time.Duration(shutdownTimeout) * time.Second,
+		Name:                 name,
+		Env:                  env,
+		Host:                 host,
+		Port:                 port,
+		ReadTimeout:          time.Duration(readTimeout) * time.Second,
+		WriteTimeout:         time.Duration(writeTimeout) * time.Second,
+		IdleTimeout:          time.Duration(idleTimeout) * time.Second,
+		ShutdownTimeout:      time.Duration(shutdownTimeout) * time.Second,
+		RunBackgroundWorkers: runBackgroundWorkers,
 	}
 }

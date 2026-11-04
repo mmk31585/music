@@ -61,6 +61,9 @@ func (w *Worker) cleanup(ctx context.Context) error {
 	if err := w.cleanupDisconnectedSessions(ctx); err != nil {
 		return fmt.Errorf("disconnected sessions: %w", err)
 	}
+	if err := w.pruneProcessedOutbox(ctx); err != nil {
+		return fmt.Errorf("processed outbox: %w", err)
+	}
 	return nil
 }
 
@@ -121,6 +124,24 @@ func (w *Worker) cleanupDisconnectedSessions(ctx context.Context) error {
 	}
 	if tag.RowsAffected() > 0 {
 		w.logger.Info("cleaned up old ws sessions", zap.Int64("count", tag.RowsAffected()))
+	}
+	return nil
+}
+
+// pruneProcessedOutbox keeps the transactional outbox from growing forever.
+// Rows are marked processed inline by the publisher, so they are only useful
+// for short-term replay/audit; anything older than a week is dropped.
+func (w *Worker) pruneProcessedOutbox(ctx context.Context) error {
+	tag, err := w.db.Exec(ctx, `
+		DELETE FROM event_outbox
+		WHERE status = 'processed'
+		  AND COALESCE(processed_at, created_at) < NOW() - INTERVAL '7 days'
+	`)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() > 0 {
+		w.logger.Info("pruned processed outbox events", zap.Int64("count", tag.RowsAffected()))
 	}
 	return nil
 }

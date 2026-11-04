@@ -15,7 +15,7 @@ type MLServiceConfig struct {
 func loadMLServiceConfig() MLServiceConfig {
 	baseURL := os.Getenv("ML_SERVICE_BASE_URL")
 	if baseURL == "" {
-		baseURL = "http://localhost:8000"
+		baseURL = "http://ml-service:8000"
 	}
 	requestTimeout := 30
 	if v := os.Getenv("ML_SERVICE_REQUEST_TIMEOUT"); v != "" {

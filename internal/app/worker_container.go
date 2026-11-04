@@ -13,7 +13,6 @@ import (
 	platformstorage "music/internal/platform/storage"
 	"music/internal/workers/analytics"
 	"music/internal/workers/cleanup"
-	"music/internal/workers/notification"
 	"music/internal/workers/recommendation"
 
 	"github.com/jackc/pgx/v5/stdlib"
@@ -31,8 +30,6 @@ type WorkerContainer struct {
 
 	AnalyticsWorker      BackgroundWorker
 	RecommendationWorker BackgroundWorker
-	NotificationWorker   BackgroundWorker
-	EmailWorker          BackgroundWorker
 	CleanupWorker        BackgroundWorker
 	ImportWorker         BackgroundWorker
 
@@ -52,7 +49,6 @@ func NewWorkerContainer(a *App) *WorkerContainer {
 func (c *WorkerContainer) buildWorkers() {
 	c.AnalyticsWorker = analytics.NewWorker(c.App.DB, c.App.Logger)
 	c.RecommendationWorker = recommendation.NewWorker(c.App.DB, c.App.Logger)
-	c.NotificationWorker = notification.NewWorker(c.App.DB, c.App.Logger)
 	c.CleanupWorker = cleanup.NewWorker(c.App.DB, c.App.Logger)
 
 	proxy := os.Getenv("IMPORT_PROXY")
@@ -78,8 +74,7 @@ func (c *WorkerContainer) buildWorkers() {
 	lfmClient := enrichment.NewLastFMClient(enrichCfg.LastFM)
 	spotClient := enrichment.NewSpotifyClient(enrichCfg.Spotify)
 	lrcClient := enrichment.NewLRCLibClient()
-	mlClient := enrichment.NewMLEnrichmentClient(c.App.Config.MLService.BaseURL)
-	enricher := enrichment.NewEnricher(mbClient, lfmClient, spotClient, lrcClient, mlClient, c.App.Logger)
+	enricher := enrichment.NewEnricher(mbClient, lfmClient, spotClient, lrcClient, c.App.Logger)
 
 	storageClient, err := platformstorage.New(c.App.ctx, platformstorage.Config{
 		Driver: c.App.Config.Storage.Driver,
@@ -117,8 +112,6 @@ func (c *WorkerContainer) buildWorkers() {
 	c.workers = []BackgroundWorker{
 		c.AnalyticsWorker,
 		c.RecommendationWorker,
-		c.NotificationWorker,
-		c.EmailWorker,
 		c.CleanupWorker,
 		c.ImportWorker,
 	}

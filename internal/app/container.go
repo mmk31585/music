@@ -319,7 +319,7 @@ func (c *Container) buildAuth(a *App) {
 	)
 
 	authRepo := auth.NewRepository(a.DB)
-	c.AuthService = auth.NewService(authRepo, tokenManager)
+	c.AuthService = auth.NewServiceWithPublisher(authRepo, tokenManager, c.Bus)
 	c.AuthHandler = auth.NewHandler(c.AuthService, a.Validator)
 
 	permRepo := permissions.NewRepository(a.DB)
@@ -444,7 +444,7 @@ func (c *Container) buildCovers(a *App) {
 
 func (c *Container) buildPlaylist() {
 	playlistRepo := playlist.NewRepository(c.SQLX)
-	c.PlaylistService = playlist.NewService(playlistRepo)
+	c.PlaylistService = playlist.NewServiceWithPublisher(playlistRepo, c.Bus)
 	c.PlaylistHandler = playlist.NewHandler(c.PlaylistService)
 }
 
@@ -560,9 +560,8 @@ func (c *Container) buildIngestion(a *App) {
 	spotClient := enrichment.NewSpotifyClient(enrichCfg.Spotify)
 	c.SpotifyClient = spotClient
 	lrcClient := enrichment.NewLRCLibClient()
-	mlClient := enrichment.NewMLEnrichmentClient(a.Config.MLService.BaseURL)
 
-	enricher := enrichment.NewEnricher(mbClient, lfmClient, spotClient, lrcClient, mlClient, zap.L())
+	enricher := enrichment.NewEnricher(mbClient, lfmClient, spotClient, lrcClient, zap.L())
 	c.Enricher = enricher
 
 	c.IngestionFinalization = finalization.NewService(c.SQLX, c.Storage, zap.L())

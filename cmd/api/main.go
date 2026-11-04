@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,6 +12,11 @@ import (
 	"music/internal/common/middleware"
 	"music/internal/platform/sentry"
 	"music/internal/platform/tracing"
+
+	// Registers the generated OpenAPI spec with swag so the swagger UI at
+	// /swagger/* can serve /swagger/doc.json. Without this blank import the
+	// registry is empty and the endpoint returns HTTP 500.
+	_ "music/docs"
 
 	"github.com/gin-gonic/gin"
 	"github.com/swaggo/files"
@@ -32,22 +36,6 @@ import (
 // @name Authorization
 // @description Type "Bearer " followed by your token
 
-func configureSwagger(log *zap.Logger) {
-	// For Vercel compatibility, we'll use the swagger.json file directly
-	// Read the swagger.json file from the docs directory
-	if swaggerFile, err := os.ReadFile("docs/swagger.json"); err == nil {
-		// Parse the JSON to validate it's valid
-		var swaggerData map[string]interface{}
-		if json.Unmarshal(swaggerFile, &swaggerData) == nil {
-			log.Info("Swagger documentation loaded successfully")
-			// Set up the gin-swagger route to serve swagger.json
-			// This replaces the need for the docs package
-		}
-	} else {
-		log.Warn("Could not load swagger.json, swagger endpoint will not be available")
-	}
-}
-
 func main() {
 	ctx := context.Background()
 
@@ -57,8 +45,6 @@ func main() {
 	}
 
 	log := application.Logger
-	// Configure swagger using embedded swagger.json (for Vercel compatibility)
-	configureSwagger(log)
 
 	// ── OpenTelemetry Tracing ──────────────────────────────────────
 	otelShutdown, err := tracing.Init(ctx, tracing.Config{
@@ -114,18 +100,26 @@ func main() {
 	}()
 
 	// ── Background workers (import, notifications, etc.) ──
+	// Only started when this process owns them. When a dedicated worker
+	// container is deployed, RUN_BACKGROUND_WORKERS=false keeps the API from
+	// running every job a second time.
 	workerCtx, cancelWorkers := context.WithCancel(context.Background())
 	defer cancelWorkers()
 
-	workerContainer := app.NewWorkerContainer(application)
-	go func() {
-		log.Info("starting background workers",
-			zap.String("env", application.Config.App.Env),
-		)
-		if err := workerContainer.Run(workerCtx); err != nil && err != context.Canceled {
-			log.Fatal("background workers failed", zap.Error(err))
-		}
-	}()
+	var workerContainer *app.WorkerContainer
+	if application.Config.App.RunBackgroundWorkers {
+		workerContainer = app.NewWorkerContainer(application)
+		go func() {
+			log.Info("starting background workers",
+				zap.String("env", application.Config.App.Env),
+			)
+			if err := workerContainer.Run(workerCtx); err != nil && err != context.Canceled {
+				log.Fatal("background workers failed", zap.Error(err))
+			}
+		}()
+	} else {
+		log.Info("in-process background workers disabled; expecting a dedicated worker container")
+	}
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
@@ -139,8 +133,10 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), application.Config.App.ShutdownTimeout)
 	defer cancel()
 
-	if err := workerContainer.Shutdown(shutdownCtx); err != nil {
-		log.Error("worker shutdown failed", zap.Error(err))
+	if workerContainer != nil {
+		if err := workerContainer.Shutdown(shutdownCtx); err != nil {
+			log.Error("worker shutdown failed", zap.Error(err))
+		}
 	}
 
 	if err := application.Shutdown(shutdownCtx); err != nil {

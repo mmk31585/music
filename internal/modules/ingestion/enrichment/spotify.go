@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -11,6 +12,9 @@ import (
 	"sync"
 	"time"
 )
+
+// ErrSpotifyNotConfigured signals the optional Spotify integration is disabled.
+var ErrSpotifyNotConfigured = errors.New("spotify client credentials not configured")
 
 type spotifyClient struct {
 	httpClient  *http.Client
@@ -121,7 +125,7 @@ func (c *spotifyClient) ensureToken(ctx context.Context) error {
 	c.mu.Unlock()
 
 	if c.cfg.ClientID == "" || c.cfg.ClientSecret == "" {
-		return fmt.Errorf("spotify client credentials not configured")
+		return ErrSpotifyNotConfigured
 	}
 
 	authStr := base64.StdEncoding.EncodeToString([]byte(c.cfg.ClientID + ":" + c.cfg.ClientSecret))

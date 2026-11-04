@@ -3,12 +3,16 @@ package enrichment
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 )
+
+// ErrLastFMNotConfigured signals the optional Last.fm integration is disabled.
+var ErrLastFMNotConfigured = errors.New("last.fm API key not configured")
 
 type lastFMClient struct {
 	httpClient *http.Client
@@ -26,7 +30,7 @@ func NewLastFMClient(cfg LastFMConfig) LastFMClient {
 // It returns the artist's bio, image, tags, similar artists, and stats.
 func (c *lastFMClient) SearchArtist(ctx context.Context, name string) (*LastFMResult, error) {
 	if c.cfg.APIKey == "" {
-		return nil, fmt.Errorf("last.fm API key not configured")
+		return nil, ErrLastFMNotConfigured
 	}
 	if name == "" {
 		return nil, fmt.Errorf("artist name is required")
@@ -141,7 +145,7 @@ func (c *lastFMClient) SearchArtist(ctx context.Context, name string) (*LastFMRe
 
 func (c *lastFMClient) SearchTrack(ctx context.Context, query TrackQuery) (*LastFMResult, error) {
 	if c.cfg.APIKey == "" {
-		return nil, fmt.Errorf("last.fm API key not configured")
+		return nil, ErrLastFMNotConfigured
 	}
 
 	params := url.Values{}

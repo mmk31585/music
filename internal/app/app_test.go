@@ -31,17 +31,13 @@ func TestNoRootMainGo(t *testing.T) {
 		t.Fatal("root main.go still exists — Bug #5 regression: must be removed to avoid build conflict with cmd/ entry points")
 	}
 
-	// Verify that the API server builds without conflict
-	build := exec.Command("go", "build", "./cmd/api")
+	// Verify that the API and worker entry points build without conflict.
+	// Build into a temp dir: a multi-package `go build` writes an executable per
+	// main package, which would otherwise overwrite the tracked ./api and ./worker
+	// binaries in the repo root.
+	build := exec.Command("go", "build", "-o", t.TempDir(), "./cmd/api", "./cmd/worker")
 	build.Dir = dir
 	if out, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("cmd/api build failed: %v\n%s", err, out)
-	}
-
-	// Verify that the worker builds without conflict
-	build = exec.Command("go", "build", "./cmd/worker")
-	build.Dir = dir
-	if out, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("cmd/worker build failed: %v\n%s", err, out)
+		t.Fatalf("cmd build failed: %v\n%s", err, out)
 	}
 }

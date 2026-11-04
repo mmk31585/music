@@ -5,6 +5,8 @@ import (
 	"errors"
 	"strings"
 
+	"music/internal/platform/events"
+
 	"github.com/google/uuid"
 )
 
@@ -34,11 +36,18 @@ type RepositoryInterface interface {
 }
 
 type Service struct {
-	repo RepositoryInterface
+	repo      RepositoryInterface
+	publisher events.Publisher
 }
 
 func NewService(repo RepositoryInterface) *Service {
 	return &Service{repo: repo}
+}
+
+// NewServiceWithPublisher wires an event publisher so playlist.created is
+// emitted to the bus/outbox (analytics + notifications).
+func NewServiceWithPublisher(repo RepositoryInterface, publisher events.Publisher) *Service {
+	return &Service{repo: repo, publisher: publisher}
 }
 
 func (s *Service) CreatePlaylist(ctx context.Context, req CreatePlaylistRequest, userID uuid.UUID) (Playlist, error) {
@@ -47,7 +56,25 @@ func (s *Service) CreatePlaylist(ctx context.Context, req CreatePlaylistRequest,
 		return Playlist{}, ErrInvalidPlaylistName
 	}
 
-	return s.repo.CreatePlaylist(ctx, req, userID)
+	playlist, err := s.repo.CreatePlaylist(ctx, req, userID)
+	if err != nil {
+		return Playlist{}, err
+	}
+
+	// Best-effort: playlist creation must not fail because the bus is down.
+	if s.publisher != nil {
+		if err := s.publisher.Publish(ctx, events.PlaylistCreatedEvent{
+			BaseEvent:  events.NewBaseEvent(),
+			UserID:     userID,
+			PlaylistID: playlist.ID,
+			Name:       playlist.Name,
+			IsPublic:   playlist.IsPublic,
+		}); err != nil {
+			// swallow: the playlist was already created
+		}
+	}
+
+	return playlist, nil
 }
 
 func (s *Service) UpdatePlaylist(ctx context.Context, playlistID, userID uuid.UUID, req UpdatePlaylistRequest) (Playlist, error) {

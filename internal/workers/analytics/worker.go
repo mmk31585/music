@@ -40,7 +40,6 @@ func (w *Worker) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
-			w.logger.Info("running analytics aggregation")
 			if err := w.aggregate(ctx); err != nil {
 				w.logger.Error("analytics aggregation failed", zap.Error(err))
 			}
@@ -48,118 +47,59 @@ func (w *Worker) Run(ctx context.Context) error {
 	}
 }
 
+// aggregate refreshes the analytics that are not maintained in real time.
+//
+// track_analytics / artist_analytics / album_analytics are incremented by the
+// event-driven analytics module (internal/modules/analytics) whenever a
+// TrackPlayed event arrives. The worker used to re-add a rolling 24h window to
+// those same cumulative columns on every run, double-counting each play (and
+// growing the counts without bound). It must not touch them.
+//
+// creator_daily_stats has no event-driven writer, so it is refreshed here.
 func (w *Worker) aggregate(ctx context.Context) error {
-	if err := w.aggregateTrackPlays(ctx); err != nil {
-		return fmt.Errorf("track plays: %w", err)
-	}
-	if err := w.aggregateArtistPlays(ctx); err != nil {
-		return fmt.Errorf("artist plays: %w", err)
-	}
-	if err := w.aggregateAlbumPlays(ctx); err != nil {
-		return fmt.Errorf("album plays: %w", err)
-	}
-	if err := w.aggregateCreatorDailyStats(ctx); err != nil {
+	if err := w.refreshCreatorDailyStats(ctx); err != nil {
 		return fmt.Errorf("creator daily stats: %w", err)
 	}
-	playlistCount, err := w.countRecentPlaylistCreations(ctx)
-	if err != nil {
-		return fmt.Errorf("playlist creations: %w", err)
-	}
-	w.logger.Info("analytics summary", zap.Int64("playlist_creations_24h", playlistCount))
 	return nil
 }
 
-func (w *Worker) aggregateTrackPlays(ctx context.Context) error {
-	_, err := w.db.Exec(ctx, `
-		INSERT INTO track_analytics (track_id, play_count, pause_count, skip_count, completion_count, updated_at)
-		SELECT
-			lh.track_id,
-			COUNT(*) AS play_count,
-			0, 0,
-			COUNT(*) FILTER (WHERE lh.completed = TRUE) AS completion_count,
-			NOW()
-		FROM listening_history lh
-		WHERE lh.played_at > NOW() - INTERVAL '24 hours'
-		GROUP BY lh.track_id
-		ON CONFLICT (track_id) DO UPDATE SET
-			play_count = track_analytics.play_count + EXCLUDED.play_count,
-			completion_count = track_analytics.completion_count + EXCLUDED.completion_count,
-			updated_at = NOW()
-	`)
-	return err
-}
-
-func (w *Worker) aggregateArtistPlays(ctx context.Context) error {
-	_, err := w.db.Exec(ctx, `
-		INSERT INTO artist_analytics (artist_id, play_count, pause_count, skip_count, completion_count, updated_at)
-		SELECT
-			t.artist_id,
-			COUNT(*) AS play_count,
-			0, 0,
-			COUNT(*) FILTER (WHERE lh.completed = TRUE) AS completion_count,
-			NOW()
-		FROM listening_history lh
-		JOIN tracks t ON t.id = lh.track_id
-		WHERE lh.played_at > NOW() - INTERVAL '24 hours'
-		  AND t.artist_id IS NOT NULL
-		GROUP BY t.artist_id
-		ON CONFLICT (artist_id) DO UPDATE SET
-			play_count = artist_analytics.play_count + EXCLUDED.play_count,
-			completion_count = artist_analytics.completion_count + EXCLUDED.completion_count,
-			updated_at = NOW()
-	`)
-	return err
-}
-
-func (w *Worker) aggregateAlbumPlays(ctx context.Context) error {
-	_, err := w.db.Exec(ctx, `
-		INSERT INTO album_analytics (album_id, play_count, pause_count, skip_count, completion_count, updated_at)
-		SELECT
-			t.album_id,
-			COUNT(*) AS play_count,
-			0, 0,
-			COUNT(*) FILTER (WHERE lh.completed = TRUE) AS completion_count,
-			NOW()
-		FROM listening_history lh
-		JOIN tracks t ON t.id = lh.track_id
-		WHERE lh.played_at > NOW() - INTERVAL '24 hours'
-		  AND t.album_id IS NOT NULL
-		GROUP BY t.album_id
-		ON CONFLICT (album_id) DO UPDATE SET
-			play_count = album_analytics.play_count + EXCLUDED.play_count,
-			completion_count = album_analytics.completion_count + EXCLUDED.completion_count,
-			updated_at = NOW()
-	`)
-	return err
-}
-
-func (w *Worker) aggregateCreatorDailyStats(ctx context.Context) error {
-	_, err := w.db.Exec(ctx, `
+// refreshCreatorDailyStats recomputes plays/listeners per creator per day for
+// today and yesterday and REPLACES the stored values. Replacing (rather than
+// `+ EXCLUDED`) makes the job idempotent: the previous accumulation added the
+// same rolling window on every run. The window covers all of yesterday and
+// today, so those two days are always recomputed from complete data; older days
+// keep their last value.
+//
+// The creator is the user who uploaded the track, not the artist: artists are
+// catalog entities with their own uuid and no owner column, so tracks.artist_id
+// can never satisfy the creator_daily_stats.user_id -> users.id foreign key.
+func (w *Worker) refreshCreatorDailyStats(ctx context.Context) error {
+	tag, err := w.db.Exec(ctx, `
 		INSERT INTO creator_daily_stats (user_id, date, plays, listeners, updated_at)
 		SELECT
-			t.artist_id,
+			d.uploaded_by,
 			lh.played_at::date AS date,
 			COUNT(*) AS plays,
 			COUNT(DISTINCT lh.user_id) AS listeners,
 			NOW()
 		FROM listening_history lh
-		JOIN tracks t ON t.id = lh.track_id
-		WHERE lh.played_at > NOW() - INTERVAL '24 hours'
-		  AND t.artist_id IS NOT NULL
-		GROUP BY t.artist_id, lh.played_at::date
+		JOIN (
+			SELECT DISTINCT track_id, uploaded_by
+			FROM ingestion_drafts
+			WHERE track_id IS NOT NULL AND uploaded_by IS NOT NULL
+		) d ON d.track_id = lh.track_id
+		WHERE lh.played_at >= CURRENT_DATE - INTERVAL '1 day'
+		GROUP BY d.uploaded_by, lh.played_at::date
 		ON CONFLICT (user_id, date) DO UPDATE SET
-			plays = creator_daily_stats.plays + EXCLUDED.plays,
-			listeners = creator_daily_stats.listeners + EXCLUDED.listeners,
+			plays = EXCLUDED.plays,
+			listeners = EXCLUDED.listeners,
 			updated_at = NOW()
 	`)
-	return err
-}
-
-func (w *Worker) countRecentPlaylistCreations(ctx context.Context) (int64, error) {
-	var count int64
-	err := w.db.QueryRow(ctx, `
-		SELECT COUNT(*) FROM playlists
-		WHERE created_at > NOW() - INTERVAL '24 hours'
-	`).Scan(&count)
-	return count, err
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() > 0 {
+		w.logger.Info("refreshed creator daily stats", zap.Int64("rows", tag.RowsAffected()))
+	}
+	return nil
 }
