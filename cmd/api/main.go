@@ -82,7 +82,7 @@ func main() {
 	router := gin.New()
 	router.Use(
 		middleware.SecurityHeaders(),
-		middleware.CORS(application.Config.CORS.AllowedOrigins),
+		middleware.CORS(application.Config.CORS.AllowedOrigins, log),
 		otelgin.Middleware("music-api"),
 		middleware.GinZapLogger(log),
 		middleware.GinZapRecovery(log),
