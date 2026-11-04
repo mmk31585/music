@@ -208,6 +208,9 @@ func (s *ImportService) importSync(ctx context.Context, url, userID string) (*Im
 }
 
 func (s *ImportService) GetProgress(ctx context.Context, jobID string) (*worker.ProgressUpdate, error) {
+	if s.importWorker == nil {
+		return nil, nil
+	}
 	return s.importWorker.GetProgress(ctx, jobID)
 }
 

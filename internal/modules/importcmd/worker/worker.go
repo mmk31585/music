@@ -178,6 +178,11 @@ func NewImportWorker(
 func (w *ImportWorker) Name() string { return "import_worker" }
 
 func (w *ImportWorker) Run(ctx context.Context) error {
+	if w.rdb == nil {
+		w.logger.Warn("import worker disabled: redis unavailable")
+		return nil
+	}
+
 	if err := w.ensureStreamGroup(ctx); err != nil {
 		return fmt.Errorf("ensure stream group: %w", err)
 	}
