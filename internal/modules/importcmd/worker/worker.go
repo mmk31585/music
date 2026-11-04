@@ -207,6 +207,10 @@ func (w *ImportWorker) Run(ctx context.Context) error {
 }
 
 func (w *ImportWorker) ensureStreamGroup(ctx context.Context) error {
+	if w.rdb == nil {
+		// Redis unavailable — worker runs without stream coordination.
+		return nil
+	}
 	err := w.rdb.XGroupCreateMkStream(ctx, streamKey, consumerGroup, "0").Err()
 	if err != nil {
 		if err.Error() == "BUSYGROUP Consumer Group name already exists" {

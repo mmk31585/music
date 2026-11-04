@@ -12,6 +12,11 @@ func TestLoad_PopulatesFeatures(t *testing.T) {
 	os.Setenv("POSTGRES_URL", "postgres://localhost:5432/test?sslmode=disable")
 	defer os.Unsetenv("POSTGRES_URL")
 
+	os.Setenv("JWT_ACCESS_SECRET", "test-access-secret-that-is-at-least-32-bytes-long")
+	os.Setenv("JWT_REFRESH_SECRET", "test-refresh-secret-that-is-at-least-32-byte")
+	defer os.Unsetenv("JWT_ACCESS_SECRET")
+	defer os.Unsetenv("JWT_REFRESH_SECRET")
+
 	os.Setenv("FEATURE_SOCIAL_ENABLED", "false")
 	os.Setenv("FEATURE_GAMIFICATION_ENABLED", "false")
 	defer os.Unsetenv("FEATURE_SOCIAL_ENABLED")

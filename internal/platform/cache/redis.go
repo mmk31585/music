@@ -3,16 +3,36 @@ package cache
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 )
 
-func NewRedis(ctx context.Context, addr, password string, db int) (*redis.Client, error) {
+type RedisConfig struct {
+	Addr         string
+	Password     string
+	DB           int
+	DialTimeout  time.Duration
+	MaxRetries   int
+	MinIdleConns int
+}
+
+// NewRedis creates a Redis client. If Addr is empty, Redis is not configured
+// and the function returns a nil client with a nil error — callers must handle
+// a nil client gracefully (degrade without cache).
+func NewRedis(ctx context.Context, cfg RedisConfig) (*redis.Client, error) {
+	if cfg.Addr == "" {
+		return nil, nil
+	}
+
 	client := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: password,
-		DB:       db,
+		Addr:         cfg.Addr,
+		Password:     cfg.Password,
+		DB:           cfg.DB,
+		DialTimeout:  cfg.DialTimeout,
+		MaxRetries:   cfg.MaxRetries,
+		MinIdleConns: cfg.MinIdleConns,
 	})
 
 	if err := client.Ping(ctx).Err(); err != nil {

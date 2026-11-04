@@ -354,7 +354,9 @@ func TestUploadDraftFile_Success(t *testing.T) {
 	hdr.Set("Content-Disposition", `form-data; name="audio"; filename="song.mp3"`)
 	hdr.Set("Content-Type", "audio/mpeg")
 	part, _ := writer.CreatePart(hdr)
-	io.Copy(part, strings.NewReader("fake-audio-content"))
+	// Use real MP3 magic bytes (ID3v2 tag) so http.DetectContentType
+	// returns audio/mpeg instead of application/octet-stream.
+	io.Copy(part, bytes.NewReader([]byte("ID3\x03\x00\x00\x00\x00\x00\x00\x00\x00")))
 	writer.Close()
 
 	w := httptest.NewRecorder()

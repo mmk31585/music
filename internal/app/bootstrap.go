@@ -46,7 +46,14 @@ func Bootstrap(ctx context.Context) (*App, error) {
 	}
 
 	var redisClient *redis.Client
-	redisClient, err = cache.NewRedis(ctx, cfg.Redis.Addr, cfg.Redis.Password, cfg.Redis.DB)
+	redisClient, err = cache.NewRedis(ctx, cache.RedisConfig{
+		Addr:         cfg.Redis.Addr,
+		Password:     cfg.Redis.Password,
+		DB:           cfg.Redis.DB,
+		DialTimeout:  cfg.Redis.DialTimeout,
+		MaxRetries:   cfg.Redis.MaxRetries,
+		MinIdleConns: 0,
+	})
 	if err != nil {
 		log.Warn("redis unavailable, continuing without cache", zap.Error(err))
 	}

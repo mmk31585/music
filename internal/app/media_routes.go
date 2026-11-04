@@ -14,7 +14,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// RegisterMediaRoutes serves uploaded media. On Vercel the local filesystem is
+// read-only, so when STORAGE_DRIVER=s3 the /uploads/* route reports a
+// configuration error instead of crashing. Local disk serving remains for
+// non-serverless deployments.
 func RegisterMediaRoutes(r *gin.Engine, mediaRoot string) {
+	// On serverless platforms with S3 storage, local disk is unavailable.
+	// Report a clear configuration error instead of attempting local file I/O.
+	if os.Getenv("VERCEL") == "1" && os.Getenv("STORAGE_DRIVER") == "s3" {
+		r.GET("/uploads/*filepath", func(c *gin.Context) {
+			c.Header("Content-Type", "application/json")
+			c.Status(http.StatusServiceUnavailable)
+			_, _ = c.Writer.Write([]byte(`{"success":false,"message":"media serving requires S3 storage on serverless; set STORAGE_DRIVER=s3 and configure S3_BUCKET/S3_ENDPOINT"}`,))
+		})
+		return
+	}
+
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		requestedPath := req.URL.Path[len("/uploads/"):]
 
