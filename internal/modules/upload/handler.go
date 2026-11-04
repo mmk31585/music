@@ -2,9 +2,9 @@ package upload
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +14,29 @@ import (
 	"music/internal/modules/auth"
 	platformstorage "music/internal/platform/storage"
 )
+
+// allowedAudioExt is the allowlist of audio file extensions.
+var allowedAudioExt = map[string]bool{
+	".mp3":  true,
+	".ogg":  true,
+	".flac": true,
+	".wav":  true,
+	".m4a":  true,
+	".aac":  true,
+}
+
+// allowedAudioMime is the allowlist of audio MIME types detected by magic bytes.
+var allowedAudioMime = map[string]bool{
+	"audio/mpeg":       true,
+	"audio/ogg":        true,
+	"audio/flac":       true,
+	"audio/wav":        true,
+	"audio/x-wav":      true,
+	"audio/wave":       true,
+	"audio/mp4":        true,
+	"audio/aac":        true,
+	"application/ogg":  true,
+}
 
 type Handler struct {
 	svc     ServiceInterface
@@ -66,12 +89,23 @@ func (h *Handler) UploadDraftFile(c *gin.Context) error {
 	defer file.Close()
 
 	// Verify content type is audio
-	contentType := header.Header.Get("Content-Type")
-	if !isAudioContentType(contentType) {
+	buf := make([]byte, 512)
+	if _, err := io.ReadFull(file, buf); err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+		return apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "failed to read uploaded file", err)
+	}
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return apperrors.New(http.StatusInternalServerError, apperrors.CodeInternal, "failed to rewind uploaded file", err)
+	}
+	contentType := http.DetectContentType(buf)
+	if !allowedAudioMime[contentType] {
 		return apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid file type; audio files only", nil)
 	}
 
 	ext := filepathExt(header.Filename)
+	if !allowedAudioExt[ext] {
+		return apperrors.New(http.StatusBadRequest, apperrors.CodeBadRequest, "invalid file extension; audio files only", nil)
+	}
+
 	key := fmt.Sprintf("uploads/listener/%s/%d%s", userID, time.Now().UnixMilli(), ext)
 
 	if err := h.storage.Upload(c.Request.Context(), key, file, header.Size, contentType); err != nil {
@@ -93,13 +127,6 @@ func (h *Handler) UploadDraftFile(c *gin.Context) error {
 		"fileSize": header.Size,
 	})
 	return nil
-}
-
-func isAudioContentType(ct string) bool {
-	if strings.HasPrefix(ct, "audio/") {
-		return true
-	}
-	return false
 }
 
 func filepathExt(filename string) string {
