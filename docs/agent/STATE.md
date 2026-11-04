@@ -120,6 +120,11 @@
 - Removed: redundant notification worker + 5 unreferenced worker packages; added outbox pruning to the cleanup worker.
 - `go vet` clean, 24/24 test packages pass.
 
+## Session 2026-11-04 — import worker nil-redis panic
+
+- **Import worker crashed the whole process on startup when Redis unavailable**: `ImportWorker.Run` called `XGroupCreateMkStream` on the nil `redis.UniversalClient` left by `bootstrap.go` when redis is down (logged warning, `continue without cache`), producing a nil-pointer dereference and `log.Fatal` that killed the worker. Guarded `Run` to log and exit cleanly when `rdb == nil`, and guarded `ImportService.GetProgress` for a nil worker.
+- `go build ./...`, `go vet ./...` clean; `go test ./...` 24/24 packages pass except the pre-existing `TestUploadDraftFile_Success` upload failure (present on clean tree, unrelated).
+
 ## Session 2026-10-21 (later) — 502 after api restart, analytics FK violation
 
 - **All API calls through the SPA returned 502** after the api container restarted. nginx caches a literal `proxy_pass http://api:8080;` hostname at startup, so it kept proxying to the api's old container IP (which the worker had taken over). Fixed in `frontend/nginx/default.conf` with `resolver 127.0.0.11 valid=10s;` + `set $api_upstream http://api:8080; proxy_pass $api_upstream;` (per-request DNS).
