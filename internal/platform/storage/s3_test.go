@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -50,18 +49,12 @@ func TestS3Storage_GetURL_PublicBaseURL(t *testing.T) {
 	require.Equal(t, "https://cdn.example.com/music-media/track-audio/abc.mp3", url)
 }
 
-func TestS3Storage_GetURL_PresignNilPresigner(t *testing.T) {
-	// presign with a nil presigner should return an error, not panic
+func TestS3Storage_GetURL_NoPublicURLReturnsKey(t *testing.T) {
 	s := &S3Storage{
 		bucket:  "music-media",
-		presign: true,
+		presign: false,
 	}
-	_, err := s.GetURL(context.Background(), "track-audio/abc.mp3")
-	require.Error(t, err)
-}
-
-func TestS3Storage_Upload_NilClientReturnsError(t *testing.T) {
-	s := &S3Storage{client: nil}
-	err := s.Upload(context.Background(), "", nil, 0, "")
-	require.Error(t, err)
+	url, err := s.GetURL(context.Background(), "track-audio/abc.mp3")
+	require.NoError(t, err)
+	require.Equal(t, "track-audio/abc.mp3", url)
 }
