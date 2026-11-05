@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net/http"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.uber.org/zap"
@@ -58,13 +59,18 @@ func NewS3Storage(ctx context.Context, cfg S3Config) (*S3Storage, error) {
 		cfg.Region = "us-east-1"
 	}
 
+	// Disable EC2 IMDS credential resolution so a missing credential fails fast
+	// instead of hanging on the IMDS endpoint. Our OIDC provider (or static keys)
+	// fully replaces the default chain.
+	_ = os.Setenv("AWS_EC2_METADATA_DISABLED", "true")
+	defer os.Unsetenv("AWS_EC2_METADATA_DISABLED")
+
 	loadOptions := []func(*awsconfig.LoadOptions) error{
 		awsconfig.WithRegion(cfg.Region),
 	}
 
 	// Precedence: static credentials (S3_ACCESS_KEY_ID/S3_SECRET_ACCESS_KEY) >
-	// IAM role assumption (AWS_ROLE_ARN) > the SDK default credential chain
-	// (IMDS, ECS task role, ~/.aws/credentials, env vars).
+	// OIDC web identity via Vercel (AWS_ROLE_ARN) > SDK default chain.
 	if cfg.AccessKeyID != "" && cfg.SecretAccessKey != "" {
 		loadOptions = append(loadOptions, awsconfig.WithCredentialsProvider(
 			credentials.NewStaticCredentialsProvider(
@@ -80,16 +86,15 @@ func NewS3Storage(ctx context.Context, cfg S3Config) (*S3Storage, error) {
 		return nil, err
 	}
 
-	// Role assumption needs source credentials to sign the AssumeRole call.
-	// The loaded config already resolved them (default chain: env/IMDS/ECS),
-	// so reuse it for the STS client, then wrap in the assume-role provider.
-	if cfg.RoleARN != "" {
+	// OIDC web identity: assume role using a per-request OIDC token.
+	// The token is supplied via the x-vercel-oidc-token header (Gin middleware
+	// stores it in the request context) or the VERCEL_OIDC_TOKEN env var.
+	if cfg.RoleARN != "" && (cfg.AccessKeyID == "" || cfg.SecretAccessKey == "") {
 		stsClient := sts.NewFromConfig(awsCfg)
-		awsCfg.Credentials = stscreds.NewAssumeRoleProvider(stsClient, cfg.RoleARN,
-			func(o *stscreds.AssumeRoleOptions) {
-				o.RoleSessionName = "muse-api"
-			},
-		)
+		awsCfg.Credentials = &oidcCredentialProvider{
+			roleARN:   cfg.RoleARN,
+			stsClient: stsClient,
+		}
 	}
 
 	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
@@ -98,6 +103,11 @@ func NewS3Storage(ctx context.Context, cfg S3Config) (*S3Storage, error) {
 		}
 
 		o.UsePathStyle = cfg.UsePathStyle
+
+		// Explicit HTTP client timeouts so a missing credential fails fast.
+		o.HTTPClient = &http.Client{
+			Timeout: 30 * time.Second,
+		}
 	})
 
 	if cfg.PresignTTL == 0 {

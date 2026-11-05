@@ -119,7 +119,7 @@ func (h *Handler) Upload(c *gin.Context) {
 
 	zap.L().Info("upload complete",
 		zap.String("step", uploadStepDBCreate),
-		zap.String("draft_id", res.ID),
+		zap.String("draft_id", res.DraftID),
 		zap.String("user_id", userID),
 	)
 
@@ -435,10 +435,10 @@ func (h *Handler) enqueueAILyricsGeneration(ctx context.Context, draft *Ingestio
 
 		jobID, err := h.mlClient.EnqueueLyricsJob(ctx, req)
 		if err != nil {
-			log.Printf("[lyrics-ml] failed to enqueue lyrics job for track %s: %v", result.TrackID, err)
+			zap.L().Error("failed to enqueue lyrics job", zap.String("track_id", result.TrackID), zap.Error(err))
 			return
 		}
-		log.Printf("[lyrics-ml] enqueued job %s for track %s", jobID, result.TrackID)
+		zap.L().Info("enqueued lyrics job", zap.String("job_id", jobID), zap.String("track_id", result.TrackID))
 	}()
 }
 
