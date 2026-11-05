@@ -55,5 +55,5 @@ func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, authMW gin.HandlerFun
 	}
 
 	// --- Public user music-status route ---
-	rg.GET("/users/:userId/music-status", handler.GetMusicStatus)
+	rg.GET("/users/:id/music-status", handler.GetMusicStatus)
 }
