@@ -140,6 +140,13 @@ func (s *ImportService) Import(ctx context.Context, url, source, title, artist, 
 		UserID: userID,
 	}
 
+	// On serverless (Vercel) no background worker process runs, so queued
+	// jobs would never be picked up. Fall back to synchronous import so the
+	// user gets a result instead of a job stuck in "queued" forever.
+	if os.Getenv("VERCEL") == "1" {
+		return s.importSync(ctx, downloadURL, userID)
+	}
+
 	if s.importWorker != nil {
 		if err := s.importWorker.Enqueue(ctx, job); err != nil {
 			return nil, err
@@ -262,6 +269,7 @@ func (s *ImportService) BatchImport(ctx context.Context, items []BatchImportItem
 
 // enqueueJob directly enqueues a job for the worker without pre-resolution.
 // If url is empty, the worker will resolve the download URL during processing.
+// On serverless (Vercel) no background worker runs, so fall back to sync import.
 func (s *ImportService) enqueueJob(ctx context.Context, title, artist, album, url, source string, externalIDs map[string]string, userID string) (*ImportResponse, error) {
 	jobID := uuid.New().String()
 	job := &worker.Job{
@@ -272,6 +280,22 @@ func (s *ImportService) enqueueJob(ctx context.Context, title, artist, album, ur
 		Artist: artist,
 		Album:  album,
 		UserID: userID,
+	}
+
+	// On serverless (Vercel) no background worker process runs.
+	if os.Getenv("VERCEL") == "1" {
+		resp, err := s.importSync(ctx, url, userID)
+		if err != nil {
+			return nil, err
+		}
+		return &ImportResponse{
+			JobID:   jobID,
+			DraftID: resp.DraftID,
+			Title:   resp.Title,
+			Artist:  resp.Artist,
+			Duration: resp.Duration,
+			Message: "track imported successfully",
+		}, nil
 	}
 
 	if s.importWorker != nil {
