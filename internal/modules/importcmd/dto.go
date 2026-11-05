@@ -102,6 +102,9 @@ type BatchJobResult struct {
 	Artist string `json:"artist"`
 	JobID  string `json:"jobId,omitempty"`
 	Error  string `json:"error,omitempty"`
+	// Status is "complete", "failed", or "in-progress". Set when imported
+	// synchronously on serverless (no background worker).
+	Status string `json:"status,omitempty"`
 }
 
 type BatchProgressResponse struct {

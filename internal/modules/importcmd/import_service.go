@@ -2,11 +2,11 @@ package importcmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"mime/multipart"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"music/internal/modules/importcmd/acquisition"
@@ -15,6 +15,7 @@ import (
 	"music/internal/modules/ingestion"
 
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
@@ -26,6 +27,7 @@ type ImportService struct {
 	searchSvc    *search.Service
 	importWorker *worker.ImportWorker
 	downloadDir  string
+	rdb          redis.UniversalClient
 }
 
 func NewImportService(
@@ -36,6 +38,7 @@ func NewImportService(
 	searchSvc *search.Service,
 	importWorker *worker.ImportWorker,
 	downloadDir string,
+	rdb redis.UniversalClient,
 ) *ImportService {
 	return &ImportService{
 		logger:       logger,
@@ -45,6 +48,7 @@ func NewImportService(
 		searchSvc:    searchSvc,
 		importWorker: importWorker,
 		downloadDir:  downloadDir,
+		rdb:          rdb,
 	}
 }
 
@@ -253,12 +257,19 @@ func (s *ImportService) BatchImport(ctx context.Context, items []BatchImportItem
 			)
 		} else if resp != nil {
 			result.JobID = resp.JobID
+			// On serverless (VERCEL=1), importSync completed the job immediately,
+			// so mark it complete for batch progress tracking.
+			if resp.DraftID != "" {
+				result.Status = "complete"
+			}
 		}
 		results = append(results, result)
 	}
 
-	// Store batch progress in context (simplified: in-memory for now)
-	s.storeBatchProgress(batchID, results)
+	// Store batch progress in Redis (persists across serverless invocations).
+	if err := s.storeBatchProgress(ctx, batchID, results); err != nil {
+		s.logger.Warn("failed to store batch progress", zap.String("batch_id", batchID), zap.Error(err))
+	}
 
 	return &BatchImportResponse{
 		BatchID: batchID,
@@ -311,42 +322,56 @@ func (s *ImportService) enqueueJob(ctx context.Context, title, artist, album, ur
 	return nil, fmt.Errorf("no import worker available; cannot import '%s - %s'", artist, title)
 }
 
-// In-memory batch progress store (simple map; Redis-backed for production)
-type batchProgressEntry struct {
-	results []BatchJobResult
+// Redis key prefix for batch progress (persists across serverless invocations).
+const batchProgressKeyPrefix = "import:batch:"
+
+// BatchProgressEntry holds batch results for Redis persistence.
+type BatchProgressEntry struct {
+	Results []BatchJobResult `json:"results"`
 }
 
-var (
-	batchProgressMu    sync.Mutex
-	batchProgressStore = make(map[string]*batchProgressEntry)
-)
-
-func (s *ImportService) storeBatchProgress(batchID string, results []BatchJobResult) {
-	batchProgressMu.Lock()
-	defer batchProgressMu.Unlock()
-	batchProgressStore[batchID] = &batchProgressEntry{results: results}
+func (s *ImportService) storeBatchProgress(ctx context.Context, batchID string, results []BatchJobResult) error {
+	if s.rdb == nil {
+		return nil
+	}
+	data, err := json.Marshal(BatchProgressEntry{Results: results})
+	if err != nil {
+		return err
+	}
+	return s.rdb.Set(ctx, batchProgressKeyPrefix+batchID, data, 24*time.Hour).Err()
 }
 
 func (s *ImportService) GetBatchProgress(ctx context.Context, batchID string) (*BatchProgressResponse, error) {
-	batchProgressMu.Lock()
-	entry, ok := batchProgressStore[batchID]
-	batchProgressMu.Unlock()
-
-	if !ok {
+	if s.rdb == nil {
 		return nil, nil
 	}
 
-	total := len(entry.results)
+	data, err := s.rdb.Get(ctx, batchProgressKeyPrefix+batchID).Bytes()
+	if err == redis.Nil {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var entry BatchProgressEntry
+	if err := json.Unmarshal(data, &entry); err != nil {
+		return nil, fmt.Errorf("parse batch progress: %w", err)
+	}
+
+	total := len(entry.Results)
 	completed := 0
 	failed := 0
 	inProgress := 0
 
-	for _, r := range entry.results {
-		if r.Error != "" {
+	for _, r := range entry.Results {
+		if r.Status == "complete" {
+			completed++
+		} else if r.Error != "" {
 			failed++
 		} else if r.JobID != "" {
-			// Check if this job is complete
-			pu, err := s.GetProgress(ctx, r.JobID)
+			// Check if this job is complete via per-job progress in Redis.
+			pu, err := s.importWorker.GetProgress(ctx, r.JobID)
 			if err != nil || pu == nil {
 				inProgress++
 			} else if pu.Status == worker.StatusComplete {

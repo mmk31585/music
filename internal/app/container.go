@@ -734,6 +734,7 @@ func (c *Container) buildImport() {
 		c.ImportSearch,
 		c.ImportWorker,
 		downloadDir,
+		c.RDB,
 	)
 
 	// Build artist searcher (Deezer + MusicBrainz, no keys needed)
