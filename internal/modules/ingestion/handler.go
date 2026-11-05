@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 
 	appErr "music/internal/common/errors"
 	"music/internal/common/pagination"
@@ -20,6 +20,17 @@ import (
 	"music/internal/modules/ingestion/finalization"
 	"music/internal/modules/lyrics"
 	platformstorage "music/internal/platform/storage"
+)
+
+// uploadStep labels each phase of the upload flow for structured logs.
+const (
+	uploadStepParse      = "parse_multipart_form"
+	uploadStepFileRead   = "read_uploaded_file"
+	uploadStepMetadata   = "extract_metadata"
+	uploadStepS3Put      = "s3_put_object"
+	uploadStepS3GetURL   = "s3_get_url"
+	uploadStepDBCreate   = "db_create_draft"
+	uploadStepPresign    = "s3_presign_upload_url"
 )
 
 type Handler struct {
@@ -54,15 +65,19 @@ func (h *Handler) SetCleanup(c *CleanupService) {
 func (h *Handler) Upload(c *gin.Context) {
 	const hardLimit = 200 << 20
 
+	log := zap.L().With(zap.String("step", uploadStepParse))
+
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, hardLimit)
 
 	if err := c.Request.ParseMultipartForm(hardLimit); err != nil {
+		log.Error("parse multipart form failed", zap.Error(err))
 		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "file too large or invalid multipart form", err))
 		return
 	}
 
 	file, header, err := c.Request.FormFile("audio")
 	if err != nil {
+		log.Error("read audio file field failed", zap.Error(err))
 		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "no audio file provided in 'audio' field", err))
 		return
 	}
@@ -70,12 +85,21 @@ func (h *Handler) Upload(c *gin.Context) {
 
 	userID := auth.UserIDFromContext(c)
 	if userID == "" {
+		log.Error("user not authenticated", zap.String("step", uploadStepFileRead))
 		response.Error(c, appErr.New(http.StatusUnauthorized, appErr.CodeUnauthorized, "user not authenticated", nil))
 		return
 	}
 
+	zap.L().Info("parsed multipart upload",
+		zap.String("step", uploadStepParse),
+		zap.String("filename", header.Filename),
+		zap.Int64("size", header.Size),
+		zap.String("user_id", userID),
+	)
+
 	res, err := h.service.Upload(c.Request.Context(), file, header, userID)
 	if err != nil {
+		zap.L().Error("service upload failed", zap.String("step", uploadStepS3Put), zap.Error(err))
 		switch {
 		case errors.Is(err, ErrInvalidFileType):
 			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "unsupported audio format (allowed: mp3, flac, ogg, m4a, aac)", err))
@@ -92,6 +116,12 @@ func (h *Handler) Upload(c *gin.Context) {
 		}
 		return
 	}
+
+	zap.L().Info("upload complete",
+		zap.String("step", uploadStepDBCreate),
+		zap.String("draft_id", res.ID),
+		zap.String("user_id", userID),
+	)
 
 	response.Success(c, http.StatusCreated, "file uploaded and enrichment started", res)
 }

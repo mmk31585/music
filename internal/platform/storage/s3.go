@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"go.uber.org/zap"
 )
 
 type S3Config struct {
@@ -37,6 +38,16 @@ type S3Storage struct {
 	presign    bool
 	presignTTL time.Duration
 }
+
+// s3Step labels each S3 operation for structured logs.
+const (
+	s3StepPut     = "s3_put_object"
+	s3StepHead    = "s3_head_object"
+	s3StepPresign = "s3_presign_put_object"
+	s3StepDelete  = "s3_delete_object"
+	s3StepGet     = "s3_get_object"
+	s3StepCopy    = "s3_copy_object"
+)
 
 func NewS3Storage(ctx context.Context, cfg S3Config) (*S3Storage, error) {
 	if cfg.Bucket == "" {
@@ -116,23 +127,46 @@ func (s *S3Storage) Upload(ctx context.Context, key string, reader io.Reader, si
 		input.ContentType = aws.String(contentType)
 	}
 
+	log := zap.L().With(
+		zap.String("step", s3StepPut),
+		zap.String("bucket", s.bucket),
+		zap.String("key", key),
+	)
+
 	_, err := s.client.PutObject(ctx, input)
+	if err != nil {
+		log.Error("s3 put object failed", zap.Error(err))
+	}
 	return err
 }
 
 func (s *S3Storage) Delete(ctx context.Context, key string) error {
 	key = strings.TrimLeft(key, "/")
 
+	log := zap.L().With(
+		zap.String("step", s3StepDelete),
+		zap.String("bucket", s.bucket),
+		zap.String("key", key),
+	)
+
 	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
 	})
-
+	if err != nil {
+		log.Error("s3 delete object failed", zap.Error(err))
+	}
 	return err
 }
 
 func (s *S3Storage) Exists(ctx context.Context, key string) (bool, error) {
 	key = strings.TrimLeft(key, "/")
+
+	log := zap.L().With(
+		zap.String("step", s3StepHead),
+		zap.String("bucket", s.bucket),
+		zap.String("key", key),
+	)
 
 	_, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{
 		Bucket: aws.String(s.bucket),
@@ -148,6 +182,7 @@ func (s *S3Storage) Exists(ctx context.Context, key string) (bool, error) {
 			return false, nil
 		}
 
+		log.Error("s3 head object failed", zap.Error(err))
 		return false, err
 	}
 
