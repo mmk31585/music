@@ -40,7 +40,12 @@ func loadStorageConfig() StorageConfig {
 	}
 	localBaseDir := os.Getenv("STORAGE_LOCAL_BASE_DIR")
 	if localBaseDir == "" {
-		localBaseDir = "uploads"
+		// On Vercel, use /tmp for writable filesystem
+		if os.Getenv("VERCEL") == "1" {
+			localBaseDir = "/tmp/uploads"
+		} else {
+			localBaseDir = "uploads"
+		}
 	}
 	localBaseURL := os.Getenv("STORAGE_LOCAL_BASE_URL")
 	if localBaseURL == "" {
