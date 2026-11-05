@@ -62,20 +62,23 @@ func NewS3Storage(ctx context.Context, cfg S3Config) (*S3Storage, error) {
 				"",
 			),
 		))
-	} else if cfg.RoleARN != "" {
-		stsClient := sts.NewFromConfig(aws.Config{Region: cfg.Region})
-		loadOptions = append(loadOptions, awsconfig.WithCredentialsProvider(
-			stscreds.NewAssumeRoleProvider(stsClient, cfg.RoleARN,
-				func(o *stscreds.AssumeRoleOptions) {
-					o.RoleSessionName = "muse-api"
-				},
-			),
-		))
 	}
 
 	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, loadOptions...)
 	if err != nil {
 		return nil, err
+	}
+
+	// Role assumption needs source credentials to sign the AssumeRole call.
+	// The loaded config already resolved them (default chain: env/IMDS/ECS),
+	// so reuse it for the STS client, then wrap in the assume-role provider.
+	if cfg.RoleARN != "" {
+		stsClient := sts.NewFromConfig(awsCfg)
+		awsCfg.Credentials = stscreds.NewAssumeRoleProvider(stsClient, cfg.RoleARN,
+			func(o *stscreds.AssumeRoleOptions) {
+				o.RoleSessionName = "muse-api"
+			},
+		)
 	}
 
 	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
