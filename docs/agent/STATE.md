@@ -134,3 +134,8 @@
 - **ML stack is now part of the running compose stack** (`ml-service`, `ml-worker`, `ml-postgres`). Fixed the container-network addresses and the healthcheck; the Go API/worker point at `http://ml-service:8000` (from `.env`).
 - **Removed the enricher's ML client** (`internal/modules/ingestion/enrichment/ml.go`, `MLClient`, `MLResult`, `SourceML`): it called a list endpoint moja-ml-service does not have and duplicated the lyrics/covers modules' ML flow (enqueue + HMAC webhook).
 - **`internal/app` test**: was building the two binaries into the repo root (clobbering the tracked `api`/`worker` files) and taking >3 min. Now builds once into a temp dir (12 s) and leaves the tree clean.
+
+## Session 2026-11-05 — S3 upload 403 (MissingAuthenticationToken)
+
+- **Track audio upload failed**: `S3: PutObject → STS: AssumeRole → 403 MissingAuthenticationToken`. When static creds were absent and `AWS_ROLE_ARN` set, the STS client was built from `aws.Config{Region: ...}` with no credentials provider, so the AssumeRole request was unsigned. Fixed in `internal/platform/storage/s3.go`: load the default config first (resolves source creds from env/IMDS/ECS), build the STS client from it, then wrap in the assume-role provider. Static-cred path unchanged.
+- `go build ./...`, `go vet ./...`, `go test ./... -race` all clean; committed `9222031 fix(storage): provide source credentials for STS role assumption`.
