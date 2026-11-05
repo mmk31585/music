@@ -35,7 +35,7 @@ func loadMediaConfig() MediaConfig {
 			maxImageSizeMB = parsed
 		}
 	}
-	maxAudioSizeMB := int64(30)
+	maxAudioSizeMB := int64(4)
 	if v := os.Getenv("MEDIA_MAX_AUDIO_SIZE_MB"); v != "" {
 		if parsed, err := strconv.ParseInt(v, 10, 64); err == nil {
 			maxAudioSizeMB = parsed
