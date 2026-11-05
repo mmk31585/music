@@ -45,4 +45,15 @@ func RegisterRoutes(rg *gin.RouterGroup, handler *Handler, authMW gin.HandlerFun
 	rg.GET("/music-video/:id/comments", handler.ListComments)
 	rg.GET("/music-videos/explore", handler.ListExplore)
 	rg.GET("/music-videos/by-track/:trackId", handler.ListByTrack)
+
+	// --- User music-status routes (auth required) ---
+	user := rg.Group("/users/me")
+	user.Use(authMW)
+	{
+		user.PUT("/music-status", handler.SetMusicStatus)
+		user.DELETE("/music-status", handler.ClearMusicStatus)
+	}
+
+	// --- Public user music-status route ---
+	rg.GET("/users/:userId/music-status", handler.GetMusicStatus)
 }
