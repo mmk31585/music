@@ -10,7 +10,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
 type S3Config struct {
@@ -19,6 +21,8 @@ type S3Config struct {
 	Endpoint        string
 	AccessKeyID     string
 	SecretAccessKey string
+	RoleARN         string
+	AccountID       string
 	PublicBaseURL   string
 	UsePathStyle    bool
 	PresignURLs     bool
@@ -47,12 +51,24 @@ func NewS3Storage(ctx context.Context, cfg S3Config) (*S3Storage, error) {
 		awsconfig.WithRegion(cfg.Region),
 	}
 
+	// Precedence: static credentials (S3_ACCESS_KEY_ID/S3_SECRET_ACCESS_KEY) >
+	// IAM role assumption (AWS_ROLE_ARN) > the SDK default credential chain
+	// (IMDS, ECS task role, ~/.aws/credentials, env vars).
 	if cfg.AccessKeyID != "" && cfg.SecretAccessKey != "" {
 		loadOptions = append(loadOptions, awsconfig.WithCredentialsProvider(
 			credentials.NewStaticCredentialsProvider(
 				cfg.AccessKeyID,
 				cfg.SecretAccessKey,
 				"",
+			),
+		))
+	} else if cfg.RoleARN != "" {
+		stsClient := sts.NewFromConfig(aws.Config{Region: cfg.Region})
+		loadOptions = append(loadOptions, awsconfig.WithCredentialsProvider(
+			stscreds.NewAssumeRoleProvider(stsClient, cfg.RoleARN,
+				func(o *stscreds.AssumeRoleOptions) {
+					o.RoleSessionName = "muse-api"
+				},
 			),
 		))
 	}

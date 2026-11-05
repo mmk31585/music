@@ -88,6 +88,8 @@ func (c *WorkerContainer) buildWorkers() {
 			Endpoint:        c.App.Config.Storage.S3.Endpoint,
 			AccessKeyID:     c.App.Config.Storage.S3.AccessKeyID,
 			SecretAccessKey: c.App.Config.Storage.S3.SecretAccessKey,
+			RoleARN:         c.App.Config.Storage.S3.RoleARN,
+			AccountID:       c.App.Config.Storage.S3.AccountID,
 			PublicBaseURL:   c.App.Config.Storage.S3.PublicBaseURL,
 			UsePathStyle:    c.App.Config.Storage.S3.UsePathStyle,
 			PresignURLs:     c.App.Config.Storage.S3.PresignURLs,

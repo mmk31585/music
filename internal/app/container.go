@@ -297,6 +297,8 @@ func (c *Container) buildStorage(a *App) {
 			Endpoint:        a.Config.Storage.S3.Endpoint,
 			AccessKeyID:     a.Config.Storage.S3.AccessKeyID,
 			SecretAccessKey: a.Config.Storage.S3.SecretAccessKey,
+			RoleARN:         a.Config.Storage.S3.RoleARN,
+			AccountID:       a.Config.Storage.S3.AccountID,
 			PublicBaseURL:   a.Config.Storage.S3.PublicBaseURL,
 			UsePathStyle:    a.Config.Storage.S3.UsePathStyle,
 			PresignURLs:     a.Config.Storage.S3.PresignURLs,

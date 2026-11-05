@@ -25,6 +25,8 @@ type S3StorageConfig struct {
 	Endpoint        string
 	AccessKeyID     string
 	SecretAccessKey string
+	RoleARN         string
+	AccountID       string
 	PublicBaseURL   string
 	UsePathStyle    bool
 	PresignURLs     bool
@@ -100,6 +102,8 @@ func loadStorageConfig() StorageConfig {
 			Endpoint:        os.Getenv("S3_ENDPOINT"),
 			AccessKeyID:     os.Getenv("S3_ACCESS_KEY_ID"),
 			SecretAccessKey: os.Getenv("S3_SECRET_ACCESS_KEY"),
+			RoleARN:         os.Getenv("AWS_ROLE_ARN"),
+			AccountID:       os.Getenv("AWS_ACCOUNT_ID"),
 			PublicBaseURL:   os.Getenv("S3_PUBLIC_BASE_URL"),
 			UsePathStyle:    usePathStyle,
 			PresignURLs:     presignURLs,
