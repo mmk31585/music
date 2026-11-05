@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -175,10 +176,17 @@ func NewImportWorker(
 	}
 }
 
+func redisClientNil(rdb redis.UniversalClient) bool {
+	// A typed-nil *redis.Client boxed into a redis.UniversalClient interface
+	// is non-nil as an interface but calls a method on a nil pointer, so we
+	// must detect the underlying nil pointer explicitly.
+	return rdb == nil || (reflect.ValueOf(rdb).Kind() == reflect.Ptr && reflect.ValueOf(rdb).IsNil())
+}
+
 func (w *ImportWorker) Name() string { return "import_worker" }
 
 func (w *ImportWorker) Run(ctx context.Context) error {
-	if w.rdb == nil {
+	if redisClientNil(w.rdb) {
 		w.logger.Warn("import worker disabled: redis unavailable")
 		return nil
 	}
