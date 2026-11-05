@@ -10,6 +10,7 @@ import (
 	"net/textproto"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -104,6 +105,11 @@ func (m *mockStorage) Exists(ctx context.Context, key string) (bool, error) {
 
 func (m *mockStorage) GetURL(ctx context.Context, key string) (string, error) {
 	args := m.Called(ctx, key)
+	return args.String(0), args.Error(1)
+}
+
+func (m *mockStorage) PresignPut(ctx context.Context, key string, contentType string, ttl time.Duration) (string, error) {
+	args := m.Called(ctx, key, contentType, ttl)
 	return args.String(0), args.Error(1)
 }
 

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type LocalConfig struct {
@@ -109,6 +110,11 @@ func (s *LocalStorage) GetURL(ctx context.Context, key string) (string, error) {
 	}
 
 	return s.baseURL + "/" + key, nil
+}
+
+// PresignPut is not supported for local storage. Returns an error.
+func (s *LocalStorage) PresignPut(ctx context.Context, key string, contentType string, ttl time.Duration) (string, error) {
+	return "", errors.New("presigned PUT not supported for local storage driver")
 }
 
 func (s *LocalStorage) Get(ctx context.Context, key string) ([]byte, error) {

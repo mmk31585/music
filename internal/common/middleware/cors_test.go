@@ -114,7 +114,7 @@ func TestCORS(t *testing.T) {
 			expectACAO:         "https://example.com",
 			expectCredentials:  "true",
 			expectVary:         "Origin, Access-Control-Request-Headers",
-			expectAllowHeaders: "Authorization,Content-Type,Accept,X-Request-ID",
+			expectAllowHeaders: "Authorization,Content-Type,Accept,X-Request-ID,X-Vercel-Oidc-Token",
 			expectMaxAge:       "600",
 		},
 		{

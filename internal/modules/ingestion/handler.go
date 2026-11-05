@@ -126,6 +126,99 @@ func (h *Handler) Upload(c *gin.Context) {
 	response.Success(c, http.StatusCreated, "file uploaded and enrichment started", res)
 }
 
+// UploadURL returns a presigned PUT URL for direct client-to-S3 upload.
+// Used for files larger than ~4MB to avoid buffering the full body in serverless.
+func (h *Handler) UploadURL(c *gin.Context) {
+	log := zap.L().With(zap.String("step", uploadStepPresign))
+
+	var req struct {
+		Filename    string `json:"filename" validate:"required"`
+		ContentType string `json:"contentType" validate:"required"`
+		Size        int64  `json:"size" validate:"required,min=1"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Error("invalid request body", zap.Error(err))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "invalid request body", err))
+		return
+	}
+
+	userID := auth.UserIDFromContext(c)
+	if userID == "" {
+		log.Error("user not authenticated")
+		response.Error(c, appErr.New(http.StatusUnauthorized, appErr.CodeUnauthorized, "user not authenticated", nil))
+		return
+	}
+
+	resp, err := h.service.PrepareUpload(c.Request.Context(), req.Filename, req.ContentType, req.Size, userID)
+	if err != nil {
+		log.Error("prepare upload failed", zap.Error(err))
+		switch {
+		case errors.Is(err, ErrInvalidFileType):
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "unsupported audio format (allowed: mp3, flac, ogg, m4a, aac)", err))
+		case errors.Is(err, ErrFileTooLarge):
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "file exceeds maximum size of 200MB", err))
+		case errors.Is(err, ErrNoFileProvided):
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "no file provided", err))
+		default:
+			response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "upload url failed", err))
+		}
+		return
+	}
+
+	log.Info("presigned upload url issued",
+		zap.String("draft_id", resp.DraftID),
+		zap.String("key", resp.Key),
+		zap.String("user_id", userID),
+	)
+
+	response.Success(c, http.StatusOK, "upload url ready", resp)
+}
+
+// UploadComplete is called by the client after a direct S3 PUT. It verifies
+// the object, extracts metadata, creates the draft, and returns the response.
+func (h *Handler) UploadComplete(c *gin.Context) {
+	log := zap.L().With(zap.String("step", uploadStepDBCreate))
+
+	var req UploadCompleteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Error("invalid request body", zap.Error(err))
+		response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "invalid request body", err))
+		return
+	}
+
+	userID := auth.UserIDFromContext(c)
+	if userID == "" {
+		log.Error("user not authenticated")
+		response.Error(c, appErr.New(http.StatusUnauthorized, appErr.CodeUnauthorized, "user not authenticated", nil))
+		return
+	}
+
+	resp, err := h.service.CompleteUpload(c.Request.Context(), req.DraftID, req.Key, userID)
+	if err != nil {
+		log.Error("complete upload failed", zap.String("draft_id", req.DraftID), zap.Error(err))
+		switch {
+		case errors.Is(err, ErrInvalidFileType):
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "unsupported audio format (allowed: mp3, flac, ogg, m4a, aac)", err))
+		case errors.Is(err, ErrNoFileProvided):
+			response.Error(c, appErr.New(http.StatusBadRequest, appErr.CodeBadRequest, "no file provided", err))
+		case errors.Is(err, ErrDuplicateFile):
+			response.Error(c, appErr.New(http.StatusConflict, appErr.CodeConflict, "this file already exists in the catalog", err))
+		case errors.Is(err, ErrStorageFailed):
+			response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "failed to verify stored file", err))
+		default:
+			response.Error(c, appErr.New(http.StatusInternalServerError, appErr.CodeInternal, "upload complete failed", err))
+		}
+		return
+	}
+
+	log.Info("direct S3 upload complete",
+		zap.String("draft_id", resp.DraftID),
+		zap.String("user_id", userID),
+	)
+
+	response.Success(c, http.StatusCreated, "upload complete", resp)
+}
+
 func (h *Handler) GetDraft(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {

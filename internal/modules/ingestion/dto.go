@@ -169,3 +169,18 @@ type IngestionConfigResponse struct {
 	MaxUploadSize     int64 `json:"maxUploadSize"`
 	EnrichmentEnabled bool  `json:"enrichmentEnabled"`
 }
+
+// PrepareUploadResponse is returned by POST /admin/ingestion/upload-url.
+// It contains the presigned PUT URL the client uploads to directly.
+type PrepareUploadResponse struct {
+	DraftID   string `json:"draftId"`
+	Key       string `json:"key"`
+	UploadURL string `json:"uploadUrl"`
+	ExpiresIn int64  `json:"expiresIn"`
+}
+
+// UploadCompleteRequest is sent by the client after a direct S3 PUT.
+type UploadCompleteRequest struct {
+	DraftID string `json:"draftId"`
+	Key     string `json:"key"`
+}

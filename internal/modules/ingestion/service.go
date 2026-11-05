@@ -405,6 +405,229 @@ func (s *Service) Upload(ctx context.Context, file multipart.File, header *multi
 	}, nil
 }
 
+// PrepareUpload validates the requested upload and returns a presigned PUT URL
+// for direct client-to-S3 upload. It does not create a draft yet.
+func (s *Service) PrepareUpload(ctx context.Context, filename, contentType string, size int64, uploadedBy string) (*PrepareUploadResponse, error) {
+	if filename == "" {
+		return nil, ErrNoFileProvided
+	}
+
+	if size > MaxUploadSize {
+		return nil, ErrFileTooLarge
+	}
+
+	if size == 0 {
+		return nil, ErrNoFileProvided
+	}
+
+	ext := strings.ToLower(filepath.Ext(filename))
+	format := formatFromExt(ext)
+	if format == "" {
+		return nil, ErrInvalidFileType
+	}
+
+	draftID := ulid.Make().String()
+	key := fmt.Sprintf("%s/%s-%s", StorageAudioDir, draftID, sanitizeFilename(filename))
+
+	presignTTL := 10 * time.Minute
+	uploadURL, err := s.storage.PresignPut(ctx, key, contentType, presignTTL)
+	if err != nil {
+		zap.L().Error("presign put failed", zap.String("step", uploadStepPresign), zap.String("key", key), zap.Error(err))
+		return nil, fmt.Errorf("%w: %v", ErrStorageFailed, err)
+	}
+
+	zap.L().Info("presigned upload url created",
+		zap.String("step", uploadStepPresign),
+		zap.String("draft_id", draftID),
+		zap.String("key", key),
+		zap.String("filename", filename),
+		zap.Int64("size", size),
+		zap.String("user_id", uploadedBy),
+	)
+
+	return &PrepareUploadResponse{
+		DraftID:   draftID,
+		Key:       key,
+		UploadURL: uploadURL,
+		ExpiresIn: int64(presignTTL.Seconds()),
+	}, nil
+}
+
+// CompleteUpload is called after the client PUTs the file to S3 via the presigned URL.
+// It verifies the object exists, downloads it, extracts metadata, creates the draft,
+// and returns the upload response.
+func (s *Service) CompleteUpload(ctx context.Context, draftID, key, uploadedBy string) (*UploadResponse, error) {
+	if draftID == "" || key == "" {
+		return nil, ErrNoFileProvided
+	}
+
+	// Verify the object exists in S3
+	exists, err := s.storage.Exists(ctx, key)
+	if err != nil {
+		zap.L().Error("s3 head object failed", zap.String("step", "s3_head_object"), zap.String("key", key), zap.Error(err))
+		return nil, fmt.Errorf("%w: %v", ErrStorageFailed, err)
+	}
+	if !exists {
+		zap.L().Error("s3 object not found", zap.String("step", "s3_head_object"), zap.String("key", key))
+		return nil, ErrNoFileProvided
+	}
+
+	// Download the object for hash + metadata extraction
+	content, err := s.storage.Get(ctx, key)
+	if err != nil {
+		zap.L().Error("s3 get object failed", zap.String("step", "s3_get_object"), zap.String("key", key), zap.Error(err))
+		return nil, fmt.Errorf("%w: %v", ErrStorageFailed, err)
+	}
+
+	if len(content) == 0 {
+		return nil, ErrNoFileProvided
+	}
+
+	// Extract filename from key (format: ingestion-audio/<draftID>-<filename>)
+	filename := key
+	if parts := strings.SplitN(key, "-", 2); len(parts) == 2 {
+		filename = parts[1]
+	}
+
+	ext := strings.ToLower(filepath.Ext(filename))
+	format := formatFromExt(ext)
+	if format == "" {
+		return nil, ErrInvalidFileType
+	}
+
+	hash := sha256.Sum256(content)
+	fileHash := hex.EncodeToString(hash[:])
+
+	existing, err := s.repo.SearchByFileHash(ctx, fileHash)
+	if err != nil {
+		zap.L().Warn("failed to check duplicate hash", zap.Error(err))
+	} else if len(existing) > 0 {
+		for _, ex := range existing {
+			if ex.Status == DraftStatusPublished {
+				return nil, ErrDuplicateFile
+			}
+		}
+		zap.L().Warn("potential duplicate file (draft already exists)",
+			zap.String("existing_draft", existing[0].ID),
+		)
+	}
+
+	result, err := extractMetadata(filename, bytes.NewReader(content))
+	if err != nil {
+		zap.L().Warn("metadata extraction failed", zap.String("filename", filename), zap.Error(err))
+		result = &extractionResult{
+			Tags: &ExtractedTags{Format: format},
+		}
+	}
+
+	if result.Audio != nil {
+		if result.Audio.Format != "" {
+			format = result.Audio.Format
+		}
+	}
+
+	extractedJSON, err := extractedTagsToJSON(result.Tags)
+	if err != nil {
+		extractedJSON = "{}"
+	}
+
+	var duration *float64
+	var bitrate *int
+	if result.Audio != nil {
+		duration = &result.Audio.Duration
+		bitrate = &result.Audio.Bitrate
+	}
+
+	audioURL, err := s.storage.GetURL(ctx, key)
+	if err != nil {
+		_ = s.storage.Delete(ctx, key)
+		return nil, fmt.Errorf("%w: %v", ErrStorageFailed, err)
+	}
+
+	draft, err := s.repo.CreateDraft(ctx, CreateDraftParams{
+		ID:                draftID,
+		UploadedBy:        uploadedBy,
+		OriginalFilename:  filename,
+		FilePath:          key,
+		FileSize:          int64(len(content)),
+		DurationSeconds:   duration,
+		Bitrate:           bitrate,
+		Format:            format,
+		FileHash:          fileHash,
+		ExtractedMetadata: extractedJSON,
+	})
+	if err != nil {
+		_ = s.storage.Delete(ctx, key)
+		return nil, err
+	}
+
+	assets := []AssetResponse{}
+	var coverArtURL *string
+
+	assets = append(assets, AssetResponse{
+		ID:        ulid.Make().String(),
+		AssetType: "audio",
+		URL:       audioURL,
+		Source:    "uploaded",
+	})
+
+	if len(result.CoverArt) > 0 {
+		coverExt := result.CoverExt
+		if coverExt == "" {
+			coverExt = ".jpg"
+		}
+		coverKey := fmt.Sprintf("%s/%s-cover%s", StorageCoverDir, draftID, coverExt)
+		coverMime := detectCoverMime(coverExt)
+
+		if err := s.storage.Upload(ctx, coverKey, bytes.NewReader(result.CoverArt), int64(len(result.CoverArt)), coverMime); err != nil {
+			zap.L().Warn("failed to upload embedded cover art", zap.Error(err))
+		} else {
+			coverURL, err := s.storage.GetURL(ctx, coverKey)
+			if err == nil {
+				coverArtURL = &coverURL
+				assetID := ulid.Make().String()
+				_, err := s.repo.CreateAsset(ctx, CreateAssetParams{
+					ID:        assetID,
+					DraftID:   draftID,
+					AssetType: "cover",
+					URL:       coverURL,
+					Source:    "embedded",
+				})
+				if err == nil {
+					assets = append(assets, AssetResponse{
+						ID:        assetID,
+						AssetType: "cover",
+						URL:       coverURL,
+						Source:    "embedded",
+					})
+				}
+			}
+		}
+	}
+
+	go s.enrichAsync(draftID, result.Tags.Title, result.Tags.Artist, result.Tags.Album, int(result.Tags.Duration))
+
+	zap.L().Info("upload complete (direct S3)",
+		zap.String("step", uploadStepDBCreate),
+		zap.String("draft_id", draftID),
+		zap.String("user_id", uploadedBy),
+	)
+
+	return &UploadResponse{
+		DraftID:           draft.ID,
+		OriginalFilename:  draft.OriginalFilename,
+		FileSize:          draft.FileSize,
+		Format:            draft.Format,
+		DurationSeconds:   draft.DurationSeconds,
+		Bitrate:           draft.Bitrate,
+		Status:            DraftStatusEnriching,
+		ExtractedMetadata: result.Tags,
+		CoverArtURL:       coverArtURL,
+		Assets:            assets,
+		CreatedAt:         draft.CreatedAt,
+	}, nil
+}
+
 func (s *Service) GetDraftByID(ctx context.Context, id string) (*DraftDetailResponse, error) {
 	draft, err := s.repo.GetDraftByID(ctx, id)
 	if err != nil {

@@ -8,6 +8,10 @@ func RegisterAdminRoutes(rg *gin.RouterGroup, h *Handler, authMW gin.HandlerFunc
 	admin := rg.Group("/admin/ingestion")
 	admin.Use(authMW, adminMW)
 	{
+		// Presigned direct upload (S3). For files > ~4MB, client PUTs directly to S3.
+		admin.POST("/upload-url", h.UploadURL)
+		admin.POST("/upload-complete", h.UploadComplete)
+		// Legacy multipart upload (kept for small files < 4MB).
 		admin.POST("/upload", h.Upload)
 		admin.GET("/drafts", h.ListDrafts)
 		admin.GET("/drafts/:id", h.GetDraft)

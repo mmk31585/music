@@ -250,3 +250,29 @@ func (s *S3Storage) GetURL(ctx context.Context, key string) (string, error) {
 
 	return key, nil
 }
+
+// PresignPut returns a time-limited presigned PUT URL for direct client-to-S3 upload.
+func (s *S3Storage) PresignPut(ctx context.Context, key string, contentType string, ttl time.Duration) (string, error) {
+	key = strings.TrimLeft(key, "/")
+
+	log := zap.L().With(
+		zap.String("step", s3StepPresign),
+		zap.String("bucket", s.bucket),
+		zap.String("key", key),
+	)
+
+	result, err := s.presigner.PresignPutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(s.bucket),
+		Key:         aws.String(key),
+		ContentType: aws.String(contentType),
+	}, func(opts *s3.PresignOptions) {
+		opts.Expires = ttl
+	})
+
+	if err != nil {
+		log.Error("s3 presign put object failed", zap.Error(err))
+		return "", err
+	}
+
+	return result.URL, nil
+}

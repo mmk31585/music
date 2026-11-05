@@ -83,6 +83,7 @@ func main() {
 	router.Use(
 		middleware.SecurityHeaders(),
 		middleware.CORS(application.Config.CORS.AllowedOrigins, log),
+		middleware.OIDCTokenMiddleware(),
 		otelgin.Middleware("music-api"),
 		middleware.GinZapLogger(log),
 		middleware.GinZapRecovery(log),

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
@@ -34,6 +35,9 @@ func (m *mockStorage) Upload(ctx context.Context, key string, _ io.Reader, _ int
 }
 func (m *mockStorage) Delete(ctx context.Context, _ string) error { return nil }
 func (m *mockStorage) Get(ctx context.Context, key string) ([]byte, error) { return nil, nil }
+func (m *mockStorage) PresignPut(ctx context.Context, key string, contentType string, ttl time.Duration) (string, error) {
+	return "http://presigned-url.example.com/" + key, nil
+}
 
 func TestSplitGenres(t *testing.T) {
 	tests := []struct {

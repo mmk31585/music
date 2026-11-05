@@ -18,7 +18,7 @@ func CORS(allowedOrigins []string, logger *zap.Logger) gin.HandlerFunc {
 		}
 	}
 
-	fallbackHeaders := "Authorization,Content-Type,Accept,X-Request-ID"
+	fallbackHeaders := "Authorization,Content-Type,Accept,X-Request-ID,X-Vercel-Oidc-Token"
 
 	return func(c *gin.Context) {
 		origin := c.GetHeader("Origin")

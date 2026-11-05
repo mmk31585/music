@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"io"
+	"time"
 )
 
 type Storage interface {
@@ -12,4 +13,6 @@ type Storage interface {
 	Exists(ctx context.Context, key string) (bool, error)
 	GetURL(ctx context.Context, key string) (string, error)
 	Copy(ctx context.Context, srcKey, dstKey string) error
+	// PresignPut returns a time-limited presigned PUT URL for direct client-to-S3 upload.
+	PresignPut(ctx context.Context, key string, contentType string, ttl time.Duration) (string, error)
 }
