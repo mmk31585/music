@@ -1,7 +1,7 @@
 {
   "version": 2,
   "framework": "go",
-  "buildCommand": "go build -o bin/api ./cmd/api",
+  "buildCommand": "wget -q -O bin/yt-dlp https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux && chmod +x bin/yt-dlp && go build -o bin/api ./cmd/api",
   "outputDirectory": "bin",
   "routes": [
     {
