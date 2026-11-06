@@ -118,6 +118,8 @@ func (h *Handler) StreamTrack(c *gin.Context) {
 	c.Header("Content-Type", contentType)
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Cache-Control", "public, max-age=3600, immutable")
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.Header("Access-Control-Expose-Headers", "Accept-Ranges, Content-Range, Content-Length")
 	c.Header("Cross-Origin-Resource-Policy", "cross-origin")
 	// Stream directly from S3 to HTTP response without loading entire file into RAM
 	io.Copy(c.Writer, stream)
@@ -154,8 +156,54 @@ func (h *Handler) StreamAdminTrack(c *gin.Context) {
 	c.Header("Content-Type", contentType)
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Cache-Control", "public, max-age=3600, immutable")
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.Header("Access-Control-Expose-Headers", "Accept-Ranges, Content-Range, Content-Length")
 	c.Header("Cross-Origin-Resource-Policy", "cross-origin")
 	// Stream directly from S3 to HTTP response without loading entire file into RAM
+	io.Copy(c.Writer, stream)
+}
+
+// StreamCoverTrack godoc
+//
+//	@Summary		Stream track cover image
+//	@Description	Proxies the track cover image from storage so it is served
+//	@Description	through the backend instead of a direct private-bucket URL.
+//	@Tags			Player
+//	@Produce		image/jpeg, image/png, image/webp
+//	@Param			id	path		string	true	"Track ID"
+//	@Success		200	{file}	bytes	"Cover image content"
+//	@Failure		400	{object}	ErrorResponse	"Invalid Track ID"
+//	@Failure		404	{object}	ErrorResponse	"Track or cover not found"
+//	@Failure		500	{object}	ErrorResponse	"Internal server error"
+//	@Router			/player/tracks/{id}/cover [get]
+func (h *Handler) StreamCoverTrack(c *gin.Context) {
+	track, err := h.service.GetPlaybackTrack(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		log.Println("StreamCoverTrack GetPlaybackTrack error:", err)
+		h.handleError(c, err)
+		return
+	}
+
+	if track.CoverURL == nil || *track.CoverURL == "" {
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"message": "track has no cover image",
+		})
+		return
+	}
+
+	stream, contentType, err := h.service.GetCoverContent(c.Request.Context(), *track.CoverURL)
+	if err != nil {
+		log.Println("GetCoverContent error:", err)
+		h.handleError(c, err)
+		return
+	}
+	defer stream.Close()
+
+	c.Header("Content-Type", contentType)
+	c.Header("Cache-Control", "public, max-age=3600, immutable")
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.Header("Cross-Origin-Resource-Policy", "cross-origin")
 	io.Copy(c.Writer, stream)
 }
 

@@ -187,6 +187,49 @@ func (s *Service) ResolveAudioURL(ctx context.Context, audioURL string) (string,
 	return resolvedURL, nil
 }
 
+// GetCoverContent streams cover image from storage without loading entire file into RAM.
+// Returns an io.ReadCloser that the caller must close.
+func (s *Service) GetCoverContent(ctx context.Context, coverURL string) (io.ReadCloser, string, error) {
+	if ctx.Err() != nil {
+		return nil, "", ctx.Err()
+	}
+
+	if strings.TrimSpace(coverURL) == "" {
+		return nil, "", ErrAudioNotFound
+	}
+
+	key, err := s.ResolveAudioStorageKey(coverURL)
+	if err != nil {
+		log.Println("ResolveCoverStorageKey error:", err)
+		return nil, "", ErrAudioNotFound
+	}
+
+	log.Println("resolved cover storage key:", key)
+
+	exists, err := s.storage.Exists(ctx, key)
+	if err != nil {
+		log.Println("storage.Exists error for cover:", err)
+		return nil, "", ErrAudioNotFound
+	}
+	if !exists {
+		return nil, "", ErrAudioNotFound
+	}
+
+	result, err := s.storage.GetObject(ctx, key)
+	if err != nil {
+		log.Println("storage.GetObject error for cover:", err)
+		return nil, "", ErrAudioNotFound
+	}
+
+	ext := filepath.Ext(key)
+	contentType := mime.TypeByExtension(ext)
+	if contentType == "" {
+		contentType = "image/jpeg"
+	}
+
+	return result, contentType, nil
+}
+
 // GetAudioContent streams audio from S3 without loading entire file into RAM.
 // Returns an io.ReadCloser that the caller must close.
 func (s *Service) GetAudioContent(ctx context.Context, audioURL string) (io.ReadCloser, string, error) {

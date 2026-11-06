@@ -9,6 +9,7 @@ func RegisterPublicRoutes(router *gin.RouterGroup, handler *Handler) {
 	{
 		playerGroup.GET("/tracks/:id", handler.GetPlaybackTrack)
 		playerGroup.GET("/tracks/:id/stream", handler.StreamTrack)
+		playerGroup.GET("/tracks/:id/cover", handler.StreamCoverTrack)
 	}
 }
 
