@@ -45,7 +45,7 @@
 |-------|--------|
 | `go build ./...` | ✅ Clean |
 | `go vet ./...` | ✅ Clean |
-| `go test ./...` | ✅ 24/24 packages pass |
+| `go test ./...` | ✅ 26/26 packages pass |
 | `vue-tsc --noEmit` | ✅ Clean |
 | `npm run build` | ✅ Clean (fixed template syntax errors) |
 
@@ -84,6 +84,7 @@
 - **Admin catalog stats** — `GET /admin/catalog/stats` endpoint (already existed)
 - **DB migrations** — All required tables verified present (playlists, liked_tracks, playback_sessions)
 - **Frontend template syntax** — Fixed multi-line expressions in `@click` handlers across 5 files (PageRecommendationsHub, PageCreatorDashboard, PageAdminModeration, PageAdminContributions, SearchOverlay)
+- **Web Interface Guidelines (WIG)** — WIG-02: added `prefers-reduced-motion` rules to `AuthHeroPanel.vue`, `HomeTrackCard.vue`, `TrackRow.vue`, `QueuePreview.vue`, `PageTrack.vue`, `HomeHero.vue`; WIG-01: replaced `transition: all` with explicit property lists across ~20 components
 
 ## Current Blockers (All Environment, Not Code)
 
@@ -99,6 +100,7 @@
 - M-006: Ingestion SSE endpoint (polling composable done, full SSE deferred)
 - L-001 through L-007: Unused code, empty states, RTL, a11y gaps
 - Tests: E2E Playwright, frontend stores, backend handlers
+- WIG: Web Interface Guidelines compliance — see docs/agent/WEB_INTERFACE_GUIDELINES_PLAN.md (7 epics, ~23 stories) — **WIG-01 and WIG-02 complete**
 
 ## Session 2026-10-19 — Import pipeline repair & worker cleanup
 
@@ -139,3 +141,11 @@
 
 - **Track audio upload failed**: `S3: PutObject → STS: AssumeRole → 403 MissingAuthenticationToken`. When static creds were absent and `AWS_ROLE_ARN` set, the STS client was built from `aws.Config{Region: ...}` with no credentials provider, so the AssumeRole request was unsigned. Fixed in `internal/platform/storage/s3.go`: load the default config first (resolves source creds from env/IMDS/ECS), build the STS client from it, then wrap in the assume-role provider. Static-cred path unchanged.
 - `go build ./...`, `go vet ./...`, `go test ./... -race` all clean; committed `9222031 fix(storage): provide source credentials for STS role assumption`.
+
+## Session 2026-11-06 — Cover art URL + Track form upload fix
+
+- **Cover art returned bare S3 key instead of HTTP URL**: `S3Storage.GetURL()` returned just the storage key (e.g. `track-covers/abc-cover.jpg`) when neither `S3_PUBLIC_BASE_URL` nor `S3_PRESIGN_URLS` was configured — browsers cannot fetch a bare key. Fixed `s3.go` and `local.go` `GetURL()` to return an error instead of a useless key. Tests updated to expect the error.
+- **TrackFormDialog sent File objects in JSON payload**: `audioFile`/`coverFile` were included in `TrackFormPayload` and emitted as JSON — File objects serialize to `{}`, so the backend never received them and `useAdminTracks.ts` tried to upload `{}` as a File. Fixed `submitForm()` to upload cover/audio via `adminUploadTrackCover`/`adminUploadTrackAudio` first, then emit `audio_url`/`cover_url` as strings. Removed File objects from the payload type; they remain in form state for UI preview only.
+- **Vercel env config required**: `S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY` (or `VERCEL_OIDC_TOKEN`) plus `S3_PUBLIC_BASE_URL` (or `S3_PRESIGN_URLS=true`) must be set in the Vercel dashboard for media URLs to resolve.
+- Frontend `TrackFormDialog.vue` committed to `music-frontend` as `92671e7`; submodule bumped in backend as `d72cf35`.
+- `go build ./...`, `go vet ./...`, `go test ./... -race` all clean; `vue-tsc --noEmit` clean.

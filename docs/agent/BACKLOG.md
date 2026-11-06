@@ -34,6 +34,15 @@ All 12 phases complete. Every CRITICAL and HIGH item resolved across the full st
 - RTL consistency check
 - ARIA labels for admin table action buttons
 
+### 🎨 Web Interface Guidelines (docs/agent/WEB_INTERFACE_GUIDELINES_PLAN.md)
+- WIG-01: Eliminate `transition: all` / `transition-all` anti-pattern (~20 components)
+- WIG-02: Animations honor `prefers-reduced-motion` (~8 components)
+- WIG-03: `` explicit `width`/`height` in CoverImage + AppImage (CLS)
+- WIG-04: Skip-to-main-content link in LayoutAuth.vue
+- WIG-05: Error messages include remediation (LoginForm, RegisterForm)
+- WIG-06: Placeholder typography `...` → `…` (AppLoader, MusicTopbar)
+- WIG-07: `outline: none` without focus replacement (ContextMenu.vue)
+
 ### 🔧 Cleanup
 - `VersionedEvent` unused code
 - `RepositoryInterface` unused in auth
