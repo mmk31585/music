@@ -10,6 +10,7 @@ import (
 	importworker "music/internal/modules/importcmd/worker"
 	"music/internal/modules/ingestion"
 	"music/internal/modules/ingestion/enrichment"
+	catalogTrack "music/internal/modules/catalog/track"
 	platformstorage "music/internal/platform/storage"
 	"music/internal/workers/analytics"
 	"music/internal/workers/cleanup"
@@ -65,6 +66,9 @@ func (c *WorkerContainer) buildWorkers() {
 
 	ingestionRepo := ingestion.NewRepository(sqlxDB)
 
+	trackRepo := catalogTrack.NewRepository(sqlxDB)
+	trackSvc := catalogTrack.NewService(trackRepo)
+
 	enrichCfg := enrichment.DefaultConfig()
 	enrichCfg.LastFM.APIKey = c.App.Config.Enrichment.LastFmAPIKey
 	enrichCfg.Spotify.ClientID = c.App.Config.Enrichment.SpotifyClientID
@@ -100,7 +104,7 @@ func (c *WorkerContainer) buildWorkers() {
 		c.App.Logger.Fatal("failed to create storage for worker", zap.Error(err))
 	}
 
-	ingestionSvc := ingestion.NewService(storageClient, ingestionRepo, enricher)
+	ingestionSvc := ingestion.NewService(storageClient, ingestionRepo, enricher, trackSvc)
 
 	c.ImportWorker = importworker.NewImportWorker(
 		c.App.Logger,

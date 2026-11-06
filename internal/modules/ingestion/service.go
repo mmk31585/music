@@ -33,16 +33,23 @@ const (
 )
 
 type Service struct {
-	storage  platformstorage.Storage
-	repo     *Repository
-	enricher *enrichment.Enricher
+	storage   platformstorage.Storage
+	repo      *Repository
+	enricher  *enrichment.Enricher
+	trackSvc  trackCatalogService
 }
 
-func NewService(storage platformstorage.Storage, repo *Repository, enricher *enrichment.Enricher) *Service {
+// trackCatalog.Service is defined in catalog/track package
+type trackCatalogService interface {
+	Delete(ctx context.Context, id string) error
+}
+
+func NewService(storage platformstorage.Storage, repo *Repository, enricher *enrichment.Enricher, trackSvc trackCatalogService) *Service {
 	return &Service{
 		storage:  storage,
 		repo:     repo,
 		enricher: enricher,
+		trackSvc: trackSvc,
 	}
 }
 
@@ -1001,6 +1008,18 @@ func (s *Service) DeleteDraft(ctx context.Context, id, requestingUserID string) 
 	// Admin check is enforced at the route level (RequireRole("admin")).
 	if draft.UploadedBy != requestingUserID {
 		return ErrUnauthorized
+	}
+
+	// If the draft was published to the catalog, delete the catalog track too.
+	if draft.TrackID != nil && *draft.TrackID != "" {
+		if err := s.trackSvc.Delete(ctx, *draft.TrackID); err != nil {
+			zap.L().Warn("failed to delete catalog track",
+				zap.String("draft_id", id),
+				zap.String("track_id", *draft.TrackID),
+				zap.Error(err),
+			)
+			// Continue deleting the draft even if catalog track deletion fails
+		}
 	}
 
 	// Clean up storage files associated with the draft.

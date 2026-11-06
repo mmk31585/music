@@ -290,8 +290,22 @@ func TestRepository_Delete(t *testing.T) {
 
 	trackID := uuid.New()
 
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM playlist_tracks WHERE track_id = $1`)).
+		WithArgs(trackID).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM liked_tracks WHERE track_id = $1::text`)).
+		WithArgs(trackID).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM play_history WHERE track_id = $1::text`)).
+		WithArgs(trackID).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM track_artists WHERE track_id = $1`)).
+		WithArgs(trackID).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM track_genres WHERE track_id = $1`)).
+		WithArgs(trackID).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM track_credits WHERE track_id = $1`)).
+		WithArgs(trackID).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM tracks WHERE id = $1`)).
 		WithArgs(trackID).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
 
 	err = repo.Delete(context.Background(), trackID)
 	require.NoError(t, err)

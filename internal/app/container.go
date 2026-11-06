@@ -571,7 +571,7 @@ func (c *Container) buildIngestion(a *App) {
 	c.Enricher = enricher
 
 	c.IngestionFinalization = finalization.NewService(c.SQLX, c.Storage, zap.L())
-	c.IngestionService = ingestion.NewService(c.Storage, ingestionRepo, enricher)
+	c.IngestionService = ingestion.NewService(c.Storage, ingestionRepo, enricher, c.TrackService)
 	c.IngestionHandler = ingestion.NewHandler(c.IngestionService)
 	c.IngestionHandler.SetFinalizer(c.IngestionFinalization)
 
