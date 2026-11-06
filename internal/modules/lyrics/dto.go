@@ -16,7 +16,7 @@ type (
 type AdminCreateLyricsRequest struct {
 	TrackID  string `json:"track_id" binding:"required"`
 	Language string `json:"language" binding:"required,min=2,max=10"`
-	Type     string `json:"type" binding:"required,oneof=plain lrc"`
+	Type     string `json:"type" binding:"oneof=plain lrc"`
 	Content  string `json:"content" binding:"required"`
 }
 

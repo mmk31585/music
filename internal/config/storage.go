@@ -79,11 +79,13 @@ func loadStorageConfig() StorageConfig {
 			usePathStyle = true
 		}
 	}
-	presignURLs := false
+	// Default to presigned URLs since production S3 buckets are private.
+	// Explicitly set S3_PRESIGN_URLS=false to use PublicBaseURL instead.
+	presignURLs := true
 	if v := os.Getenv("S3_PRESIGN_URLS"); v != "" {
 		switch v {
-		case "true", "TRUE", "1", "yes", "YES", "y", "Y":
-			presignURLs = true
+		case "false", "FALSE", "0", "no", "NO", "n", "N":
+			presignURLs = false
 		}
 	}
 	presignTTL := 900

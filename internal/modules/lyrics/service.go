@@ -40,8 +40,11 @@ func (s *Service) CreateLyrics(ctx context.Context, req CreateLyricsRequest) (Ly
 		return Lyrics{}, ErrInvalidLyricsLanguage
 	}
 
-	// Auto-detect LRC from content
+	// Auto-detect LRC from content; default to plain when type is empty.
 	req.Type = strings.TrimSpace(req.Type)
+	if req.Type == "" {
+		req.Type = "plain"
+	}
 	if isLRCLyrics(req.Content) {
 		req.Type = "lrc"
 	}
