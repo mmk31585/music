@@ -498,7 +498,7 @@ func (w *ImportWorker) processJob(ctx context.Context, job *Job) {
 	// This fixes the case where yt-dlp infers a garbage title from the URL
 	// (e.g., iTunes previews with generic mzaf_ filenames).
 	if job.Title != "" || job.Artist != "" || job.Album != "" {
-		if err := w.ingestionSvc.UpdateExtractedMetadata(ctx, uploadRes.DraftID, job.Title, job.Artist, job.Album); err != nil {
+		if err := w.ingestionSvc.UpdateExtractedMetadata(ctx, uploadRes.DraftID, job.Title, job.Artist, job.Album, ""); err != nil {
 			w.logger.Warn("failed to update extracted metadata",
 				zap.String("draft_id", uploadRes.DraftID),
 				zap.Error(err),

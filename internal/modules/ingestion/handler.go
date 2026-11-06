@@ -337,7 +337,7 @@ func (h *Handler) UpdateDraftMetadata(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.UpdateExtractedMetadata(c.Request.Context(), id, req.Title, req.Artist, req.Album); err != nil {
+	if err := h.service.UpdateExtractedMetadata(c.Request.Context(), id, req.Title, req.Artist, req.Album, req.CoverURL); err != nil {
 		if errors.Is(err, ErrDraftNotFound) {
 			response.Error(c, appErr.New(http.StatusNotFound, appErr.CodeNotFound, "draft not found", nil))
 			return

@@ -798,7 +798,7 @@ func detectCoverMime(ext string) string {
 // UpdateExtractedMetadata overrides the draft's extracted (ffprobe) metadata
 // with provided values. This is used by the import worker when the downloaded
 // file has incorrect embedded tags (e.g., iTunes previews with generic IDs).
-func (s *Service) UpdateExtractedMetadata(ctx context.Context, draftID, title, artist, album string) error {
+func (s *Service) UpdateExtractedMetadata(ctx context.Context, draftID, title, artist, album, coverURL string) error {
 	draft, err := s.repo.GetDraftByID(ctx, draftID)
 	if err != nil {
 		return err
@@ -816,6 +816,9 @@ func (s *Service) UpdateExtractedMetadata(ctx context.Context, draftID, title, a
 	}
 	if album != "" {
 		tags.Album = album
+	}
+	if coverURL != "" {
+		tags.CoverURL = coverURL
 	}
 
 	extractedJSON, err := extractedTagsToJSON(tags)
@@ -894,18 +897,37 @@ func (s *Service) UploadDraftImage(ctx context.Context, draftID, entityType stri
 		return "", fmt.Errorf("read file: %w", err)
 	}
 
-	imageKey := fmt.Sprintf("%s/%s-%s-image%s", StorageEnrichDir, draftID, entityType, ext)
+	imageKey1 := fmt.Sprintf("%s/%s-%s-image%s", StorageEnrichDir, draftID, entityType, ext)
+	imageKey2 := fmt.Sprintf("track-covers/%s-cover%s", draftID, ext)
 	mime := detectImageMime(ext)
 
-	if err := s.storage.Upload(ctx, imageKey, bytes.NewReader(content), int64(len(content)), mime); err != nil {
-		return "", fmt.Errorf("store image: %w", err)
+	// Upload to BOTH key formats for backward compatibility
+	err1 := s.storage.Upload(ctx, imageKey1, bytes.NewReader(content), int64(len(content)), mime)
+	err2 := s.storage.Upload(ctx, imageKey2, bytes.NewReader(content), int64(len(content)), mime)
+
+	if err1 != nil && err2 != nil {
+		return "", fmt.Errorf("store image: %w", err1)
 	}
 
-	imageURL, err := s.storage.GetURL(ctx, imageKey)
+	// Return the new format URL (track-covers/)
+	imageURL, err := s.storage.GetURL(ctx, imageKey2)
 	if err != nil {
-		_ = s.storage.Delete(ctx, imageKey)
-		return "", fmt.Errorf("get url: %w", err)
+		// Fallback to the original format
+		imageURL, err = s.storage.GetURL(ctx, imageKey1)
+		if err != nil {
+			_ = s.storage.Delete(ctx, imageKey1)
+			_ = s.storage.Delete(ctx, imageKey2)
+			return "", fmt.Errorf("get url: %w", err)
+		}
 	}
+
+	// Save cover URL to draft record
+	if err := s.repo.UpdateDraftCoverURL(ctx, draftID, imageURL); err != nil {
+		zap.L().Warn("failed to save cover URL to draft", zap.String("draft_id", draftID), zap.Error(err))
+	}
+
+	// Clean up the original format key if new format succeeded
+	_ = s.storage.Delete(ctx, imageKey1)
 
 	return imageURL, nil
 }

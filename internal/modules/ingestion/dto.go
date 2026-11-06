@@ -44,6 +44,7 @@ type ExtractedTags struct {
 	Bitrate     int     `json:"bitrate,omitempty"`
 	Format      string  `json:"format,omitempty"`
 	HasCoverArt bool    `json:"hasCoverArt"`
+	CoverURL    string  `json:"coverUrl,omitempty"`
 }
 
 type DraftListItem struct {
@@ -129,11 +130,12 @@ type RejectDraftRequest struct {
 }
 
 // UpdateDraftMetadataRequest allows partial updates to a draft's extracted
-// metadata fields (title, artist, album). Empty fields are not updated.
+// metadata fields (title, artist, album, cover). Empty fields are not updated.
 type UpdateDraftMetadataRequest struct {
-	Title  string `json:"title,omitempty"`
-	Artist string `json:"artist,omitempty"`
-	Album  string `json:"album,omitempty"`
+	Title    string `json:"title,omitempty"`
+	Artist   string `json:"artist,omitempty"`
+	Album    string `json:"album,omitempty"`
+	CoverURL string `json:"cover_url,omitempty"`
 }
 
 type EnrichDraftRequest struct {

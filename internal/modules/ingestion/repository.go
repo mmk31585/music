@@ -221,6 +221,16 @@ func (r *Repository) UpdateDraftExtractedMetadata(ctx context.Context, id string
 	return err
 }
 
+func (r *Repository) UpdateDraftCoverURL(ctx context.Context, draftID, coverURL string) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE ingestion_drafts
+		SET extracted_metadata = COALESCE(extracted_metadata, '{}'::jsonb) || $1::jsonb,
+		    updated_at = NOW()
+		WHERE id = $2
+	`, `{"coverUrl":"`+coverURL+`"}`, draftID)
+	return err
+}
+
 func (r *Repository) UpdateDraftFinalMetadata(ctx context.Context, id string, finalJSON string, status DraftStatus) error {
 	_, err := r.db.ExecContext(ctx, `
 		UPDATE ingestion_drafts SET final_metadata = $1::jsonb, status = $2, updated_at = NOW() WHERE id = $3
