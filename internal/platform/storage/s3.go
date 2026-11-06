@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -149,9 +150,15 @@ func (s *S3Storage) Upload(ctx context.Context, key string, reader io.Reader, si
 
 	_, err := s.client.PutObject(ctx, input)
 	if err != nil {
-		log.Error("s3 put object failed", zap.Error(err))
+		log.Error("s3 put object failed",
+			zap.Error(err),
+			zap.String("bucket", s.bucket),
+			zap.String("key", key),
+			zap.String("content_type", contentType),
+		)
+		return fmt.Errorf("s3 put object: %w", err)
 	}
-	return err
+	return nil
 }
 
 func (s *S3Storage) Delete(ctx context.Context, key string) error {

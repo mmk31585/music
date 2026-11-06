@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -36,7 +37,12 @@ type oidcCredentialProvider struct {
 func (p *oidcCredentialProvider) Retrieve(ctx context.Context) (aws.Credentials, error) {
 	token, ok := OIDCTokenFromContext(ctx)
 	if !ok || token == "" {
-		return aws.Credentials{}, errors.New("no OIDC token in request context; set x-vercel-oidc-token header")
+		// Fall back to VERCEL_OIDC_TOKEN env var (available on Vercel serverless
+		// when the x-vercel-oidc-token header is not injected by the platform).
+		token = os.Getenv("VERCEL_OIDC_TOKEN")
+	}
+	if token == "" {
+		return aws.Credentials{}, errors.New("no OIDC token in request context or VERCEL_OIDC_TOKEN env var; set x-vercel-oidc-token header or VERCEL_OIDC_TOKEN")
 	}
 
 	log := zap.L().With(zap.String("step", "sts_assume_role_with_web_identity"))
