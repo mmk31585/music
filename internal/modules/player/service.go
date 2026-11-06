@@ -7,6 +7,7 @@ import (
 	"mime"
 	"net/url"
 	"path/filepath"
+	"io"
 	"strings"
 
 	"github.com/google/uuid"
@@ -186,11 +187,9 @@ func (s *Service) ResolveAudioURL(ctx context.Context, audioURL string) (string,
 	return resolvedURL, nil
 }
 
-// GetAudioContent reads the audio file directly from storage and returns the bytes
-// with the appropriate MIME type. This avoids the 302 redirect approach which
-// breaks when accessing the frontend from a remote machine (the redirect URL
-// may point to localhost or a path not proxied by the dev server).
-func (s *Service) GetAudioContent(ctx context.Context, audioURL string) ([]byte, string, error) {
+// GetAudioContent streams audio from S3 without loading entire file into RAM.
+// Returns an io.ReadCloser that the caller must close.
+func (s *Service) GetAudioContent(ctx context.Context, audioURL string) (io.ReadCloser, string, error) {
 	if ctx.Err() != nil {
 		return nil, "", ctx.Err()
 	}
@@ -208,9 +207,10 @@ func (s *Service) GetAudioContent(ctx context.Context, audioURL string) ([]byte,
 		return nil, "", ErrAudioNotFound
 	}
 
-	data, err := s.storage.Get(ctx, key)
+	// Get the object from S3 as a stream
+	result, err := s.storage.GetObject(ctx, key)
 	if err != nil {
-		log.Println("storage.Get error:", err)
+		log.Println("storage.GetObject error:", err)
 		return nil, "", ErrAudioNotFound
 	}
 
@@ -220,7 +220,7 @@ func (s *Service) GetAudioContent(ctx context.Context, audioURL string) ([]byte,
 		contentType = "audio/mpeg"
 	}
 
-	return data, contentType, nil
+	return result, contentType, nil
 }
 
 func (s *Service) TrackPlayed(

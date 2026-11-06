@@ -108,6 +108,11 @@ func (m *mockStorage) GetURL(ctx context.Context, key string) (string, error) {
 	return args.String(0), args.Error(1)
 }
 
+func (m *mockStorage) GetObject(ctx context.Context, key string) (io.ReadCloser, error) {
+	args := m.Called(ctx, key)
+	return args.Get(0).(io.ReadCloser), args.Error(1)
+}
+
 func (m *mockStorage) PresignPut(ctx context.Context, key string, contentType string, ttl time.Duration) (string, error) {
 	args := m.Called(ctx, key, contentType, ttl)
 	return args.String(0), args.Error(1)

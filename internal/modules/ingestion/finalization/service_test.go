@@ -3,6 +3,7 @@ package finalization
 import (
 	"context"
 	"errors"
+	"bytes"
 	"io"
 	"testing"
 	"time"
@@ -37,6 +38,10 @@ func (m *mockStorage) Delete(ctx context.Context, _ string) error { return nil }
 func (m *mockStorage) Get(ctx context.Context, key string) ([]byte, error) { return nil, nil }
 func (m *mockStorage) PresignPut(ctx context.Context, key string, contentType string, ttl time.Duration) (string, error) {
 	return "http://presigned-url.example.com/" + key, nil
+}
+
+func (m *mockStorage) GetObject(ctx context.Context, key string) (io.ReadCloser, error) {
+	return io.NopCloser(bytes.NewReader([]byte("mock audio data"))), nil
 }
 
 func TestSplitGenres(t *testing.T) {

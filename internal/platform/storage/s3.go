@@ -237,6 +237,22 @@ func (s *S3Storage) Get(ctx context.Context, key string) ([]byte, error) {
 	return io.ReadAll(result.Body)
 }
 
+// GetObject returns an io.ReadCloser for streaming audio from S3 without loading
+// the entire file into RAM. The caller must close the returned reader.
+func (s *S3Storage) GetObject(ctx context.Context, key string) (io.ReadCloser, error) {
+	key = strings.TrimLeft(key, "/")
+
+	result, err := s.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result.Body, nil
+}
+
 func (s *S3Storage) GetURL(ctx context.Context, key string) (string, error) {
 	key = strings.TrimLeft(key, "/")
 

@@ -1,13 +1,11 @@
 package player
 
 import (
-	"bytes"
 	"context"
 	"errors"
+	"io"
 	"log"
 	"net/http"
-	"path/filepath"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -40,7 +38,7 @@ type ErrorResponse struct {
 //	@Produce		json
 //	@Param			id	path		string	true	"Track ID"
 //	@Success		200	{object}	PlaybackResponse
-//	@Failure		400	{object}	ErrorResponse	"Invalid track ID"
+//	@Failure		400	{object}	ErrorResponse	"Invalid Track ID"
 //	@Failure		403	{object}	ErrorResponse	"Track is private"
 //	@Failure		404	{object}	ErrorResponse	"Track not found"
 //	@Failure		500	{object}	ErrorResponse	"Internal server error"
@@ -67,7 +65,7 @@ func (h *Handler) GetPlaybackTrack(c *gin.Context) {
 //	@Security		BearerAuth
 //	@Param			id	path		string	true	"Track ID"
 //	@Success		200	{object}	PlaybackResponse
-//	@Failure		400	{object}	ErrorResponse	"Invalid track ID"
+//	@Failure		400	{object}	ErrorResponse	"Invalid Track ID"
 //	@Failure		404	{object}	ErrorResponse	"Track not found"
 //	@Failure		500	{object}	ErrorResponse	"Internal server error"
 //	@Router			/admin/player/tracks/{id} [get]
@@ -90,9 +88,9 @@ func (h *Handler) GetAdminPlaybackTrack(c *gin.Context) {
 //	@Description	Serves the audio file directly instead of redirecting to a storage URL.
 //	@Tags			Player
 //	@Produce		plain
-//	@Param			id	path	string	true	"Track ID"
+//	@Param			id	path		string	true	"Track ID"
 //	@Success		200	"Audio file content"
-//	@Failure		400	{object}	ErrorResponse	"Invalid track ID"
+//	@Failure		400	{object}	ErrorResponse	"Invalid Track ID"
 //	@Failure		403	{object}	ErrorResponse	"Track is private"
 //	@Failure		404	{object}	ErrorResponse	"Track or audio not found"
 //	@Failure		500	{object}	ErrorResponse	"Internal server error"
@@ -109,18 +107,20 @@ func (h *Handler) StreamTrack(c *gin.Context) {
 
 	log.Println("StreamTrack track audio_url:", track.AudioURL)
 
-	data, contentType, err := h.service.GetAudioContent(c.Request.Context(), track.AudioURL)
+	stream, contentType, err := h.service.GetAudioContent(c.Request.Context(), track.AudioURL)
 	if err != nil {
 		log.Println("GetAudioContent error:", err)
 		h.handleError(c, err)
 		return
 	}
+	defer stream.Close()
 
 	c.Header("Content-Type", contentType)
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Cache-Control", "public, max-age=3600, immutable")
 	c.Header("Cross-Origin-Resource-Policy", "cross-origin")
-	http.ServeContent(c.Writer, c.Request, filepath.Base(track.AudioURL), time.Time{}, bytes.NewReader(data))
+	// Stream directly from S3 to HTTP response without loading entire file into RAM
+	io.Copy(c.Writer, stream)
 }
 
 // StreamAdminTrack godoc
@@ -130,9 +130,9 @@ func (h *Handler) StreamTrack(c *gin.Context) {
 //	@Tags			Player Admin
 //	@Produce		plain
 //	@Security		BearerAuth
-//	@Param			id	path	string	true	"Track ID"
+//	@Param			id	path		string	true	"Track ID"
 //	@Success		200	"Audio file content"
-//	@Failure		400	{object}	ErrorResponse	"Invalid track ID"
+//	@Failure		400	{object}	ErrorResponse	"Invalid Track ID"
 //	@Failure		404	{object}	ErrorResponse	"Track or audio not found"
 //	@Failure		500	{object}	ErrorResponse	"Internal server error"
 //	@Router			/admin/player/tracks/{id}/stream [get]
@@ -143,18 +143,20 @@ func (h *Handler) StreamAdminTrack(c *gin.Context) {
 		return
 	}
 
-	data, contentType, err := h.service.GetAudioContent(c.Request.Context(), track.AudioURL)
+	stream, contentType, err := h.service.GetAudioContent(c.Request.Context(), track.AudioURL)
 	if err != nil {
 		log.Println("GetAudioContent error:", err)
 		h.handleError(c, err)
 		return
 	}
+	defer stream.Close()
 
 	c.Header("Content-Type", contentType)
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Cache-Control", "public, max-age=3600, immutable")
 	c.Header("Cross-Origin-Resource-Policy", "cross-origin")
-	http.ServeContent(c.Writer, c.Request, filepath.Base(track.AudioURL), time.Time{}, bytes.NewReader(data))
+	// Stream directly from S3 to HTTP response without loading entire file into RAM
+	io.Copy(c.Writer, stream)
 }
 
 func (h *Handler) handleError(c *gin.Context, err error) {

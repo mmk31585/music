@@ -130,6 +130,26 @@ func (s *LocalStorage) Get(ctx context.Context, key string) ([]byte, error) {
 	return os.ReadFile(path)
 }
 
+// GetObject returns an io.ReadCloser for streaming files from local storage.
+// The caller must close the returned reader.
+func (s *LocalStorage) GetObject(ctx context.Context, key string) (io.ReadCloser, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	path, err := s.safePath(key)
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return f, nil
+}
+
 func (s *LocalStorage) Copy(ctx context.Context, srcKey, dstKey string) error {
 	if err := ctx.Err(); err != nil {
 		return err
