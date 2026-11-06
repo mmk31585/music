@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -610,6 +611,64 @@ func (h *Handler) UploadDraftImage(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "image uploaded", gin.H{"url": imageURL})
+}
+
+// ServeDraftCoverImage streams cover images from S3 through the Go backend.
+// This avoids CORS issues by serving cover images through the same origin as the API.
+func (h *Handler) ServeDraftCoverImage(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	draft, err := h.service.GetDraftByID(c.Request.Context(), id)
+	if err != nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+	if draft == nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	// Find cover URL from extracted metadata
+	coverURL := ""
+	if draft.ExtractedMetadata != nil && draft.ExtractedMetadata.CoverURL != "" {
+		coverURL = draft.ExtractedMetadata.CoverURL
+	}
+
+	if coverURL == "" {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	// Extract S3 key from URL
+	key := coverURL
+	if strings.HasPrefix(coverURL, "http") {
+		parts := strings.SplitN(coverURL, "/", 4)
+		if len(parts) >= 4 {
+			key = parts[3]
+		} else {
+			c.Status(http.StatusNotFound)
+			return
+		}
+	}
+
+	// Stream cover image from S3 through Go backend
+	stream, contentType, err := h.service.GetCoverImage(c.Request.Context(), key)
+	if err != nil {
+		zap.L().Error("GetCoverImage error", zap.Error(err))
+		c.Status(http.StatusNotFound)
+		return
+	}
+	defer stream.Close()
+
+	c.Header("Content-Type", contentType)
+	c.Header("Accept-Ranges", "bytes")
+	c.Header("Cache-Control", "public, max-age=86400, immutable")
+	c.Header("Cross-Origin-Resource-Policy", "cross-origin")
+	io.Copy(c.Writer, stream)
 }
 
 func (h *Handler) GetConfig(c *gin.Context) {

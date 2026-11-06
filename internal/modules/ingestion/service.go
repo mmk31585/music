@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -827,6 +829,38 @@ func (s *Service) UpdateExtractedMetadata(ctx context.Context, draftID, title, a
 	}
 
 	return s.repo.UpdateDraftExtractedMetadata(ctx, draftID, extractedJSON)
+}
+
+// GetCoverImage streams cover image from S3 through the Go backend.
+// Returns io.ReadCloser, contentType, error.
+func (s *Service) GetCoverImage(ctx context.Context, key string) (io.ReadCloser, string, error) {
+	if ctx.Err() != nil {
+		return nil, "", ctx.Err()
+	}
+
+	key = strings.TrimLeft(key, "/")
+
+	exists, err := s.storage.Exists(ctx, key)
+	if err != nil {
+		return nil, "", err
+	}
+	if !exists {
+		return nil, "", ErrDraftNotFound
+	}
+
+	result, err := s.storage.GetObject(ctx, key)
+	if err != nil {
+		log.Println("storage.GetObject error:", err)
+		return nil, "", err
+	}
+
+	ext := filepath.Ext(key)
+	contentType := mime.TypeByExtension(ext)
+	if contentType == "" {
+		contentType = "image/jpeg"
+	}
+
+	return result, contentType, nil
 }
 
 func (s *Service) SaveFinalMetadata(ctx context.Context, id string, req SaveFinalMetadataRequest) error {
