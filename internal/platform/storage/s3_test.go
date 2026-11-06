@@ -49,12 +49,12 @@ func TestS3Storage_GetURL_PublicBaseURL(t *testing.T) {
 	require.Equal(t, "https://cdn.example.com/music-media/track-audio/abc.mp3", url)
 }
 
-func TestS3Storage_GetURL_NoPublicURLReturnsKey(t *testing.T) {
+func TestS3Storage_GetURL_NoPublicURLReturnsError(t *testing.T) {
 	s := &S3Storage{
 		bucket:  "music-media",
 		presign: false,
 	}
-	url, err := s.GetURL(context.Background(), "track-audio/abc.mp3")
-	require.NoError(t, err)
-	require.Equal(t, "track-audio/abc.mp3", url)
+	_, err := s.GetURL(context.Background(), "track-audio/abc.mp3")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "no public URL or presign configured")
 }
