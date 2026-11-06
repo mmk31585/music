@@ -1,0 +1,38 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000,
+      "url": "http://localhost:3000",
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "cwd": "/mnt/windows/nvme0n1p6/projects/music/frontend"
+    },
+    {
+      "name": "frontend-dev-expose",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:expose"],
+      "port": 3000,
+      "url": "http://localhost:3000",
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "cwd": "/mnt/windows/nvme0n1p6/projects/music/frontend"
+    },
+    {
+      "name": "frontend-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "preview"],
+      "port": 3000,
+      "url": "http://localhost:3000",
+      "env": {
+        "NODE_ENV": "production"
+      },
+      "cwd": "/mnt/windows/nvme0n1p6/projects/music/frontend"
+    }
+  ]
+}

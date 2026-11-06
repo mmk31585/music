@@ -26,7 +26,7 @@ import (
 const (
 	MaxUploadSize    = 200 << 20
 	StorageAudioDir  = "ingestion-audio"
-	StorageCoverDir  = "ingestion-covers"
+	StorageCoverDir  = "track-covers"
 	StorageEnrichDir = "enrichment-images"
 )
 
