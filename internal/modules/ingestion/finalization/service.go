@@ -204,6 +204,14 @@ func (s *Service) Finalize(ctx context.Context, draftID, draftStatus, draftFilep
 		} else {
 			final.Track.CoverURL = localURL
 		}
+	} else if final.Track.CoverURL != "" && !strings.HasPrefix(final.Track.CoverURL, "http://") && !strings.HasPrefix(final.Track.CoverURL, "https://") {
+		// Raw storage key (e.g. "track-covers/xxx-cover.jpg") — convert to an
+		// accessible URL via storage.GetURL so the frontend can fetch it.
+		if localURL, err := s.storage.GetURL(ctx, final.Track.CoverURL); err == nil {
+			final.Track.CoverURL = localURL
+		} else {
+			s.logger.Warn("failed to resolve track cover URL", zap.String("key", final.Track.CoverURL), zap.Error(err))
+		}
 	}
 
 	tx, err := s.db.BeginTxx(ctx, nil)

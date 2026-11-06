@@ -627,7 +627,44 @@ func (r *Repository) Update(ctx context.Context, id uuid.UUID, req UpdateRequest
 }
 
 func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
-	res, err := r.db.ExecContext(ctx, `DELETE FROM tracks WHERE id = $1`, id)
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return common.MapPGError(err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// Remove the track from all related tables before deleting the track itself.
+	_, err = tx.ExecContext(ctx, `DELETE FROM playlist_tracks WHERE track_id = $1`, id)
+	if err != nil {
+		return common.MapPGError(err)
+	}
+
+	_, err = tx.ExecContext(ctx, `DELETE FROM liked_tracks WHERE track_id = $1::text`, id)
+	if err != nil {
+		return common.MapPGError(err)
+	}
+
+	_, err = tx.ExecContext(ctx, `DELETE FROM play_history WHERE track_id = $1::text`, id)
+	if err != nil {
+		return common.MapPGError(err)
+	}
+
+	_, err = tx.ExecContext(ctx, `DELETE FROM track_artists WHERE track_id = $1`, id)
+	if err != nil {
+		return common.MapPGError(err)
+	}
+
+	_, err = tx.ExecContext(ctx, `DELETE FROM track_genres WHERE track_id = $1`, id)
+	if err != nil {
+		return common.MapPGError(err)
+	}
+
+	_, err = tx.ExecContext(ctx, `DELETE FROM track_credits WHERE track_id = $1`, id)
+	if err != nil {
+		return common.MapPGError(err)
+	}
+
+	res, err := tx.ExecContext(ctx, `DELETE FROM tracks WHERE id = $1`, id)
 	if err != nil {
 		return common.MapPGError(err)
 	}
@@ -639,6 +676,10 @@ func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
 
 	if rows == 0 {
 		return common.ErrNotFound
+	}
+
+	if err := tx.Commit(); err != nil {
+		return common.MapPGError(err)
 	}
 
 	return nil
