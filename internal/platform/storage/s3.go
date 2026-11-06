@@ -128,13 +128,17 @@ func (s *S3Storage) Upload(ctx context.Context, key string, reader io.Reader, si
 	key = strings.TrimLeft(key, "/")
 
 	input := &s3.PutObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(key),
-		Body:   reader,
+		Bucket:   aws.String(s.bucket),
+		Key:      aws.String(key),
+		Body:     reader,
 	}
-
 	if contentType != "" {
 		input.ContentType = aws.String(contentType)
+	}
+	if size >= 0 {
+		// S3 requires Content-Length for stream bodies; the caller (media
+		// service) passes header.Size, which is known at upload time.
+		input.ContentLength = aws.Int64(size)
 	}
 
 	log := zap.L().With(
