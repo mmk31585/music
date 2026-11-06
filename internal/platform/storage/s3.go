@@ -259,7 +259,7 @@ func (s *S3Storage) GetURL(ctx context.Context, key string) (string, error) {
 		return result.URL, nil
 	}
 
-	return key, nil
+	return "", fmt.Errorf("no public URL or presign configured for S3 bucket %s; cannot generate URL for key %s", s.bucket, key)
 }
 
 // PresignPut returns a time-limited presigned PUT URL for direct client-to-S3 upload.

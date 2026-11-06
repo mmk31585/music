@@ -106,7 +106,7 @@ func (s *LocalStorage) GetURL(ctx context.Context, key string) (string, error) {
 	key = strings.TrimLeft(key, "/")
 
 	if s.baseURL == "" {
-		return key, nil
+		return "", errors.New("no base URL configured for local storage; cannot generate URL for key " + key)
 	}
 
 	return s.baseURL + "/" + key, nil
