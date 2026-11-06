@@ -256,10 +256,6 @@ func (s *S3Storage) GetObject(ctx context.Context, key string) (io.ReadCloser, e
 func (s *S3Storage) GetURL(ctx context.Context, key string) (string, error) {
 	key = strings.TrimLeft(key, "/")
 
-	if s.publicURL != "" {
-		return s.publicURL + "/" + key, nil
-	}
-
 	if s.presign {
 		result, err := s.presigner.PresignGetObject(ctx, &s3.GetObjectInput{
 			Bucket: aws.String(s.bucket),
@@ -273,6 +269,10 @@ func (s *S3Storage) GetURL(ctx context.Context, key string) (string, error) {
 		}
 
 		return result.URL, nil
+	}
+
+	if s.publicURL != "" {
+		return s.publicURL + "/" + key, nil
 	}
 
 	return "", fmt.Errorf("no public URL or presign configured for S3 bucket %s; cannot generate URL for key %s", s.bucket, key)

@@ -269,9 +269,13 @@ func NewContainer(a *App) *Container {
 	c.subscribeEvents()
 
 	// Wire the transactional outbox store into the event bus for durable,
-	// at-least-once event delivery. The relay runs every 5 seconds.
+	// at-least-once event delivery. The relay runs every 5 seconds, but only
+	// outside of serverless (Vercel) — each function instance would otherwise
+	// run its own relay and compete on the tiny connection pool.
 	outboxStore := events.NewSQLOutboxStore(sqlxDB)
-	bus.SetOutboxStore(outboxStore, 5*time.Second)
+	if os.Getenv("VERCEL") != "1" {
+		bus.SetOutboxStore(outboxStore, 5*time.Second)
+	}
 
 	return c
 }
