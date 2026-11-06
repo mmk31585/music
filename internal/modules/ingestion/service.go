@@ -363,10 +363,21 @@ func (s *Service) Upload(ctx context.Context, file multipart.File, header *multi
 		coverMime := detectCoverMime(coverExt)
 
 		if err := s.storage.Upload(ctx, coverKey, bytes.NewReader(result.CoverArt), int64(len(result.CoverArt)), coverMime); err != nil {
-			zap.L().Warn("failed to upload embedded cover art", zap.Error(err))
+			zap.L().Warn("failed to store embedded cover art",
+				zap.String("draft_id", draftID),
+				zap.Int("cover_size", len(result.CoverArt)),
+				zap.String("cover_ext", coverExt),
+				zap.Error(err),
+			)
 		} else {
 			coverURL, err := s.storage.GetURL(ctx, coverKey)
-			if err == nil {
+			if err != nil {
+				zap.L().Warn("failed to get cover art URL",
+					zap.String("draft_id", draftID),
+					zap.String("cover_key", coverKey),
+					zap.Error(err),
+				)
+			} else {
 				coverArtURL = &coverURL
 				assetID := ulid.Make().String()
 				_, err := s.repo.CreateAsset(ctx, CreateAssetParams{
@@ -580,10 +591,21 @@ func (s *Service) CompleteUpload(ctx context.Context, draftID, key, uploadedBy s
 		coverMime := detectCoverMime(coverExt)
 
 		if err := s.storage.Upload(ctx, coverKey, bytes.NewReader(result.CoverArt), int64(len(result.CoverArt)), coverMime); err != nil {
-			zap.L().Warn("failed to upload embedded cover art", zap.Error(err))
+			zap.L().Warn("failed to store embedded cover art",
+				zap.String("draft_id", draftID),
+				zap.Int("cover_size", len(result.CoverArt)),
+				zap.String("cover_ext", coverExt),
+				zap.Error(err),
+			)
 		} else {
 			coverURL, err := s.storage.GetURL(ctx, coverKey)
-			if err == nil {
+			if err != nil {
+				zap.L().Warn("failed to get cover art URL",
+					zap.String("draft_id", draftID),
+					zap.String("cover_key", coverKey),
+					zap.Error(err),
+				)
+			} else {
 				coverArtURL = &coverURL
 				assetID := ulid.Make().String()
 				_, err := s.repo.CreateAsset(ctx, CreateAssetParams{
