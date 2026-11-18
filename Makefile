@@ -11,7 +11,7 @@ tidy:
 	go mod tidy
 
 build:
-	go build -o bin/api ./cmd/api
+	cd backend && go build -o ../bin/api ./cmd/api
 
 build-worker:
 	go build -o bin/worker ./cmd/worker
@@ -19,17 +19,17 @@ build-worker:
 build-all: build build-worker
 
 test:
-	go test ./... -race -count=1
+	cd backend && go test ./... -race -count=1
 
 test-coverage:
-	go test ./... -race -coverprofile=coverage.out -covermode=atomic -count=1
+	cd backend && go test ./... -race -coverprofile=coverage.out -covermode=atomic -count=1
 
 cover-html: test-coverage
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report: file://$(PWD)/coverage.html"
 
 cover-ci:
-	go test ./... -race -coverprofile=coverage.out -covermode=atomic -count=1
+	cd backend && go test ./... -race -coverprofile=coverage.out -covermode=atomic -count=1
 	go tool cover -func=coverage.out | tail -1 | awk '{print $$NF}' | sed 's/%//' | xargs -I{} bash -c 'if [ "{}" \< "30.0" ]; then echo "FAIL: Coverage {}% < 30.0% threshold"; exit 1; else echo "PASS: Coverage {}% >= 30.0%"; fi'
 
 lint-go:
