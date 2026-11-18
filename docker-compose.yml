@@ -40,9 +40,13 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        GOPROXY: https://package-mirror.liara.ir/repository/go/
     env_file: .env
     environment:
       DATABASE_SOURCE: postgres://${POSTGRES_USER:-muse}:${POSTGRES_PASSWORD:-muse}@postgres:5432/${POSTGRES_DB:-muse}?sslmode=disable
+      DATABASE_URL: postgres://${POSTGRES_USER:-muse}:${POSTGRES_PASSWORD:-muse}@postgres:5432/${POSTGRES_DB:-muse}?sslmode=disable
+      DATABASE_URL_UNPOOLED: postgres://${POSTGRES_USER:-muse}:${POSTGRES_PASSWORD:-muse}@postgres:5432/${POSTGRES_DB:-muse}?sslmode=disable
       REDIS_ADDR: redis:6379
     depends_on:
       postgres:
