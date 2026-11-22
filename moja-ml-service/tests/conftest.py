@@ -1,4 +1,4 @@
-"""Test configuration and fixtures for moja-ml-service."""
+"""Test configuration and fixtures for ml-service."""
 
 from collections.abc import AsyncGenerator
 

@@ -1,6 +1,6 @@
 # Muse — Backend API (AGENTS.md)
 
-> Start every session by reading this file, then `docs/agent/STATE.md`, then the last 20 lines of `docs/agent/BACKLOG.md` (or `docs/LEARNINGS.md` if present). Run `git status` and `make test` before editing.
+> Start every session by reading this file, then `docs/agent/STATE.md`, then the last 20 lines of `docs/agent/BACKLOG.md` (or `docs/LEARNINGS.md` if present). Run `git status` + `make test` before editing.
 
 ## 1. What this is
 
@@ -37,6 +37,7 @@ music/
 ├── docker-compose.yml       # production-style full stack (pg+redis+migrate+api+worker+frontend)
 ├── fly.toml / railway.json / vercel.json  # deploy targets
 └── AGENTS.md                # this file
+
 ```
 
 Anything under `frontend/` is owned by the frontend repo; do not edit it from here unless the task explicitly crosses the seam (keep the contract stable).
@@ -121,6 +122,7 @@ make migrate-up     # applies goose migrations
 make migrate-status
 make infra-up / infra-down
 make docker-up      # compose build + run
+
 ```
 
 Frontend commands live in `frontend/` (`npm run lint`, `npx vitest run`, `npx vue-tsc --noEmit`).
@@ -160,7 +162,7 @@ For every session:
 3. **One task at a time** (one bullet of one phase). Keep commits small (< ~200 changed lines) with Conventional Commit messages.
 4. After each task: run `make test` (and `go vet ./...`, `golangci-lint` when relevant). Commit only when green, then update `docs/agent/STATE.md`.
 5. On 3 failed attempts on the same problem, record it in `docs/agent/BACKLOG.md`/concerns and move on.
-6. Record non-trivial bugs/surprises in `docs/LEARNINGS.md` (if present) append-only: `date | symptom | cause | fix | rule`.
+6. Record non-trivial bugs/surprises in `docs/agent/LEARNINGS.md` (if present) append-only: `date | symptom | cause | fix | rule`.
 7. Never commit secrets, real URLs/tokens in tests, disable failing tests, or add deps without noting why.
 8. Validate inputs with the validator package; use parameterized SQL; avoid SQL injection; include security headers.
 9. Do not work on a later concern before earlier blockers are cleared.
@@ -205,10 +207,12 @@ Stop and ask the human for:
 
 - Do not log tokens, passwords, or PII.
 - CORS origins must be exact; never wildcard in production.
-- Audio bytes never stream through this API in the intended model (local files + MinIO); keep upload/download policies consistent with configured storage.
+- **Streaming model (hybrid):** Production uses `STREAM_MODE=redirect` — `GET /stream` authenticates+authorizes, then replies 302 to a short-lived presigned URL (default 1h TTL). Local dev/fallback uses `STREAM_MODE=proxy` — audio bytes stream through Go via `http.ServeContent` + `Storage.GetObjectRange` (never `io.ReadAll` a full audio object). The legacy note "audio never streams through this API" no longer applies; redirect mode is the production default. See `docs/adr/streaming-model.md`.
 - Vercel deployment note: Vercel Go server must listen on `PORT` when provided (config falls back to it); provided `APP_PORT` can override in dev.
 - External services can be down; ML/lyrics calls must not break core track endpoints.
 
 ---
 
 Maintenance: If a subsequent session discovers this file is stale or wrong (build commands changed, new env vars, new module), edit it in the same commit as the change. Keep this file under ~400 lines.
+
+Today's date: Sun Nov 22 2026

@@ -1,5 +1,5 @@
 """
-SQLAlchemy ORM models for moja-ml-service's OWN database.
+SQLAlchemy ORM models for ml-service's OWN database.
 
 This database is separate from the Go backend's catalog database. It tracks
 job lifecycle for ML processing tasks.

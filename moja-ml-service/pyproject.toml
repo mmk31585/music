@@ -1,5 +1,5 @@
 [project]
-name = "moja-ml-service"
+name = "ml-service"
 version = "0.1.0"
 description = "Audio/ML processing service for the Moja (موجا) Persian music platform — transcription, feature extraction, recommendations"
 requires-python = ">=3.12"

@@ -1,21 +1,36 @@
 from typing import Literal
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     # ── App ──────────────────────────────────────────────────────────────
-    app_name: str = "moja-ml-service"
+    app_name: str = "ml-service"
     environment: str = "development"
     debug: bool = False
 
     # ── Database (this service's OWN database — separate from Go's catalog DB) ──
-    database_url: str = "postgresql+asyncpg://moja_ml:changeme_in_production@localhost:5433/moja_ml"
+    postgres_user: str = "ml"
+    postgres_password: str = "ml"
+    postgres_db: str = "ml"
+    postgres_host: str = "localhost"
+    postgres_port: int = 5433
+    database_url: str = ""
 
     # ── Redis / Celery ───────────────────────────────────────────────────
     redis_url: str = "redis://localhost:6379/0"
     celery_broker_url: str = "redis://localhost:6379/1"
     celery_result_backend: str = "redis://localhost:6379/2"
+
+    @model_validator(mode="after")
+    def _build_database_url(self) -> "Settings":
+        if not self.database_url:
+            self.database_url = (
+                f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
+                f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+            )
+        return self
 
     # ── Storage mode ─────────────────────────────────────────────────────
     # "shared_volume"  — Go's uploads dir mounted at audio_shared_path (local/VPS)

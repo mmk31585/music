@@ -1,5 +1,5 @@
 """
-Celery application configuration for moja-ml-service.
+Celery application configuration for ml-service.
 
 Defines the Celery app instance with routing, serialization, and the
 critical concurrency limit (see ``worker_concurrency`` doc below).
@@ -30,7 +30,7 @@ from celery import Celery
 from app.config import settings
 
 celery_app = Celery(
-    "moja_ml_service",
+    "ml_service",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
 )

@@ -16,3 +16,7 @@ gateway/envoy/.cache/
 platform/.cache/
 .omc
 node_modules
+.opencode
+specs
+.agents
+.claude

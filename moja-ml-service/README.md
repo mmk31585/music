@@ -123,7 +123,7 @@ This schema is defined here for documentation. The actual implementation
 
 ```bash
 # 1. Clone and enter the project
-cd moja-ml-service
+cd ml-service
 
 # 2. Create virtual environment and install dependencies
 uv sync
@@ -177,7 +177,7 @@ uv run mypy app/
 ## Project Structure
 
 ```
-moja-ml-service/
+ml-service/
 ├── app/
 │   ├── main.py                 # FastAPI application entry point
 │   ├── config.py               # pydantic-settings configuration
